@@ -34,6 +34,15 @@
 		0100000000000025 /* GameListResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000025 /* GameListResponse.swift */; };
 		0100000000000026 /* GameDetailResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000026 /* GameDetailResponse.swift */; };
 		0100000000000027 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000027 /* Enums.swift */; };
+		0100000000000028 /* GameDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000028 /* GameDetailViewModel.swift */; };
+		0100000000000029 /* GameSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000029 /* GameSection.swift */; };
+		0100000000000030 /* PreviewFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000030 /* PreviewFixtures.swift */; };
+		0100000000000031 /* EmptySectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000031 /* EmptySectionView.swift */; };
+		0100000000000032 /* GameHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000032 /* GameHeaderView.swift */; };
+		0100000000000033 /* HighlightCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000033 /* HighlightCardView.swift */; };
+		0100000000000034 /* SectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000034 /* SectionCardView.swift */; };
+		0100000000000035 /* TeamComparisonRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000035 /* TeamComparisonRowView.swift */; };
+		0100000000000036 /* TimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000036 /* TimelineRowView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +74,15 @@
 		0200000000000025 /* GameListResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameListResponse.swift; sourceTree = "<group>"; };
 		0200000000000026 /* GameDetailResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailResponse.swift; sourceTree = "<group>"; };
 		0200000000000027 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
+		0200000000000028 /* GameDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailViewModel.swift; sourceTree = "<group>"; };
+		0200000000000029 /* GameSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSection.swift; sourceTree = "<group>"; };
+		0200000000000030 /* PreviewFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewFixtures.swift; sourceTree = "<group>"; };
+		0200000000000031 /* EmptySectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptySectionView.swift; sourceTree = "<group>"; };
+		0200000000000032 /* GameHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameHeaderView.swift; sourceTree = "<group>"; };
+		0200000000000033 /* HighlightCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightCardView.swift; sourceTree = "<group>"; };
+		0200000000000034 /* SectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionCardView.swift; sourceTree = "<group>"; };
+		0200000000000035 /* TeamComparisonRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamComparisonRowView.swift; sourceTree = "<group>"; };
+		0200000000000036 /* TimelineRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineRowView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +132,7 @@
 				0400000000000006 /* Networking */,
 				0400000000000007 /* Screens */,
 				0400000000000008 /* Components */,
+				0400000000000013 /* ViewModels */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -204,8 +223,24 @@
 			isa = PBXGroup;
 			children = (
 				0200000000000017 /* GameDetailView.swift */,
+				0200000000000029 /* GameSection.swift */,
+				0200000000000030 /* PreviewFixtures.swift */,
+				0200000000000031 /* EmptySectionView.swift */,
+				0200000000000032 /* GameHeaderView.swift */,
+				0200000000000033 /* HighlightCardView.swift */,
+				0200000000000034 /* SectionCardView.swift */,
+				0200000000000035 /* TeamComparisonRowView.swift */,
+				0200000000000036 /* TimelineRowView.swift */,
 			);
 			path = Game;
+			sourceTree = "<group>";
+		};
+		0400000000000013 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				0200000000000028 /* GameDetailViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -303,6 +338,15 @@
 				0100000000000025 /* GameListResponse.swift in Sources */,
 				0100000000000026 /* GameDetailResponse.swift in Sources */,
 				0100000000000027 /* Enums.swift in Sources */,
+				0100000000000028 /* GameDetailViewModel.swift in Sources */,
+				0100000000000029 /* GameSection.swift in Sources */,
+				0100000000000030 /* PreviewFixtures.swift in Sources */,
+				0100000000000031 /* EmptySectionView.swift in Sources */,
+				0100000000000032 /* GameHeaderView.swift in Sources */,
+				0100000000000033 /* HighlightCardView.swift in Sources */,
+				0100000000000034 /* SectionCardView.swift in Sources */,
+				0100000000000035 /* TeamComparisonRowView.swift in Sources */,
+				0100000000000036 /* TimelineRowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

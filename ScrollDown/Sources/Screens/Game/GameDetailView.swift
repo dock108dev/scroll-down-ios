@@ -55,7 +55,7 @@ struct GameDetailView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry") {
-                Task { await loadGame() }
+                Task { await viewModel.load(gameId: gameId, service: appConfig.gameService) }
             }
             .buttonStyle(.borderedProminent)
         }
