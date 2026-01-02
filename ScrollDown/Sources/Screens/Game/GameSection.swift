@@ -25,7 +25,7 @@ enum GameSection: String, CaseIterable, Hashable {
         case .teamStats:
             return "Team Stats"
         case .final:
-            return "Final"
+            return "Final Score"
         }
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GameHeaderView: View {
     let game: Game
+    let scoreRevealed: Bool
 
     var body: some View {
         VStack(spacing: Layout.spacing) {
@@ -10,8 +11,8 @@ struct GameHeaderView: View {
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, Layout.badgeHorizontalPadding)
                     .padding(.vertical, Layout.badgeVerticalPadding)
-                    .background(Color.blue.opacity(Layout.badgeBackgroundOpacity))
-                    .foregroundColor(.blue)
+                    .background(GameTheme.accentColor.opacity(Layout.badgeBackgroundOpacity))
+                    .foregroundColor(GameTheme.accentColor)
                     .clipShape(Capsule())
 
                 if let date = game.parsedGameDate {
@@ -32,18 +33,42 @@ struct GameHeaderView: View {
                 }
                 TeamHeaderView(teamName: game.homeTeam, alignment: .trailing)
             }
+
+            Text(statusDescription)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(Layout.cardPadding)
-        .background(Color(.systemBackground))
+        .background(GameTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: Layout.cornerRadius)
-                .stroke(Color(.systemGray5), lineWidth: Layout.borderWidth)
+                .stroke(GameTheme.cardBorder, lineWidth: Layout.borderWidth)
+        )
+        .shadow(
+            color: GameTheme.cardShadow,
+            radius: Layout.shadowRadius,
+            x: 0,
+            y: Layout.shadowYOffset
         )
         .padding(.horizontal, Layout.horizontalPadding)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Game header")
-        .accessibilityValue("\(game.awayTeam) at \(game.homeTeam)")
+        .accessibilityValue("\(game.awayTeam) at \(game.homeTeam), \(statusDescription)")
+    }
+
+    private var statusDescription: String {
+        switch game.status {
+        case .completed:
+            return scoreRevealed ? "Game complete — score revealed below" : "Game complete — spoiler-safe"
+        case .scheduled:
+            return "Not started"
+        case .postponed:
+            return "Postponed"
+        case .canceled:
+            return "Canceled"
+        }
     }
 }
 
@@ -55,12 +80,12 @@ private struct TeamHeaderView: View {
         VStack(alignment: alignment, spacing: Layout.teamTextSpacing) {
             ZStack {
                 Circle()
-                    .fill(Color.blue.opacity(Layout.logoOpacity))
+                    .fill(GameTheme.accentColor.opacity(Layout.logoOpacity))
                     .frame(width: Layout.logoSize, height: Layout.logoSize)
 
                 Text(initials(for: teamName))
                     .font(.caption.weight(.bold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(GameTheme.accentColor)
             }
 
             Text(teamName)
@@ -92,10 +117,12 @@ private enum Layout {
     static let cornerRadius: CGFloat = 22
     static let borderWidth: CGFloat = 1
     static let horizontalPadding: CGFloat = 20
+    static let shadowRadius: CGFloat = 10
+    static let shadowYOffset: CGFloat = 4
 }
 
 #Preview {
-    GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game)
+    GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game, scoreRevealed: false)
         .padding()
         .background(Color(.systemGroupedBackground))
 }
