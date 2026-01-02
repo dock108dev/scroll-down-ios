@@ -266,7 +266,7 @@ private enum Layout {
 private enum Strings {
     static let navigationTitle = "Scroll Down Sports"
     static let introTitle = "Scroll Down Sports"
-    static let introSubtitle = "Catch up — without spoilers."
+    static let introSubtitle = "Catch up at your own pace."
     static let allLeaguesLabel = "All"
     static let loadingTitle = "Loading games..."
     static let errorIconName = "exclamationmark.triangle"

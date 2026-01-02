@@ -33,10 +33,6 @@ struct GameRowView: View {
                 .font(.footnote)
                 .foregroundColor(.secondary)
             
-            if game.inferredStatus == .completed {
-                spoilerSafeBadge
-            }
-            
             VStack(alignment: .leading, spacing: Layout.valueSpacing) {
                 Text(Strings.valueHeader)
                     .font(.caption2.weight(.semibold))
@@ -86,16 +82,6 @@ struct GameRowView: View {
         }
     }
     
-    private var spoilerSafeBadge: some View {
-        Text(Strings.spoilerSafeLabel)
-            .font(.caption2.weight(.semibold))
-            .foregroundColor(.secondary)
-            .padding(.horizontal, Layout.spoilerBadgeHorizontalPadding)
-            .padding(.vertical, Layout.spoilerBadgeVerticalPadding)
-            .background(Color(.systemGray5))
-            .clipShape(Capsule())
-    }
-    
     private var accessibilityLabel: String {
         "\(game.awayTeam) at \(game.homeTeam). \(game.statusLine)."
     }
@@ -110,16 +96,13 @@ private enum Layout {
     static let leagueBadgeVerticalPadding: CGFloat = 4
     static let leagueBadgeCornerRadius: CGFloat = 6
     static let leagueBadgeBackgroundOpacity: Double = 0.15
-    static let spoilerBadgeHorizontalPadding: CGFloat = 10
-    static let spoilerBadgeVerticalPadding: CGFloat = 4
 }
 
 private enum Strings {
     static let valueHeader = "What you get if you tap"
     static let valueSummaryScheduled = "Preview • Storylines • Lineups"
-    static let valueSummaryInProgress = "Live updates • Highlights • Spoiler-safe recap"
+    static let valueSummaryInProgress = "Live updates • Highlights • Recap"
     static let valueSummaryCompleted = "Game recap • Highlights • Stats"
-    static let spoilerSafeLabel = "🔒 Spoiler-safe"
 }
 
 #Preview {

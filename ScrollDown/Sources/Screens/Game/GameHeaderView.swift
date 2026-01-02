@@ -61,7 +61,7 @@ struct GameHeaderView: View {
     private var statusDescription: String {
         switch game.status {
         case .completed:
-            return scoreRevealed ? "Game complete — score revealed below" : "Game complete — spoiler-safe"
+            return scoreRevealed ? "Final score below" : "Game complete"
         case .scheduled:
             return "Not started"
         case .postponed:
