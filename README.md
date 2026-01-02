@@ -8,7 +8,7 @@ A SwiftUI iOS app for consuming sports game data, designed to work with the [Scr
 - 🎭 **Mock-first development** - works without network
 - 🔄 **Swappable data layer** - easily switch between mock and real API
 - 📋 **Spec-aligned models** - Codable types match OpenAPI exactly
-- 🏠 **Game list** with league filtering
+- 🏠 **Spoiler-safe game list** with league filtering
 - 📊 **Game detail** with stats, odds, social posts, and play-by-play
 
 ## Project Structure
@@ -142,5 +142,4 @@ Mock JSON files are sourced from `scroll-down-api-spec/examples/`:
 ## License
 
 Proprietary - All rights reserved
-
 

@@ -5,6 +5,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
     let id: Int
     let leagueCode: String
     let gameDate: String
+    let status: GameStatus?
     let homeTeam: String
     let awayTeam: String
     let homeScore: Int?
@@ -24,6 +25,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
         case id
         case leagueCode = "league_code"
         case gameDate = "game_date"
+        case status
         case homeTeam = "home_team"
         case awayTeam = "away_team"
         case homeScore = "home_score"
@@ -51,6 +53,17 @@ struct GameSummary: Codable, Identifiable, Hashable {
 
 // MARK: - Computed Properties
 extension GameSummary {
+    private enum Formatting {
+        static let startPrefix = "Starts "
+        static let dateTemplate = "MMM d"
+        static let timeStyle: DateFormatter.Style = .short
+        static let dateTimeSeparator = " — "
+        static let inProgressText = "Game in progress"
+        static let completedText = "Final — tap for recap"
+        static let postponedText = "Postponed"
+        static let canceledText = "Canceled"
+    }
+
     /// Formatted score string (e.g., "112 - 108")
     var scoreDisplay: String {
         guard let home = homeScore, let away = awayScore else {
@@ -78,6 +91,44 @@ extension GameSummary {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-}
 
+    var inferredStatus: GameStatus {
+        if let status {
+            return status
+        }
+        if homeScore != nil || awayScore != nil {
+            return .completed
+        }
+        if let playCount, playCount > 0 {
+            return .inProgress
+        }
+        return .scheduled
+    }
+
+    var statusLine: String {
+        switch inferredStatus {
+        case .scheduled:
+            guard let date = parsedGameDate else { return formattedDate }
+            return Formatting.startPrefix + formattedStartTime(date: date)
+        case .inProgress:
+            return Formatting.inProgressText
+        case .completed:
+            return Formatting.completedText
+        case .postponed:
+            return Formatting.postponedText
+        case .canceled:
+            return Formatting.canceledText
+        }
+    }
+
+    private func formattedStartTime(date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.setLocalizedDateFormatFromTemplate(Formatting.dateTemplate)
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = Formatting.timeStyle
+        let dateText = dateFormatter.string(from: date)
+        let timeText = timeFormatter.string(from: date)
+        return dateText + Formatting.dateTimeSeparator + timeText
+    }
+}
 

@@ -5,16 +5,15 @@ struct GameRowView: View {
     let game: GameSummary
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // League and date
+        VStack(alignment: .leading, spacing: Layout.stackSpacing) {
             HStack {
                 Text(game.leagueCode)
                     .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(leagueColor.opacity(0.15))
+                    .padding(.horizontal, Layout.leagueBadgeHorizontalPadding)
+                    .padding(.vertical, Layout.leagueBadgeVerticalPadding)
+                    .background(leagueColor.opacity(Layout.leagueBadgeBackgroundOpacity))
                     .foregroundColor(leagueColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .clipShape(RoundedRectangle(cornerRadius: Layout.leagueBadgeCornerRadius))
                 
                 Spacer()
                 
@@ -23,43 +22,41 @@ struct GameRowView: View {
                     .foregroundColor(.secondary)
             }
             
-            // Teams and score
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(game.awayTeam)
-                            .font(.subheadline.weight(.medium))
-                        Spacer()
-                        if let score = game.awayScore {
-                            Text("\(score)")
-                                .font(.subheadline.weight(.bold))
-                                .foregroundColor(awayWon ? .primary : .secondary)
-                        }
-                    }
-                    
-                    HStack {
-                        Text(game.homeTeam)
-                            .font(.subheadline.weight(.medium))
-                        Spacer()
-                        if let score = game.homeScore {
-                            Text("\(score)")
-                                .font(.subheadline.weight(.bold))
-                                .foregroundColor(homeWon ? .primary : .secondary)
-                        }
-                    }
-                }
+            VStack(alignment: .leading, spacing: Layout.teamSpacing) {
+                Text(game.awayTeam)
+                    .font(.subheadline.weight(.semibold))
+                Text(game.homeTeam)
+                    .font(.subheadline.weight(.semibold))
             }
             
-            // Data availability indicators
-            HStack(spacing: 8) {
-                dataIndicator("Box", available: game.hasBoxscore ?? false)
-                dataIndicator("Stats", available: game.hasPlayerStats ?? false)
-                dataIndicator("Odds", available: game.hasOdds ?? false)
-                dataIndicator("Social", available: game.hasSocial ?? false)
-                dataIndicator("PBP", available: game.hasPbp ?? false)
+            Text(game.statusLine)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            
+            if game.inferredStatus == .completed {
+                spoilerSafeBadge
+            }
+            
+            VStack(alignment: .leading, spacing: Layout.valueSpacing) {
+                Text(Strings.valueHeader)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.secondary)
+                Text(valueSummaryText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(Layout.cardPadding)
+        .background(HomeTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: HomeTheme.cardCornerRadius))
+        .shadow(
+            color: HomeTheme.cardShadow,
+            radius: HomeTheme.cardShadowRadius,
+            x: 0,
+            y: HomeTheme.cardShadowYOffset
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
     }
     
     // MARK: - Helpers
@@ -76,26 +73,53 @@ struct GameRowView: View {
         }
     }
     
-    private var homeWon: Bool {
-        guard let home = game.homeScore, let away = game.awayScore else { return false }
-        return home > away
-    }
-    
-    private var awayWon: Bool {
-        guard let home = game.homeScore, let away = game.awayScore else { return false }
-        return away > home
-    }
-    
-    private func dataIndicator(_ label: String, available: Bool) -> some View {
-        HStack(spacing: 2) {
-            Circle()
-                .fill(available ? Color.green : Color.gray.opacity(0.3))
-                .frame(width: 6, height: 6)
-            Text(label)
-                .font(.caption2)
-                .foregroundColor(available ? .secondary : .secondary.opacity(0.5))
+    private var valueSummaryText: String {
+        switch game.inferredStatus {
+        case .scheduled:
+            return Strings.valueSummaryScheduled
+        case .inProgress:
+            return Strings.valueSummaryInProgress
+        case .completed:
+            return Strings.valueSummaryCompleted
+        case .postponed, .canceled:
+            return Strings.valueSummaryScheduled
         }
     }
+    
+    private var spoilerSafeBadge: some View {
+        Text(Strings.spoilerSafeLabel)
+            .font(.caption2.weight(.semibold))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, Layout.spoilerBadgeHorizontalPadding)
+            .padding(.vertical, Layout.spoilerBadgeVerticalPadding)
+            .background(Color(.systemGray5))
+            .clipShape(Capsule())
+    }
+    
+    private var accessibilityLabel: String {
+        "\(game.awayTeam) at \(game.homeTeam). \(game.statusLine)."
+    }
+}
+
+private enum Layout {
+    static let stackSpacing: CGFloat = 12
+    static let teamSpacing: CGFloat = 6
+    static let valueSpacing: CGFloat = 4
+    static let cardPadding: CGFloat = 16
+    static let leagueBadgeHorizontalPadding: CGFloat = 8
+    static let leagueBadgeVerticalPadding: CGFloat = 4
+    static let leagueBadgeCornerRadius: CGFloat = 6
+    static let leagueBadgeBackgroundOpacity: Double = 0.15
+    static let spoilerBadgeHorizontalPadding: CGFloat = 10
+    static let spoilerBadgeVerticalPadding: CGFloat = 4
+}
+
+private enum Strings {
+    static let valueHeader = "What you get if you tap"
+    static let valueSummaryScheduled = "Preview • Storylines • Lineups"
+    static let valueSummaryInProgress = "Live updates • Highlights • Spoiler-safe recap"
+    static let valueSummaryCompleted = "Game recap • Highlights • Stats"
+    static let spoilerSafeLabel = "🔒 Spoiler-safe"
 }
 
 #Preview {
@@ -104,6 +128,7 @@ struct GameRowView: View {
             id: 12345,
             leagueCode: "NBA",
             gameDate: "2026-01-01T19:30:00-05:00",
+            status: .completed,
             homeTeam: "Boston Celtics",
             awayTeam: "Los Angeles Lakers",
             homeScore: 112,
@@ -120,6 +145,6 @@ struct GameRowView: View {
             lastScrapedAt: "2026-01-02T03:15:00Z"
         ))
     }
+    .listStyle(.plain)
+    .background(HomeTheme.background)
 }
-
-

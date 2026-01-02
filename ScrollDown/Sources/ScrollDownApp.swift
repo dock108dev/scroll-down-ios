@@ -8,8 +8,8 @@ struct ScrollDownApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appConfig)
+                .tint(HomeTheme.accentColor)
         }
     }
 }
-
 

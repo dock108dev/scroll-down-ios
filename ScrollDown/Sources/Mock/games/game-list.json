@@ -4,6 +4,7 @@
       "id": 12345,
       "league_code": "NBA",
       "game_date": "2026-01-01T19:30:00-05:00",
+      "status": "completed",
       "home_team": "Boston Celtics",
       "away_team": "Los Angeles Lakers",
       "home_score": 112,
@@ -23,6 +24,7 @@
       "id": 12346,
       "league_code": "NBA",
       "game_date": "2026-01-01T20:00:00-06:00",
+      "status": "completed",
       "home_team": "Chicago Bulls",
       "away_team": "Miami Heat",
       "home_score": 98,
@@ -39,9 +41,30 @@
       "last_scraped_at": "2026-01-02T02:45:00Z"
     },
     {
+      "id": 12348,
+      "league_code": "NBA",
+      "game_date": "2026-01-01T21:15:00-05:00",
+      "status": "in_progress",
+      "home_team": "New York Knicks",
+      "away_team": "Atlanta Hawks",
+      "home_score": null,
+      "away_score": null,
+      "has_boxscore": false,
+      "has_player_stats": true,
+      "has_odds": false,
+      "has_social": true,
+      "has_pbp": true,
+      "play_count": 128,
+      "social_post_count": 6,
+      "has_required_data": false,
+      "scrape_version": 1,
+      "last_scraped_at": "2026-01-01T21:20:00Z"
+    },
+    {
       "id": 12347,
       "league_code": "NBA",
       "game_date": "2026-01-01T22:30:00-08:00",
+      "status": "scheduled",
       "home_team": "Golden State Warriors",
       "away_team": "Phoenix Suns",
       "home_score": null,
@@ -58,7 +81,7 @@
       "last_scraped_at": null
     }
   ],
-  "total": 156,
+  "total": 157,
   "next_offset": 50,
   "with_boxscore_count": 142,
   "with_player_stats_count": 142,
@@ -66,5 +89,3 @@
   "with_social_count": 98,
   "with_pbp_count": 134
 }
-
-

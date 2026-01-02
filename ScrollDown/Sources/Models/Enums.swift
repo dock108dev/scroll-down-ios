@@ -15,6 +15,7 @@ enum LeagueCode: String, Codable, CaseIterable {
 /// Game status as defined in the OpenAPI spec
 enum GameStatus: String, Codable {
     case scheduled
+    case inProgress = "in_progress"
     case completed
     case postponed
     case canceled
@@ -58,5 +59,4 @@ enum PlayType: String, Codable {
     case highlight
     case play
 }
-
 

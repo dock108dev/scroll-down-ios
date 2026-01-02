@@ -9,8 +9,8 @@ final class ModelDecodingTests: XCTestCase {
     func testGameListResponseDecoding() throws {
         let response: GameListResponse = MockLoader.load("game-list")
         
-        XCTAssertEqual(response.games.count, 3)
-        XCTAssertEqual(response.total, 156)
+        XCTAssertEqual(response.games.count, 4)
+        XCTAssertEqual(response.total, 157)
         XCTAssertEqual(response.nextOffset, 50)
         
         // Verify first game
@@ -21,7 +21,11 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(firstGame.awayTeam, "Los Angeles Lakers")
         XCTAssertEqual(firstGame.homeScore, 112)
         XCTAssertEqual(firstGame.awayScore, 108)
+        XCTAssertEqual(firstGame.status, .completed)
         XCTAssertTrue(firstGame.hasBoxscore ?? false)
+
+        let inProgressGame = response.games[2]
+        XCTAssertEqual(inProgressGame.status, .inProgress)
     }
     
     // MARK: - Game Detail Response
@@ -136,6 +140,45 @@ final class ModelDecodingTests: XCTestCase {
         let post = try decoder.decode(SocialPostResponse.self, from: json)
         XCTAssertEqual(post.mediaType, .video)
     }
+
+    // MARK: - Game Summary Logic
+
+    func testGameSummaryInferredStatus() {
+        let scheduledGame = makeGameSummary(playCount: 0)
+        XCTAssertEqual(scheduledGame.inferredStatus, .scheduled)
+
+        let inProgressGame = makeGameSummary(playCount: 12)
+        XCTAssertEqual(inProgressGame.inferredStatus, .inProgress)
+
+        let completedGame = makeGameSummary(homeScore: 3, awayScore: 2)
+        XCTAssertEqual(completedGame.inferredStatus, .completed)
+    }
 }
 
-
+private func makeGameSummary(
+    status: GameStatus? = nil,
+    homeScore: Int? = nil,
+    awayScore: Int? = nil,
+    playCount: Int? = nil
+) -> GameSummary {
+    GameSummary(
+        id: 42,
+        leagueCode: "NBA",
+        gameDate: "2026-01-01T19:30:00Z",
+        status: status,
+        homeTeam: "Team A",
+        awayTeam: "Team B",
+        homeScore: homeScore,
+        awayScore: awayScore,
+        hasBoxscore: false,
+        hasPlayerStats: false,
+        hasOdds: false,
+        hasSocial: false,
+        hasPbp: false,
+        playCount: playCount,
+        socialPostCount: 0,
+        hasRequiredData: false,
+        scrapeVersion: 1,
+        lastScrapedAt: "2026-01-01T20:00:00Z"
+    )
+}
