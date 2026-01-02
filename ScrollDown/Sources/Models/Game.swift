@@ -66,6 +66,10 @@ extension Game {
         }
         return "\(home) - \(away)"
     }
+
+    var matchupTitle: String {
+        "\(awayTeam) at \(homeTeam)"
+    }
     
     /// Parsed game date
     var parsedGameDate: Date? {
@@ -79,5 +83,3 @@ extension Game {
         return formatter.date(from: gameDate)
     }
 }
-
-
