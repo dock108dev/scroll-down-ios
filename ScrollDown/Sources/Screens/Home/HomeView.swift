@@ -136,28 +136,56 @@ struct HomeView: View {
     }
     
     private var gameListView: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: Layout.cardSpacing) {
-                ForEach(sectionedGames) { section in
-                    Text(section.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, Layout.horizontalPadding)
-                        .padding(.top, Layout.sectionHeaderTopPadding)
-                    
-                    ForEach(section.games) { game in
-                        NavigationLink(value: game) {
-                            GameRowView(game: game)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: Layout.cardSpacing) {
+                    ForEach(sectionedGames) { section in
+                        // Section header
+                        VStack(alignment: .leading, spacing: 0) {
+                            if section.title != Strings.sectionEarlier {
+                                Divider()
+                                    .padding(.horizontal, Layout.horizontalPadding)
+                                    .padding(.bottom, Layout.sectionDividerPadding)
+                            }
+                            
+                            Text(section.title)
+                                .font(.title3.weight(.bold))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, Layout.horizontalPadding)
+                                .padding(.top, Layout.sectionHeaderTopPadding)
+                                .id(section.title)
                         }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, Layout.horizontalPadding)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            triggerHapticIfNeeded(for: game)
-                        })
+                        
+                        if section.games.isEmpty && section.title == Strings.sectionToday {
+                            Text("No games scheduled for today")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, Layout.horizontalPadding)
+                                .padding(.vertical, Layout.emptyStatePadding)
+                        } else {
+                            ForEach(section.games) { game in
+                                NavigationLink(value: game) {
+                                    GameRowView(game: game)
+                                }
+                                .buttonStyle(CardPressButtonStyle())
+                                .padding(.horizontal, Layout.horizontalPadding)
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    triggerHapticIfNeeded(for: game)
+                                })
+                            }
+                        }
+                    }
+                }
+                .padding(.bottom, Layout.bottomPadding)
+            }
+            .onAppear {
+                // Scroll to Today section on appear
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo(Strings.sectionToday, anchor: .top)
                     }
                 }
             }
-            .padding(.bottom, Layout.bottomPadding)
         }
     }
     
@@ -196,27 +224,50 @@ struct HomeView: View {
     // MARK: - Sectioning
     
     private var sectionedGames: [GameListSection] {
-        var buckets: [String: [GameSummary]] = [:]
-        for game in games {
-            let title = sectionTitle(for: game)
-            buckets[title, default: []].append(game)
-        }
-        return Strings.sectionOrder.compactMap { title in
-            guard let games = buckets[title], !games.isEmpty else { return nil }
-            return GameListSection(title: title, games: games)
-        }
-    }
-    
-    private func sectionTitle(for game: GameSummary) -> String {
-        guard let date = game.parsedGameDate else { return Strings.sectionEarlier }
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
-            return Strings.sectionToday
+        let today = calendar.startOfDay(for: Date())
+        
+        var earlier: [GameSummary] = []
+        var todayGames: [GameSummary] = []
+        var upcoming: [GameSummary] = []
+        
+        for game in games {
+            guard let gameDate = game.parsedGameDate else {
+                earlier.append(game)
+                continue
+            }
+            
+            let gameDay = calendar.startOfDay(for: gameDate)
+            
+            if gameDay < today {
+                earlier.append(game)
+            } else if gameDay == today {
+                todayGames.append(game)
+            } else {
+                upcoming.append(game)
+            }
         }
-        if calendar.isDateInYesterday(date) {
-            return Strings.sectionYesterday
+        
+        // Sort each bucket
+        earlier.sort { ($0.parsedGameDate ?? .distantPast) > ($1.parsedGameDate ?? .distantPast) } // desc
+        todayGames.sort { ($0.parsedGameDate ?? .distantPast) < ($1.parsedGameDate ?? .distantPast) } // asc
+        upcoming.sort { ($0.parsedGameDate ?? .distantFuture) < ($1.parsedGameDate ?? .distantFuture) } // asc
+        
+        // Build sections in order: Earlier → Today → Upcoming
+        var sections: [GameListSection] = []
+        
+        if !earlier.isEmpty {
+            sections.append(GameListSection(title: Strings.sectionEarlier, games: earlier))
         }
-        return Strings.sectionEarlier
+        
+        // Always show Today section (even if empty, for anchor)
+        sections.append(GameListSection(title: Strings.sectionToday, games: todayGames))
+        
+        if !upcoming.isEmpty {
+            sections.append(GameListSection(title: Strings.sectionUpcoming, games: upcoming))
+        }
+        
+        return sections
     }
     
     // MARK: - Feedback
@@ -248,12 +299,24 @@ private enum Layout {
     static let emptyIconSize: CGFloat = 48
     static let progressScale: CGFloat = 1.5
     static let cardSpacing: CGFloat = 12
-    static let sectionHeaderTopPadding: CGFloat = 16
+    static let sectionHeaderTopPadding: CGFloat = 12
+    static let sectionDividerPadding: CGFloat = 8
+    static let emptyStatePadding: CGFloat = 24
     static let bottomPadding: CGFloat = 32
     static let dataModeSpacing: CGFloat = 4
     static let dataModeIndicatorSize: CGFloat = 8
     static let requestLimit = 50
     static let requestOffset = 0
+}
+
+/// Button style with subtle press animation for cards
+private struct CardPressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .opacity(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
 }
 
 private enum Strings {
@@ -270,10 +333,9 @@ private enum Strings {
     static let emptySubtitle = "No games found for the selected filters"
     static let mockLabel = "Mock"
     static let liveLabel = "Live"
-    static let sectionToday = "Today"
-    static let sectionYesterday = "Yesterday"
     static let sectionEarlier = "Earlier"
-    static let sectionOrder = [sectionToday, sectionYesterday, sectionEarlier]
+    static let sectionToday = "Today"
+    static let sectionUpcoming = "Upcoming"
 }
 
 #Preview {

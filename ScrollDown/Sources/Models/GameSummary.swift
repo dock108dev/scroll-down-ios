@@ -54,12 +54,13 @@ struct GameSummary: Codable, Identifiable, Hashable {
 // MARK: - Computed Properties
 extension GameSummary {
     private enum Formatting {
-        static let startPrefix = "Starts "
+        static let startsAtPrefix = "Starts at "
         static let dateTemplate = "MMM d"
         static let timeStyle: DateFormatter.Style = .short
         static let dateTimeSeparator = " — "
         static let inProgressText = "Live — catching up available"
         static let completedText = "Final — recap available"
+        static let upcomingText = "Scheduled — tap for details"
         static let postponedText = "Postponed"
         static let canceledText = "Canceled"
     }
@@ -91,6 +92,16 @@ extension GameSummary {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    /// Short formatted date (e.g., "Jan 1 • 7:30 PM")
+    var shortFormattedDate: String {
+        guard let date = parsedGameDate else { return gameDate }
+        let dateFormatter = DateFormatter()
+        dateFormatter.setLocalizedDateFormatFromTemplate("MMM d")
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        return "\(dateFormatter.string(from: date)) • \(timeFormatter.string(from: date))"
+    }
 
     var inferredStatus: GameStatus {
         if let status {
@@ -106,10 +117,17 @@ extension GameSummary {
     }
 
     var statusLine: String {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let isUpcoming = parsedGameDate.map { calendar.startOfDay(for: $0) > today } ?? false
+        
         switch inferredStatus {
         case .scheduled:
+            if isUpcoming {
+                return Formatting.upcomingText
+            }
             guard let date = parsedGameDate else { return formattedDate }
-            return Formatting.startPrefix + formattedStartTime(date: date)
+            return Formatting.startsAtPrefix + formattedTime(date: date)
         case .inProgress:
             return Formatting.inProgressText
         case .completed:
@@ -120,15 +138,12 @@ extension GameSummary {
             return Formatting.canceledText
         }
     }
-
-    private func formattedStartTime(date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.setLocalizedDateFormatFromTemplate(Formatting.dateTemplate)
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = Formatting.timeStyle
-        let dateText = dateFormatter.string(from: date)
-        let timeText = timeFormatter.string(from: date)
-        return dateText + Formatting.dateTimeSeparator + timeText
+    
+    private func formattedTime(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
+
 }
 
