@@ -8,6 +8,15 @@ struct GameDetailView: View {
     @StateObject private var viewModel: GameDetailViewModel
     @State private var selectedSection: GameSection = .overview
     @State private var collapsedQuarters: Set<Int> = []
+    @State private var hasInitializedQuarters = false
+    @State private var viewMode: ViewMode = .full
+    @State private var isOverviewExpanded = false
+    @State private var isPreGameExpanded = true
+    @State private var isTimelineExpanded = false
+    @State private var isPlayerStatsExpanded = false
+    @State private var isTeamStatsExpanded = false
+    @State private var isFinalScoreExpanded = false
+    @State private var isPostGameExpanded = false
 
     init(gameId: Int, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -67,11 +76,13 @@ struct GameDetailView: View {
             ScrollView {
                 VStack(spacing: Layout.sectionSpacing) {
                     if let game = viewModel.game {
-                        GameHeaderView(game: game)
+                        GameHeaderView(game: game, scoreRevealed: isFinalScoreExpanded)
                             .id(GameSection.header)
                     }
 
                     VStack(spacing: Layout.sectionSpacing) {
+                        viewModeToggleCard
+                            .id(Layout.viewModeAnchor)
                         overviewSection
                             .id(GameSection.overview)
                             .onAppear {
@@ -104,7 +115,7 @@ struct GameDetailView: View {
                 }
                 .padding(.bottom, Layout.bottomPadding)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(GameTheme.background)
             .safeAreaInset(edge: .top, spacing: 0) {
                 sectionNavigationBar { section in
                     withAnimation(.easeInOut) {
@@ -117,7 +128,11 @@ struct GameDetailView: View {
     }
 
     private var overviewSection: some View {
-        SectionCardView(title: "Overview", subtitle: "Recap") {
+        CollapsibleSectionCard(
+            title: "Overview",
+            subtitle: "Spoiler-free recap",
+            isExpanded: $isOverviewExpanded
+        ) {
             VStack(alignment: .leading, spacing: Layout.textSpacing) {
                 Text(viewModel.overviewSummary)
                     .font(.body)
@@ -146,7 +161,11 @@ struct GameDetailView: View {
     }
 
     private var preGameSection: some View {
-        DisclosureGroup {
+        CollapsibleSectionCard(
+            title: "Pre-Game",
+            subtitle: "Before tipoff",
+            isExpanded: $isPreGameExpanded
+        ) {
             VStack(spacing: Layout.cardSpacing) {
                 ForEach(viewModel.preGamePosts) { post in
                     HighlightCardView(post: post)
@@ -156,15 +175,16 @@ struct GameDetailView: View {
                     EmptySectionView(text: "Pre-game posts will appear here.")
                 }
             }
-        } label: {
-            sectionHeader("Pre-Game", icon: "clock")
         }
-        .sectionCard()
         .accessibilityHint("Expands to show pre-game posts")
     }
 
     private var timelineSection: some View {
-        SectionCardView(title: "Timeline", subtitle: "Play-by-play") {
+        CollapsibleSectionCard(
+            title: "Timeline",
+            subtitle: "Play-by-play",
+            isExpanded: $isTimelineExpanded
+        ) {
             VStack(spacing: Layout.cardSpacing) {
                 ForEach(viewModel.timelineQuarters) { quarter in
                     quarterSection(quarter)
@@ -175,15 +195,21 @@ struct GameDetailView: View {
                 }
             }
         }
+        .onChange(of: viewModel.timelineQuarters) { quarters in
+            guard !hasInitializedQuarters else { return }
+            collapsedQuarters = Set(quarters.map(\.quarter))
+            hasInitializedQuarters = true
+        }
         .accessibilityElement(children: .contain)
     }
 
     private func quarterSection(_ quarter: GameDetailViewModel.QuarterTimeline) -> some View {
-        DisclosureGroup(
+        CollapsibleQuarterCard(
+            title: "\(quarterTitle(quarter.quarter)) (\(quarter.plays.count) plays)",
             isExpanded: Binding(
                 get: { !collapsedQuarters.contains(quarter.quarter) },
                 set: { isExpanded in
-                    withAnimation(.easeInOut) {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                         if isExpanded {
                             collapsedQuarters.remove(quarter.quarter)
                         } else {
@@ -205,28 +231,15 @@ struct GameDetailView: View {
                 }
             }
             .padding(.top, Layout.listSpacing)
-        } label: {
-            HStack {
-                Text(quarterTitle(quarter.quarter))
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(quarter.plays.count) plays")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .accessibilityElement(children: .combine)
         }
-        .padding(.vertical, Layout.listSpacing)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: Layout.cardCornerRadius)
-                .stroke(Color(.systemGray5), lineWidth: Layout.borderWidth)
-        )
     }
 
     private func playerStatsSection(_ stats: [PlayerStat]) -> some View {
-        SectionCardView(title: "Player Stats", subtitle: "Top performers") {
+        CollapsibleSectionCard(
+            title: "Player Stats",
+            subtitle: "Individual performance",
+            isExpanded: $isPlayerStatsExpanded
+        ) {
             if stats.isEmpty {
                 EmptySectionView(text: "Player stats are not yet available.")
             } else {
@@ -289,25 +302,34 @@ struct GameDetailView: View {
     }
 
     private func teamStatsSection(_ stats: [TeamStat]) -> some View {
-        SectionCardView(title: "Team Stats", subtitle: "Comparison") {
+        CollapsibleSectionCard(
+            title: "Team Stats",
+            subtitle: "How the game unfolded",
+            isExpanded: $isTeamStatsExpanded
+        ) {
             if viewModel.teamComparisonStats.isEmpty {
                 EmptySectionView(text: "Team stats will appear once available.")
             } else {
                 VStack(spacing: Layout.listSpacing) {
                     ForEach(viewModel.teamComparisonStats) { stat in
-                TeamComparisonRowView(
-                    stat: stat,
-                    homeTeam: stats.first(where: { $0.isHome })?.team ?? "Home",
-                    awayTeam: stats.first(where: { !$0.isHome })?.team ?? "Away"
-                )
+                        TeamComparisonRowView(
+                            stat: stat,
+                            homeTeam: stats.first(where: { $0.isHome })?.team ?? "Home",
+                            awayTeam: stats.first(where: { !$0.isHome })?.team ?? "Away"
+                        )
+                    }
+                }
             }
-        }
-    }
         }
     }
 
     private var finalScoreSection: some View {
-        SectionCardView(title: "Final Score", subtitle: "Wrap-up") {
+        CollapsibleSectionCard(
+            title: "Final Score",
+            subtitle: "Reveal",
+            collapsedTitle: "Final Score — tap to reveal",
+            isExpanded: $isFinalScoreExpanded
+        ) {
             VStack(spacing: Layout.textSpacing) {
                 Text(viewModel.game?.scoreDisplay ?? Constants.scoreFallback)
                     .font(.system(size: Layout.finalScoreSize, weight: .bold))
@@ -325,7 +347,11 @@ struct GameDetailView: View {
     }
 
     private var postGameSection: some View {
-        DisclosureGroup {
+        CollapsibleSectionCard(
+            title: "Post-Game",
+            subtitle: "Reactions & highlights",
+            isExpanded: $isPostGameExpanded
+        ) {
             VStack(spacing: Layout.cardSpacing) {
                 ForEach(viewModel.postGamePosts) { post in
                     HighlightCardView(post: post)
@@ -335,24 +361,12 @@ struct GameDetailView: View {
                     EmptySectionView(text: "Post-game posts will appear here.")
                 }
             }
-        } label: {
-            sectionHeader("Post-Game", icon: "sparkles")
         }
-        .sectionCard()
         .accessibilityHint("Expands to show post-game posts")
     }
     
     // MARK: - Helper Views
     
-    private func sectionHeader(_ title: String, icon: String) -> some View {
-        HStack(spacing: Layout.iconSpacing) {
-            Image(systemName: icon)
-                .foregroundColor(.blue)
-            Text(title)
-                .font(.headline)
-        }
-    }
-
     private func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Layout.navigationSpacing) {
@@ -365,7 +379,7 @@ struct GameDetailView: View {
                             .padding(.horizontal, Layout.navigationHorizontalPadding)
                             .padding(.vertical, Layout.navigationVerticalPadding)
                             .foregroundColor(selectedSection == section ? .white : .primary)
-                            .background(selectedSection == section ? Color.blue : Color(.systemGray5))
+                            .background(selectedSection == section ? GameTheme.accentColor : Color(.systemGray5))
                             .clipShape(Capsule())
                     }
                     .accessibilityLabel("Jump to \(section.title)")
@@ -386,6 +400,170 @@ struct GameDetailView: View {
     private func quarterTitle(_ quarter: Int) -> String {
         quarter == 0 ? "Additional" : "Q\(quarter)"
     }
+
+    private var viewModeToggleCard: some View {
+        SectionCardView(title: "View Mode", subtitle: "Display only") {
+            ViewModeToggleView(selection: $viewMode)
+        }
+    }
+}
+
+private struct CollapsibleSectionCard<Content: View>: View {
+    let title: String
+    let subtitle: String?
+    let collapsedTitle: String?
+    @Binding var isExpanded: Bool
+    let content: Content
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        collapsedTitle: String? = nil,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.collapsedTitle = collapsedTitle
+        self._isExpanded = isExpanded
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
+            Button(action: toggle) {
+                HStack(spacing: Layout.headerSpacing) {
+                    VStack(alignment: .leading, spacing: Layout.subtitleSpacing) {
+                        if let collapsedTitle, !isExpanded {
+                            Text(collapsedTitle)
+                                .font(.headline)
+                        } else {
+                            Text(title)
+                                .font(.headline)
+                            if let subtitle {
+                                Text(subtitle)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                content
+                    .transition(.opacity)
+            }
+        }
+        .sectionCard()
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+    }
+
+    private func toggle() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            isExpanded.toggle()
+        }
+    }
+}
+
+private struct CollapsibleQuarterCard<Content: View>: View {
+    let title: String
+    @Binding var isExpanded: Bool
+    let content: Content
+
+    init(
+        title: String,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
+            Button(action: toggle) {
+                HStack(spacing: Layout.headerSpacing) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                content
+                    .transition(.opacity)
+            }
+        }
+        .padding(.vertical, Layout.listSpacing)
+        .background(GameTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Layout.cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Layout.cardCornerRadius)
+                .stroke(GameTheme.cardBorder, lineWidth: Layout.borderWidth)
+        )
+        .shadow(
+            color: GameTheme.cardShadow,
+            radius: Layout.shadowRadius,
+            x: 0,
+            y: Layout.shadowYOffset
+        )
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+    }
+
+    private func toggle() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            isExpanded.toggle()
+        }
+    }
+}
+
+private enum ViewMode: String, CaseIterable {
+    case full = "Full"
+    case compact = "Compact"
+}
+
+private struct ViewModeToggleView: View {
+    @Binding var selection: ViewMode
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Layout.listSpacing) {
+            Text("View Mode:")
+                .font(.subheadline.weight(.semibold))
+            HStack(spacing: Layout.toggleSpacing) {
+                ForEach(ViewMode.allCases, id: \.self) { mode in
+                    Button {
+                        selection = mode
+                    } label: {
+                        HStack(spacing: Layout.toggleIconSpacing) {
+                            Image(systemName: selection == mode ? "largecircle.fill.circle" : "circle")
+                                .foregroundColor(GameTheme.accentColor)
+                            Text(mode.rawValue)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("View mode toggle")
+    }
 }
 
 private enum Layout {
@@ -398,7 +576,6 @@ private enum Layout {
     static let bottomPadding: CGFloat = 32
     static let bulletSize: CGFloat = 6
     static let bulletOffset: CGFloat = 6
-    static let iconSpacing: CGFloat = 8
     static let navigationSpacing: CGFloat = 12
     static let navigationHorizontalPadding: CGFloat = 16
     static let navigationVerticalPadding: CGFloat = 8
@@ -409,6 +586,13 @@ private enum Layout {
     static let finalScoreSize: CGFloat = 40
     static let cardCornerRadius: CGFloat = 16
     static let borderWidth: CGFloat = 1
+    static let shadowRadius: CGFloat = 10
+    static let shadowYOffset: CGFloat = 4
+    static let headerSpacing: CGFloat = 12
+    static let subtitleSpacing: CGFloat = 4
+    static let toggleSpacing: CGFloat = 16
+    static let toggleIconSpacing: CGFloat = 6
+    static let viewModeAnchor: String = "viewMode"
 }
 
 private enum Constants {

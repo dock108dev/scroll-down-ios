@@ -16,10 +16,15 @@ struct HighlightCardView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.secondary)
                     Spacer()
-                    if let handle = post.sourceHandle {
-                        Text("@\(handle)")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.blue)
+                    VStack(alignment: .trailing, spacing: Layout.metaSpacing) {
+                        if let handle = post.sourceHandle {
+                            Text("@\(handle)")
+                                .font(.caption.weight(.medium))
+                                .foregroundColor(GameTheme.accentColor)
+                        }
+                        Text(formattedTimestamp)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
                 }
 
@@ -34,11 +39,17 @@ struct HighlightCardView: View {
             }
             .padding(Layout.padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemBackground))
+            .background(GameTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: Layout.cornerRadius)
-                    .stroke(Color(.systemGray5), lineWidth: Layout.borderWidth)
+                    .stroke(GameTheme.cardBorder, lineWidth: Layout.borderWidth)
+            )
+            .shadow(
+                color: GameTheme.cardShadow,
+                radius: Layout.shadowRadius,
+                x: 0,
+                y: Layout.shadowYOffset
             )
         }
         .buttonStyle(.plain)
@@ -58,30 +69,54 @@ struct HighlightCardView: View {
                         .resizable()
                         .scaledToFill()
                 } placeholder: {
-                    ProgressView()
+                    mediaPlaceholder
                 }
                 .frame(height: Layout.mediaHeight)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: Layout.mediaCornerRadius))
-            } else if post.hasVideo {
-                VStack(spacing: Layout.videoSpacing) {
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.system(size: Layout.videoIconSize))
-                        .foregroundColor(.blue)
-                    Text("Watch highlight")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
             } else {
-                Image(systemName: "photo")
-                    .font(.system(size: Layout.videoIconSize))
-                    .foregroundColor(.secondary)
+                mediaPlaceholder
             }
         }
     }
 
     private var postTitle: String {
         post.hasVideo ? "Highlight" : "Post"
+    }
+
+    private var formattedTimestamp: String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let parsedDate = formatter.date(from: post.postedAt)
+            ?? ISO8601DateFormatter().date(from: post.postedAt)
+        if let parsedDate {
+            return parsedDate.formatted(date: .abbreviated, time: .shortened)
+        }
+        return post.postedAt
+    }
+
+    private var mediaPlaceholder: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Layout.mediaCornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(.systemGray6), Color(.systemGray5)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(height: Layout.mediaHeight)
+            VStack(spacing: Layout.placeholderSpacing) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.system(size: Layout.videoIconSize))
+                    .foregroundColor(.secondary)
+                Text("Media unavailable in mock mode")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Layout.placeholderPadding)
+        }
     }
 }
 
@@ -93,7 +128,11 @@ private enum Layout {
     static let mediaHeight: CGFloat = 160
     static let mediaCornerRadius: CGFloat = 12
     static let videoIconSize: CGFloat = 32
-    static let videoSpacing: CGFloat = 6
+    static let placeholderSpacing: CGFloat = 6
+    static let placeholderPadding: CGFloat = 12
+    static let metaSpacing: CGFloat = 2
+    static let shadowRadius: CGFloat = 10
+    static let shadowYOffset: CGFloat = 4
 }
 
 #Preview {

@@ -35,11 +35,17 @@ struct SectionCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(Layout.padding)
-            .background(Color(.systemBackground))
+            .background(GameTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: Layout.cornerRadius)
-                    .stroke(Color(.systemGray5), lineWidth: Layout.borderWidth)
+                    .stroke(GameTheme.cardBorder, lineWidth: Layout.borderWidth)
+            )
+            .shadow(
+                color: GameTheme.cardShadow,
+                radius: Layout.shadowRadius,
+                x: 0,
+                y: Layout.shadowYOffset
             )
     }
 }
@@ -56,6 +62,8 @@ private enum Layout {
     static let padding: CGFloat = 16
     static let cornerRadius: CGFloat = 18
     static let borderWidth: CGFloat = 1
+    static let shadowRadius: CGFloat = 10
+    static let shadowYOffset: CGFloat = 4
 }
 
 #Preview {
