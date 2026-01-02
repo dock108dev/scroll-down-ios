@@ -120,9 +120,6 @@ struct HomeView: View {
             }
         }
         .listStyle(.plain)
-        .navigationDestination(for: GameSummary.self) { game in
-            GameDetailView(gameId: game.id)
-        }
     }
     
     private var dataModeIndicator: some View {
@@ -164,4 +161,3 @@ struct HomeView: View {
     }
     .environmentObject(AppConfig.shared)
 }
-
