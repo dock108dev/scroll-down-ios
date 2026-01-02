@@ -64,6 +64,8 @@ struct GameHeaderView: View {
             return scoreRevealed ? "Final score below" : "Game complete"
         case .scheduled:
             return "Not started"
+        case .inProgress:
+            return "In progress"
         case .postponed:
             return "Postponed"
         case .canceled:

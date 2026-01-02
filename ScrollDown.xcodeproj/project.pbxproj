@@ -43,6 +43,8 @@
 		0100000000000034 /* SectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000034 /* SectionCardView.swift */; };
 		0100000000000035 /* TeamComparisonRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000035 /* TeamComparisonRowView.swift */; };
 		0100000000000036 /* TimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000036 /* TimelineRowView.swift */; };
+		0100000000000037 /* GameTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000037 /* GameTheme.swift */; };
+		0100000000000038 /* HomeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000038 /* HomeTheme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +85,8 @@
 		0200000000000034 /* SectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionCardView.swift; sourceTree = "<group>"; };
 		0200000000000035 /* TeamComparisonRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamComparisonRowView.swift; sourceTree = "<group>"; };
 		0200000000000036 /* TimelineRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineRowView.swift; sourceTree = "<group>"; };
+		0200000000000037 /* GameTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameTheme.swift; sourceTree = "<group>"; };
+		0200000000000038 /* HomeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -215,6 +219,7 @@
 			children = (
 				0200000000000015 /* HomeView.swift */,
 				0200000000000016 /* GameRowView.swift */,
+				0200000000000038 /* HomeTheme.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -231,6 +236,7 @@
 				0200000000000034 /* SectionCardView.swift */,
 				0200000000000035 /* TeamComparisonRowView.swift */,
 				0200000000000036 /* TimelineRowView.swift */,
+				0200000000000037 /* GameTheme.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -347,6 +353,8 @@
 				0100000000000034 /* SectionCardView.swift in Sources */,
 				0100000000000035 /* TeamComparisonRowView.swift in Sources */,
 				0100000000000036 /* TimelineRowView.swift in Sources */,
+				0100000000000037 /* GameTheme.swift in Sources */,
+				0100000000000038 /* HomeTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

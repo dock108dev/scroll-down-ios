@@ -1,7 +1,7 @@
 import Foundation
 
 /// Play-by-play event as defined in the OpenAPI spec (PlayEntry schema)
-struct PlayEntry: Codable, Identifiable {
+struct PlayEntry: Codable, Identifiable, Equatable {
     let playIndex: Int
     let quarter: Int?
     let gameClock: String?
