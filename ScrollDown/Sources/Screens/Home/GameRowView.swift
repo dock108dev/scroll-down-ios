@@ -35,7 +35,7 @@ struct GameRowView: View {
                         .foregroundColor(.primary)
                     
                     // Status line
-                    Text(game.statusLine)
+                    Text(statusText)
                         .font(.footnote)
                         .foregroundColor(.secondary)
                     
@@ -74,15 +74,18 @@ struct GameRowView: View {
 
     private var previewWidget: some View {
         VStack(alignment: .leading, spacing: Layout.previewSpacing) {
-            HStack(spacing: Layout.previewSpacing) {
-                previewBadge(title: Strings.excitementLabel, value: excitementScore)
-                previewBadge(title: Strings.qualityLabel, value: qualityScore)
-                
-                Spacer()
-                
-                infoButton
+            if shouldShowPlaceholder {
+                placeholderBadgeRow
+            } else {
+                HStack(spacing: Layout.previewSpacing) {
+                    previewBadge(title: Strings.excitementLabel, value: excitementScore)
+                    previewBadge(title: Strings.qualityLabel, value: qualityScore)
+                    
+                    Spacer()
+                    
+                    infoButton
+                }
             }
-            
         }
     }
 
@@ -115,9 +118,37 @@ struct GameRowView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Strings.expandNuggetLabel)
     }
+
+    private var placeholderBadgeRow: some View {
+        HStack(spacing: Layout.previewSpacing) {
+            skeletonBadge(width: Layout.skeletonBadgeWidthLarge)
+            skeletonBadge(width: Layout.skeletonBadgeWidthSmall)
+            
+            Spacer()
+            
+            Circle()
+                .fill(Color(.systemGray5))
+                .frame(width: Layout.skeletonInfoSize, height: Layout.skeletonInfoSize)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func skeletonBadge(width: CGFloat) -> some View {
+        Capsule()
+            .fill(Color(.systemGray5))
+            .frame(width: width, height: Layout.skeletonBadgeHeight)
+    }
     
     private var matchupTitle: String {
         "\(game.awayTeam) at \(game.homeTeam)"
+    }
+
+    private var statusText: String {
+        shouldShowPlaceholder ? Strings.evaluatingMatchup : game.statusLine
+    }
+
+    private var shouldShowPlaceholder: Bool {
+        !(game.hasRequiredData ?? false)
     }
     
     private var leagueColor: Color {
@@ -171,6 +202,10 @@ private enum Layout {
     static let badgeHorizontalPadding: CGFloat = 8
     static let badgeVerticalPadding: CGFloat = 4
     static let infoPadding: CGFloat = 6
+    static let skeletonBadgeHeight: CGFloat = 20
+    static let skeletonBadgeWidthLarge: CGFloat = 92
+    static let skeletonBadgeWidthSmall: CGFloat = 76
+    static let skeletonInfoSize: CGFloat = 24
     static let nuggetSheetTagSpacing: CGFloat = 8
     static let nuggetSheetTagPadding: CGFloat = 6
     static let nuggetSheetHorizontalPadding: CGFloat = 16
@@ -184,6 +219,7 @@ private enum Strings {
     static let expandNuggetLabel = "Open game nugget"
     static let nuggetSheetTitle = "Why this game matters"
     static let nuggetTags = ["Rivalry", "Postseason Stakes", "Bubble Watch"]
+    static let evaluatingMatchup = "Evaluating matchup..."
     static let nuggets = [
         "Momentum swings make the late stages worth a peek.",
         "A matchup of styles could set up a tight finish.",
