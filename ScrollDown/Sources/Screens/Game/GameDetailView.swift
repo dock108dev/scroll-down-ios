@@ -18,6 +18,9 @@ struct GameDetailView: View {
     @State private var isTeamStatsExpanded = false
     @State private var isFinalScoreExpanded = false
     @State private var isPostGameExpanded = false
+    @State private var isCompactSummaryExpanded = false
+    @State private var isCompactTimelineExpanded = false
+    @State private var isCompactPostsExpanded = false
 
     init(gameId: Int, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -146,29 +149,32 @@ struct GameDetailView: View {
 
                 VStack(spacing: Layout.sectionSpacing) {
                     displayOptionsSection
-                    chapterSection(number: 1, title: "Overview", subtitle: "Recap") {
+                    compactChapterSection(
+                        number: 1,
+                        title: "AI Summary",
+                        subtitle: "Quick recap",
+                        isExpanded: $isCompactSummaryExpanded
+                    ) {
                         overviewContent
                     }
-                    chapterSection(number: 2, title: "Pre-Game", subtitle: "Before tipoff") {
-                        preGameContent
-                    }
-                    chapterSection(number: 3, title: "Timeline", subtitle: "Play-by-play") {
+                    compactChapterSection(
+                        number: 2,
+                        title: "Play-by-play",
+                        subtitle: "Timeline",
+                        isExpanded: $isCompactTimelineExpanded
+                    ) {
                         CompactTimelineView(
                             moments: viewModel.compactTimelineMoments,
                             status: viewModel.game?.status
                         )
                     }
-                    chapterSection(number: 4, title: "Player Stats", subtitle: "Individual performance") {
-                        playerStatsContent(viewModel.playerStats)
-                    }
-                    chapterSection(number: 5, title: "Team Stats", subtitle: "How the game unfolded") {
-                        teamStatsContent(viewModel.teamStats)
-                    }
-                    chapterSection(number: 6, title: "Final Score", subtitle: "Wrap-up") {
-                        finalScoreContent
-                    }
-                    chapterSection(number: 7, title: "Post-Game", subtitle: "Reactions") {
-                        postGameContent
+                    compactChapterSection(
+                        number: 3,
+                        title: "Posts",
+                        subtitle: "Highlights & reactions",
+                        isExpanded: $isCompactPostsExpanded
+                    ) {
+                        compactPostsContent
                     }
                 }
                 .padding(.horizontal, Layout.horizontalPadding)
@@ -447,6 +453,25 @@ struct GameDetailView: View {
             }
         }
     }
+
+    private var compactPostsContent: some View {
+        VStack(alignment: .leading, spacing: Layout.cardSpacing) {
+            if viewModel.preGamePosts.isEmpty && viewModel.postGamePosts.isEmpty {
+                EmptySectionView(text: "Posts will appear here.")
+            } else {
+                compactPostsSection(
+                    title: "Pre-Game",
+                    posts: viewModel.preGamePosts,
+                    emptyText: "Pre-game posts will appear here."
+                )
+                compactPostsSection(
+                    title: "Post-Game",
+                    posts: viewModel.postGamePosts,
+                    emptyText: "Post-game posts will appear here."
+                )
+            }
+        }
+    }
     
     // MARK: - Helper Views
     
@@ -480,10 +505,11 @@ struct GameDetailView: View {
         .accessibilityLabel("Section navigation")
     }
 
-    private func chapterSection(
+    private func compactChapterSection(
         number: Int,
         title: String,
         subtitle: String?,
+        isExpanded: Binding<Bool>,
         @ViewBuilder content: () -> some View
     ) -> some View {
         VStack(alignment: .leading, spacing: Layout.chapterSpacing) {
@@ -491,8 +517,31 @@ struct GameDetailView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, Layout.chapterHorizontalPadding)
-            SectionCardView(title: title, subtitle: subtitle) {
+            CollapsibleSectionCard(
+                title: title,
+                subtitle: subtitle,
+                isExpanded: isExpanded
+            ) {
                 content()
+            }
+        }
+    }
+
+    private func compactPostsSection(
+        title: String,
+        posts: [SocialPostEntry],
+        emptyText: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Layout.listSpacing) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.secondary)
+            if posts.isEmpty {
+                EmptySectionView(text: emptyText)
+            } else {
+                ForEach(posts) { post in
+                    HighlightCardView(post: post)
+                }
             }
         }
     }
