@@ -114,7 +114,7 @@ struct GameDetailView: View {
                                     selectedSection = .overview
                                 }
                             preGameSection
-                            timelineSection
+                            timelineSection(using: proxy)
                                 .id(GameSection.timeline)
                                 .onAppear {
                                     selectedSection = .timeline
@@ -312,13 +312,13 @@ struct GameDetailView: View {
         }
     }
 
-    private var timelineSection: some View {
+    private func timelineSection(using proxy: ScrollViewProxy) -> some View {
         CollapsibleSectionCard(
             title: "Timeline",
             subtitle: "Play-by-play",
             isExpanded: $isTimelineExpanded
         ) {
-            timelineContent
+            timelineContent(using: proxy)
         }
         .onChange(of: viewModel.timelineQuarters) { quarters in
             guard !hasInitializedQuarters else { return }
@@ -337,14 +337,14 @@ struct GameDetailView: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var timelineContent: some View {
+    private func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: Layout.cardSpacing) {
             if let liveMarker = viewModel.liveScoreMarker {
                 TimelineScoreChipView(marker: liveMarker)
             }
 
             ForEach(viewModel.timelineQuarters) { quarter in
-                quarterSection(quarter)
+                quarterSection(quarter, using: proxy)
             }
 
             if viewModel.timelineQuarters.isEmpty {
@@ -353,7 +353,10 @@ struct GameDetailView: View {
         }
     }
 
-    private func quarterSection(_ quarter: GameDetailViewModel.QuarterTimeline) -> some View {
+    private func quarterSection(
+        _ quarter: GameDetailViewModel.QuarterTimeline,
+        using proxy: ScrollViewProxy
+    ) -> some View {
         CollapsibleQuarterCard(
             title: "\(quarterTitle(quarter.quarter)) (\(quarter.plays.count) plays)",
             isExpanded: Binding(
@@ -365,6 +368,9 @@ struct GameDetailView: View {
                         } else {
                             collapsedQuarters.insert(quarter.quarter)
                         }
+                    }
+                    if isExpanded {
+                        scrollToQuarterHeader(quarter.quarter, using: proxy)
                     }
                 }
             )
@@ -395,6 +401,7 @@ struct GameDetailView: View {
             }
             .padding(.top, Layout.listSpacing)
         }
+        .id(quarterAnchorId(quarter.quarter))
     }
 
     private func playerStatsSection(_ stats: [PlayerStat]) -> some View {
@@ -905,6 +912,17 @@ struct GameDetailView: View {
 
     private var resumeMarkerKey: String {
         "game.resume.playIndex.\(gameId)"
+    }
+
+    private func scrollToQuarterHeader(_ quarter: Int, using proxy: ScrollViewProxy) {
+        let anchorId = quarterAnchorId(quarter)
+        DispatchQueue.main.async {
+            proxy.scrollTo(anchorId, anchor: .top)
+        }
+    }
+
+    private func quarterAnchorId(_ quarter: Int) -> String {
+        "quarter-\(quarter)"
     }
 
     private var aiSummaryView: some View {

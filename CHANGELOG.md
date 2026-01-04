@@ -21,3 +21,4 @@
 ### Fixed
 - Navigation tap reliability improved (List → ScrollView+LazyVStack)
 - Mock service now generates unique game detail for each game ID
+- Timeline quarter expansion no longer jumps ahead in the feed
