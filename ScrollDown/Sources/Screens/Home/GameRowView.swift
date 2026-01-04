@@ -3,7 +3,7 @@ import SwiftUI
 /// Row view for displaying a game summary in a list
 struct GameRowView: View {
     let game: GameSummary
-    @State private var isNuggetExpanded = false
+    @State private var isNuggetSheetPresented = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -62,6 +62,12 @@ struct GameRowView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
+        .sheet(isPresented: $isNuggetSheetPresented) {
+            NuggetDetailSheet(
+                nuggetText: nuggetText,
+                tags: Strings.nuggetTags
+            )
+        }
     }
     
     // MARK: - Helpers
@@ -77,14 +83,7 @@ struct GameRowView: View {
                 infoButton
             }
             
-            if isNuggetExpanded {
-                Text(nuggetText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
-        .animation(.easeInOut(duration: Layout.nuggetAnimationDuration), value: isNuggetExpanded)
     }
 
     private func previewBadge(title: String, value: Int) -> some View {
@@ -104,9 +103,9 @@ struct GameRowView: View {
 
     private var infoButton: some View {
         Button {
-            isNuggetExpanded.toggle()
+            isNuggetSheetPresented = true
         } label: {
-            Image(systemName: isNuggetExpanded ? Strings.infoIconFilled : Strings.infoIcon)
+            Image(systemName: Strings.infoIconFilled)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(Layout.infoPadding)
@@ -114,7 +113,7 @@ struct GameRowView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isNuggetExpanded ? Strings.collapseNuggetLabel : Strings.expandNuggetLabel)
+        .accessibilityLabel(Strings.expandNuggetLabel)
     }
     
     private var matchupTitle: String {
@@ -172,16 +171,19 @@ private enum Layout {
     static let badgeHorizontalPadding: CGFloat = 8
     static let badgeVerticalPadding: CGFloat = 4
     static let infoPadding: CGFloat = 6
-    static let nuggetAnimationDuration: Double = 0.2
+    static let nuggetSheetTagSpacing: CGFloat = 8
+    static let nuggetSheetTagPadding: CGFloat = 6
+    static let nuggetSheetHorizontalPadding: CGFloat = 16
+    static let nuggetSheetVerticalPadding: CGFloat = 20
 }
 
 private enum Strings {
     static let excitementLabel = "Excitement"
     static let qualityLabel = "Quality"
-    static let infoIcon = "info.circle"
     static let infoIconFilled = "info.circle.fill"
-    static let expandNuggetLabel = "Show preview nugget"
-    static let collapseNuggetLabel = "Hide preview nugget"
+    static let expandNuggetLabel = "Open game nugget"
+    static let nuggetSheetTitle = "Why this game matters"
+    static let nuggetTags = ["Rivalry", "Postseason Stakes", "Bubble Watch"]
     static let nuggets = [
         "Momentum swings make the late stages worth a peek.",
         "A matchup of styles could set up a tight finish.",
@@ -189,6 +191,44 @@ private enum Strings {
         "Late-game execution may decide this one.",
         "Plenty of back-and-forth keeps the tension high."
     ]
+}
+
+private struct NuggetDetailSheet: View {
+    let nuggetText: String
+    let tags: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Layout.nuggetSheetVerticalPadding) {
+            Text(Strings.nuggetSheetTitle)
+                .font(.title3.weight(.semibold))
+                .foregroundColor(.primary)
+
+            Text(nuggetText)
+                .font(.body)
+                .foregroundColor(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 120), alignment: .leading)],
+                alignment: .leading,
+                spacing: Layout.nuggetSheetTagSpacing
+            ) {
+                ForEach(tags, id: \.self) { tag in
+                    Text(tag)
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, Layout.nuggetSheetHorizontalPadding)
+                        .padding(.vertical, Layout.nuggetSheetTagPadding)
+                        .background(Color(.systemGray6))
+                        .clipShape(Capsule())
+                        .accessibilityLabel(tag)
+                }
+            }
+        }
+        .padding(.horizontal, Layout.nuggetSheetHorizontalPadding)
+        .padding(.vertical, Layout.nuggetSheetVerticalPadding)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
 }
 
 #Preview {
