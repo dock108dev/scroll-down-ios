@@ -26,6 +26,10 @@ struct GameDetailView: View {
     @State private var playRowFrames: [Int: CGRect] = [:]
     @State private var timelineFrame: CGRect = .zero
     @State private var scrollViewFrame: CGRect = .zero
+    @State private var savedResumePlayIndex: Int?
+    @State private var hasLoadedResumeMarker = false
+    @State private var isResumeTrackingEnabled = true
+    @State private var shouldShowResumePrompt = false
 
     init(gameId: Int, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -147,10 +151,18 @@ struct GameDetailView: View {
                     }
                 )
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    sectionNavigationBar { section in
-                        withAnimation(.easeInOut) {
-                            selectedSection = section
-                            proxy.scrollTo(section, anchor: .top)
+                    VStack(spacing: 0) {
+                        sectionNavigationBar { section in
+                            withAnimation(.easeInOut) {
+                                selectedSection = section
+                                proxy.scrollTo(section, anchor: .top)
+                            }
+                        }
+                        if shouldShowResumePrompt {
+                            resumePromptView(
+                                onResume: { resumeScroll(using: proxy) },
+                                onStartOver: { startOver(using: proxy) }
+                            )
                         }
                     }
                 }
@@ -166,12 +178,20 @@ struct GameDetailView: View {
             .background(GameTheme.background)
             .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
                 playRowFrames = value
+                updateResumeMarkerIfNeeded()
             }
             .onPreferenceChange(TimelineFramePreferenceKey.self) { value in
                 timelineFrame = value
             }
             .onPreferenceChange(ScrollViewFramePreferenceKey.self) { value in
                 scrollViewFrame = value
+                updateResumeMarkerIfNeeded()
+            }
+            .onAppear {
+                loadResumeMarkerIfNeeded()
+            }
+            .onChange(of: viewModel.detail?.plays.count ?? 0) { _ in
+                loadResumeMarkerIfNeeded()
             }
         }
     }
@@ -358,6 +378,7 @@ struct GameDetailView: View {
                     }
 
                     TimelineRowView(play: play)
+                        .id("play-\(play.playIndex)")
                         .background(
                             GeometryReader { proxy in
                                 Color.clear.preference(
@@ -787,6 +808,105 @@ struct GameDetailView: View {
             .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
 
+    private func resumePromptView(onResume: @escaping () -> Void, onStartOver: @escaping () -> Void) -> some View {
+        VStack(spacing: Layout.resumePromptSpacing) {
+            Text("Resume where you left off?")
+                .font(.subheadline.weight(.semibold))
+            HStack(spacing: Layout.resumeButtonSpacing) {
+                Button("Start over") {
+                    onStartOver()
+                }
+                .buttonStyle(.bordered)
+                Button("Resume") {
+                    onResume()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(Layout.resumePromptPadding)
+        .frame(maxWidth: .infinity)
+        .background(.ultraThinMaterial)
+        .overlay(Divider(), alignment: .bottom)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Resume where you left off?")
+    }
+
+    private func resumeScroll(using proxy: ScrollViewProxy) {
+        guard let savedResumePlayIndex else {
+            shouldShowResumePrompt = false
+            isResumeTrackingEnabled = true
+            return
+        }
+        isTimelineExpanded = true
+        selectedSection = .timeline
+        expandQuarter(for: savedResumePlayIndex)
+        withAnimation(.easeInOut) {
+            proxy.scrollTo("play-\(savedResumePlayIndex)", anchor: .top)
+        }
+        shouldShowResumePrompt = false
+        isResumeTrackingEnabled = true
+    }
+
+    private func startOver(using proxy: ScrollViewProxy) {
+        clearSavedResumeMarker()
+        shouldShowResumePrompt = false
+        isResumeTrackingEnabled = true
+        withAnimation(.easeInOut) {
+            proxy.scrollTo(GameSection.header, anchor: .top)
+        }
+    }
+
+    private func expandQuarter(for playIndex: Int) {
+        guard let quarter = viewModel.detail?.plays.first(where: { $0.playIndex == playIndex })?.quarter else {
+            return
+        }
+        collapsedQuarters.remove(quarter)
+    }
+
+    private func loadResumeMarkerIfNeeded() {
+        guard !hasLoadedResumeMarker else {
+            return
+        }
+        guard viewModel.detail != nil else {
+            return
+        }
+        hasLoadedResumeMarker = true
+        guard let storedPlayIndex = UserDefaults.standard.object(forKey: resumeMarkerKey) as? Int else {
+            return
+        }
+        guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
+            clearSavedResumeMarker()
+            return
+        }
+        savedResumePlayIndex = storedPlayIndex
+        shouldShowResumePrompt = true
+        isResumeTrackingEnabled = false
+    }
+
+    private func updateResumeMarkerIfNeeded() {
+        guard isResumeTrackingEnabled else {
+            return
+        }
+        guard let play = currentViewingPlay else {
+            return
+        }
+        let playIndex = play.playIndex
+        guard playIndex != savedResumePlayIndex else {
+            return
+        }
+        savedResumePlayIndex = playIndex
+        UserDefaults.standard.set(playIndex, forKey: resumeMarkerKey)
+    }
+
+    private func clearSavedResumeMarker() {
+        savedResumePlayIndex = nil
+        UserDefaults.standard.removeObject(forKey: resumeMarkerKey)
+    }
+
+    private var resumeMarkerKey: String {
+        "game.resume.playIndex.\(gameId)"
+    }
+
     private var aiSummaryView: some View {
         Group {
             switch viewModel.summaryState {
@@ -857,6 +977,9 @@ private enum Layout {
     static let viewingPillHorizontalPadding: CGFloat = 12
     static let viewingPillVerticalPadding: CGFloat = 6
     static let viewingPillTopPadding: CGFloat = 12
+    static let resumePromptPadding: CGFloat = 16
+    static let resumePromptSpacing: CGFloat = 8
+    static let resumeButtonSpacing: CGFloat = 12
     static let scrollCoordinateSpace = "gameScrollView"
 }
 
