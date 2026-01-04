@@ -171,11 +171,7 @@ enum MockDataGenerator {
             ("MLB", "Los Angeles Dodgers", "San Francisco Giants")
         ]
 
-        guard let matchup = matchups.randomElement() else {
-            return ("NBA", "Home Team", "Away Team")
-        }
-
-        return matchup
+        return matchups.randomElement()!
     }
 
     private static func formatDate(_ date: Date) -> String {
