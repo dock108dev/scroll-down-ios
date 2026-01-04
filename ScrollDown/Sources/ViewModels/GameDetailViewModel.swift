@@ -23,6 +23,12 @@ final class GameDetailViewModel: ObservableObject {
         var id: String { name }
     }
 
+    struct TimelineScoreMarker: Identifiable, Equatable {
+        let id: String
+        let label: String
+        let score: String
+    }
+
     @Published private(set) var detail: GameDetailResponse?
     @Published var isLoading: Bool
     @Published var errorMessage: String?
@@ -171,6 +177,42 @@ final class GameDetailViewModel: ObservableObject {
         return mapping
     }
 
+    var liveScoreMarker: TimelineScoreMarker? {
+        guard game?.status == .inProgress else {
+            return nil
+        }
+
+        guard let score = latestScoreDisplay() else {
+            return nil
+        }
+
+        return TimelineScoreMarker(
+            id: Constants.liveMarkerId,
+            label: Constants.liveScoreLabel,
+            score: score
+        )
+    }
+
+    func scoreMarker(for play: PlayEntry) -> TimelineScoreMarker? {
+        guard play.playType == .periodEnd else {
+            return nil
+        }
+
+        guard let score = scoreDisplay(home: play.homeScore, away: play.awayScore) else {
+            return nil
+        }
+
+        let label = play.quarter == Constants.halftimeQuarter
+            ? Constants.halftimeLabel
+            : Constants.periodEndLabel
+
+        return TimelineScoreMarker(
+            id: "period-end-\(play.playIndex)",
+            label: label,
+            score: score
+        )
+    }
+
     var teamComparisonStats: [TeamComparisonStat] {
         guard let home = detail?.teamStats.first(where: { $0.isHome }),
               let away = detail?.teamStats.first(where: { !$0.isHome }) else {
@@ -274,6 +316,23 @@ final class GameDetailViewModel: ObservableObject {
 
         return trimmed
     }
+
+    private func latestScoreDisplay() -> String? {
+        let plays = detail?.plays ?? []
+        if let scoredPlay = plays.reversed().first(where: { $0.homeScore != nil && $0.awayScore != nil }) {
+            return scoreDisplay(home: scoredPlay.homeScore, away: scoredPlay.awayScore)
+        }
+
+        return scoreDisplay(home: game?.homeScore, away: game?.awayScore)
+    }
+
+    private func scoreDisplay(home: Int?, away: Int?) -> String? {
+        guard let home, let away else {
+            return nil
+        }
+
+        return "\(away) - \(home)"
+    }
 }
 
 private enum Constants {
@@ -288,6 +347,11 @@ private enum Constants {
         "Highlights will populate when available."
     ]
     static let unknownQuarter = 0
+    static let halftimeQuarter = 2
+    static let halftimeLabel = "Halftime"
+    static let periodEndLabel = "Period End"
+    static let liveScoreLabel = "Live Score"
+    static let liveMarkerId = "live-score"
     static let minimumHighlightSpacing = 1
     static let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()

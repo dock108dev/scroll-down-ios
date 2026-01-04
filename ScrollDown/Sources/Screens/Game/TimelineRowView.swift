@@ -31,11 +31,6 @@ struct TimelineRowView: View {
             }
 
             Spacer()
-
-            if let home = play.homeScore, let away = play.awayScore {
-                Text("\(away)-\(home)")
-                    .font(.caption.weight(.semibold))
-            }
         }
         .padding(Layout.padding)
         .background(Color(.systemBackground))

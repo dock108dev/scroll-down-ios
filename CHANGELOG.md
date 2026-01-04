@@ -16,6 +16,7 @@
 - README streamlined for clarity and quick start
 - GameDetailView refactored from 578 → 450 LOC
 - Empty directories removed (Components now populated, Assets removed)
+- Timeline play-by-play now surfaces scores via separators (live, halftime, period end)
 
 ### Fixed
 - Navigation tap reliability improved (List → ScrollView+LazyVStack)

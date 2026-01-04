@@ -280,6 +280,10 @@ struct GameDetailView: View {
 
     private var timelineContent: some View {
         VStack(spacing: Layout.cardSpacing) {
+            if let liveMarker = viewModel.liveScoreMarker {
+                TimelineScoreChipView(marker: liveMarker)
+            }
+
             ForEach(viewModel.timelineQuarters) { quarter in
                 quarterSection(quarter)
             }
@@ -315,6 +319,10 @@ struct GameDetailView: View {
                     }
 
                     TimelineRowView(play: play)
+
+                    if let marker = viewModel.scoreMarker(for: play) {
+                        TimelineScoreChipView(marker: marker)
+                    }
                 }
             }
             .padding(.top, Layout.listSpacing)
