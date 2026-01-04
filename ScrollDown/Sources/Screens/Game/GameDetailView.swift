@@ -6,6 +6,7 @@ struct GameDetailView: View {
     let gameId: Int
     
     @StateObject private var viewModel: GameDetailViewModel
+    @AppStorage("compactModeEnabled") private var isCompactMode = false
     @State private var selectedSection: GameSection = .overview
     @State private var collapsedQuarters: Set<Int> = []
     @State private var hasInitializedQuarters = false
@@ -72,6 +73,16 @@ struct GameDetailView: View {
     }
     
     private func gameContentView() -> some View {
+        Group {
+            if isCompactMode {
+                compactContentView
+            } else {
+                standardContentView
+            }
+        }
+    }
+
+    private var standardContentView: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: Layout.sectionSpacing) {
@@ -81,6 +92,7 @@ struct GameDetailView: View {
                     }
 
                     VStack(spacing: Layout.sectionSpacing) {
+                        displayOptionsSection
                         overviewSection
                             .id(GameSection.overview)
                             .onAppear {
@@ -125,37 +137,93 @@ struct GameDetailView: View {
         }
     }
 
+    private var compactContentView: some View {
+        ScrollView {
+            VStack(spacing: Layout.sectionSpacing) {
+                if let game = viewModel.game {
+                    GameHeaderView(game: game)
+                }
+
+                VStack(spacing: Layout.sectionSpacing) {
+                    displayOptionsSection
+                    chapterSection(number: 1, title: "Overview", subtitle: "Recap") {
+                        overviewContent
+                    }
+                    chapterSection(number: 2, title: "Pre-Game", subtitle: "Before tipoff") {
+                        preGameContent
+                    }
+                    chapterSection(number: 3, title: "Timeline", subtitle: "Play-by-play") {
+                        timelineContent
+                    }
+                    .onChange(of: viewModel.timelineQuarters) { quarters in
+                        guard !hasInitializedQuarters else { return }
+                        // Q1 expanded, Q2+ collapsed per spec
+                        collapsedQuarters = Set(quarters.filter { $0.quarter > 1 }.map(\.quarter))
+                        hasInitializedQuarters = true
+                    }
+                    chapterSection(number: 4, title: "Player Stats", subtitle: "Individual performance") {
+                        playerStatsContent(viewModel.playerStats)
+                    }
+                    chapterSection(number: 5, title: "Team Stats", subtitle: "How the game unfolded") {
+                        teamStatsContent(viewModel.teamStats)
+                    }
+                    chapterSection(number: 6, title: "Final Score", subtitle: "Wrap-up") {
+                        finalScoreContent
+                    }
+                    chapterSection(number: 7, title: "Post-Game", subtitle: "Reactions") {
+                        postGameContent
+                    }
+                }
+                .padding(.horizontal, Layout.horizontalPadding)
+            }
+            .padding(.bottom, Layout.bottomPadding)
+        }
+        .background(GameTheme.background)
+    }
+
+    private var displayOptionsSection: some View {
+        SectionCardView(title: "Recap Style", subtitle: "Choose your flow") {
+            Toggle("Compact Mode", isOn: $isCompactMode)
+                .tint(GameTheme.accentColor)
+        }
+        .accessibilityHint("Switch to a chapter-based recap flow")
+    }
+
     private var overviewSection: some View {
         CollapsibleSectionCard(
             title: "Overview",
             subtitle: "Recap",
             isExpanded: $isOverviewExpanded
         ) {
-            VStack(alignment: .leading, spacing: Layout.textSpacing) {
-                Text(viewModel.overviewSummary)
-                    .font(.body)
-                    .foregroundColor(.primary)
-                    .accessibilityLabel("Summary")
-                    .accessibilityValue(viewModel.overviewSummary)
-
-                VStack(alignment: .leading, spacing: Layout.listSpacing) {
-                    ForEach(viewModel.recapBullets, id: \.self) { bullet in
-                        HStack(alignment: .top, spacing: Layout.listSpacing) {
-                            Circle()
-                                .frame(width: Layout.bulletSize, height: Layout.bulletSize)
-                                .foregroundColor(.secondary)
-                                .padding(.top, Layout.bulletOffset)
-                            Text(bullet)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                    }
-                }
-            }
+            overviewContent
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Game overview")
+    }
+
+    private var overviewContent: some View {
+        VStack(alignment: .leading, spacing: Layout.textSpacing) {
+            Text(viewModel.overviewSummary)
+                .font(.body)
+                .foregroundColor(.primary)
+                .accessibilityLabel("Summary")
+                .accessibilityValue(viewModel.overviewSummary)
+
+            VStack(alignment: .leading, spacing: Layout.listSpacing) {
+                ForEach(viewModel.recapBullets, id: \.self) { bullet in
+                    HStack(alignment: .top, spacing: Layout.listSpacing) {
+                        Circle()
+                            .frame(width: Layout.bulletSize, height: Layout.bulletSize)
+                            .foregroundColor(.secondary)
+                            .padding(.top, Layout.bulletOffset)
+                        Text(bullet)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 
     private var preGameSection: some View {
@@ -164,17 +232,21 @@ struct GameDetailView: View {
             subtitle: "Before tipoff",
             isExpanded: $isPreGameExpanded
         ) {
-            VStack(spacing: Layout.cardSpacing) {
-                ForEach(viewModel.preGamePosts) { post in
-                    HighlightCardView(post: post)
-                }
-
-                if viewModel.preGamePosts.isEmpty {
-                    EmptySectionView(text: "Pre-game posts will appear here.")
-                }
-            }
+            preGameContent
         }
         .accessibilityHint("Expands to show pre-game posts")
+    }
+
+    private var preGameContent: some View {
+        VStack(spacing: Layout.cardSpacing) {
+            ForEach(viewModel.preGamePosts) { post in
+                HighlightCardView(post: post)
+            }
+
+            if viewModel.preGamePosts.isEmpty {
+                EmptySectionView(text: "Pre-game posts will appear here.")
+            }
+        }
     }
 
     private var timelineSection: some View {
@@ -183,15 +255,7 @@ struct GameDetailView: View {
             subtitle: "Play-by-play",
             isExpanded: $isTimelineExpanded
         ) {
-            VStack(spacing: Layout.cardSpacing) {
-                ForEach(viewModel.timelineQuarters) { quarter in
-                    quarterSection(quarter)
-                }
-
-                if viewModel.timelineQuarters.isEmpty {
-                    EmptySectionView(text: "No play-by-play data available.")
-                }
-            }
+            timelineContent
         }
         .onChange(of: viewModel.timelineQuarters) { quarters in
             guard !hasInitializedQuarters else { return }
@@ -200,6 +264,18 @@ struct GameDetailView: View {
             hasInitializedQuarters = true
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var timelineContent: some View {
+        VStack(spacing: Layout.cardSpacing) {
+            ForEach(viewModel.timelineQuarters) { quarter in
+                quarterSection(quarter)
+            }
+
+            if viewModel.timelineQuarters.isEmpty {
+                EmptySectionView(text: "No play-by-play data available.")
+            }
+        }
     }
 
     private func quarterSection(_ quarter: GameDetailViewModel.QuarterTimeline) -> some View {
@@ -239,18 +315,22 @@ struct GameDetailView: View {
             subtitle: "Individual performance",
             isExpanded: $isPlayerStatsExpanded
         ) {
-            if stats.isEmpty {
-                EmptySectionView(text: "Player stats are not yet available.")
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        playerStatsHeader
-                        ForEach(Array(stats.enumerated()), id: \.element.id) { index, stat in
-                            playerStatsRow(stat, isAlternate: index.isMultiple(of: 2))
-                        }
+            playerStatsContent(stats)
+        }
+    }
+
+    private func playerStatsContent(_ stats: [PlayerStat]) -> some View {
+        if stats.isEmpty {
+            EmptySectionView(text: "Player stats are not yet available.")
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    playerStatsHeader
+                    ForEach(Array(stats.enumerated()), id: \.element.id) { index, stat in
+                        playerStatsRow(stat, isAlternate: index.isMultiple(of: 2))
                     }
-                    .frame(minWidth: Layout.statsTableWidth)
                 }
+                .frame(minWidth: Layout.statsTableWidth)
             }
         }
     }
@@ -306,17 +386,21 @@ struct GameDetailView: View {
             subtitle: "How the game unfolded",
             isExpanded: $isTeamStatsExpanded
         ) {
-            if viewModel.teamComparisonStats.isEmpty {
-                EmptySectionView(text: "Team stats will appear once available.")
-            } else {
-                VStack(spacing: Layout.listSpacing) {
-                    ForEach(viewModel.teamComparisonStats) { stat in
-                        TeamComparisonRowView(
-                            stat: stat,
-                            homeTeam: stats.first(where: { $0.isHome })?.team ?? "Home",
-                            awayTeam: stats.first(where: { !$0.isHome })?.team ?? "Away"
-                        )
-                    }
+            teamStatsContent(stats)
+        }
+    }
+
+    private func teamStatsContent(_ stats: [TeamStat]) -> some View {
+        if viewModel.teamComparisonStats.isEmpty {
+            EmptySectionView(text: "Team stats will appear once available.")
+        } else {
+            VStack(spacing: Layout.listSpacing) {
+                ForEach(viewModel.teamComparisonStats) { stat in
+                    TeamComparisonRowView(
+                        stat: stat,
+                        homeTeam: stats.first(where: { $0.isHome })?.team ?? "Home",
+                        awayTeam: stats.first(where: { !$0.isHome })?.team ?? "Away"
+                    )
                 }
             }
         }
@@ -328,16 +412,20 @@ struct GameDetailView: View {
             subtitle: "Wrap-up",
             isExpanded: $isFinalScoreExpanded
         ) {
-            VStack(spacing: Layout.textSpacing) {
-                Text(viewModel.game?.scoreDisplay ?? Constants.scoreFallback)
-                    .font(.system(size: Layout.finalScoreSize, weight: .bold))
-                Text("Final")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Layout.listSpacing)
+            finalScoreContent
         }
+    }
+
+    private var finalScoreContent: some View {
+        VStack(spacing: Layout.textSpacing) {
+            Text(viewModel.game?.scoreDisplay ?? Constants.scoreFallback)
+                .font(.system(size: Layout.finalScoreSize, weight: .bold))
+            Text("Final")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Layout.listSpacing)
     }
 
     private var postGameSection: some View {
@@ -346,17 +434,21 @@ struct GameDetailView: View {
             subtitle: "Reactions",
             isExpanded: $isPostGameExpanded
         ) {
-            VStack(spacing: Layout.cardSpacing) {
-                ForEach(viewModel.postGamePosts) { post in
-                    HighlightCardView(post: post)
-                }
-
-                if viewModel.postGamePosts.isEmpty {
-                    EmptySectionView(text: "Post-game posts will appear here.")
-                }
-            }
+            postGameContent
         }
         .accessibilityHint("Expands to show post-game posts")
+    }
+
+    private var postGameContent: some View {
+        VStack(spacing: Layout.cardSpacing) {
+            ForEach(viewModel.postGamePosts) { post in
+                HighlightCardView(post: post)
+            }
+
+            if viewModel.postGamePosts.isEmpty {
+                EmptySectionView(text: "Post-game posts will appear here.")
+            }
+        }
     }
     
     // MARK: - Helper Views
@@ -391,6 +483,23 @@ struct GameDetailView: View {
         .accessibilityLabel("Section navigation")
     }
 
+    private func chapterSection(
+        number: Int,
+        title: String,
+        subtitle: String?,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Layout.chapterSpacing) {
+            Text("Chapter \(number)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, Layout.chapterHorizontalPadding)
+            SectionCardView(title: title, subtitle: subtitle) {
+                content()
+            }
+        }
+    }
+
     private func quarterTitle(_ quarter: Int) -> String {
         quarter == 0 ? "Additional" : "Q\(quarter)"
     }
@@ -416,6 +525,8 @@ private enum Layout {
     static let statsHorizontalPadding: CGFloat = 16
     static let statsTableWidth: CGFloat = 360
     static let finalScoreSize: CGFloat = 40
+    static let chapterSpacing: CGFloat = 8
+    static let chapterHorizontalPadding: CGFloat = 4
 }
 
 private enum Constants {
