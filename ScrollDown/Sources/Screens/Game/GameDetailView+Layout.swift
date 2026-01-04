@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Layout Constants
 
-enum Layout {
+fileprivate enum Layout {
     static let sectionSpacing: CGFloat = 20
     static let textSpacing: CGFloat = 12
     static let listSpacing: CGFloat = 8
@@ -32,12 +32,12 @@ enum Layout {
     static let scrollCoordinateSpace = "gameScrollView"
 }
 
-enum Constants {
+fileprivate enum Constants {
     static let statFallback = "--"
     static let scoreFallback = "--"
 }
 
-struct PlayRowFramePreferenceKey: PreferenceKey {
+fileprivate struct PlayRowFramePreferenceKey: PreferenceKey {
     static var defaultValue: [Int: CGRect] = [:]
 
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
@@ -45,7 +45,7 @@ struct PlayRowFramePreferenceKey: PreferenceKey {
     }
 }
 
-struct TimelineFramePreferenceKey: PreferenceKey {
+fileprivate struct TimelineFramePreferenceKey: PreferenceKey {
     static var defaultValue: CGRect = .zero
 
     static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
@@ -53,7 +53,7 @@ struct TimelineFramePreferenceKey: PreferenceKey {
     }
 }
 
-struct ScrollViewFramePreferenceKey: PreferenceKey {
+fileprivate struct ScrollViewFramePreferenceKey: PreferenceKey {
     static var defaultValue: CGRect = .zero
 
     static func reduce(value: inout CGRect, nextValue: () -> CGRect) {

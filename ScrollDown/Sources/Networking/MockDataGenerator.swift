@@ -171,11 +171,7 @@ enum MockDataGenerator {
             ("MLB", "Los Angeles Dodgers", "San Francisco Giants")
         ]
 
-        guard let matchup = matchups.randomElement() else {
-            return ("NBA", "Home Team", "Away Team")
-        }
-
-        return matchup
+        return matchups.randomElement()!
     }
 
     private static func formatDate(_ date: Date) -> String {
@@ -288,7 +284,9 @@ enum MockDataGenerator {
                 assists: Int.random(in: 1...10),
                 yards: nil,
                 touchdowns: nil,
-                interceptions: nil
+                rawStats: [:],
+                source: "mock",
+                updatedAt: formatDate(Date())
             ))
         }
 
@@ -302,7 +300,9 @@ enum MockDataGenerator {
                 assists: Int.random(in: 1...10),
                 yards: nil,
                 touchdowns: nil,
-                interceptions: nil
+                rawStats: [:],
+                source: "mock",
+                updatedAt: formatDate(Date())
             ))
         }
 
@@ -314,22 +314,24 @@ enum MockDataGenerator {
             TeamStat(
                 team: home,
                 isHome: true,
-                points: Int.random(in: 95...125),
-                rebounds: Int.random(in: 35...60),
-                assists: Int.random(in: 15...30),
-                yards: nil,
-                touchdowns: nil,
-                interceptions: nil
+                stats: [
+                    "points": AnyCodable(Int.random(in: 95...125)),
+                    "rebounds": AnyCodable(Int.random(in: 35...60)),
+                    "assists": AnyCodable(Int.random(in: 15...30))
+                ],
+                source: "mock",
+                updatedAt: formatDate(Date())
             ),
             TeamStat(
                 team: away,
                 isHome: false,
-                points: Int.random(in: 95...125),
-                rebounds: Int.random(in: 35...60),
-                assists: Int.random(in: 15...30),
-                yards: nil,
-                touchdowns: nil,
-                interceptions: nil
+                stats: [
+                    "points": AnyCodable(Int.random(in: 95...125)),
+                    "rebounds": AnyCodable(Int.random(in: 35...60)),
+                    "assists": AnyCodable(Int.random(in: 15...30))
+                ],
+                source: "mock",
+                updatedAt: formatDate(Date())
             )
         ]
     }
@@ -337,31 +339,40 @@ enum MockDataGenerator {
     private static func generateSocialPosts(home: String, away: String) -> [SocialPostEntry] {
         [
             SocialPostEntry(
-                id: UUID().uuidString,
-                postType: .highlight,
-                source: "FanHub",
-                createdAt: formatDate(Date()),
-                content: "\(home) open with crisp ball movement.",
-                tags: ["ball-movement", "start"],
-                isRevealable: true
+                id: Int.random(in: 1000...9999),
+                postUrl: "https://x.com/\(home.lowercased())/status/\(UUID().uuidString)",
+                postedAt: formatDate(Date()),
+                hasVideo: false,
+                teamAbbreviation: home,
+                tweetText: "\(home) open with crisp ball movement.",
+                videoUrl: nil,
+                imageUrl: nil,
+                sourceHandle: "FanHub",
+                mediaType: .none
             ),
             SocialPostEntry(
-                id: UUID().uuidString,
-                postType: .highlight,
-                source: "FanHub",
-                createdAt: formatDate(Date()),
-                content: "\(away) punch back with a quick run.",
-                tags: ["run", "response"],
-                isRevealable: true
+                id: Int.random(in: 1000...9999),
+                postUrl: "https://x.com/\(away.lowercased())/status/\(UUID().uuidString)",
+                postedAt: formatDate(Date()),
+                hasVideo: false,
+                teamAbbreviation: away,
+                tweetText: "\(away) punch back with a quick run.",
+                videoUrl: nil,
+                imageUrl: nil,
+                sourceHandle: "FanHub",
+                mediaType: .none
             ),
             SocialPostEntry(
-                id: UUID().uuidString,
-                postType: .recap,
-                source: "FanHub",
-                createdAt: formatDate(Date()),
-                content: "Momentum swings set up the second half.",
-                tags: ["momentum"],
-                isRevealable: true
+                id: Int.random(in: 1000...9999),
+                postUrl: "https://x.com/fanhub/status/\(UUID().uuidString)",
+                postedAt: formatDate(Date()),
+                hasVideo: false,
+                teamAbbreviation: home,
+                tweetText: "Momentum swings set up the second half.",
+                videoUrl: nil,
+                imageUrl: nil,
+                sourceHandle: "FanHub",
+                mediaType: .none
             )
         ]
     }
@@ -389,15 +400,15 @@ enum MockDataGenerator {
             let second = Int.random(in: 0...59)
 
             let play = PlayEntry(
-                id: UUID().uuidString,
                 playIndex: index,
                 quarter: quarter,
                 gameClock: String(format: "%d:%02d", minute, second),
-                playType: .score,
+                playType: .shot,
+                teamAbbreviation: team,
+                playerName: "Player \(index % 10 + 1)",
                 description: "\(team) makes a shot.",
-                awayScore: awayScore,
                 homeScore: homeScore,
-                scoreValue: points
+                awayScore: awayScore
             )
             plays.append(play)
         }

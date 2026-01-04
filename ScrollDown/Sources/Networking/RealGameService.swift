@@ -48,10 +48,5 @@ final class RealGameService: GameService {
 }
 
 private extension RealGameService {
-    static let defaultBaseURL: URL = {
-        guard let url = URL(string: "https://api.scrolldown.sports") else {
-            preconditionFailure("Invalid default API base URL.")
-        }
-        return url
-    }()
+    static let defaultBaseURL: URL = URL(string: "https://api.scrolldown.sports")!
 }
