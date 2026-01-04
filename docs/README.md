@@ -6,5 +6,5 @@ Welcome to the Scroll Down iOS app docs.
 
 - [Architecture](architecture.md)
 - [Development](development.md)
-- [Changelog](../CHANGELOG.md)
+- [Changelog](CHANGELOG.md)
 - [Agent Notes](../AGENTS.md)

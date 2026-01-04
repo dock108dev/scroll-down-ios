@@ -21,4 +21,4 @@ Archive the app in Xcode and distribute via TestFlight or the App Store.
 ## Documentation
 
 Deeper documentation lives in [`/docs`](docs/README.md). Core project references like
-`AGENTS.md` and `CHANGELOG.md` remain at the repo root.
+`AGENTS.md` remain at the repo root, and the changelog lives in [`/docs/CHANGELOG.md`](docs/CHANGELOG.md).
