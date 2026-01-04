@@ -12,6 +12,7 @@
 - Reusable `CollapsibleCards` component extracted to Components/
 - Related posts section with tap-to-reveal blur for score-containing posts
 - Game preview networking service for API previews
+- Feature flag for game preview scores (defaulted on in debug builds)
 
 ### Changed
 - Documentation consolidated under `/docs` with a lean root README

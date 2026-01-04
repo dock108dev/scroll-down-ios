@@ -13,6 +13,16 @@ enum DataMode: String, CaseIterable {
     }
 }
 
+enum FeatureFlags {
+    static let enableGamePreviewScores: Bool = {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }()
+}
+
 // MARK: - Dev Clock
 
 /// Centralized date provider for consistent time handling
@@ -76,5 +86,4 @@ final class AppConfig: ObservableObject {
     
     private init() {}
 }
-
 
