@@ -83,6 +83,34 @@ final class MockGameService: GameService {
         
         return MockLoader.load("social-posts")
     }
+
+    func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 180_000_000) // 180ms
+
+        if generatedGames == nil {
+            generatedGames = MockDataGenerator.generateGames()
+        }
+
+        let homeTeam: String?
+        let awayTeam: String?
+        if let cachedGame = gameCache[gameId]?.game {
+            homeTeam = cachedGame.homeTeam
+            awayTeam = cachedGame.awayTeam
+        } else if let summary = generatedGames?.first(where: { $0.id == gameId }) {
+            homeTeam = summary.homeTeam
+            awayTeam = summary.awayTeam
+        } else {
+            homeTeam = nil
+            awayTeam = nil
+        }
+
+        guard let homeTeam, let awayTeam else {
+            throw GameServiceError.notFound
+        }
+
+        return AISummaryResponse(summary: MockDataGenerator.generateSummary(homeTeam: homeTeam, awayTeam: awayTeam))
+    }
 }
 
 // MARK: - Mock Data Generator
@@ -126,6 +154,13 @@ private enum MockDataGenerator {
         games.append(contentsOf: upcomingGames)
         
         return games
+    }
+
+    static func generateSummary(homeTeam: String, awayTeam: String) -> String {
+        let opening = "\(awayTeam) and \(homeTeam) kept the pace steady early."
+        let middle = "Momentum shifted with timely plays on both ends."
+        let close = "Scan the timeline to uncover the defining moments."
+        return [opening, middle, close].joined(separator: " ")
     }
     
     private static func generateDayGames(

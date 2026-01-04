@@ -41,7 +41,9 @@ struct GameDetailView: View {
         .navigationTitle(viewModel.game?.matchupTitle ?? "Game Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.load(gameId: gameId, service: appConfig.gameService)
+            async let detailLoad: Void = viewModel.load(gameId: gameId, service: appConfig.gameService)
+            async let summaryLoad: Void = viewModel.loadSummary(gameId: gameId, service: appConfig.gameService)
+            _ = await (detailLoad, summaryLoad)
         }
     }
     
@@ -215,11 +217,7 @@ struct GameDetailView: View {
 
     private var overviewContent: some View {
         VStack(alignment: .leading, spacing: Layout.textSpacing) {
-            Text(viewModel.overviewSummary)
-                .font(.body)
-                .foregroundColor(.primary)
-                .accessibilityLabel("Summary")
-                .accessibilityValue(viewModel.overviewSummary)
+            aiSummaryView
 
             VStack(alignment: .leading, spacing: Layout.listSpacing) {
                 ForEach(viewModel.recapBullets, id: \.self) { bullet in
@@ -558,6 +556,49 @@ struct GameDetailView: View {
     private func quarterTitle(_ quarter: Int) -> String {
         quarter == 0 ? "Additional" : "Q\(quarter)"
     }
+
+    private var aiSummaryView: some View {
+        Group {
+            switch viewModel.summaryState {
+            case .loading:
+                HStack(spacing: Layout.listSpacing) {
+                    ProgressView()
+                    Text("Loading summary...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            case .failed:
+                VStack(alignment: .leading, spacing: Layout.smallSpacing) {
+                    Text("Summary unavailable right now.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Button("Retry") {
+                        Task { await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService) }
+                    }
+                    .buttonStyle(.bordered)
+                }
+            case .loaded(let summary):
+                Text(summary)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                    .lineLimit(4)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: Layout.summaryMinHeight, alignment: .leading)
+        .accessibilityLabel("Summary")
+        .accessibilityValue(summaryAccessibilityValue)
+    }
+
+    private var summaryAccessibilityValue: String {
+        switch viewModel.summaryState {
+        case .loaded(let summary):
+            return summary
+        case .failed:
+            return "Summary unavailable"
+        case .loading:
+            return "Loading summary"
+        }
+    }
 }
 
 // MARK: - Layout Constants
@@ -582,6 +623,7 @@ private enum Layout {
     static let finalScoreSize: CGFloat = 40
     static let chapterSpacing: CGFloat = 8
     static let chapterHorizontalPadding: CGFloat = 4
+    static let summaryMinHeight: CGFloat = 72
 }
 
 private enum Constants {

@@ -2,6 +2,11 @@ import Foundation
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
+    enum SummaryState: Equatable {
+        case loading
+        case loaded(String)
+        case failed(String)
+    }
     struct QuarterTimeline: Identifiable, Equatable {
         let quarter: Int
         let plays: [PlayEntry]
@@ -21,6 +26,7 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var detail: GameDetailResponse?
     @Published var isLoading: Bool
     @Published var errorMessage: String?
+    @Published private(set) var summaryState: SummaryState = .loading
 
     init(detail: GameDetailResponse? = nil) {
         self.detail = detail
@@ -42,6 +48,18 @@ final class GameDetailViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             isLoading = false
+        }
+    }
+
+    func loadSummary(gameId: Int, service: GameService) async {
+        summaryState = .loading
+
+        do {
+            let response = try await service.fetchSummary(gameId: gameId)
+            let sanitized = sanitizeSummary(response.summary)
+            summaryState = .loaded(sanitized ?? overviewSummary)
+        } catch {
+            summaryState = .failed(error.localizedDescription)
         }
     }
 
@@ -203,11 +221,27 @@ final class GameDetailViewModel: ObservableObject {
 
         return String(format: Constants.decimalFormat, value)
     }
+
+    private func sanitizeSummary(_ summary: String) -> String? {
+        let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        if let regex = Constants.scoreRegex {
+            let range = NSRange(location: 0, length: trimmed.utf16.count)
+            if regex.firstMatch(in: trimmed, options: [], range: range) != nil {
+                return nil
+            }
+        }
+
+        return trimmed
+    }
 }
 
 private enum Constants {
     static let summaryTemplate = "Catch up on %@ at %@."
-    static let summaryFallback = "Catch up below."
+    static let summaryFallback = "Summary will appear here soon."
     static let recapTeamsTemplate = "Matchup: %@ at %@."
     static let recapStatusTemplate = "Status: %@."
     static let recapHighlightsTemplate = "Key moments and highlights below."
@@ -229,6 +263,8 @@ private enum Constants {
     static let integerFormat = "%.0f"
     static let decimalFormat = "%.1f"
     static let statFallback = "--"
+    static let scorePattern = #"(\d+)\s*(?:-|–|to)\s*(\d+)"#
+    static let scoreRegex = try? NSRegularExpression(pattern: scorePattern, options: [])
     static let teamComparisonKeys: [(key: String, label: String)] = [
         ("fg_pct", "Field %"),
         ("fg3_pct", "3PT %"),

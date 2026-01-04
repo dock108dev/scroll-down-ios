@@ -30,6 +30,11 @@ protocol GameService {
     /// - Parameter gameId: The game ID
     /// - Returns: Social post list response
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse
+
+    /// Fetch AI summary for a game
+    /// - Parameter gameId: The game ID
+    /// - Returns: Summary response
+    func fetchSummary(gameId: Int) async throws -> AISummaryResponse
 }
 
 // MARK: - Service Errors
@@ -52,4 +57,3 @@ enum GameServiceError: LocalizedError {
         }
     }
 }
-

@@ -71,5 +71,13 @@ final class RealGameService: GameService {
         
         throw GameServiceError.notImplemented
     }
-}
 
+    func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
+        // TODO: Implement real API call
+        // let url = baseURL.appendingPathComponent("/summary").appendingPathComponent(String(gameId))
+        // let (data, _) = try await session.data(from: url)
+        // return try JSONDecoder().decode(AISummaryResponse.self, from: data)
+
+        throw GameServiceError.notImplemented
+    }
+}
