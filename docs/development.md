@@ -14,3 +14,11 @@ Timeline scores surface via separators (live, halftime, period end) instead of i
 ```bash
 xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
+
+## QA Checklist
+
+- Dark/light mode
+- Long team names
+- Games without ratings
+- Mid-major conferences
+- Offline mode fallback
