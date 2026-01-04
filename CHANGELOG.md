@@ -11,6 +11,7 @@
 - Dev-mode clock for consistent mock data generation (fixed to Nov 12, 2024)
 - Reusable `CollapsibleCards` component extracted to Components/
 - Related posts section with tap-to-reveal blur for score-containing posts
+- Game preview networking service for API previews
 
 ### Changed
 - Documentation consolidated under `/docs` with a lean root README

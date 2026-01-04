@@ -9,7 +9,7 @@ final class RealGameService: GameService {
     private let session: URLSession
 
     init(
-        baseURL: URL = Self.defaultBaseURL,
+        baseURL: URL = APIConfiguration.baseURL,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
@@ -45,8 +45,4 @@ final class RealGameService: GameService {
     func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
         throw GameServiceError.notImplemented
     }
-}
-
-private extension RealGameService {
-    static let defaultBaseURL: URL = URL(string: "https://api.scrolldown.sports")!
 }
