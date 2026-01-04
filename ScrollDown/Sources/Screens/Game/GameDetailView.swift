@@ -23,6 +23,9 @@ struct GameDetailView: View {
     @State private var isCompactTimelineExpanded = false
     @State private var isCompactPostsExpanded = false
     @State private var selectedCompactMoment: CompactMoment?
+    @State private var playRowFrames: [Int: CGRect] = [:]
+    @State private var timelineFrame: CGRect = .zero
+    @State private var scrollViewFrame: CGRect = .zero
 
     init(gameId: Int, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -91,56 +94,84 @@ struct GameDetailView: View {
 
     private var standardContentView: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: Layout.sectionSpacing) {
-                    if let game = viewModel.game {
-                        GameHeaderView(game: game)
-                            .id(GameSection.header)
-                    }
-
+            ZStack(alignment: .topTrailing) {
+                ScrollView {
                     VStack(spacing: Layout.sectionSpacing) {
-                        displayOptionsSection
-                        overviewSection
-                            .id(GameSection.overview)
-                            .onAppear {
-                                selectedSection = .overview
-                            }
-                        preGameSection
-                        timelineSection
-                            .id(GameSection.timeline)
-                            .onAppear {
-                                selectedSection = .timeline
-                            }
-                        playerStatsSection(viewModel.playerStats)
-                            .id(GameSection.playerStats)
-                            .onAppear {
-                                selectedSection = .playerStats
-                            }
-                        teamStatsSection(viewModel.teamStats)
-                            .id(GameSection.teamStats)
-                            .onAppear {
-                                selectedSection = .teamStats
-                            }
-                        finalScoreSection
-                            .id(GameSection.final)
-                            .onAppear {
-                                selectedSection = .final
-                            }
-                        postGameSection
-                        relatedPostsSection
+                        if let game = viewModel.game {
+                            GameHeaderView(game: game)
+                                .id(GameSection.header)
+                        }
+
+                        VStack(spacing: Layout.sectionSpacing) {
+                            displayOptionsSection
+                            overviewSection
+                                .id(GameSection.overview)
+                                .onAppear {
+                                    selectedSection = .overview
+                                }
+                            preGameSection
+                            timelineSection
+                                .id(GameSection.timeline)
+                                .onAppear {
+                                    selectedSection = .timeline
+                                }
+                            playerStatsSection(viewModel.playerStats)
+                                .id(GameSection.playerStats)
+                                .onAppear {
+                                    selectedSection = .playerStats
+                                }
+                            teamStatsSection(viewModel.teamStats)
+                                .id(GameSection.teamStats)
+                                .onAppear {
+                                    selectedSection = .teamStats
+                                }
+                            finalScoreSection
+                                .id(GameSection.final)
+                                .onAppear {
+                                    selectedSection = .final
+                                }
+                            postGameSection
+                            relatedPostsSection
+                        }
+                        .padding(.horizontal, Layout.horizontalPadding)
                     }
-                    .padding(.horizontal, Layout.horizontalPadding)
+                    .padding(.bottom, Layout.bottomPadding)
                 }
-                .padding(.bottom, Layout.bottomPadding)
+                .coordinateSpace(name: Layout.scrollCoordinateSpace)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: ScrollViewFramePreferenceKey.self,
+                            value: proxy.frame(in: .named(Layout.scrollCoordinateSpace))
+                        )
+                    }
+                )
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    sectionNavigationBar { section in
+                        withAnimation(.easeInOut) {
+                            selectedSection = section
+                            proxy.scrollTo(section, anchor: .top)
+                        }
+                    }
+                }
+
+                if let viewingText = viewingPillText {
+                    viewingPillView(text: viewingText)
+                        .padding(.top, Layout.viewingPillTopPadding)
+                        .padding(.horizontal, Layout.horizontalPadding)
+                        .transition(.opacity)
+                        .accessibilityLabel("Viewing \(viewingText)")
+                }
             }
             .background(GameTheme.background)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                sectionNavigationBar { section in
-                    withAnimation(.easeInOut) {
-                        selectedSection = section
-                        proxy.scrollTo(section, anchor: .top)
-                    }
-                }
+            .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
+                playRowFrames = value
+            }
+            .onPreferenceChange(TimelineFramePreferenceKey.self) { value in
+                timelineFrame = value
+            }
+            .onPreferenceChange(ScrollViewFramePreferenceKey.self) { value in
+                scrollViewFrame = value
             }
         }
     }
@@ -275,6 +306,14 @@ struct GameDetailView: View {
             collapsedQuarters = Set(quarters.filter { $0.quarter > 1 }.map(\.quarter))
             hasInitializedQuarters = true
         }
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: TimelineFramePreferenceKey.self,
+                    value: proxy.frame(in: .named(Layout.scrollCoordinateSpace))
+                )
+            }
+        )
         .accessibilityElement(children: .contain)
     }
 
@@ -319,6 +358,14 @@ struct GameDetailView: View {
                     }
 
                     TimelineRowView(play: play)
+                        .background(
+                            GeometryReader { proxy in
+                                Color.clear.preference(
+                                    key: PlayRowFramePreferenceKey.self,
+                                    value: [play.playIndex: proxy.frame(in: .named(Layout.scrollCoordinateSpace))]
+                                )
+                            }
+                        )
 
                     if let marker = viewModel.scoreMarker(for: play) {
                         TimelineScoreChipView(marker: marker)
@@ -637,6 +684,109 @@ struct GameDetailView: View {
         quarter == 0 ? "Additional" : "Q\(quarter)"
     }
 
+    private var viewingPillText: String? {
+        guard isTimelineVisible else {
+            return nil
+        }
+
+        guard let play = currentViewingPlay,
+              let scoreText = scoreDisplay(for: play) else {
+            return nil
+        }
+
+        return "\(periodDescriptor(for: play)) | \(scoreText)"
+    }
+
+    private var isTimelineVisible: Bool {
+        timelineFrame.height > 0 && scrollViewFrame.height > 0 && timelineFrame.intersects(scrollViewFrame)
+    }
+
+    private var currentViewingPlay: PlayEntry? {
+        guard scrollViewFrame.height > 0 else {
+            return nil
+        }
+
+        let playsByIndex = Dictionary(
+            uniqueKeysWithValues: (viewModel.detail?.plays ?? []).map { ($0.playIndex, $0) }
+        )
+
+        let visiblePlays = playRowFrames.compactMap { playIndex, frame -> (PlayEntry, CGRect)? in
+            guard let play = playsByIndex[playIndex],
+                  frame.maxY >= scrollViewFrame.minY,
+                  frame.minY <= scrollViewFrame.maxY else {
+                return nil
+            }
+            return (play, frame)
+        }
+
+        return visiblePlays
+            .sorted { $0.1.minY < $1.1.minY }
+            .last?
+            .0
+    }
+
+    private func periodDescriptor(for play: PlayEntry) -> String {
+        guard let quarter = play.quarter else {
+            return "Game"
+        }
+
+        let ordinal = quarterOrdinal(quarter)
+        guard let clock = play.gameClock,
+              let minutesRemaining = Int(clock.split(separator: ":").first ?? "") else {
+            return ordinal
+        }
+
+        let phase = periodPhaseLabel(minutesRemaining: minutesRemaining)
+        return "\(phase) \(ordinal)"
+    }
+
+    private func periodPhaseLabel(minutesRemaining: Int) -> String {
+        switch minutesRemaining {
+        case 8...:
+            return "Early"
+        case 4..<8:
+            return "Mid"
+        default:
+            return "Late"
+        }
+    }
+
+    private func quarterOrdinal(_ quarter: Int) -> String {
+        switch quarter {
+        case 1:
+            return "1st"
+        case 2:
+            return "2nd"
+        case 3:
+            return "3rd"
+        case 4:
+            return "4th"
+        case 0:
+            return "OT"
+        default:
+            return "\(quarter)th"
+        }
+    }
+
+    private func scoreDisplay(for play: PlayEntry) -> String? {
+        guard let away = play.awayScore, let home = play.homeScore else {
+            return nil
+        }
+
+        return "\(away)–\(home)"
+    }
+
+    private func viewingPillView(text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundColor(.primary)
+            .padding(.horizontal, Layout.viewingPillHorizontalPadding)
+            .padding(.vertical, Layout.viewingPillVerticalPadding)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+    }
+
     private var aiSummaryView: some View {
         Group {
             switch viewModel.summaryState {
@@ -704,6 +854,34 @@ private enum Layout {
     static let chapterSpacing: CGFloat = 8
     static let chapterHorizontalPadding: CGFloat = 4
     static let summaryMinHeight: CGFloat = 72
+    static let viewingPillHorizontalPadding: CGFloat = 12
+    static let viewingPillVerticalPadding: CGFloat = 6
+    static let viewingPillTopPadding: CGFloat = 12
+    static let scrollCoordinateSpace = "gameScrollView"
+}
+
+private struct PlayRowFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}
+
+private struct TimelineFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
+private struct ScrollViewFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
 }
 
 private enum Constants {
