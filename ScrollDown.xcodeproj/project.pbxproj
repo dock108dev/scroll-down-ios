@@ -46,6 +46,21 @@
 		0100000000000037 /* GameTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000037 /* GameTheme.swift */; };
 		0100000000000038 /* HomeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000038 /* HomeTheme.swift */; };
 		0100000000000039 /* CollapsibleCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000039 /* CollapsibleCards.swift */; };
+		0100000000000040 /* AISummaryResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000040 /* AISummaryResponse.swift */; };
+		0100000000000041 /* CompactMoment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000041 /* CompactMoment.swift */; };
+		0100000000000042 /* GamePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000042 /* GamePreview.swift */; };
+		0100000000000043 /* APIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000043 /* APIConfiguration.swift */; };
+		0100000000000044 /* GamePreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000044 /* GamePreviewService.swift */; };
+		0100000000000045 /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000045 /* MockDataGenerator.swift */; };
+		0100000000000046 /* CompactMomentExpandedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000046 /* CompactMomentExpandedView.swift */; };
+		0100000000000047 /* CompactTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000047 /* CompactTimelineView.swift */; };
+		0100000000000048 /* GameDetailView+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000048 /* GameDetailView+Helpers.swift */; };
+		0100000000000049 /* GameDetailView+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000049 /* GameDetailView+Layout.swift */; };
+		0100000000000050 /* GameDetailView+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000050 /* GameDetailView+Sections.swift */; };
+		0100000000000051 /* RelatedPostCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000051 /* RelatedPostCardView.swift */; };
+		0100000000000052 /* TimelineScoreChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000052 /* TimelineScoreChipView.swift */; };
+		0100000000000053 /* CompactMomentPbpViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0200000000000053 /* CompactMomentPbpViewModel.swift */; };
+		0100000000000054 /* related-posts.json in Resources */ = {isa = PBXBuildFile; fileRef = 0200000000000054 /* related-posts.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -89,6 +104,21 @@
 		0200000000000037 /* GameTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameTheme.swift; sourceTree = "<group>"; };
 		0200000000000038 /* HomeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTheme.swift; sourceTree = "<group>"; };
 		0200000000000039 /* CollapsibleCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollapsibleCards.swift; sourceTree = "<group>"; };
+		0200000000000040 /* AISummaryResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISummaryResponse.swift; sourceTree = "<group>"; };
+		0200000000000041 /* CompactMoment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMoment.swift; sourceTree = "<group>"; };
+		0200000000000042 /* GamePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamePreview.swift; sourceTree = "<group>"; };
+		0200000000000043 /* APIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfiguration.swift; sourceTree = "<group>"; };
+		0200000000000044 /* GamePreviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamePreviewService.swift; sourceTree = "<group>"; };
+		0200000000000045 /* MockDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
+		0200000000000046 /* CompactMomentExpandedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMomentExpandedView.swift; sourceTree = "<group>"; };
+		0200000000000047 /* CompactTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactTimelineView.swift; sourceTree = "<group>"; };
+		0200000000000048 /* GameDetailView+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Helpers.swift"; sourceTree = "<group>"; };
+		0200000000000049 /* GameDetailView+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Layout.swift"; sourceTree = "<group>"; };
+		0200000000000050 /* GameDetailView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Sections.swift"; sourceTree = "<group>"; };
+		0200000000000051 /* RelatedPostCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatedPostCardView.swift; sourceTree = "<group>"; };
+		0200000000000052 /* TimelineScoreChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineScoreChipView.swift; sourceTree = "<group>"; };
+		0200000000000053 /* CompactMomentPbpViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMomentPbpViewModel.swift; sourceTree = "<group>"; };
+		0200000000000054 /* related-posts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "related-posts.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,17 +176,20 @@
 		0400000000000004 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				0200000000000040 /* AISummaryResponse.swift */,
+				0200000000000041 /* CompactMoment.swift */,
 				0200000000000027 /* Enums.swift */,
 				0200000000000003 /* Game.swift */,
-				0200000000000004 /* GameSummary.swift */,
-				0200000000000025 /* GameListResponse.swift */,
 				0200000000000026 /* GameDetailResponse.swift */,
-				0200000000000005 /* TeamStat.swift */,
-				0200000000000006 /* PlayerStat.swift */,
+				0200000000000025 /* GameListResponse.swift */,
+				0200000000000042 /* GamePreview.swift */,
+				0200000000000004 /* GameSummary.swift */,
 				0200000000000007 /* OddsEntry.swift */,
-				0200000000000008 /* SocialPost.swift */,
-				0200000000000009 /* PlayEntry.swift */,
 				0200000000000010 /* PbpEvent.swift */,
+				0200000000000009 /* PlayEntry.swift */,
+				0200000000000006 /* PlayerStat.swift */,
+				0200000000000008 /* SocialPost.swift */,
+				0200000000000005 /* TeamStat.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -173,7 +206,10 @@
 		0400000000000006 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				0200000000000043 /* APIConfiguration.swift */,
 				0200000000000012 /* GameService.swift */,
+				0200000000000044 /* GamePreviewService.swift */,
+				0200000000000045 /* MockDataGenerator.swift */,
 				0200000000000013 /* MockGameService.swift */,
 				0200000000000014 /* RealGameService.swift */,
 			);
@@ -212,6 +248,7 @@
 				0200000000000021 /* game-002.json */,
 				0200000000000022 /* game-list.json */,
 				0200000000000023 /* pbp-001.json */,
+				0200000000000054 /* related-posts.json */,
 				0200000000000024 /* social-posts.json */,
 			);
 			path = games;
@@ -230,16 +267,23 @@
 		0400000000000012 /* Game */ = {
 			isa = PBXGroup;
 			children = (
-				0200000000000017 /* GameDetailView.swift */,
-				0200000000000029 /* GameSection.swift */,
-				0200000000000030 /* PreviewFixtures.swift */,
+				0200000000000046 /* CompactMomentExpandedView.swift */,
+				0200000000000047 /* CompactTimelineView.swift */,
 				0200000000000031 /* EmptySectionView.swift */,
+				0200000000000017 /* GameDetailView.swift */,
+				0200000000000048 /* GameDetailView+Helpers.swift */,
+				0200000000000049 /* GameDetailView+Layout.swift */,
+				0200000000000050 /* GameDetailView+Sections.swift */,
 				0200000000000032 /* GameHeaderView.swift */,
+				0200000000000029 /* GameSection.swift */,
+				0200000000000037 /* GameTheme.swift */,
 				0200000000000033 /* HighlightCardView.swift */,
+				0200000000000030 /* PreviewFixtures.swift */,
+				0200000000000051 /* RelatedPostCardView.swift */,
 				0200000000000034 /* SectionCardView.swift */,
 				0200000000000035 /* TeamComparisonRowView.swift */,
 				0200000000000036 /* TimelineRowView.swift */,
-				0200000000000037 /* GameTheme.swift */,
+				0200000000000052 /* TimelineScoreChipView.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -247,6 +291,7 @@
 		0400000000000013 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				0200000000000053 /* CompactMomentPbpViewModel.swift */,
 				0200000000000028 /* GameDetailViewModel.swift */,
 			);
 			path = ViewModels;
@@ -316,6 +361,7 @@
 				0100000000000022 /* game-list.json in Resources */,
 				0100000000000023 /* pbp-001.json in Resources */,
 				0100000000000024 /* social-posts.json in Resources */,
+				0100000000000054 /* related-posts.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,6 +405,20 @@
 				0100000000000037 /* GameTheme.swift in Sources */,
 				0100000000000038 /* HomeTheme.swift in Sources */,
 				0100000000000039 /* CollapsibleCards.swift in Sources */,
+				0100000000000040 /* AISummaryResponse.swift in Sources */,
+				0100000000000041 /* CompactMoment.swift in Sources */,
+				0100000000000042 /* GamePreview.swift in Sources */,
+				0100000000000043 /* APIConfiguration.swift in Sources */,
+				0100000000000044 /* GamePreviewService.swift in Sources */,
+				0100000000000045 /* MockDataGenerator.swift in Sources */,
+				0100000000000046 /* CompactMomentExpandedView.swift in Sources */,
+				0100000000000047 /* CompactTimelineView.swift in Sources */,
+				0100000000000048 /* GameDetailView+Helpers.swift in Sources */,
+				0100000000000049 /* GameDetailView+Layout.swift in Sources */,
+				0100000000000050 /* GameDetailView+Sections.swift in Sources */,
+				0100000000000051 /* RelatedPostCardView.swift in Sources */,
+				0100000000000052 /* TimelineScoreChipView.swift in Sources */,
+				0100000000000053 /* CompactMomentPbpViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -565,5 +625,3 @@
 	};
 	rootObject = 0800000000000001 /* Project object */;
 }
-
-

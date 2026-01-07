@@ -100,13 +100,13 @@ struct GameDetailView: View {
         ScrollViewReader { proxy in
             ZStack(alignment: .topTrailing) {
                 ScrollView {
-                    VStack(spacing: Layout.sectionSpacing) {
+                    VStack(spacing: GameDetailLayout.sectionSpacing) {
                         if let game = viewModel.game {
                             GameHeaderView(game: game)
                                 .id(GameSection.header)
                         }
 
-                        VStack(spacing: Layout.sectionSpacing) {
+                        VStack(spacing: GameDetailLayout.sectionSpacing) {
                             displayOptionsSection
                             overviewSection
                                 .id(GameSection.overview)
@@ -137,16 +137,16 @@ struct GameDetailView: View {
                             postGameSection
                             relatedPostsSection
                         }
-                        .padding(.horizontal, Layout.horizontalPadding)
+                        .padding(.horizontal, GameDetailLayout.horizontalPadding)
                     }
-                    .padding(.bottom, Layout.bottomPadding)
+                    .padding(.bottom, GameDetailLayout.bottomPadding)
                 }
-                .coordinateSpace(name: Layout.scrollCoordinateSpace)
+                .coordinateSpace(name: GameDetailLayout.scrollCoordinateSpace)
                 .background(
                     GeometryReader { proxy in
                         Color.clear.preference(
                             key: ScrollViewFramePreferenceKey.self,
-                            value: proxy.frame(in: .named(Layout.scrollCoordinateSpace))
+                            value: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
                         )
                     }
                 )
@@ -169,8 +169,8 @@ struct GameDetailView: View {
 
                 if let viewingText = viewingPillText {
                     viewingPillView(text: viewingText)
-                        .padding(.top, Layout.viewingPillTopPadding)
-                        .padding(.horizontal, Layout.horizontalPadding)
+                        .padding(.top, GameDetailLayout.viewingPillTopPadding)
+                        .padding(.horizontal, GameDetailLayout.horizontalPadding)
                         .transition(.opacity)
                         .accessibilityLabel("Viewing \(viewingText)")
                 }
@@ -198,12 +198,12 @@ struct GameDetailView: View {
 
     var compactContentView: some View {
         ScrollView {
-            VStack(spacing: Layout.sectionSpacing) {
+            VStack(spacing: GameDetailLayout.sectionSpacing) {
                 if let game = viewModel.game {
                     GameHeaderView(game: game)
                 }
 
-                VStack(spacing: Layout.sectionSpacing) {
+                VStack(spacing: GameDetailLayout.sectionSpacing) {
                     displayOptionsSection
                     compactChapterSection(
                         number: 1,
@@ -236,9 +236,9 @@ struct GameDetailView: View {
                         compactPostsContent
                     }
                 }
-                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.horizontal, GameDetailLayout.horizontalPadding)
             }
-            .padding(.bottom, Layout.bottomPadding)
+            .padding(.bottom, GameDetailLayout.bottomPadding)
         }
         .background(GameTheme.background)
         .sheet(item: $selectedCompactMoment) { moment in

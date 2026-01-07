@@ -22,16 +22,16 @@ extension GameDetailView {
     }
 
     var overviewContent: some View {
-        VStack(alignment: .leading, spacing: Layout.textSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.textSpacing) {
             aiSummaryView
 
-            VStack(alignment: .leading, spacing: Layout.listSpacing) {
+            VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
                 ForEach(viewModel.recapBullets, id: \.self) { bullet in
-                    HStack(alignment: .top, spacing: Layout.listSpacing) {
+                    HStack(alignment: .top, spacing: GameDetailLayout.listSpacing) {
                         Circle()
-                            .frame(width: Layout.bulletSize, height: Layout.bulletSize)
+                            .frame(width: GameDetailLayout.bulletSize, height: GameDetailLayout.bulletSize)
                             .foregroundColor(.secondary)
-                            .padding(.top, Layout.bulletOffset)
+                            .padding(.top, GameDetailLayout.bulletOffset)
                         Text(bullet)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -54,7 +54,7 @@ extension GameDetailView {
     }
 
     var preGameContent: some View {
-        VStack(spacing: Layout.cardSpacing) {
+        VStack(spacing: GameDetailLayout.cardSpacing) {
             ForEach(viewModel.preGamePosts) { post in
                 HighlightCardView(post: post)
             }
@@ -83,7 +83,7 @@ extension GameDetailView {
             GeometryReader { proxy in
                 Color.clear.preference(
                     key: TimelineFramePreferenceKey.self,
-                    value: proxy.frame(in: .named(Layout.scrollCoordinateSpace))
+                    value: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
                 )
             }
         )
@@ -91,7 +91,7 @@ extension GameDetailView {
     }
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: Layout.cardSpacing) {
+        VStack(spacing: GameDetailLayout.cardSpacing) {
             if let liveMarker = viewModel.liveScoreMarker {
                 TimelineScoreChipView(marker: liveMarker)
             }
@@ -128,7 +128,7 @@ extension GameDetailView {
                 }
             )
         ) {
-            VStack(spacing: Layout.cardSpacing) {
+            VStack(spacing: GameDetailLayout.cardSpacing) {
                 ForEach(quarter.plays) { play in
                     if let highlights = viewModel.highlightByPlayIndex[play.playIndex] {
                         ForEach(highlights) { highlight in
@@ -142,7 +142,7 @@ extension GameDetailView {
                             GeometryReader { proxy in
                                 Color.clear.preference(
                                     key: PlayRowFramePreferenceKey.self,
-                                    value: [play.playIndex: proxy.frame(in: .named(Layout.scrollCoordinateSpace))]
+                                    value: [play.playIndex: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
                                 )
                             }
                         )
@@ -152,7 +152,7 @@ extension GameDetailView {
                     }
                 }
             }
-            .padding(.top, Layout.listSpacing)
+            .padding(.top, GameDetailLayout.listSpacing)
         }
         .id(quarterAnchorId(quarter.quarter))
     }
@@ -167,6 +167,7 @@ extension GameDetailView {
         }
     }
 
+    @ViewBuilder
     func playerStatsContent(_ stats: [PlayerStat]) -> some View {
         if stats.isEmpty {
             EmptySectionView(text: "Player stats are not yet available.")
@@ -178,32 +179,32 @@ extension GameDetailView {
                         playerStatsRow(stat, isAlternate: index.isMultiple(of: 2))
                     }
                 }
-                .frame(minWidth: Layout.statsTableWidth)
+                .frame(minWidth: GameDetailLayout.statsTableWidth)
             }
         }
     }
 
     var playerStatsHeader: some View {
-        HStack(spacing: Layout.statsColumnSpacing) {
+        HStack(spacing: GameDetailLayout.statsColumnSpacing) {
             Text("Player")
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("PTS")
-                .frame(width: Layout.statColumnWidth)
+                .frame(width: GameDetailLayout.statColumnWidth)
             Text("REB")
-                .frame(width: Layout.statColumnWidth)
+                .frame(width: GameDetailLayout.statColumnWidth)
             Text("AST")
-                .frame(width: Layout.statColumnWidth)
+                .frame(width: GameDetailLayout.statColumnWidth)
         }
         .font(.caption.weight(.semibold))
         .foregroundColor(.secondary)
-        .padding(.vertical, Layout.listSpacing)
-        .padding(.horizontal, Layout.statsHorizontalPadding)
+        .padding(.vertical, GameDetailLayout.listSpacing)
+        .padding(.horizontal, GameDetailLayout.statsHorizontalPadding)
         .background(Color(.systemGray6))
     }
 
     func playerStatsRow(_ stat: PlayerStat, isAlternate: Bool) -> some View {
-        HStack(spacing: Layout.statsColumnSpacing) {
-            VStack(alignment: .leading, spacing: Layout.smallSpacing) {
+        HStack(spacing: GameDetailLayout.statsColumnSpacing) {
+            VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
                 Text(stat.playerName)
                     .font(.subheadline.weight(.medium))
                 Text(stat.team)
@@ -212,16 +213,16 @@ extension GameDetailView {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(stat.points.map(String.init) ?? Constants.statFallback)
-                .frame(width: Layout.statColumnWidth)
-            Text(stat.rebounds.map(String.init) ?? Constants.statFallback)
-                .frame(width: Layout.statColumnWidth)
-            Text(stat.assists.map(String.init) ?? Constants.statFallback)
-                .frame(width: Layout.statColumnWidth)
+            Text(stat.points.map(String.init) ?? GameDetailConstants.statFallback)
+                .frame(width: GameDetailLayout.statColumnWidth)
+            Text(stat.rebounds.map(String.init) ?? GameDetailConstants.statFallback)
+                .frame(width: GameDetailLayout.statColumnWidth)
+            Text(stat.assists.map(String.init) ?? GameDetailConstants.statFallback)
+                .frame(width: GameDetailLayout.statColumnWidth)
         }
         .font(.subheadline)
-        .padding(.vertical, Layout.listSpacing)
-        .padding(.horizontal, Layout.statsHorizontalPadding)
+        .padding(.vertical, GameDetailLayout.listSpacing)
+        .padding(.horizontal, GameDetailLayout.statsHorizontalPadding)
         .background(isAlternate ? Color(.systemGray6) : Color(.systemBackground))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(stat.playerName), \(stat.team)")
@@ -238,11 +239,12 @@ extension GameDetailView {
         }
     }
 
+    @ViewBuilder
     func teamStatsContent(_ stats: [TeamStat]) -> some View {
         if viewModel.teamComparisonStats.isEmpty {
             EmptySectionView(text: "Team stats will appear once available.")
         } else {
-            VStack(spacing: Layout.listSpacing) {
+            VStack(spacing: GameDetailLayout.listSpacing) {
                 ForEach(viewModel.teamComparisonStats) { stat in
                     TeamComparisonRowView(
                         stat: stat,
@@ -265,15 +267,15 @@ extension GameDetailView {
     }
 
     var finalScoreContent: some View {
-        VStack(spacing: Layout.textSpacing) {
-            Text(viewModel.game?.scoreDisplay ?? Constants.scoreFallback)
-                .font(.system(size: Layout.finalScoreSize, weight: .bold))
+        VStack(spacing: GameDetailLayout.textSpacing) {
+            Text(viewModel.game?.scoreDisplay ?? GameDetailConstants.scoreFallback)
+                .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
             Text("Final")
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.listSpacing)
+        .padding(.vertical, GameDetailLayout.listSpacing)
     }
 
     var postGameSection: some View {
@@ -288,7 +290,7 @@ extension GameDetailView {
     }
 
     var postGameContent: some View {
-        VStack(spacing: Layout.cardSpacing) {
+        VStack(spacing: GameDetailLayout.cardSpacing) {
             ForEach(viewModel.postGamePosts) { post in
                 HighlightCardView(post: post)
             }
@@ -300,7 +302,7 @@ extension GameDetailView {
     }
 
     var compactPostsContent: some View {
-        VStack(alignment: .leading, spacing: Layout.cardSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.cardSpacing) {
             if viewModel.preGamePosts.isEmpty && viewModel.postGamePosts.isEmpty {
                 EmptySectionView(text: "Posts will appear here.")
             } else {
@@ -324,15 +326,15 @@ extension GameDetailView {
 
     func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Layout.navigationSpacing) {
+            HStack(spacing: GameDetailLayout.navigationSpacing) {
                 ForEach(GameSection.navigationSections, id: \.self) { section in
                     Button {
                         onSelect(section)
                     } label: {
                         Text(section.title)
                             .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, Layout.navigationHorizontalPadding)
-                            .padding(.vertical, Layout.navigationVerticalPadding)
+                            .padding(.horizontal, GameDetailLayout.navigationHorizontalPadding)
+                            .padding(.vertical, GameDetailLayout.navigationVerticalPadding)
                             .foregroundColor(selectedSection == section ? .white : .primary)
                             .background(selectedSection == section ? GameTheme.accentColor : Color(.systemGray5))
                             .clipShape(Capsule())
@@ -340,8 +342,8 @@ extension GameDetailView {
                     .accessibilityLabel("Jump to \(section.title)")
                 }
             }
-            .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.listSpacing)
+            .padding(.horizontal, GameDetailLayout.horizontalPadding)
+            .padding(.vertical, GameDetailLayout.listSpacing)
         }
         .background(Color(.systemBackground))
         .overlay(
@@ -359,11 +361,11 @@ extension GameDetailView {
         isExpanded: Binding<Bool>,
         @ViewBuilder content: () -> some View
     ) -> some View {
-        VStack(alignment: .leading, spacing: Layout.chapterSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.chapterSpacing) {
             Text("Chapter \(number)")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.secondary)
-                .padding(.horizontal, Layout.chapterHorizontalPadding)
+                .padding(.horizontal, GameDetailLayout.chapterHorizontalPadding)
             CollapsibleSectionCard(
                 title: title,
                 subtitle: subtitle,
@@ -379,7 +381,7 @@ extension GameDetailView {
         posts: [SocialPostEntry],
         emptyText: String
     ) -> some View {
-        VStack(alignment: .leading, spacing: Layout.listSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
@@ -405,7 +407,7 @@ extension GameDetailView {
     }
 
     var relatedPostsCompactSection: some View {
-        VStack(alignment: .leading, spacing: Layout.listSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
             Text("Related")
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
@@ -414,17 +416,17 @@ extension GameDetailView {
     }
 
     var relatedPostsContent: some View {
-        VStack(alignment: .leading, spacing: Layout.cardSpacing) {
+        VStack(alignment: .leading, spacing: GameDetailLayout.cardSpacing) {
             switch viewModel.relatedPostsState {
             case .idle, .loading:
-                HStack(spacing: Layout.listSpacing) {
+                HStack(spacing: GameDetailLayout.listSpacing) {
                     ProgressView()
                     Text("Loading related posts...")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
             case .failed(let message):
-                VStack(alignment: .leading, spacing: Layout.listSpacing) {
+                VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
                     Text("Related posts unavailable.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -440,7 +442,7 @@ extension GameDetailView {
                 if viewModel.relatedPosts.isEmpty {
                     EmptySectionView(text: "Related posts will appear here.")
                 } else {
-                    LazyVStack(spacing: Layout.cardSpacing) {
+                    LazyVStack(spacing: GameDetailLayout.cardSpacing) {
                         ForEach(viewModel.relatedPosts) { post in
                             RelatedPostCardView(
                                 post: post,

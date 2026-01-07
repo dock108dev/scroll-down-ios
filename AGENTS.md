@@ -37,7 +37,6 @@ See `.cursorrules` for complete coding standards. Key points:
 
 ## Do NOT
 
-- Manually edit `ScrollDown.xcodeproj/project.pbxproj`
 - Break progressive disclosure defaults
 - Add dependencies without justification
 - Use `print()` in production code

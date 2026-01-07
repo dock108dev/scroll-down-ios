@@ -101,18 +101,18 @@ extension GameDetailView {
         Text(text)
             .font(.caption.weight(.semibold))
             .foregroundColor(.primary)
-            .padding(.horizontal, Layout.viewingPillHorizontalPadding)
-            .padding(.vertical, Layout.viewingPillVerticalPadding)
+            .padding(.horizontal, GameDetailLayout.viewingPillHorizontalPadding)
+            .padding(.vertical, GameDetailLayout.viewingPillVerticalPadding)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
             .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
 
     func resumePromptView(onResume: @escaping () -> Void, onStartOver: @escaping () -> Void) -> some View {
-        VStack(spacing: Layout.resumePromptSpacing) {
+        VStack(spacing: GameDetailLayout.resumePromptSpacing) {
             Text("Resume where you left off?")
                 .font(.subheadline.weight(.semibold))
-            HStack(spacing: Layout.resumeButtonSpacing) {
+            HStack(spacing: GameDetailLayout.resumeButtonSpacing) {
                 Button("Start over") {
                     onStartOver()
                 }
@@ -123,7 +123,7 @@ extension GameDetailView {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding(Layout.resumePromptPadding)
+        .padding(GameDetailLayout.resumePromptPadding)
         .frame(maxWidth: .infinity)
         .background(.ultraThinMaterial)
         .overlay(Divider(), alignment: .bottom)
@@ -222,14 +222,14 @@ extension GameDetailView {
         Group {
             switch viewModel.summaryState {
             case .loading:
-                HStack(spacing: Layout.listSpacing) {
+                HStack(spacing: GameDetailLayout.listSpacing) {
                     ProgressView()
                     Text("Loading summary...")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
             case .failed:
-                VStack(alignment: .leading, spacing: Layout.smallSpacing) {
+                VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
                     Text("Summary unavailable right now.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -245,7 +245,7 @@ extension GameDetailView {
                     .lineLimit(4)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: Layout.summaryMinHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: GameDetailLayout.summaryMinHeight, alignment: .leading)
         .accessibilityLabel("Summary")
         .accessibilityValue(summaryAccessibilityValue)
     }
