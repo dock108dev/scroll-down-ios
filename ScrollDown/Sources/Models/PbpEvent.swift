@@ -2,6 +2,12 @@ import Foundation
 
 /// Detailed play-by-play event as defined in the OpenAPI spec (PbpEvent schema)
 /// Note: id and game_id can be either string or integer per spec
+///
+/// REVEAL PHILOSOPHY:
+/// - homeScore and awayScore are present in the model but NOT displayed by default
+/// - The backend provides reveal-aware descriptions that don't leak outcomes
+/// - Future phases will add reveal toggles; this phase prepares for that
+/// - Timeline rendering must remain spoiler-safe by default
 struct PbpEvent: Codable, Identifiable {
     let id: StringOrInt
     let gameId: StringOrInt
@@ -14,8 +20,8 @@ struct PbpEvent: Codable, Identifiable {
     let teamId: String?
     let playerName: String?
     let playerId: StringOrInt?
-    let homeScore: Int?
-    let awayScore: Int?
+    let homeScore: Int? // Present but not displayed by default (reveal-aware)
+    let awayScore: Int? // Present but not displayed by default (reveal-aware)
     
     enum CodingKeys: String, CodingKey {
         case id

@@ -15,6 +15,15 @@ This app provides a native iOS experience for catching up on sports games at you
 | [Changelog](CHANGELOG.md) | Feature history and version updates |
 | [Agent Notes](../AGENTS.md) | Context for AI coding assistants |
 
+## Beta Phases
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| [Phase A](PHASE_A.md) | ✅ Complete | Routing and trust fixes |
+| [Phase B](PHASE_B.md) | ✅ Complete | Real backend feeds |
+| [Phase C](PHASE_C.md) | ✅ Complete | Timeline usability improvements |
+| Phase D | 🔜 Upcoming | Recaps and reveal toggles |
+
 ## Quick Reference
 
 - **Environment toggle:** `AppConfig.shared.environment`
