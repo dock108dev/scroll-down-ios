@@ -124,22 +124,25 @@ final class MockGameService: GameService {
         
         // Use cached detail if available
         if let detail = gameCache[gameId] {
+            let posts = detail.socialPosts.map { entry in
+                SocialPostResponse(
+                    id: entry.id,
+                    gameId: gameId,
+                    teamId: entry.teamAbbreviation,
+                    postUrl: entry.postUrl,
+                    postedAt: entry.postedAt,
+                    hasVideo: entry.hasVideo,
+                    videoUrl: entry.videoUrl,
+                    imageUrl: entry.imageUrl,
+                    tweetText: entry.tweetText,
+                    sourceHandle: entry.sourceHandle,
+                    mediaType: entry.mediaType,
+                    revealLevel: .pre
+                )
+            }
             return SocialPostListResponse(
-                posts: detail.socialPosts.map { entry in
-                    SocialPostResponse(
-                        id: entry.id,
-                        postUrl: entry.postUrl,
-                        postedAt: entry.postedAt,
-                        hasVideo: entry.hasVideo,
-                        teamAbbreviation: entry.teamAbbreviation,
-                        tweetText: entry.tweetText,
-                        videoUrl: entry.videoUrl,
-                        imageUrl: entry.imageUrl,
-                        sourceHandle: entry.sourceHandle,
-                        mediaType: entry.mediaType,
-                        revealLevel: .pre
-                    )
-                }
+                posts: posts,
+                total: posts.count
             )
         }
         
@@ -222,7 +225,7 @@ final class MockGameService: GameService {
                 period: play.quarter,
                 gameClock: play.gameClock,
                 elapsedSeconds: nil,
-                eventType: play.playType.rawValue,
+                eventType: play.playType?.rawValue,
                 description: play.description,
                 team: play.teamAbbreviation,
                 teamId: nil,
