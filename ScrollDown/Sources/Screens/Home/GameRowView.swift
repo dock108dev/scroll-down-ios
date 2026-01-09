@@ -363,3 +363,4 @@ private struct NuggetDetailSheet: View {
     .background(HomeTheme.background)
     .preferredColorScheme(.dark)
 }
+

@@ -64,3 +64,4 @@ private enum Layout {
     ContentView()
         .environmentObject(AppConfig.shared)
 }
+

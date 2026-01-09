@@ -98,7 +98,5 @@ iOS client for the Scroll Down Sports platform—spoiler-free sports recaps.
 - App consumes API defined in `scroll-down-api-spec`
 - Models should match OpenAPI spec definitions
 
-### Protected Files
-- `ScrollDown.xcodeproj/project.pbxproj` — Don't manually edit
-
-
+### Files to Handle With Care
+- `ScrollDown.xcodeproj/project.pbxproj` — Prefer editing via Xcode; manual edits are OK when you know what you’re doing (e.g. merge conflict resolution). Keep diffs minimal and validate with `xcodebuild`.

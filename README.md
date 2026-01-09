@@ -75,3 +75,4 @@ Deeper documentation lives in [`/docs`](docs/README.md):
 - [Changelog](docs/CHANGELOG.md) — Feature history and updates
 
 Agent notes for AI coding assistants are in [`AGENTS.md`](AGENTS.md).
+

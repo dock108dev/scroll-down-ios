@@ -352,3 +352,4 @@ extension Notification.Name {
     }
     .environmentObject(AppConfig.shared)
 }
+

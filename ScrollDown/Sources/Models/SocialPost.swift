@@ -89,3 +89,4 @@ struct RelatedPostListResponse: Codable {
     let total: Int
 }
 
+
