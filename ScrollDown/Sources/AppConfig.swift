@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Environment for switching between mock and live data sources.
 enum AppEnvironment: String, CaseIterable {
@@ -155,7 +156,8 @@ final class AppConfig: ObservableObject {
         // Log filtering if games were excluded
         if filtered.count < games.count {
             let excluded = games.count - filtered.count
-            print("⏰ Snapshot mode: excluded \(excluded) live/unknown games")
+            Logger(subsystem: "com.scrolldown.app", category: "config")
+                .info("⏰ Snapshot mode: excluded \(excluded) live/unknown games")
         }
         
         return filtered

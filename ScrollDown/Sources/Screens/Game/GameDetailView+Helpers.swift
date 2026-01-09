@@ -255,4 +255,56 @@ extension GameDetailView {
             return "Loading summary"
         }
     }
+
+    func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: GameDetailLayout.navigationSpacing) {
+                ForEach(GameSection.navigationSections, id: \.self) { section in
+                    Button {
+                        onSelect(section)
+                    } label: {
+                        Text(section.title)
+                            .font(.subheadline.weight(.medium))
+                            .padding(.horizontal, GameDetailLayout.navigationHorizontalPadding)
+                            .padding(.vertical, GameDetailLayout.navigationVerticalPadding)
+                            .foregroundColor(selectedSection == section ? .white : .primary)
+                            .background(selectedSection == section ? GameTheme.accentColor : Color(.systemGray5))
+                            .clipShape(Capsule())
+                    }
+                    .accessibilityLabel("Jump to \(section.title)")
+                }
+            }
+            .padding(.horizontal, GameDetailLayout.horizontalPadding)
+            .padding(.vertical, GameDetailLayout.listSpacing)
+        }
+        .background(Color(.systemBackground))
+        .overlay(
+            Divider(),
+            alignment: .bottom
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Section navigation")
+    }
+
+    func compactChapterSection(
+        number: Int,
+        title: String,
+        subtitle: String?,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: GameDetailLayout.chapterSpacing) {
+            Text("Chapter \(number)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, GameDetailLayout.chapterHorizontalPadding)
+            CollapsibleSectionCard(
+                title: title,
+                subtitle: subtitle,
+                isExpanded: isExpanded
+            ) {
+                content()
+            }
+        }
+    }
 }

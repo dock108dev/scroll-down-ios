@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TeamComparisonRowView: View {
-    let stat: GameDetailViewModel.TeamComparisonStat
+    let stat: TeamComparisonStat
     let homeTeam: String
     let awayTeam: String
 
@@ -85,7 +85,7 @@ private enum Layout {
 
 #Preview {
     TeamComparisonRowView(
-        stat: GameDetailViewModel.TeamComparisonStat(
+        stat: TeamComparisonStat(
             name: "Field %",
             homeValue: 0.52,
             awayValue: 0.44,

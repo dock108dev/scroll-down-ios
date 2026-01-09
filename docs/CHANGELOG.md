@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added - Phase F (Quality Polish)
+- Loading skeleton placeholders for all loading states
+- Enhanced empty states with contextual icons
+- Tap-to-retry for error states
+- LoadingSkeletonView component with multiple styles
+
+### Added - Phase E (Social Blending)
+- Social feed in Game Detail with tap-to-reveal blur for outcome-aware posts
+- Related posts section with reveal-aware rendering
+- Social service implementation in Mock/Real environments
+
+### Added - Phase D (Recaps & Reveal Control)
+- Explicit reveal control (Outcome Reveal Gate) in Game Detail
+- Neutral, flow-focused pre-reveal AI summaries
+- Outcome-visible post-reveal AI summaries
+- Per-game reveal preference persistence in UserDefaults
+- Context section explaining "why the game mattered" without spoilers
+
 ### Added - Phase C (Timeline Usability)
 - Period/quarter grouping for PBP events with collapsible sections
 - Pagination for long PBP sequences (20 events per chunk, per period)

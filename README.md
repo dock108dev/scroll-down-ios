@@ -24,19 +24,18 @@ This isn't about hiding information — it's about letting you experience the ga
 | Expanded play-by-play slices per moment | ✅ Live |
 | Progressive disclosure UI patterns | ✅ Live |
 | Dark mode support | ✅ Live |
-| Backend API integration | 🚧 In Progress |
+| Backend API integration | ✅ Live |
 | Push notifications | 📋 Planned |
 | User preferences & favorites | 📋 Planned |
 
 ## Data Sources
 
-The app currently runs on **structured mock data** to enable UI development without backend dependencies. This includes:
+The app supports two environments, toggled via `AppConfig.environment`:
 
-- Realistic game lists across multiple dates
-- Full game detail payloads with team stats, timelines, and moments
-- Play-by-play event data for timeline expansion
+- **Mock Mode**: Uses realistic local JSON data for offline development and UI testing.
+- **Live Mode**: Connects to the backend API for real-time data.
 
-The architecture supports a clean toggle between mock and live API environments via `AppConfig.environment`. Backend integration is underway — models align with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract.
+Models are strictly aligned with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract. Local development defaults to **Live Mode** pointing at `http://localhost:8000`.
 
 ## Relationship to Web UI
 

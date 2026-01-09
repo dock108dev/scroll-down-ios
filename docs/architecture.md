@@ -44,42 +44,36 @@ ScrollDown/Sources/
 
 Views never call services directly. ViewModels mediate all data access.
 
-## Core Design Principles
+## Core Product Principles
 
-### Progressive Disclosure
+### 1. Progressive Disclosure
 The app reveals information in layers. Users see context, matchups, and game flow before outcomes. This respects how games unfold over time.
 
-### User-Controlled Pacing
+### 2. The Reveal Principle
+We never use the word "spoiler." Instead, we talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
+- **Default:** Always outcome-hidden (`reveal=pre`).
+- **User Choice:** Users must explicitly choose to uncover scores and results.
+- **Why:** The app respects curiosity, not impatience.
+
+### 3. User-Controlled Pacing
 Nothing is auto-revealed. The user moves through timeline moments at their own pace, tapping to expand details when they're ready.
 
-### Mobile-First Experience
-The UI is designed for touch navigation and vertical scrolling. Key screens:
+## Key Mechanisms
 
-| Screen | Purpose |
-|--------|---------|
-| **HomeView** | Game feed grouped by Earlier/Today/Upcoming |
-| **GameDetailView** | Collapsible sections for game context |
-| **CompactTimelineView** | Chapter-style moments for paced catch-up |
-| **CompactMomentExpandedView** | Play-by-play detail for a single moment |
+### Outcome Reveal Gate
+Implemented in the `Overview` section of `GameDetailView`.
+- **Persistence:** Saved per-game in `UserDefaults` using the key `game.outcomeRevealed.{gameId}`.
+- **Reversibility:** Users can toggle back to "Hidden" at any time.
+- **Backend Sync:** Switching reveal state triggers a reload of the AI summary with the appropriate `reveal` parameter (`pre` or `post`).
 
-## Key Screens
+### Timeline Narrative
+Timeline moments are grouped by period/quarter with collapsible sections.
+- **Moment Summaries:** Narrative bridges between play clusters.
+- **Score Separators:** Scores appear at natural breakpoints (halftime, period end) rather than inline with individual plays to maintain tension.
+- **Pagination:** Long play sequences are chunked (20 events per cluster) to avoid overwhelming the user.
 
-### Home Feed
-Displays games grouped by temporal context:
-- **Earlier** — Games from the past 2 days
-- **Today** — Today's games (auto-scrolls here on load)
-- **Upcoming** — Future scheduled games
-
-### Game Detail
-Collapsible card sections that progressively reveal:
-1. Overview (teams, time, status)
-2. Matchup context
-3. Timeline moments
-4. Team stats
-5. Related content
-
-### Compact Timeline
-A chapter-style list of key moments. Each moment expands inline to show its play-by-play slice. Score chips appear at natural break points (halftime, period end) rather than inline with plays.
+### Reveal-Aware Social
+Social posts that may contain outcomes are blurred by default. Tapping the post reveals the content, matching the overall reveal philosophy.
 
 ## Configuration
 

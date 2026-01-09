@@ -53,16 +53,48 @@ xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPh
   -only-testing:ScrollDownTests/GameDetailViewModelTests
 ```
 
-## QA Checklist
+## Beta Features
 
-Before submitting changes, verify:
+### 1. Time Override (Snapshot Mode)
+Freeze the app to a specific date to test historical data. **Debug builds only.**
 
-- [ ] **Appearance** — Works in both dark and light mode
-- [ ] **Text overflow** — Long team names truncate gracefully
-- [ ] **Edge cases** — Games without ratings, mid-major conferences
-- [ ] **Data modes** — UI works with both mock and (when available) API data
-- [ ] **Timeline pacing** — Expanding a moment doesn't jump the scroll position
-- [ ] **Accessibility** — VoiceOver labels are meaningful
+**Enable via Environment Variable:**
+```bash
+export IOS_BETA_ASSUME_NOW=2024-10-23T04:00:00Z
+```
+
+**Enable via Admin UI:**
+1. Long-press (2s) on "Updated X ago" in the Home feed.
+2. Select a date or preset.
+3. Tap "Done" to reload with the override.
+
+**Visual Indicator:** An orange badge appears at the top when active.
+
+### 2. Admin Settings
+Accessible via long-press on freshness text. Controls:
+- Snapshot date selection
+- Data mode info
+- Environment toggle visibility
+
+## QA & Validation Checklist
+
+Verify these behaviors before submitting changes:
+
+### General UI
+- [ ] **Appearance** — Dark and light mode support
+- [ ] **Text Overflow** — Long team names/titles truncate gracefully
+- [ ] **Accessibility** — VoiceOver labels and Dynamic Type scaling
+
+### Data & Logic
+- [ ] **Empty States** — Contextual icons and messages show when data is missing
+- [ ] **Loading** — Skeleton placeholders show before content flashes in
+- [ ] **Reveal Logic** — Outcomes stay hidden until explicitly revealed
+- [ ] **Persistence** — Reveal states and overrides persist correctly
+
+### Navigation & Routing
+- [ ] **Deep Linking** — Routing to specific games by ID
+- [ ] **Stability** — Scrolling doesn't jump when expanding/collapsing sections
+- [ ] **Logs** — Check `GameRoutingLogger` in Console for navigation tracing
 
 ## Debugging Tips
 

@@ -7,27 +7,6 @@ final class GameDetailViewModel: ObservableObject {
         case loaded(String)
         case failed(String)
     }
-    struct QuarterTimeline: Identifiable, Equatable {
-        let quarter: Int
-        let plays: [PlayEntry]
-        var id: Int { quarter }
-    }
-
-    struct TeamComparisonStat: Identifiable {
-        let name: String
-        let homeValue: Double?
-        let awayValue: Double?
-        let homeDisplay: String
-        let awayDisplay: String
-
-        var id: String { name }
-    }
-
-    struct TimelineScoreMarker: Identifiable, Equatable {
-        let id: String
-        let label: String
-        let score: String
-    }
 
     @Published private(set) var detail: GameDetailResponse?
     @Published var isLoading: Bool

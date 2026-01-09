@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TimelineScoreChipView: View {
-    let marker: GameDetailViewModel.TimelineScoreMarker
+    let marker: TimelineScoreMarker
 
     var body: some View {
         HStack(spacing: Layout.spacing) {
@@ -35,7 +35,7 @@ private enum Layout {
 
 #Preview {
     TimelineScoreChipView(
-        marker: GameDetailViewModel.TimelineScoreMarker(
+        marker: TimelineScoreMarker(
             id: "preview",
             label: "Halftime",
             score: "45 - 48"
