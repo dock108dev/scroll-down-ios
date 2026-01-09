@@ -222,21 +222,16 @@ extension GameDetailView {
         Group {
             switch viewModel.summaryState {
             case .loading:
-                HStack(spacing: GameDetailLayout.listSpacing) {
-                    ProgressView()
-                    Text("Loading summary...")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                // Phase F: Loading skeleton instead of spinner
+                LoadingSkeletonView(style: .textBlock)
             case .failed:
-                VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
-                    Text("Summary unavailable right now.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Button("Retry") {
-                        Task { await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService) }
-                    }
-                    .buttonStyle(.bordered)
+                // Phase F: Improved error state
+                EmptySectionView(
+                    text: "Summary unavailable right now. Tap to retry.",
+                    icon: "exclamationmark.triangle"
+                )
+                .onTapGesture {
+                    Task { await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService) }
                 }
             case .loaded(let summary):
                 Text(summary)

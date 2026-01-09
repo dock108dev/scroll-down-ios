@@ -159,32 +159,28 @@ struct HomeView: View {
     @ViewBuilder
     private func sectionContent(for section: HomeSectionState) -> some View {
         if section.isLoading {
-            HStack {
-                ProgressView()
-                    .scaleEffect(Layout.sectionProgressScale)
-                Text(Strings.sectionLoading)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
+            // Phase F: Loading skeleton instead of spinner
+            VStack(spacing: Layout.skeletonSpacing) {
+                ForEach(0..<2, id: \.self) { _ in
+                    LoadingSkeletonView(style: .gameCard)
+                        .padding(.horizontal, Layout.horizontalPadding)
+                }
             }
-            .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.sectionStatePadding)
         } else if let error = section.errorMessage {
-            HStack {
-                Text(sectionErrorMessage(for: section, error: error))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
+            // Phase F: Improved error state with icon
+            EmptySectionView(
+                text: sectionErrorMessage(for: section, error: error),
+                icon: "exclamationmark.triangle"
+            )
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.sectionStatePadding)
         } else if section.games.isEmpty {
-            HStack {
-                Text(sectionEmptyMessage(for: section))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
+            // Phase F: Improved empty state with contextual icon
+            EmptySectionView(
+                text: sectionEmptyMessage(for: section),
+                icon: sectionEmptyIcon(for: section)
+            )
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.sectionStatePadding)
         } else {
@@ -313,6 +309,18 @@ struct HomeView: View {
             return Strings.upcomingEmpty
         }
     }
+    
+    /// Phase F: Contextual icons for empty states
+    private func sectionEmptyIcon(for section: HomeSectionState) -> String {
+        switch section.range {
+        case .last2:
+            return "clock.arrow.circlepath"
+        case .current:
+            return "calendar"
+        case .next24:
+            return "clock"
+        }
+    }
 
     private func sectionErrorMessage(for section: HomeSectionState, error: String) -> String {
         switch section.range {
@@ -362,7 +370,7 @@ private enum Layout {
     static let sectionHeaderTopPadding: CGFloat = 12
     static let sectionDividerPadding: CGFloat = 8
     static let sectionStatePadding: CGFloat = 12
-    static let sectionProgressScale: CGFloat = 0.9
+    static let skeletonSpacing: CGFloat = 12 // Phase F: Skeleton placeholder spacing
     static let bottomPadding: CGFloat = 32
     static let dataModeSpacing: CGFloat = 4
     static let dataModeIndicatorSize: CGFloat = 8

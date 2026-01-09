@@ -522,31 +522,31 @@ extension GameDetailView {
     private var socialFeedView: some View {
         switch viewModel.socialPostsState {
         case .idle, .loading:
-            HStack(spacing: GameDetailLayout.listSpacing) {
-                ProgressView()
-                Text("Loading social posts...")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            // Phase F: Loading skeleton instead of spinner
+            VStack(spacing: GameDetailLayout.cardSpacing) {
+                ForEach(0..<3, id: \.self) { _ in
+                    LoadingSkeletonView(style: .socialPost)
+                }
             }
         case .failed(let message):
-            VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
-                Text("Social posts unavailable.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Button("Retry") {
-                    Task { await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService) }
-                }
-                .buttonStyle(.bordered)
-                Text(message)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Phase F: Improved error state
+            EmptySectionView(
+                text: "Social posts unavailable. Tap to retry.",
+                icon: "exclamationmark.triangle"
+            )
+            .onTapGesture {
+                Task { await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService) }
             }
         case .loaded:
             let filteredPosts = viewModel.filteredSocialPosts
             if filteredPosts.isEmpty {
-                EmptySectionView(text: viewModel.isOutcomeRevealed 
-                    ? "No social posts available for this game."
-                    : "No pre-reveal social posts yet. More may appear after revealing the outcome.")
+                // Phase F: Contextual empty state
+                EmptySectionView(
+                    text: viewModel.isOutcomeRevealed 
+                        ? "No social posts available for this game."
+                        : "No pre-reveal social posts yet. More may appear after revealing the outcome.",
+                    icon: "bubble.left.and.bubble.right"
+                )
             } else {
                 LazyVStack(spacing: GameDetailLayout.cardSpacing) {
                     ForEach(filteredPosts) { post in
