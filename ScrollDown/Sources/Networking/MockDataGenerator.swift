@@ -44,11 +44,38 @@ enum MockDataGenerator {
         return games
     }
 
-    static func generateSummary(homeTeam: String, awayTeam: String) -> String {
-        let opening = "\(awayTeam) and \(homeTeam) kept the pace steady early."
-        let middle = "Momentum shifted with timely plays on both ends."
-        let close = "Scan the timeline to uncover the defining moments."
-        return [opening, middle, close].joined(separator: " ")
+    static func generateSummary(
+        homeTeam: String,
+        awayTeam: String,
+        homeScore: Int?,
+        awayScore: Int?,
+        reveal: RevealLevel
+    ) -> String {
+        switch reveal {
+        case .pre:
+            // Pre-reveal: describe flow without outcomes
+            let opening = "\(awayTeam) and \(homeTeam) kept the pace steady early."
+            let middle = "Momentum shifted with timely plays on both ends."
+            let close = "Scan the timeline to uncover the defining moments."
+            return [opening, middle, close].joined(separator: " ")
+            
+        case .post:
+            // Post-reveal: include outcome and final score
+            guard let homeScore, let awayScore else {
+                // Fallback if scores unavailable
+                return generateSummary(homeTeam: homeTeam, awayTeam: awayTeam, homeScore: nil, awayScore: nil, reveal: .pre)
+            }
+            
+            let winner = homeScore > awayScore ? homeTeam : awayTeam
+            let loser = homeScore > awayScore ? awayTeam : homeTeam
+            let winnerScore = max(homeScore, awayScore)
+            let loserScore = min(homeScore, awayScore)
+            
+            let opening = "\(winner) defeated \(loser) \(winnerScore)-\(loserScore) in a competitive matchup."
+            let middle = "Key plays in the second half proved decisive."
+            let close = "The final margin reflected sustained execution down the stretch."
+            return [opening, middle, close].joined(separator: " ")
+        }
     }
 
     private static func generateDayGames(

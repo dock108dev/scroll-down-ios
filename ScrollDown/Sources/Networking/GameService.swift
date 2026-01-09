@@ -36,9 +36,19 @@ protocol GameService {
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse
 
     /// Fetch AI summary for a game
-    /// - Parameter gameId: The game ID
+    /// - Parameters:
+    ///   - gameId: The game ID
+    ///   - reveal: Reveal level (pre or post) - defaults to pre
     /// - Returns: Summary response
-    func fetchSummary(gameId: Int) async throws -> AISummaryResponse
+    func fetchSummary(gameId: Int, reveal: RevealLevel) async throws -> AISummaryResponse
+}
+
+// MARK: - Reveal Level
+/// Controls outcome visibility in recaps and summaries
+/// Default is always .pre (outcome-hidden)
+enum RevealLevel: String {
+    case pre  // Before outcome reveal - no final scores or results
+    case post // After outcome reveal - full scores and results visible
 }
 
 // MARK: - Service Errors

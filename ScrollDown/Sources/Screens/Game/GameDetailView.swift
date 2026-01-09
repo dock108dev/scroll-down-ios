@@ -67,6 +67,8 @@ struct GameDetailView: View {
             await viewModel.load(gameId: gameId, league: leagueCode, service: appConfig.gameService)
 
             if !viewModel.isUnavailable {
+                // Load reveal preference before loading summary
+                viewModel.loadRevealPreference(for: gameId)
                 await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService)
             }
         }

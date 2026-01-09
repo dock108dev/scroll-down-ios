@@ -37,6 +37,7 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var relatedPosts: [RelatedPost] = []
     @Published private(set) var relatedPostsState: RelatedPostsState = .idle
     @Published private(set) var revealedRelatedPostIds: Set<Int> = []
+    @Published var isOutcomeRevealed: Bool = false // User-controlled outcome visibility
 
     enum RelatedPostsState: Equatable {
         case idle
@@ -82,12 +83,36 @@ final class GameDetailViewModel: ObservableObject {
         summaryState = .loading
 
         do {
-            let response = try await service.fetchSummary(gameId: gameId)
+            // Use reveal level based on user preference
+            // Default is always .pre (outcome-hidden)
+            let revealLevel: RevealLevel = isOutcomeRevealed ? .post : .pre
+            let response = try await service.fetchSummary(gameId: gameId, reveal: revealLevel)
             let sanitized = sanitizeSummary(response.summary)
             summaryState = .loaded(sanitized ?? overviewSummary)
         } catch {
             summaryState = .failed(error.localizedDescription)
         }
+    }
+    
+    /// Toggle outcome reveal and reload summary
+    func toggleOutcomeReveal(gameId: Int, service: GameService) async {
+        isOutcomeRevealed.toggle()
+        
+        // Persist preference
+        UserDefaults.standard.set(isOutcomeRevealed, forKey: outcomeRevealKey(for: gameId))
+        
+        // Reload summary with new reveal level
+        await loadSummary(gameId: gameId, service: service)
+    }
+    
+    /// Load persisted reveal preference
+    func loadRevealPreference(for gameId: Int) {
+        // Default is always false (pre-reveal)
+        isOutcomeRevealed = UserDefaults.standard.bool(forKey: outcomeRevealKey(for: gameId))
+    }
+    
+    private func outcomeRevealKey(for gameId: Int) -> String {
+        "game.outcomeRevealed.\(gameId)"
     }
 
     func loadRelatedPosts(gameId: Int, service: GameService) async {
@@ -126,6 +151,60 @@ final class GameDetailViewModel: ObservableObject {
             return Constants.summaryFallback
         }
         return String(format: Constants.summaryTemplate, game.awayTeam, game.homeTeam)
+    }
+    
+    /// Game context - why this game matters
+    /// Returns nil if context is unavailable (section will be hidden)
+    var gameContext: String? {
+        guard let game = detail?.game else {
+            return nil
+        }
+        
+        // For now, provide basic context based on teams and league
+        // In the future, backend could provide richer context (rivalry, rankings, etc.)
+        let context = generateBasicContext(for: game)
+        
+        // Only return context if it's meaningful
+        return context.isEmpty ? nil : context
+    }
+    
+    /// Generate basic context from available game data
+    /// CRITICAL: Context must be neutral and non-conclusive
+    private func generateBasicContext(for game: Game) -> String {
+        var contextParts: [String] = []
+        
+        // League context
+        switch game.leagueCode {
+        case "NBA":
+            contextParts.append("NBA matchup")
+        case "NCAAB":
+            contextParts.append("College basketball")
+        case "NHL":
+            contextParts.append("NHL game")
+        default:
+            contextParts.append("\(game.leagueCode) game")
+        }
+        
+        // Team matchup
+        contextParts.append("featuring \(game.awayTeam) at \(game.homeTeam)")
+        
+        // Status context (non-conclusive)
+        switch game.status {
+        case .scheduled:
+            if let date = game.parsedGameDate {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                contextParts.append("scheduled for \(formatter.string(from: date))")
+            }
+        case .inProgress:
+            contextParts.append("currently in progress")
+        case .completed:
+            contextParts.append("played on \(game.formattedDate)")
+        default:
+            break
+        }
+        
+        return contextParts.joined(separator: ", ") + "."
     }
 
     var recapBullets: [String] {

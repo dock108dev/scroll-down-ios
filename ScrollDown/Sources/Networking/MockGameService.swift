@@ -120,7 +120,7 @@ final class MockGameService: GameService {
         return MockLoader.load("related-posts")
     }
 
-    func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
+    func fetchSummary(gameId: Int, reveal: RevealLevel) async throws -> AISummaryResponse {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 180_000_000) // 180ms
 
@@ -130,21 +130,38 @@ final class MockGameService: GameService {
 
         let homeTeam: String?
         let awayTeam: String?
+        let homeScore: Int?
+        let awayScore: Int?
+        
         if let cachedGame = gameCache[gameId]?.game {
             homeTeam = cachedGame.homeTeam
             awayTeam = cachedGame.awayTeam
+            homeScore = cachedGame.homeScore
+            awayScore = cachedGame.awayScore
         } else if let summary = generatedGames?.first(where: { $0.id == gameId }) {
             homeTeam = summary.homeTeam
             awayTeam = summary.awayTeam
+            homeScore = summary.homeScore
+            awayScore = summary.awayScore
         } else {
             homeTeam = nil
             awayTeam = nil
+            homeScore = nil
+            awayScore = nil
         }
 
         guard let homeTeam, let awayTeam else {
             throw GameServiceError.notFound
         }
 
-        return AISummaryResponse(summary: MockDataGenerator.generateSummary(homeTeam: homeTeam, awayTeam: awayTeam))
+        return AISummaryResponse(
+            summary: MockDataGenerator.generateSummary(
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                homeScore: homeScore,
+                awayScore: awayScore,
+                reveal: reveal
+            )
+        )
     }
 }
