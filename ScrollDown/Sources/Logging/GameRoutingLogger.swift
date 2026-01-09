@@ -13,15 +13,15 @@ enum GameRoutingLogger {
     }()
 
     static func logTap(gameId: Int, league: String) {
-        log(event: "tap", tappedId: gameId, destinationId: gameId, league: league, level: .notice)
+        log(event: "tap", tappedId: gameId, destinationId: gameId, league: league, level: .default)
     }
 
     static func logNavigation(tappedId: Int, destinationId: Int, league: String) {
-        log(event: "navigate", tappedId: tappedId, destinationId: destinationId, league: league, level: .notice)
+        log(event: "navigate", tappedId: tappedId, destinationId: destinationId, league: league, level: .default)
     }
 
     static func logDetailLoad(tappedId: Int, destinationId: Int, league: String?) {
-        log(event: "detail_load", tappedId: tappedId, destinationId: destinationId, league: league, level: .notice)
+        log(event: "detail_load", tappedId: tappedId, destinationId: destinationId, league: league, level: .default)
     }
 
     static func logInvalidNavigation(tappedId: Int, destinationId: Int, league: String?) {

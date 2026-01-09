@@ -8,7 +8,7 @@ import Foundation
 /// - The backend provides reveal-aware descriptions that don't leak outcomes
 /// - Future phases will add reveal toggles; this phase prepares for that
 /// - Timeline rendering must remain spoiler-safe by default
-struct PbpEvent: Codable, Identifiable {
+struct PbpEvent: Codable, Identifiable, Equatable {
     let id: StringOrInt
     let gameId: StringOrInt
     let period: Int?

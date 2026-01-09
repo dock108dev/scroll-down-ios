@@ -59,6 +59,15 @@ struct Game: Codable, Identifiable, Hashable {
 
 // MARK: - Computed Properties
 extension Game {
+    /// Formatted date for display
+    var formattedDate: String {
+        guard let date = parsedGameDate else { return gameDate }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
     /// Formatted score string (e.g., "112 - 108")
     var scoreDisplay: String {
         guard let home = homeScore, let away = awayScore else {

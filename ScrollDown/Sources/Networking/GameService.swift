@@ -46,7 +46,7 @@ protocol GameService {
 // MARK: - Reveal Level
 /// Controls outcome visibility in recaps and summaries
 /// Default is always .pre (outcome-hidden)
-enum RevealLevel: String {
+enum RevealLevel: String, Codable {
     case pre  // Before outcome reveal - no final scores or results
     case post // After outcome reveal - full scores and results visible
 }

@@ -10,8 +10,10 @@ struct ContentView: View {
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
                     case .game(let id, let league):
-                        GameRoutingLogger.logNavigation(tappedId: id, destinationId: id, league: league)
                         GameDetailView(gameId: id, leagueCode: league)
+                            .onAppear {
+                                GameRoutingLogger.logNavigation(tappedId: id, destinationId: id, league: league)
+                            }
                     case .deepLinkPlaceholder(let value):
                         DeepLinkPlaceholderView(value: value)
                     }
