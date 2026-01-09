@@ -7,13 +7,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             HomeView()
-                .navigationDestination(for: GameSummary.self) { game in
-                    GameDetailView(gameId: game.id)
-                }
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
-                    case .game(let id):
-                        GameDetailView(gameId: id)
+                    case .game(let id, let league):
+                        GameRoutingLogger.logNavigation(tappedId: id, destinationId: id, league: league)
+                        GameDetailView(gameId: id, leagueCode: league)
                     case .deepLinkPlaceholder(let value):
                         DeepLinkPlaceholderView(value: value)
                     }
@@ -23,7 +21,7 @@ struct ContentView: View {
 }
 
 enum AppRoute: Hashable {
-    case game(id: Int)
+    case game(id: Int, league: String)
     case deepLinkPlaceholder(String)
 }
 

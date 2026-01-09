@@ -32,6 +32,7 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var detail: GameDetailResponse?
     @Published var isLoading: Bool
     @Published var errorMessage: String?
+    @Published private(set) var isUnavailable: Bool = false
     @Published private(set) var summaryState: SummaryState = .loading
     @Published private(set) var relatedPosts: [RelatedPost] = []
     @Published private(set) var relatedPostsState: RelatedPostsState = .idle
@@ -49,7 +50,7 @@ final class GameDetailViewModel: ObservableObject {
         self.isLoading = detail == nil
     }
 
-    func load(gameId: Int, service: GameService) async {
+    func load(gameId: Int, league: String?, service: GameService) async {
         guard detail == nil else {
             isLoading = false
             return
@@ -57,9 +58,19 @@ final class GameDetailViewModel: ObservableObject {
 
         isLoading = true
         errorMessage = nil
+        isUnavailable = false
 
         do {
-            detail = try await service.fetchGame(id: gameId)
+            let response = try await service.fetchGame(id: gameId)
+            guard response.game.id == gameId else {
+                // Block fallback routing if the backend returns a different ID.
+                GameRoutingLogger.logMismatch(tappedId: gameId, destinationId: response.game.id, league: league)
+                detail = nil
+                isUnavailable = true
+                isLoading = false
+                return
+            }
+            detail = response
             isLoading = false
         } catch {
             errorMessage = error.localizedDescription

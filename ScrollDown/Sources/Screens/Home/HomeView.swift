@@ -145,12 +145,14 @@ struct HomeView: View {
                                 .padding(.vertical, Layout.emptyStatePadding)
                         } else {
                             ForEach(section.games) { game in
-                                NavigationLink(value: game) {
+                                NavigationLink(value: AppRoute.game(id: game.id, league: game.leagueCode)) {
+                                    // Trust the backend-provided game.id for routing; never derive IDs locally.
                                     GameRowView(game: game)
                                 }
                                 .buttonStyle(CardPressButtonStyle())
                                 .padding(.horizontal, Layout.horizontalPadding)
                                 .simultaneousGesture(TapGesture().onEnded {
+                                    GameRoutingLogger.logTap(gameId: game.id, league: game.leagueCode)
                                     triggerHapticIfNeeded(for: game)
                                 })
                             }
