@@ -10,6 +10,7 @@ struct GameListResponse: Codable {
     let withOddsCount: Int?
     let withSocialCount: Int?
     let withPbpCount: Int?
+    let lastUpdatedAt: String?
     
     enum CodingKeys: String, CodingKey {
         case games
@@ -20,8 +21,8 @@ struct GameListResponse: Codable {
         case withOddsCount = "with_odds_count"
         case withSocialCount = "with_social_count"
         case withPbpCount = "with_pbp_count"
+        case lastUpdatedAt = "last_updated_at"
     }
 }
-
 
 

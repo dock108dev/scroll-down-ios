@@ -4,12 +4,12 @@ Guide for local development, testing, and debugging.
 
 ## Data Modes
 
-The app supports two data modes, controlled via `AppConfig.shared.dataMode`:
+The app supports two environments, controlled via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
 | `.mock` | Structured local JSON data | UI development, offline work |
-| `.api` | Live backend API calls | Integration testing, production |
+| `.live` | Live backend API calls | Integration testing, production |
 
 **Default:** The app runs in mock mode. No backend connection required.
 
@@ -27,7 +27,7 @@ The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping
 
 ```swift
 // In code (for debugging)
-AppConfig.shared.dataMode = .api
+AppConfig.shared.environment = .live
 ```
 
 A runtime toggle UI is planned for debug builds.
@@ -68,7 +68,7 @@ Before submitting changes, verify:
 
 ### Check current data mode
 ```swift
-print(AppConfig.shared.dataMode)
+print(AppConfig.shared.environment)
 ```
 
 ### Inspect dev clock

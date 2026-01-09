@@ -36,7 +36,7 @@ The app currently runs on **structured mock data** to enable UI development with
 - Full game detail payloads with team stats, timelines, and moments
 - Play-by-play event data for timeline expansion
 
-The architecture supports a clean toggle between mock and live API modes via `AppConfig.dataMode`. Backend integration is underway — models align with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract.
+The architecture supports a clean toggle between mock and live API environments via `AppConfig.environment`. Backend integration is underway — models align with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract.
 
 ## Relationship to Web UI
 
@@ -75,4 +75,3 @@ Deeper documentation lives in [`/docs`](docs/README.md):
 - [Changelog](docs/CHANGELOG.md) — Feature history and updates
 
 Agent notes for AI coding assistants are in [`AGENTS.md`](AGENTS.md).
-

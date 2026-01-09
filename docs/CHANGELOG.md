@@ -16,12 +16,15 @@ All notable changes to this project are documented here.
 - Game preview networking service for API integration
 - Feature flag for game preview scores (enabled in debug builds)
 - Routing diagnostics via structured logs (tap, navigate, detail load, ID mismatch)
+- Home feed snapshot wiring for Earlier/Today/Coming Up ranges with backend-driven ordering
+- Data freshness label on the home feed sourced from backend `last_updated_at`
 
 ### Changed
 - Documentation consolidated under `/docs` with a lean root README
 - GameDetailView split into focused files to keep views under 500 LOC
 - Mock data generator extracted for cleaner networking layout
 - Timeline play-by-play now surfaces scores via separators (halftime, period end)
+- Environment configuration now uses `AppConfig.environment` to keep mock/live sources in sync
 
 ### Fixed
 - Navigation tap reliability improved (List → ScrollView+LazyVStack)

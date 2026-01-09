@@ -86,7 +86,7 @@ A chapter-style list of key moments. Each moment expands inline to show its play
 The app uses `AppConfig` to manage runtime behavior:
 
 ```swift
-AppConfig.shared.dataMode   // .mock or .api
+AppConfig.shared.environment   // .mock or .live
 AppConfig.shared.gameService // Returns appropriate service implementation
 ```
 

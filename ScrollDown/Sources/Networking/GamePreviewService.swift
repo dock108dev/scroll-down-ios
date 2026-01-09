@@ -10,7 +10,7 @@ final class GamePreviewService {
     private let session: URLSession
 
     init(
-        baseURL: URL = APIConfiguration.baseURL,
+        baseURL: URL = AppConfig.shared.apiBaseURL,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
