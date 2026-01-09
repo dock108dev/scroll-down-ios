@@ -15,6 +15,7 @@ All notable changes to this project are documented here.
 - Related posts section with tap-to-reveal blur for posts containing outcomes
 - Game preview networking service for API integration
 - Feature flag for game preview scores (enabled in debug builds)
+- Routing diagnostics via structured logs (tap, navigate, detail load, ID mismatch)
 
 ### Changed
 - Documentation consolidated under `/docs` with a lean root README
@@ -26,3 +27,4 @@ All notable changes to this project are documented here.
 - Navigation tap reliability improved (List → ScrollView+LazyVStack)
 - Mock service now generates unique game detail for each game ID
 - Timeline quarter expansion no longer jumps ahead in the feed
+- Game detail routing now rejects mismatched backend IDs to prevent wrong-game opens

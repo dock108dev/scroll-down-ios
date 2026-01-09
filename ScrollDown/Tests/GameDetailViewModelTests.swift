@@ -111,4 +111,90 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertEqual(marker?.label, "Live Score")
         XCTAssertEqual(marker?.score, "20 - 18")
     }
+
+    @MainActor
+    func testLoadMarksUnavailableWhenIdsMismatch() async {
+        let game = Game(
+            id: 999,
+            leagueCode: "NBA",
+            season: 2024,
+            seasonType: "regular",
+            gameDate: "2024-11-12T00:00:00Z",
+            homeTeam: "HOME",
+            awayTeam: "AWAY",
+            homeScore: nil,
+            awayScore: nil,
+            status: .scheduled,
+            scrapeVersion: nil,
+            lastScrapedAt: nil,
+            hasBoxscore: nil,
+            hasPlayerStats: nil,
+            hasOdds: nil,
+            hasSocial: nil,
+            hasPbp: nil,
+            playCount: nil,
+            socialPostCount: nil,
+            homeTeamXHandle: nil,
+            awayTeamXHandle: nil
+        )
+        let detail = GameDetailResponse(
+            game: game,
+            teamStats: [],
+            playerStats: [],
+            odds: [],
+            socialPosts: [],
+            plays: [],
+            compactMoments: nil,
+            derivedMetrics: [:],
+            rawPayloads: [:]
+        )
+        let service = StubGameService(detail: detail)
+        let viewModel = GameDetailViewModel()
+
+        await viewModel.load(gameId: 1, league: "NBA", service: service)
+
+        XCTAssertNil(viewModel.detail)
+        XCTAssertTrue(viewModel.isUnavailable)
+    }
+}
+
+private struct StubGameService: GameService {
+    let detail: GameDetailResponse
+
+    func fetchGame(id: Int) async throws -> GameDetailResponse {
+        detail
+    }
+
+    func fetchGames(league: LeagueCode?, limit: Int, offset: Int) async throws -> GameListResponse {
+        GameListResponse(
+            games: [],
+            total: 0,
+            nextOffset: nil,
+            withBoxscoreCount: 0,
+            withPlayerStatsCount: 0,
+            withOddsCount: 0,
+            withSocialCount: 0,
+            withPbpCount: 0
+        )
+    }
+
+    func fetchPbp(gameId: Int) async throws -> PbpResponse {
+        PbpResponse(events: [])
+    }
+
+    func fetchCompactMomentPbp(momentId: StringOrInt) async throws -> PbpResponse {
+        PbpResponse(events: [])
+    }
+
+    func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
+        SocialPostListResponse(posts: [])
+    }
+
+    func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
+        RelatedPostListResponse(posts: [])
+    }
+
+    func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
+        AISummaryResponse(summary: "")
+    }
 }

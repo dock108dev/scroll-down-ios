@@ -4,6 +4,7 @@ import SwiftUI
 struct GameDetailView: View {
     @EnvironmentObject var appConfig: AppConfig
     let gameId: Int
+    let leagueCode: String?
 
     @StateObject var viewModel: GameDetailViewModel
     @AppStorage("compactModeEnabled") var isCompactMode = false
@@ -31,28 +32,48 @@ struct GameDetailView: View {
     @State var isResumeTrackingEnabled = true
     @State var shouldShowResumePrompt = false
 
-    init(gameId: Int, detail: GameDetailResponse? = nil) {
+    init(gameId: Int, leagueCode: String? = nil, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
+        self.leagueCode = leagueCode
         _viewModel = StateObject(wrappedValue: GameDetailViewModel(detail: detail))
     }
 
     var body: some View {
         Group {
-            if viewModel.isLoading {
+            if !isValidGameId {
+                unavailableView
+            } else if viewModel.isUnavailable {
+                unavailableView
+            } else if viewModel.isLoading {
                 loadingView
             } else if let error = viewModel.errorMessage {
                 errorView(error)
             } else if viewModel.detail != nil {
                 gameContentView()
+            } else {
+                unavailableView
             }
         }
         .navigationTitle(viewModel.game?.matchupTitle ?? "Game Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            async let detailLoad: Void = viewModel.load(gameId: gameId, service: appConfig.gameService)
-            async let summaryLoad: Void = viewModel.loadSummary(gameId: gameId, service: appConfig.gameService)
-            _ = await (detailLoad, summaryLoad)
+            guard isValidGameId else {
+                // Block fallback routing when identity is missing; show a neutral unavailable state.
+                GameRoutingLogger.logInvalidNavigation(tappedId: gameId, destinationId: gameId, league: leagueCode)
+                return
+            }
+
+            GameRoutingLogger.logDetailLoad(tappedId: gameId, destinationId: gameId, league: leagueCode)
+            await viewModel.load(gameId: gameId, league: leagueCode, service: appConfig.gameService)
+
+            if !viewModel.isUnavailable {
+                await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService)
+            }
         }
+    }
+
+    private var isValidGameId: Bool {
+        gameId > 0
     }
 
     // MARK: - Subviews
@@ -64,6 +85,22 @@ struct GameDetailView: View {
             Text("Loading game...")
                 .foregroundColor(.secondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    var unavailableView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary)
+            Text("Game unavailable")
+                .font(.headline)
+            Text("We couldn't confirm this game's identity.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -79,7 +116,7 @@ struct GameDetailView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry") {
-                Task { await viewModel.load(gameId: gameId, service: appConfig.gameService) }
+                Task { await viewModel.load(gameId: gameId, league: leagueCode, service: appConfig.gameService) }
             }
             .buttonStyle(.borderedProminent)
         }
