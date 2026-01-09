@@ -73,5 +73,6 @@ Deeper documentation lives in [`/docs`](docs/README.md):
 - [Architecture](docs/architecture.md) — MVVM structure and data flow
 - [Development](docs/development.md) — Mock mode, testing, QA checklist
 - [Changelog](docs/CHANGELOG.md) — Feature history and updates
+- [Beta Time Override](docs/BETA_TIME_OVERRIDE.md) — Time-travel mode for testing historical data
 
 Agent notes for AI coding assistants are in [`AGENTS.md`](AGENTS.md).

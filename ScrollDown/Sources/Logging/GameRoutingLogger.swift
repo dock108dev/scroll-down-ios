@@ -1,6 +1,9 @@
 import Foundation
 import OSLog
 
+/// Lightweight navigation diagnostics for game routing
+/// Logs user taps, navigation events, and ID mismatches to help debug unexpected routing behavior
+/// WHY: Phase A identified routing trust issues where tapped games didn't match displayed details
 enum GameRoutingLogger {
     private static let logger = Logger(subsystem: "com.scrolldown.app", category: "routing")
     private static let timestampFormatter: ISO8601DateFormatter = {

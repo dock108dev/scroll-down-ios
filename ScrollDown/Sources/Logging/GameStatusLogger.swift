@@ -1,6 +1,8 @@
 import Foundation
 import OSLog
 
+/// Logs missing or invalid game status values
+/// WHY: Helps identify data quality issues from backend where status field is unexpectedly nil
 enum GameStatusLogger {
     private static let logger = Logger(subsystem: "com.scrolldown.app", category: "status")
     private static let timestampFormatter: ISO8601DateFormatter = {
