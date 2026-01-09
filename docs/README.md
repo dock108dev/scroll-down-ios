@@ -17,6 +17,6 @@ This app provides a native iOS experience for catching up on sports games at you
 
 ## Quick Reference
 
-- **Data mode toggle:** `AppConfig.shared.dataMode`
+- **Environment toggle:** `AppConfig.shared.environment`
 - **Run tests:** `xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16'`
 - **Key screens:** HomeView → GameDetailView → CompactTimelineView

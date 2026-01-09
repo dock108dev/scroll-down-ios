@@ -35,7 +35,7 @@ final class MockGameService: GameService {
         return response
     }
     
-    func fetchGames(league: LeagueCode?, limit: Int, offset: Int) async throws -> GameListResponse {
+    func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 300_000_000) // 300ms
         
@@ -50,6 +50,8 @@ final class MockGameService: GameService {
         if let league = league {
             games = games.filter { $0.leagueCode == league.rawValue }
         }
+
+        games = filterGames(games, for: range)
         
         return GameListResponse(
             games: games,
@@ -59,8 +61,35 @@ final class MockGameService: GameService {
             withPlayerStatsCount: games.filter { $0.hasPlayerStats == true }.count,
             withOddsCount: games.filter { $0.hasOdds == true }.count,
             withSocialCount: games.filter { $0.hasSocial == true }.count,
-            withPbpCount: games.filter { $0.hasPbp == true }.count
+            withPbpCount: games.filter { $0.hasPbp == true }.count,
+            lastUpdatedAt: ISO8601DateFormatter().string(from: AppDate.now())
         )
+    }
+
+    private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
+        let todayStart = AppDate.startOfToday
+        let todayEnd = AppDate.endOfToday
+
+        switch range {
+        case .last2:
+            let historyStart = AppDate.historyWindowStart
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= historyStart && date < todayStart
+            }
+        case .current:
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= todayStart && date <= todayEnd
+            }
+        case .next24:
+            let now = AppDate.now()
+            let windowEnd = now.addingTimeInterval(24 * 60 * 60)
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date > now && date <= windowEnd
+            }
+        }
     }
     
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
@@ -119,5 +148,3 @@ final class MockGameService: GameService {
         return AISummaryResponse(summary: MockDataGenerator.generateSummary(homeTeam: homeTeam, awayTeam: awayTeam))
     }
 }
-
-

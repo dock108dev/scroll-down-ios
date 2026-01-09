@@ -4,11 +4,13 @@ import UIKit
 /// Main home screen displaying list of games
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
-    @State private var games: [GameSummary] = []
-    @State private var isLoading = true
+    @State private var earlierSection = HomeSectionState(range: .last2, title: Strings.sectionEarlier)
+    @State private var todaySection = HomeSectionState(range: .current, title: Strings.sectionToday)
+    @State private var upcomingSection = HomeSectionState(range: .next24, title: Strings.sectionUpcoming)
     @State private var errorMessage: String?
+    @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
-    
+
     var body: some View {
         ZStack {
             HomeTheme.background
@@ -38,23 +40,27 @@ struct HomeView: View {
             await loadGames()
         }
     }
-    
+
     // MARK: - Subviews
-    
+
     private var headerView: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Layout.filterSpacing) {
-                leagueFilterButton(nil, label: Strings.allLeaguesLabel)
-                ForEach(LeagueCode.allCases, id: \.self) { league in
-                    leagueFilterButton(league, label: league.rawValue)
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Layout.filterSpacing) {
+                    leagueFilterButton(nil, label: Strings.allLeaguesLabel)
+                    ForEach(LeagueCode.allCases, id: \.self) { league in
+                        leagueFilterButton(league, label: league.rawValue)
+                    }
                 }
+                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.vertical, Layout.filterVerticalPadding)
             }
-            .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.filterVerticalPadding)
+            .background(HomeTheme.background)
+
+            dataFreshnessView
         }
-        .background(HomeTheme.background)
     }
-    
+
     private func leagueFilterButton(_ league: LeagueCode?, label: String) -> some View {
         Button(action: {
             selectedLeague = league
@@ -69,31 +75,28 @@ struct HomeView: View {
                 .clipShape(Capsule())
         }
     }
-    
+
+    private var dataFreshnessView: some View {
+        HStack {
+            Text(dataFreshnessText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, Layout.horizontalPadding)
+        .padding(.bottom, Layout.freshnessBottomPadding)
+    }
+
     private var contentView: some View {
         Group {
-            if isLoading {
-                loadingView
-            } else if let error = errorMessage {
+            if let error = errorMessage {
                 errorView(error)
-            } else if games.isEmpty {
-                emptyView
             } else {
                 gameListView
             }
         }
     }
-    
-    private var loadingView: some View {
-        VStack(spacing: Layout.stateSpacing) {
-            ProgressView()
-                .scaleEffect(Layout.progressScale)
-            Text(Strings.loadingTitle)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
+
     private func errorView(_ message: String) -> some View {
         VStack(spacing: Layout.stateSpacing) {
             Image(systemName: Strings.errorIconName)
@@ -113,50 +116,17 @@ struct HomeView: View {
         .padding(Layout.statePadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
-    private var emptyView: some View {
-        VStack(spacing: Layout.stateSpacing) {
-            Image(systemName: Strings.emptyIconName)
-                .font(.system(size: Layout.emptyIconSize))
-                .foregroundColor(.secondary)
-            Text(Strings.emptyTitle)
-                .font(.headline)
-            Text(Strings.emptySubtitle)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
+
     private var gameListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: Layout.cardSpacing) {
-                    ForEach(sectionedGames) { section in
+                    ForEach(sectionsInOrder) { section in
                         // Section header with ID for scrolling
                         sectionHeader(for: section)
                             .id(section.title)
-                        
-                        if section.games.isEmpty && section.title == Strings.sectionToday {
-                            Text("No games scheduled for today")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, Layout.horizontalPadding)
-                                .padding(.vertical, Layout.emptyStatePadding)
-                        } else {
-                            ForEach(section.games) { game in
-                                NavigationLink(value: AppRoute.game(id: game.id, league: game.leagueCode)) {
-                                    // Trust the backend-provided game.id for routing; never derive IDs locally.
-                                    GameRowView(game: game)
-                                }
-                                .buttonStyle(CardPressButtonStyle())
-                                .padding(.horizontal, Layout.horizontalPadding)
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    GameRoutingLogger.logTap(gameId: game.id, league: game.leagueCode)
-                                    triggerHapticIfNeeded(for: game)
-                                })
-                            }
-                        }
+
+                        sectionContent(for: section)
                     }
                 }
                 .padding(.bottom, Layout.bottomPadding)
@@ -168,16 +138,16 @@ struct HomeView: View {
             }
         }
     }
-    
+
     @ViewBuilder
-    private func sectionHeader(for section: GameListSection) -> some View {
+    private func sectionHeader(for section: HomeSectionState) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if section.title != Strings.sectionEarlier {
                 Divider()
                     .padding(.horizontal, Layout.horizontalPadding)
                     .padding(.bottom, Layout.sectionDividerPadding)
             }
-            
+
             Text(section.title)
                 .font(.title3.weight(.bold))
                 .foregroundColor(.primary)
@@ -185,113 +155,199 @@ struct HomeView: View {
                 .padding(.top, Layout.sectionHeaderTopPadding)
         }
     }
-    
+
+    @ViewBuilder
+    private func sectionContent(for section: HomeSectionState) -> some View {
+        if section.isLoading {
+            HStack {
+                ProgressView()
+                    .scaleEffect(Layout.sectionProgressScale)
+                Text(Strings.sectionLoading)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, Layout.horizontalPadding)
+            .padding(.vertical, Layout.sectionStatePadding)
+        } else if let error = section.errorMessage {
+            HStack {
+                Text(sectionErrorMessage(for: section, error: error))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, Layout.horizontalPadding)
+            .padding(.vertical, Layout.sectionStatePadding)
+        } else if section.games.isEmpty {
+            HStack {
+                Text(sectionEmptyMessage(for: section))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, Layout.horizontalPadding)
+            .padding(.vertical, Layout.sectionStatePadding)
+        } else {
+            ForEach(section.games) { game in
+                NavigationLink(value: AppRoute.game(id: game.id, league: game.leagueCode)) {
+                    // Trust the backend-provided game.id for routing; never derive IDs locally.
+                    GameRowView(game: game)
+                }
+                .buttonStyle(CardPressButtonStyle())
+                .padding(.horizontal, Layout.horizontalPadding)
+                .simultaneousGesture(TapGesture().onEnded {
+                    GameRoutingLogger.logTap(gameId: game.id, league: game.leagueCode)
+                    triggerHapticIfNeeded(for: game)
+                })
+            }
+        }
+    }
+
     private var dataModeIndicator: some View {
         HStack(spacing: Layout.dataModeSpacing) {
             Circle()
-                .fill(appConfig.dataMode == .mock ? Color.orange : HomeTheme.accentColor)
+                .fill(appConfig.environment == .mock ? Color.orange : HomeTheme.accentColor)
                 .frame(width: Layout.dataModeIndicatorSize, height: Layout.dataModeIndicatorSize)
-            Text(appConfig.dataMode == .mock ? Strings.mockLabel : Strings.liveLabel)
+            Text(appConfig.environment == .mock ? Strings.mockLabel : Strings.liveLabel)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
     }
-    
+
     // MARK: - Data Loading
-    
+
     private func loadGames(scrollToToday: Bool = true) async {
-        isLoading = true
         errorMessage = nil
-        
+
+        earlierSection.isLoading = true
+        todaySection.isLoading = true
+        upcomingSection.isLoading = true
+        earlierSection.errorMessage = nil
+        todaySection.errorMessage = nil
+        upcomingSection.errorMessage = nil
+
+        let service = appConfig.gameService
+
+        async let earlierResult = loadSection(range: .last2, service: service)
+        async let todayResult = loadSection(range: .current, service: service)
+        async let upcomingResult = loadSection(range: .next24, service: service)
+
+        let results = await [earlierResult, todayResult, upcomingResult]
+
+        applySectionResults(results)
+        updateLastUpdatedAt(from: results)
+
+        if results.allSatisfy({ $0.errorMessage != nil }) {
+            errorMessage = Strings.globalErrorMessage
+        }
+
+        if scrollToToday {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                NotificationCenter.default.post(name: .scrollToToday, object: nil)
+            }
+        }
+    }
+
+    private func loadSection(range: GameRange, service: GameService) async -> SectionResult {
         do {
-            let service = appConfig.gameService
-            let response = try await service.fetchGames(
-                league: selectedLeague,
-                limit: Layout.requestLimit,
-                offset: Layout.requestOffset
-            )
-            games = response.games
-            isLoading = false
-            
-            // Trigger scroll to today after data is loaded
-            if scrollToToday {
-                // Delay to ensure views are rendered
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    NotificationCenter.default.post(name: .scrollToToday, object: nil)
-                }
-            }
+            let response = try await service.fetchGames(range: range, league: selectedLeague)
+            return SectionResult(range: range, games: response.games, lastUpdatedAt: response.lastUpdatedAt, errorMessage: nil)
         } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
+            return SectionResult(range: range, games: [], lastUpdatedAt: nil, errorMessage: error.localizedDescription)
         }
     }
-    
-    // MARK: - Sectioning
-    
-    private var sectionedGames: [GameListSection] {
-        let calendar = Calendar.current
-        let todayStart = AppDate.startOfToday
-        let todayEnd = AppDate.endOfToday
-        let historyStart = AppDate.historyWindowStart
-        
-        var earlier: [GameSummary] = []
-        var todayGames: [GameSummary] = []
-        var upcoming: [GameSummary] = []
-        
-        for game in games {
-            guard let gameDate = game.parsedGameDate else {
-                continue // Skip games without valid dates
-            }
-            
-            // Exclude games older than history window (2 days ago)
-            if gameDate < historyStart {
-                continue
-            }
-            
-            if gameDate < todayStart {
-                earlier.append(game)
-            } else if gameDate <= todayEnd {
-                todayGames.append(game)
-            } else {
-                upcoming.append(game)
+
+    private func applySectionResults(_ results: [SectionResult]) {
+        for result in results {
+            switch result.range {
+            case .last2:
+                earlierSection.games = result.games
+                earlierSection.errorMessage = result.errorMessage
+                earlierSection.isLoading = false
+            case .current:
+                todaySection.games = result.games
+                todaySection.errorMessage = result.errorMessage
+                todaySection.isLoading = false
+            case .next24:
+                upcomingSection.games = result.games
+                upcomingSection.errorMessage = result.errorMessage
+                upcomingSection.isLoading = false
             }
         }
-        
-        // Sort each bucket
-        earlier.sort { ($0.parsedGameDate ?? .distantPast) > ($1.parsedGameDate ?? .distantPast) } // desc (newest first)
-        todayGames.sort { ($0.parsedGameDate ?? .distantPast) < ($1.parsedGameDate ?? .distantPast) } // asc
-        upcoming.sort { ($0.parsedGameDate ?? .distantFuture) < ($1.parsedGameDate ?? .distantFuture) } // asc
-        
-        // Build sections in order: Earlier → Today → Upcoming
-        var sections: [GameListSection] = []
-        
-        if !earlier.isEmpty {
-            sections.append(GameListSection(title: Strings.sectionEarlier, games: earlier))
-        }
-        
-        // Always show Today section (even if empty, for anchor)
-        sections.append(GameListSection(title: Strings.sectionToday, games: todayGames))
-        
-        if !upcoming.isEmpty {
-            sections.append(GameListSection(title: Strings.sectionUpcoming, games: upcoming))
-        }
-        
-        return sections
     }
-    
+
+    private func updateLastUpdatedAt(from results: [SectionResult]) {
+        let dates = results.compactMap { parseLastUpdatedAt($0.lastUpdatedAt) }
+        lastUpdatedAt = dates.max()
+    }
+
+    private func parseLastUpdatedAt(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        if let date = dateFormatterWithFractional.date(from: value) {
+            return date
+        }
+        return dateFormatter.date(from: value)
+    }
+
+    private var dataFreshnessText: String {
+        guard let lastUpdatedAt else {
+            return Strings.updateUnavailable
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        let relative = formatter.localizedString(for: lastUpdatedAt, relativeTo: Date())
+        return String(format: Strings.updatedTemplate, relative)
+    }
+
+    private var sectionsInOrder: [HomeSectionState] {
+        [earlierSection, todaySection, upcomingSection]
+    }
+
+    private func sectionEmptyMessage(for section: HomeSectionState) -> String {
+        switch section.range {
+        case .last2:
+            return Strings.earlierEmpty
+        case .current:
+            return Strings.todayEmpty
+        case .next24:
+            return Strings.upcomingEmpty
+        }
+    }
+
+    private func sectionErrorMessage(for section: HomeSectionState, error: String) -> String {
+        switch section.range {
+        case .last2:
+            return String(format: Strings.earlierError, error)
+        case .current:
+            return String(format: Strings.todayError, error)
+        case .next24:
+            return String(format: Strings.upcomingError, error)
+        }
+    }
+
     // MARK: - Feedback
-    
+
     private func triggerHapticIfNeeded(for game: GameSummary) {
-        guard game.inferredStatus == .completed else { return }
+        guard game.status == .completed else { return }
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred()
     }
 }
 
-private struct GameListSection: Identifiable {
+private struct HomeSectionState: Identifiable {
     let id = UUID()
+    let range: GameRange
     let title: String
+    var games: [GameSummary] = []
+    var isLoading = true
+    var errorMessage: String?
+}
+
+private struct SectionResult {
+    let range: GameRange
     let games: [GameSummary]
+    let lastUpdatedAt: String?
+    let errorMessage: String?
 }
 
 private enum Layout {
@@ -302,17 +358,15 @@ private enum Layout {
     static let stateSpacing: CGFloat = 16
     static let statePadding: CGFloat = 24
     static let errorIconSize: CGFloat = 48
-    static let emptyIconSize: CGFloat = 48
-    static let progressScale: CGFloat = 1.5
     static let cardSpacing: CGFloat = 12
     static let sectionHeaderTopPadding: CGFloat = 12
     static let sectionDividerPadding: CGFloat = 8
-    static let emptyStatePadding: CGFloat = 24
+    static let sectionStatePadding: CGFloat = 12
+    static let sectionProgressScale: CGFloat = 0.9
     static let bottomPadding: CGFloat = 32
     static let dataModeSpacing: CGFloat = 4
     static let dataModeIndicatorSize: CGFloat = 8
-    static let requestLimit = 50
-    static let requestOffset = 0
+    static let freshnessBottomPadding: CGFloat = 8
 }
 
 /// Button style with subtle press animation for cards
@@ -328,19 +382,37 @@ private struct CardPressButtonStyle: ButtonStyle {
 private enum Strings {
     static let navigationTitle = "Scroll Down Sports"
     static let allLeaguesLabel = "All"
-    static let loadingTitle = "Loading games..."
     static let errorIconName = "exclamationmark.triangle"
     static let errorTitle = "Error"
     static let retryLabel = "Retry"
-    static let emptyIconName = "sportscourt"
-    static let emptyTitle = "No Games"
-    static let emptySubtitle = "No games found for the selected filters"
     static let mockLabel = "Mock"
     static let liveLabel = "Live"
     static let sectionEarlier = "Earlier"
     static let sectionToday = "Today"
-    static let sectionUpcoming = "Upcoming"
+    static let sectionUpcoming = "Coming Up"
+    static let sectionLoading = "Loading section..."
+    static let earlierEmpty = "No games from the last two days."
+    static let todayEmpty = "No games scheduled for today."
+    static let upcomingEmpty = "No games scheduled in the next 24 hours."
+    static let updatedTemplate = "Updated %@"
+    static let updateUnavailable = "Update time unavailable"
+    static let globalErrorMessage = "We couldn't reach the latest game feeds."
+    static let earlierError = "Earlier games unavailable. %@"
+    static let todayError = "Today's games unavailable. %@"
+    static let upcomingError = "Coming up games unavailable. %@"
 }
+
+private let dateFormatterWithFractional: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+}()
+
+private let dateFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime]
+    return formatter
+}()
 
 // MARK: - Notification Names
 
@@ -354,4 +426,3 @@ extension Notification.Name {
     }
     .environmentObject(AppConfig.shared)
 }
-

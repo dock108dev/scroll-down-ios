@@ -1,29 +1,37 @@
 import Foundation
+import OSLog
 
 /// Real API implementation of GameService.
-/// Uses a not-yet-implemented backend while the service is under development.
 final class RealGameService: GameService {
 
     // MARK: - Configuration
     private let baseURL: URL
     private let session: URLSession
+    private let decoder: JSONDecoder
+    private let logger = Logger(subsystem: "com.scrolldown.app", category: "networking")
 
     init(
-        baseURL: URL = APIConfiguration.baseURL,
+        baseURL: URL,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
         self.session = session
+        self.decoder = JSONDecoder()
     }
 
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        throw GameServiceError.notImplemented
+        try await request(path: "games/\(id)", queryItems: [])
     }
 
-    func fetchGames(league: LeagueCode?, limit: Int, offset: Int) async throws -> GameListResponse {
-        throw GameServiceError.notImplemented
+    func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
+        var queryItems = [URLQueryItem(name: "range", value: range.rawValue)]
+        if let league {
+            queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
+        }
+        // Trust backend snapshot windows for ordering and membership; avoid client-side guessing.
+        return try await request(path: "games", queryItems: queryItems)
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
@@ -45,5 +53,34 @@ final class RealGameService: GameService {
     func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
         throw GameServiceError.notImplemented
     }
-}
 
+    // MARK: - Networking
+
+    private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {
+        guard var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
+            throw GameServiceError.notFound
+        }
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+        guard let url = components.url else {
+            throw GameServiceError.notFound
+        }
+
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
+            }
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
+                throw URLError(.badServerResponse)
+            }
+            return try decoder.decode(T.self, from: data)
+        } catch let error as DecodingError {
+            throw GameServiceError.decodingError(error)
+        } catch {
+            throw GameServiceError.networkError(error)
+        }
+    }
+}

@@ -8,13 +8,12 @@ protocol GameService {
     /// - Returns: Full game detail response
     func fetchGame(id: Int) async throws -> GameDetailResponse
     
-    /// Fetch list of games
+    /// Fetch list of games for a snapshot range.
     /// - Parameters:
+    ///   - range: Backend-defined time window
     ///   - league: Optional league filter
-    ///   - limit: Maximum number of results
-    ///   - offset: Pagination offset
     /// - Returns: Game list response with summaries
-    func fetchGames(league: LeagueCode?, limit: Int, offset: Int) async throws -> GameListResponse
+    func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse
     
     /// Fetch play-by-play events for a game
     /// - Parameter gameId: The game ID
@@ -62,4 +61,3 @@ enum GameServiceError: LocalizedError {
         }
     }
 }
-

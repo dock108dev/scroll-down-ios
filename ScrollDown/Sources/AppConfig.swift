@@ -1,14 +1,14 @@
 import Foundation
 
-/// Data mode for switching between mock and API data sources
-enum DataMode: String, CaseIterable {
+/// Environment for switching between mock and live data sources.
+enum AppEnvironment: String, CaseIterable {
     case mock
-    case api
+    case live
     
     var displayName: String {
         switch self {
         case .mock: return "Mock Data"
-        case .api: return "Live API"
+        case .live: return "Live API"
         }
     }
 }
@@ -43,7 +43,7 @@ enum AppDate {
     
     /// Returns the current date based on data mode
     static func now() -> Date {
-        AppConfig.shared.dataMode == .mock ? devDate : Date()
+        AppConfig.shared.environment == .mock ? devDate : Date()
     }
     
     /// Start of today based on AppDate.now()
@@ -72,19 +72,23 @@ final class AppConfig: ObservableObject {
     static let shared = AppConfig()
     
     /// Current data mode - defaults to mock for development
-    @Published var dataMode: DataMode = .mock
+    @Published var environment: AppEnvironment = .mock
     
     /// Returns the appropriate GameService based on current data mode
     var gameService: any GameService {
-        switch dataMode {
+        switch environment {
         case .mock:
             return MockGameService()
-        case .api:
-            return RealGameService()
+        case .live:
+            return RealGameService(baseURL: apiBaseURL)
         }
+    }
+
+    /// Single source of truth for the API base URL.
+    var apiBaseURL: URL {
+        APIConfiguration.baseURL(for: environment)
     }
     
     private init() {}
 }
-
 

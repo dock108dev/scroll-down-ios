@@ -55,14 +55,11 @@ struct GameSummary: Codable, Identifiable, Hashable {
 extension GameSummary {
     private enum Formatting {
         static let startsAtPrefix = "Starts at "
-        static let dateTemplate = "MMM d"
-        static let timeStyle: DateFormatter.Style = .short
-        static let dateTimeSeparator = " — "
-        static let inProgressText = "Live — catching up available"
+        static let inProgressText = "Live"
         static let completedText = "Final — recap available"
-        static let upcomingText = "Scheduled — tap for details"
         static let postponedText = "Postponed"
         static let canceledText = "Canceled"
+        static let statusUnavailableText = "Status unavailable"
     }
 
     /// Formatted score string (e.g., "112 - 108")
@@ -103,29 +100,16 @@ extension GameSummary {
         return "\(dateFormatter.string(from: date)) • \(timeFormatter.string(from: date))"
     }
 
-    var inferredStatus: GameStatus {
-        if let status {
-            return status
-        }
-        if homeScore != nil || awayScore != nil {
-            return .completed
-        }
-        if let playCount, playCount > 0 {
-            return .inProgress
-        }
-        return .scheduled
-    }
-
     var statusLine: String {
-        let todayEnd = AppDate.endOfToday
-        let isUpcoming = parsedGameDate.map { $0 > todayEnd } ?? false
-        
-        switch inferredStatus {
+        // The backend status is the source of truth; do not infer from scores or timestamps.
+        guard let status else {
+            GameStatusLogger.logMissingStatus(gameId: id, league: leagueCode)
+            return Formatting.statusUnavailableText
+        }
+
+        switch status {
         case .scheduled:
-            if isUpcoming {
-                return Formatting.upcomingText
-            }
-            guard let date = parsedGameDate else { return formattedDate }
+            guard let date = parsedGameDate else { return Formatting.startsAtPrefix + formattedDate }
             return Formatting.startsAtPrefix + formattedTime(date: date)
         case .inProgress:
             return Formatting.inProgressText
@@ -145,5 +129,4 @@ extension GameSummary {
     }
 
 }
-
 
