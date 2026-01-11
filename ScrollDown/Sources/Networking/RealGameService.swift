@@ -40,8 +40,12 @@ final class RealGameService: GameService {
         }
         #endif
         
-        // Trust backend snapshot windows for ordering and membership; avoid client-side guessing.
-        return try await request(path: "games", queryItems: queryItems)
+        // NOTE: The /games snapshot endpoint is not deployed yet on Hetzner
+        // Using admin endpoint with workarounds:
+        // - range param is ignored (returns all games paginated)
+        // - no status field (inferred from has_required_data/scores)
+        // TODO: Switch to /games when snapshot endpoint is deployed
+        return try await request(path: "api/admin/sports/games", queryItems: queryItems)
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
@@ -77,6 +81,10 @@ final class RealGameService: GameService {
         guard let url = components.url else {
             throw GameServiceError.notFound
         }
+
+        // #region agent log
+        DebugLogger.log(hypothesisId: "A", location: "RealGameService.swift:80", message: "📡 Request URL", data: ["url": url.absoluteString])
+        // #endregion
 
         do {
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")

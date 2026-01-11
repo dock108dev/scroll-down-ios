@@ -5,8 +5,9 @@
 	};
 	objectVersion = 56;
 	objects = {
-
 /* Begin PBXBuildFile section */
+		0DAA00000000000000000002 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DAA00000000000000000001 /* DebugLogger.swift */; };
+
 		00449D83323AF9C901593CD0 /* OddsEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 806F28E6F1FF947E4F413B7A /* OddsEntry.swift */; };
 		00BA56A662081034AD386E10 /* GameDetailView+Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4999165CE89FE47041D145 /* GameDetailView+Overview.swift */; };
 		0100000000000019 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0200000000000019 /* Assets.xcassets */; };
@@ -73,8 +74,11 @@
 		FB8DDD92C239971E53FF0F09 /* CompactMomentPbpViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5369870B8B334B7237FD96A /* CompactMomentPbpViewModel.swift */; };
 		FE1D381FDC873B5BAB938189 /* game-001.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C3E1CA0DC85903F544E917 /* game-001.json */; };
 /* End PBXBuildFile section */
+		0DAA00000000000000000002 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DAA00000000000000000001 /* DebugLogger.swift */; };
 
 /* Begin PBXFileReference section */
+		0DAA00000000000000000001 /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollDown/Sources/Logging/DebugLogger.swift; sourceTree = "<group>"; };
+
 		0200000000000019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		03CBB42D2772608C0E2EFA78 /* Game.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
 		03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollapsibleCards.swift; sourceTree = "<group>"; };
@@ -141,6 +145,7 @@
 		FF703192C979F20849B5C597 /* CompactMomentExpandedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompactMomentExpandedView.swift; sourceTree = "<group>"; };
 		FFEDD72AB15D6E74583ECE63 /* PbpEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PbpEvent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+		0DAA00000000000000000001 /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollDown/Sources/Logging/DebugLogger.swift; sourceTree = "<group>"; };
 
 /* Begin PBXFrameworksBuildPhase section */
 		0300000000000001 /* Frameworks */ = {
@@ -151,7 +156,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
 		0400000000000000 = {
 			isa = PBXGroup;
@@ -356,7 +360,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
-
 /* Begin PBXNativeTarget section */
 		0500000000000001 /* ScrollDown */ = {
 			isa = PBXNativeTarget;
@@ -375,7 +378,6 @@
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
-
 /* Begin PBXProject section */
 		0800000000000001 /* Project object */ = {
 			isa = PBXProject;
@@ -406,7 +408,6 @@
 			);
 		};
 /* End PBXProject section */
-
 /* Begin PBXResourcesBuildPhase section */
 		0600000000000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -423,7 +424,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		0600000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -482,6 +482,7 @@
 				77EF0BFA896CD62B68C098A9 /* GameStatusLogger.swift in Sources */,
 				B46AADD785BC18C1FC3B928A /* TimeService.swift in Sources */,
 				675B4AD1545E903D1B4408B0 /* AppConfig.swift in Sources */,
+				0DAA00000000000000000002 /* DebugLogger.swift in Sources */,
 				BCD3F6FA49CFAA122E7CA551 /* GameDetailDisplayModels.swift in Sources */,
 				00BA56A662081034AD386E10 /* GameDetailView+Overview.swift in Sources */,
 				2916265C6557233A8296D0BC /* GameDetailView+Stats.swift in Sources */,
@@ -491,7 +492,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
 /* Begin XCBuildConfiguration section */
 		0900000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -671,7 +671,6 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
-
 /* Begin XCConfigurationList section */
 		0700000000000001 /* Build configuration list for PBXNativeTarget "ScrollDown" */ = {
 			isa = XCConfigurationList;

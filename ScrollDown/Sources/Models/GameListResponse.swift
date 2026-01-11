@@ -1,7 +1,7 @@
 import Foundation
 
 /// Game list response matching the /games snapshot endpoint
-struct GameListResponse: Codable {
+struct GameListResponse: Decodable {
     let range: String?
     let games: [GameSummary]
     let total: Int?

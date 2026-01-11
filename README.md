@@ -35,7 +35,7 @@ The app supports two environments, toggled via `AppConfig.environment`:
 - **Mock Mode**: Uses realistic local JSON data for offline development and UI testing.
 - **Live Mode**: Connects to the backend API for real-time data.
 
-Models are strictly aligned with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract. Local development defaults to **Live Mode** pointing at `http://localhost:8000`.
+Models are strictly aligned with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract. Local development defaults to **Live Mode** pointing at `https://sports-data-admin.dock108.ai`.
 
 ## Relationship to Web UI
 

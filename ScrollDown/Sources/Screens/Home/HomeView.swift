@@ -283,12 +283,19 @@ struct HomeView: View {
         do {
             let response = try await service.fetchGames(range: range, league: selectedLeague)
             
+            // #region agent log
+            DebugLogger.log(hypothesisId: "E", location: "HomeView.swift:286", message: "📥 Games received for section", data: ["range": range.rawValue, "count": response.games.count, "firstGameId": response.games.first?.id as Any])
+            // #endregion
+
             // Beta Admin: Apply snapshot mode filtering if active
             // This excludes live/in-progress games to ensure deterministic replay
             let filteredGames = appConfig.filterGamesForSnapshotMode(response.games)
             
             return SectionResult(range: range, games: filteredGames, lastUpdatedAt: response.lastUpdatedAt, errorMessage: nil)
         } catch {
+            // #region agent log
+            DebugLogger.log(hypothesisId: "E", location: "HomeView.swift:294", message: "❌ Section load failed", data: ["range": range.rawValue, "error": error.localizedDescription])
+            // #endregion
             return SectionResult(range: range, games: [], lastUpdatedAt: nil, errorMessage: error.localizedDescription)
         }
     }
