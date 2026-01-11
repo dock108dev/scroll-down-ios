@@ -30,6 +30,11 @@ protocol GameService {
     /// - Returns: Social post list response
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse
 
+    /// Fetch pre-generated timeline artifact for a game
+    /// - Parameter gameId: The game ID
+    /// - Returns: Timeline artifact response
+    func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse
+
     /// Fetch related posts for a game
     /// - Parameter gameId: The game ID
     /// - Returns: Related post list response

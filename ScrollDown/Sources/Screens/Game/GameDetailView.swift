@@ -77,6 +77,8 @@ struct GameDetailView: View {
                 if viewModel.isSocialTabEnabled {
                     await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
                 }
+
+                await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
             }
         }
     }
@@ -325,4 +327,3 @@ struct GameDetailView: View {
         .environmentObject(AppConfig.shared)
     }
 }
-

@@ -32,6 +32,8 @@ extension GameDetailView {
                 TimelineScoreChipView(marker: liveMarker)
             }
 
+            timelineArtifactStatusView
+
             ForEach(viewModel.timelineQuarters) { quarter in
                 quarterSection(quarter, using: proxy)
             }
@@ -92,4 +94,53 @@ extension GameDetailView {
         }
         .id(quarterAnchorId(quarter.quarter))
     }
+
+    @ViewBuilder
+    private var timelineArtifactStatusView: some View {
+        switch viewModel.timelineArtifactState {
+        case .idle:
+            EmptyView()
+        case .loading:
+            Text(TimelineVerificationConstants.loadingText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        case .failed(let message):
+            Text(String(format: TimelineVerificationConstants.failureText, message))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        case .loaded:
+            if let summary = viewModel.timelineArtifactSummary {
+                VStack(alignment: .leading, spacing: GameDetailLayout.textSpacing) {
+                    Text(String(format: TimelineVerificationConstants.countText, summary.eventCount))
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.secondary)
+
+                    if let firstTimestamp = summary.firstTimestamp {
+                        Text(String(format: TimelineVerificationConstants.firstTimestampText, firstTimestamp))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let lastTimestamp = summary.lastTimestamp {
+                        Text(String(format: TimelineVerificationConstants.lastTimestampText, lastTimestamp))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else {
+                Text(TimelineVerificationConstants.missingTimelineText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+private enum TimelineVerificationConstants {
+    static let loadingText = "Loading timeline artifact…"
+    static let failureText = "Timeline artifact load failed: %@"
+    static let countText = "Timeline events: %d"
+    static let firstTimestampText = "First timestamp: %@"
+    static let lastTimestampText = "Last timestamp: %@"
+    static let missingTimelineText = "Timeline artifact loaded (timeline_json missing)."
 }
