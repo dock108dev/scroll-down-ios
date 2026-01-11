@@ -25,6 +25,24 @@ struct GameDetailResponse: Codable {
     }
 }
 
+/// Timeline artifact response as defined in the sports-admin API.
+/// Holds pre-generated timeline JSON without client-side transformation.
+struct TimelineArtifactResponse: Codable {
+    let gameId: Int?
+    let timelineJson: AnyCodable?
+    let gameAnalysisJson: AnyCodable?
+    let summaryJson: AnyCodable?
+    let generatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case gameId = "game_id"
+        case timelineJson = "timeline_json"
+        case gameAnalysisJson = "game_analysis_json"
+        case summaryJson = "summary_json"
+        case generatedAt = "generated_at"
+    }
+}
+
 // MARK: - AnyCodable for flexible JSON values
 /// A type-erased Codable value for handling dynamic JSON objects
 struct AnyCodable: Codable {
@@ -88,5 +106,4 @@ struct AnyCodable: Codable {
         }
     }
 }
-
 

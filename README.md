@@ -25,6 +25,7 @@ This isn't about hiding information — it's about letting you experience the ga
 | Progressive disclosure UI patterns | ✅ Live |
 | Dark mode support | ✅ Live |
 | Backend API integration | ✅ Live |
+| Timeline artifact fetch (read-only verification) | ✅ Live |
 | Push notifications | 📋 Planned |
 | User preferences & favorites | 📋 Planned |
 

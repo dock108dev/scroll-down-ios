@@ -60,6 +60,10 @@ final class RealGameService: GameService {
         throw GameServiceError.notImplemented
     }
 
+    func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
+        try await request(path: "games/\(gameId)/timeline", queryItems: [])
+    }
+
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
         throw GameServiceError.notImplemented
     }

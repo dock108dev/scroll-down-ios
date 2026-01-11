@@ -4,6 +4,9 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added - Phase G (Timeline API Integration)
+- Read-only timeline artifact fetch from `/games/{game_id}/timeline` with minimal verification stats in the timeline section
+
 ### Added - Phase F (Quality Polish)
 - Loading skeleton placeholders for all loading states
 - Enhanced empty states with contextual icons

@@ -157,6 +157,19 @@ final class MockGameService: GameService {
         return MockLoader.load("social-posts")
     }
 
+    func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
+
+        return TimelineArtifactResponse(
+            gameId: gameId,
+            timelineJson: AnyCodable(Constants.emptyTimeline),
+            gameAnalysisJson: nil,
+            summaryJson: nil,
+            generatedAt: nil
+        )
+    }
+
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
@@ -237,4 +250,8 @@ final class MockGameService: GameService {
             )
         }
     }
+}
+
+private enum Constants {
+    static let emptyTimeline: [Any] = []
 }

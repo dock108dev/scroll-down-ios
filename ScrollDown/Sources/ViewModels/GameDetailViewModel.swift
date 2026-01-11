@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
@@ -22,6 +23,10 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var socialPosts: [SocialPostResponse] = []
     @Published private(set) var socialPostsState: SocialPostsState = .idle
     @Published var isSocialTabEnabled: Bool = false // User preference for social tab
+
+    // Timeline artifact (read-only fetch)
+    @Published private(set) var timelineArtifact: TimelineArtifactResponse?
+    @Published private(set) var timelineArtifactState: TimelineArtifactState = .idle
     
     enum SocialPostsState: Equatable {
         case idle
@@ -30,12 +35,27 @@ final class GameDetailViewModel: ObservableObject {
         case failed(String)
     }
 
+    enum TimelineArtifactState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
+    struct TimelineArtifactSummary: Equatable {
+        let eventCount: Int
+        let firstTimestamp: String?
+        let lastTimestamp: String?
+    }
+
     enum RelatedPostsState: Equatable {
         case idle
         case loading
         case loaded
         case failed(String)
     }
+
+    private let logger = Logger(subsystem: "com.scrolldown.app", category: "timeline")
 
     init(detail: GameDetailResponse? = nil) {
         self.detail = detail
@@ -149,6 +169,27 @@ final class GameDetailViewModel: ObservableObject {
             socialPostsState = .loaded
         } catch {
             socialPostsState = .failed(error.localizedDescription)
+        }
+    }
+
+    func loadTimeline(gameId: Int, service: GameService) async {
+        switch timelineArtifactState {
+        case .loaded, .loading:
+            return
+        case .idle, .failed:
+            break
+        }
+
+        timelineArtifactState = .loading
+
+        do {
+            let resolvedGameId = timelineGameId(for: gameId)
+            let response = try await service.fetchTimeline(gameId: resolvedGameId)
+            timelineArtifact = response
+            timelineArtifactState = .loaded
+        } catch {
+            logger.error("Timeline fetch failed: \(error.localizedDescription, privacy: .public)")
+            timelineArtifactState = .failed(error.localizedDescription)
         }
     }
     
@@ -285,11 +326,32 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     var timelineQuarters: [QuarterTimeline] {
+        // NOTE: Timeline UI currently relies on client-side grouping/sorting of `detail.plays`.
+        // Social posts are also filtered client-side by reveal state; no server-side timeline merge exists yet.
         let plays = detail?.plays ?? []
         let grouped = Dictionary(grouping: plays, by: { $0.quarter ?? Constants.unknownQuarter })
         return grouped
             .map { QuarterTimeline(quarter: $0.key, plays: $0.value.sorted { $0.playIndex < $1.playIndex }) }
             .sorted { $0.quarter < $1.quarter }
+    }
+
+    var timelineArtifactSummary: TimelineArtifactSummary? {
+        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
+            return nil
+        }
+
+        let events = extractTimelineEvents(from: timelineValue)
+        guard !events.isEmpty else {
+            return TimelineArtifactSummary(eventCount: 0, firstTimestamp: nil, lastTimestamp: nil)
+        }
+
+        let firstTimestamp = extractTimestamp(from: events.first)
+        let lastTimestamp = extractTimestamp(from: events.last)
+        return TimelineArtifactSummary(
+            eventCount: events.count,
+            firstTimestamp: firstTimestamp,
+            lastTimestamp: lastTimestamp
+        )
     }
 
     var highlightByPlayIndex: [Int: [SocialPostEntry]] {
@@ -418,6 +480,57 @@ final class GameDetailViewModel: ObservableObject {
         return nil
     }
 
+    private func timelineGameId(for gameId: Int) -> Int {
+        gameId > 0 ? gameId : Constants.defaultTimelineGameId
+    }
+
+    private func extractTimelineEvents(from value: Any) -> [[String: Any]] {
+        if let events = value as? [[String: Any]] {
+            return events
+        }
+
+        if let array = value as? [Any] {
+            return array.compactMap { $0 as? [String: Any] }
+        }
+
+        if let dict = value as? [String: Any] {
+            if let events = dict[Constants.timelineEventsKey] as? [[String: Any]] {
+                return events
+            }
+            if let eventsArray = dict[Constants.timelineEventsKey] as? [Any] {
+                return eventsArray.compactMap { $0 as? [String: Any] }
+            }
+        }
+
+        return []
+    }
+
+    private func extractTimestamp(from event: [String: Any]?) -> String? {
+        guard let event else {
+            return nil
+        }
+
+        let candidates = [
+            Constants.timelineTimestampKey,
+            Constants.timelineEventTimestampKey,
+            Constants.timelineTimeKey,
+            Constants.timelineClockKey
+        ]
+
+        for key in candidates {
+            if let value = event[key] {
+                if let stringValue = value as? String {
+                    return stringValue
+                }
+                if let numberValue = value as? NSNumber {
+                    return numberValue.stringValue
+                }
+            }
+        }
+
+        return nil
+    }
+
     private func formattedStat(_ value: Double?, fallback: String) -> String {
         guard let value else {
             return fallback
@@ -505,4 +618,10 @@ private enum Constants {
         ("trb", "Rebounds"),
         ("tov", "Turnovers")
     ]
+    static let defaultTimelineGameId = 401585601
+    static let timelineEventsKey = "events"
+    static let timelineTimestampKey = "timestamp"
+    static let timelineEventTimestampKey = "event_timestamp"
+    static let timelineTimeKey = "time"
+    static let timelineClockKey = "clock"
 }
