@@ -163,10 +163,12 @@ final class MockGameService: GameService {
 
         return TimelineArtifactResponse(
             gameId: gameId,
+            sport: "NBA",
+            timelineVersion: "mock-1.0",
+            generatedAt: nil,
             timelineJson: AnyCodable(Constants.emptyTimeline),
             gameAnalysisJson: nil,
-            summaryJson: nil,
-            generatedAt: nil
+            summaryJson: nil
         )
     }
 

@@ -87,9 +87,38 @@ struct AdminSettingsView: View {
                     Text("Quick Presets")
                 }
                 
+                // Environment Switcher (DEBUG only)
+                #if DEBUG
+                Section {
+                    Picker("Data Source", selection: $appConfig.environment) {
+                        ForEach(AppEnvironment.allCases, id: \.self) { env in
+                            Text(env.displayName).tag(env)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    if appConfig.environment == .localhost {
+                        LabeledContent("URL", value: APIConfiguration.localhostURL)
+                            .font(.caption)
+                        
+                        Text("Ensure your local server is running on port \(APIConfiguration.localhostPort)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("Data Source")
+                } footer: {
+                    Text("Localhost connects to your local dev server. Only works in Simulator.")
+                }
+                #endif
+                
                 // Environment Info
                 Section {
                     LabeledContent("Data Mode", value: appConfig.environment.displayName)
+                    if appConfig.environment.usesNetwork {
+                        LabeledContent("API URL", value: appConfig.apiBaseURL.absoluteString)
+                            .font(.caption)
+                    }
                     LabeledContent("App Date", value: AppDate.now().formatted(date: .abbreviated, time: .shortened))
                 } header: {
                     Text("Environment")

@@ -1,15 +1,25 @@
 import Foundation
 import OSLog
 
-/// Environment for switching between mock and live data sources.
+/// Environment for switching between mock, localhost, and live data sources.
 enum AppEnvironment: String, CaseIterable {
     case mock
+    case localhost
     case live
     
     var displayName: String {
         switch self {
         case .mock: return "Mock Data"
+        case .localhost: return "Localhost"
         case .live: return "Live API"
+        }
+    }
+    
+    /// Whether this environment uses network calls
+    var usesNetwork: Bool {
+        switch self {
+        case .mock: return false
+        case .localhost, .live: return true
         }
     }
 }
@@ -22,6 +32,11 @@ enum FeatureFlags {
         return false
         #endif
     }()
+    
+    /// Set to true to default to localhost on app launch (DEBUG only)
+    /// Useful for local development sessions—change this instead of using Admin Settings each time
+    /// NOTE: Requires local server running on port \(APIConfiguration.localhostPort)
+    static let defaultToLocalhost: Bool = true
 }
 
 // MARK: - Dev Clock
@@ -95,12 +110,35 @@ enum AppDate {
 final class AppConfig: ObservableObject {
     static let shared = AppConfig()
     
-    /// Current data mode - defaults to live for local infra testing
-    @Published var environment: AppEnvironment = .live
+    /// Current data mode - defaults based on build configuration
+    /// Set `FeatureFlags.defaultToLocalhost = true` to auto-use localhost on launch
+    @Published var environment: AppEnvironment = {
+        #if DEBUG
+        if FeatureFlags.defaultToLocalhost {
+            return .localhost
+        }
+        #endif
+        return .live
+    }() {
+        didSet {
+            // Clear cached services when environment changes
+            if oldValue != environment {
+                invalidateServices()
+            }
+        }
+    }
     
     /// Stored services to ensure consistency (especially for mock data)
     private var _mockService: MockGameService?
     private var _realService: RealGameService?
+    private var _localhostService: RealGameService?
+    
+    /// Clear cached services (called when environment changes)
+    private func invalidateServices() {
+        _realService = nil
+        _localhostService = nil
+        // Keep mock service as it doesn't depend on URL
+    }
     
     /// Returns the appropriate GameService based on current data mode
     var gameService: any GameService {
@@ -110,6 +148,11 @@ final class AppConfig: ObservableObject {
                 _mockService = MockGameService()
             }
             return _mockService!
+        case .localhost:
+            if _localhostService == nil {
+                _localhostService = RealGameService(baseURL: apiBaseURL)
+            }
+            return _localhostService!
         case .live:
             if _realService == nil {
                 _realService = RealGameService(baseURL: apiBaseURL)

@@ -27,19 +27,32 @@ struct GameDetailResponse: Codable {
 
 /// Timeline artifact response as defined in the sports-admin API.
 /// Holds pre-generated timeline JSON without client-side transformation.
+///
+/// Backend guarantees for backfilled games:
+/// - `game_id`, `sport`, `timeline_version`, `generated_at` (required top-level)
+/// - `timeline_json`: ordered list of events (event_type, synthetic_timestamp)
+/// - `game_analysis_json`: segments[], highlights[]
+/// - `summary_json`: overall + per-segment narratives
 struct TimelineArtifactResponse: Codable {
+    // MARK: - Required Top-Level Fields
     let gameId: Int?
+    let sport: String?
+    let timelineVersion: String?
+    let generatedAt: String?
+    
+    // MARK: - Artifact Payloads
     let timelineJson: AnyCodable?
     let gameAnalysisJson: AnyCodable?
     let summaryJson: AnyCodable?
-    let generatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
+        case sport
+        case timelineVersion = "timeline_version"
+        case generatedAt = "generated_at"
         case timelineJson = "timeline_json"
         case gameAnalysisJson = "game_analysis_json"
         case summaryJson = "summary_json"
-        case generatedAt = "generated_at"
     }
 }
 
