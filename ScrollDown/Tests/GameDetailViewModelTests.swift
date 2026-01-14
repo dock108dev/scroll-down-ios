@@ -165,8 +165,9 @@ private struct StubGameService: GameService {
         detail
     }
 
-    func fetchGames(league: LeagueCode?, limit: Int, offset: Int) async throws -> GameListResponse {
+    func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
         GameListResponse(
+            range: range.rawValue,
             games: [],
             total: 0,
             nextOffset: nil,
@@ -174,7 +175,8 @@ private struct StubGameService: GameService {
             withPlayerStatsCount: 0,
             withOddsCount: 0,
             withSocialCount: 0,
-            withPbpCount: 0
+            withPbpCount: 0,
+            lastUpdatedAt: nil
         )
     }
 
@@ -187,14 +189,22 @@ private struct StubGameService: GameService {
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        SocialPostListResponse(posts: [])
+        SocialPostListResponse(posts: [], total: 0)
+    }
+
+    func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
+        TimelineArtifactResponse(
+            gameId: gameId,
+            sport: nil,
+            timelineVersion: nil,
+            generatedAt: nil,
+            timelineJson: nil,
+            gameAnalysisJson: nil,
+            summaryJson: nil
+        )
     }
 
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
-        RelatedPostListResponse(posts: [])
-    }
-
-    func fetchSummary(gameId: Int) async throws -> AISummaryResponse {
-        AISummaryResponse(summary: "")
+        RelatedPostListResponse(posts: [], total: 0)
     }
 }

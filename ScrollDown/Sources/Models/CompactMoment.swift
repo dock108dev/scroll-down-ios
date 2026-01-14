@@ -1,6 +1,9 @@
 import Foundation
 
-/// Compact timeline moment as defined in the OpenAPI spec (CompactMoment schema)
+/// DEPRECATED: Compact timeline moment as defined in the OpenAPI spec (CompactMoment schema)
+/// Timeline is now rendered via UnifiedTimelineEvent from timeline_json
+/// This model is kept for reference but should be deleted when cleanup is complete
+@available(*, deprecated, message: "Use UnifiedTimelineEvent from timeline_json")
 struct CompactMoment: Codable, Identifiable, Equatable {
     let id: StringOrInt
     let period: Int?
@@ -33,7 +36,7 @@ extension CompactMoment {
     }
 
     var displayTitle: String {
-        title ?? description ?? "Moment update"
+        title ?? description ?? "Play update"
     }
 
     var timeLabel: String? {

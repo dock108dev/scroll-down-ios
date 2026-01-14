@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// DEPRECATED: This view used the old CompactMoment-based approach
+/// Compact mode is now implemented as layout density changes in UnifiedTimelineRowView
+/// This file is kept for reference but should be deleted when cleanup is complete
+@available(*, deprecated, message: "Use UnifiedTimelineRowView with isCompact instead")
 struct CompactTimelineView: View {
     let moments: [CompactMoment]
     let status: GameStatus?
@@ -26,7 +30,7 @@ struct CompactTimelineView: View {
             }
 
             if moments.isEmpty {
-                EmptySectionView(text: "Moments will appear here as the game unfolds.")
+                EmptySectionView(text: "Timeline will appear here as the game unfolds.")
                     .padding(.horizontal, Layout.horizontalPadding)
             }
         }
@@ -36,9 +40,9 @@ struct CompactTimelineView: View {
     private var statusText: String? {
         switch status {
         case .inProgress:
-            return "Live moments"
+            return "Live"
         case .completed, .final:
-            return "Final moments"
+            return "Final"
         default:
             return nil
         }
@@ -52,9 +56,6 @@ private struct CompactTimelineRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Layout.rowContentSpacing) {
             VStack(alignment: .leading, spacing: Layout.textSpacing) {
-                Text("Chapter \(index)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.secondary)
                 Text(moment.displayTitle)
                     .font(.subheadline)
                     .foregroundColor(.primary)
@@ -88,7 +89,7 @@ private struct CompactTimelineRow: View {
         )
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Timeline moment")
+        .accessibilityLabel("Timeline event")
         .accessibilityValue(moment.displayTitle)
     }
 }

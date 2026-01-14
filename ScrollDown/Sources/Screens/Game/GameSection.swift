@@ -10,7 +10,8 @@ enum GameSection: String, CaseIterable, Hashable {
     case final
 
     static var navigationSections: [GameSection] {
-        [.overview, .timeline, .social, .playerStats, .teamStats, .final]
+        // NOTE: .social removed - tweets are now integrated into unified timeline
+        [.overview, .timeline, .playerStats, .teamStats, .final]
     }
 
     var title: String {

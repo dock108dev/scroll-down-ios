@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// DEPRECATED: This view used the old CompactMoment-based approach
+/// Timeline is now rendered via UnifiedTimelineRowView from timeline_json
+/// This file is kept for reference but should be deleted when cleanup is complete
+@available(*, deprecated, message: "Timeline now uses unified rendering from timeline_json")
 struct CompactMomentExpandedView: View {
     let moment: CompactMoment
     let service: GameService
@@ -209,7 +213,7 @@ struct CompactMomentExpandedView: View {
     }
 }
 
-/// Moment summary card - a narrative bridge between event clusters
+/// Summary card - a narrative bridge between event clusters
 /// These provide context without revealing outcomes
 private struct MomentSummaryCard: View {
     let summary: MomentSummary
@@ -236,7 +240,7 @@ private struct MomentSummaryCard: View {
                 .opacity(0.3)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Moment summary")
+        .accessibilityLabel("Play summary")
         .accessibilityValue(summary.text)
     }
 }

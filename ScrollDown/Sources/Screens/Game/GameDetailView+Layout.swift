@@ -8,6 +8,7 @@ enum GameDetailLayout {
     static let listSpacing: CGFloat = 8
     static let smallSpacing: CGFloat = 4
     static let cardSpacing: CGFloat = 16
+    static let compactCardSpacing: CGFloat = 8  // Reduced spacing for compact mode
     static let horizontalPadding: CGFloat = 20
     static let bottomPadding: CGFloat = 32
     static let bulletSize: CGFloat = 6
@@ -20,8 +21,8 @@ enum GameDetailLayout {
     static let statsHorizontalPadding: CGFloat = 16
     static let statsTableWidth: CGFloat = 360
     static let finalScoreSize: CGFloat = 40
-    static let chapterSpacing: CGFloat = 8
-    static let chapterHorizontalPadding: CGFloat = 4
+    static let sectionSpacingCompact: CGFloat = 8
+    static let sectionHorizontalPaddingCompact: CGFloat = 4
     static let summaryMinHeight: CGFloat = 72
     static let viewingPillHorizontalPadding: CGFloat = 12
     static let viewingPillVerticalPadding: CGFloat = 6

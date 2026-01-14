@@ -13,18 +13,16 @@ struct GameDetailView: View {
     @State var hasInitializedQuarters = false
     // Default expansion states per spec
     @State var isOverviewExpanded = true
-    @State var isPreGameExpanded = true
+    // NOTE: isPreGameExpanded removed - preGameSection deprecated
     @State var isTimelineExpanded = true
     @State var isPlayerStatsExpanded = false
     @State var isTeamStatsExpanded = false
     @State var isFinalScoreExpanded = false
-    @State var isPostGameExpanded = false
-    @State var isSocialExpanded = false
+    // NOTE: isPostGameExpanded removed - postGameSection deprecated
+    // NOTE: isSocialExpanded removed - socialSection deprecated
     @State var isRelatedPostsExpanded = false
-    @State var isCompactSummaryExpanded = false
-    @State var isCompactTimelineExpanded = false
-    @State var isCompactPostsExpanded = false
-    @State var selectedCompactMoment: CompactMoment?
+    // NOTE: Removed legacy compact view state (isCompactSummaryExpanded, isCompactTimelineExpanded, 
+    // isCompactPostsExpanded, selectedCompactMoment) - compact mode now affects layout density only
     @State var playRowFrames: [Int: CGRect] = [:]
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
@@ -68,17 +66,17 @@ struct GameDetailView: View {
             await viewModel.load(gameId: gameId, league: leagueCode, service: appConfig.gameService)
 
             if !viewModel.isUnavailable {
-                // Load reveal preference before loading summary
+                // Load user preferences
                 viewModel.loadRevealPreference(for: gameId)
-                await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService)
-                
-                // Load social tab preference (Phase E)
                 viewModel.loadSocialTabPreference(for: gameId)
+                
+                // Load timeline artifact (contains summary_json)
+                await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
+                
+                // Load social posts if enabled
                 if viewModel.isSocialTabEnabled {
                     await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
                 }
-
-                await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
             }
         }
     }
@@ -135,13 +133,11 @@ struct GameDetailView: View {
     }
 
     func gameContentView() -> some View {
-        Group {
-            if isCompactMode {
-                compactContentView
-            } else {
-                standardContentView
-            }
-        }
+        // NOTE: Compact mode temporarily disabled (visual no-op)
+        // The toggle remains in UI but always shows standard view
+        // Compact mode previously hid sections, which violated the principle
+        // that it should only change layout, not which data is rendered
+        standardContentView
     }
 
     var standardContentView: some View {
@@ -161,17 +157,13 @@ struct GameDetailView: View {
                                 .onAppear {
                                     selectedSection = .overview
                                 }
-                            preGameSection
+                            // NOTE: preGameSection removed - social posts now come from timeline_json
                             timelineSection(using: proxy)
                                 .id(GameSection.timeline)
                                 .onAppear {
                                     selectedSection = .timeline
                                 }
-                            socialSection
-                                .id(GameSection.social)
-                                .onAppear {
-                                    selectedSection = .social
-                                }
+                            // NOTE: socialSection removed - tweets are now integrated into unified timeline
                             playerStatsSection(viewModel.playerStats)
                                 .id(GameSection.playerStats)
                                 .onAppear {
@@ -187,7 +179,7 @@ struct GameDetailView: View {
                                 .onAppear {
                                     selectedSection = .final
                                 }
-                            postGameSection
+                            // NOTE: postGameSection removed - social posts now come from timeline_json
                             relatedPostsSection
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding)
@@ -249,57 +241,10 @@ struct GameDetailView: View {
         }
     }
 
-    var compactContentView: some View {
-        ScrollView {
-            VStack(spacing: GameDetailLayout.sectionSpacing) {
-                if let game = viewModel.game {
-                    GameHeaderView(game: game)
-                }
-
-                VStack(spacing: GameDetailLayout.sectionSpacing) {
-                    displayOptionsSection
-                    compactChapterSection(
-                        number: 1,
-                        title: "AI Summary",
-                        subtitle: "Quick recap",
-                        isExpanded: $isCompactSummaryExpanded
-                    ) {
-                        overviewContent
-                    }
-                    compactChapterSection(
-                        number: 2,
-                        title: "Play-by-play",
-                        subtitle: "Timeline",
-                        isExpanded: $isCompactTimelineExpanded
-                    ) {
-                        CompactTimelineView(
-                            moments: viewModel.compactTimelineMoments,
-                            status: viewModel.game?.status,
-                            onSelect: { moment in
-                                selectedCompactMoment = moment
-                            }
-                        )
-                    }
-                    compactChapterSection(
-                        number: 3,
-                        title: "Posts",
-                        subtitle: "Highlights & reactions",
-                        isExpanded: $isCompactPostsExpanded
-                    ) {
-                        compactPostsContent
-                    }
-                }
-                .padding(.horizontal, GameDetailLayout.horizontalPadding)
-            }
-            .padding(.bottom, GameDetailLayout.bottomPadding)
-        }
-        .background(GameTheme.background)
-        .sheet(item: $selectedCompactMoment) { moment in
-            NavigationStack {
-                CompactMomentExpandedView(moment: moment, service: appConfig.gameService)
-            }
-        }
-    }
+    // NOTE: Legacy compactContentView deleted
+    // Compact mode is now implemented as layout density changes in standardContentView
+    // The old view hid sections instead of just changing layout, violating the principle
+    // that compact mode should only affect presentation, not content
 }
 
 #Preview {

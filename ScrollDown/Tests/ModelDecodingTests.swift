@@ -107,28 +107,6 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(firstPost.sourceHandle, "NBA")
     }
 
-    // MARK: - Game Preview
-
-    func testGamePreviewDecoding() throws {
-        let json = """
-        {
-            "game_id": "12345",
-            "excitement_score": 82,
-            "quality_score": 76,
-            "tags": ["rivalry", "comeback"],
-            "nugget": "A late surge turned this into a nail-biter."
-        }
-        """.data(using: .utf8)!
-
-        let decoder = JSONDecoder()
-        let preview = try decoder.decode(GamePreview.self, from: json)
-        XCTAssertEqual(preview.gameId, "12345")
-        XCTAssertEqual(preview.excitementScore, 82)
-        XCTAssertEqual(preview.qualityScore, 76)
-        XCTAssertEqual(preview.tags, ["rivalry", "comeback"])
-        XCTAssertEqual(preview.nugget, "A late surge turned this into a nail-biter.")
-    }
-    
     // MARK: - Enum Decoding
     
     func testGameStatusDecoding() throws {

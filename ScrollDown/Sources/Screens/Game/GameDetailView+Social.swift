@@ -1,50 +1,28 @@
 import SwiftUI
 
 extension GameDetailView {
+    // MARK: - Deprecated Social Sections
+    // These sections rendered social posts from detail.socialPosts (client-side split)
+    // Now deprecated - tweets are integrated into unified timeline via timeline_json
+    
+    @available(*, deprecated, message: "Use unified timeline - tweets now come from timeline_json")
     var preGameSection: some View {
-        CollapsibleSectionCard(
-            title: "Pre-Game",
-            subtitle: "Before tipoff",
-            isExpanded: $isPreGameExpanded
-        ) {
-            preGameContent
-        }
-        .accessibilityHint("Expands to show pre-game posts")
+        EmptyView() // Removed - social posts now in unified timeline
     }
 
+    @available(*, deprecated, message: "Use unified timeline - tweets now come from timeline_json")
     var preGameContent: some View {
-        VStack(spacing: GameDetailLayout.cardSpacing) {
-            ForEach(viewModel.preGamePosts) { post in
-                HighlightCardView(post: post)
-            }
-
-            if viewModel.preGamePosts.isEmpty {
-                EmptySectionView(text: "Pre-game posts will appear here.")
-            }
-        }
+        EmptyView()
     }
 
+    @available(*, deprecated, message: "Use unified timeline - tweets now come from timeline_json")
     var postGameSection: some View {
-        CollapsibleSectionCard(
-            title: "Post-Game",
-            subtitle: "Reactions",
-            isExpanded: $isPostGameExpanded
-        ) {
-            postGameContent
-        }
-        .accessibilityHint("Expands to show post-game posts")
+        EmptyView() // Removed - social posts now in unified timeline
     }
 
+    @available(*, deprecated, message: "Use unified timeline - tweets now come from timeline_json")
     var postGameContent: some View {
-        VStack(spacing: GameDetailLayout.cardSpacing) {
-            ForEach(viewModel.postGamePosts) { post in
-                HighlightCardView(post: post)
-            }
-
-            if viewModel.postGamePosts.isEmpty {
-                EmptySectionView(text: "Post-game posts will appear here.")
-            }
-        }
+        EmptyView()
     }
 
     var compactPostsContent: some View {
@@ -87,16 +65,11 @@ extension GameDetailView {
         }
     }
 
-    /// Social section (Phase E) - Optional, opt-in social context
+    /// Social section - DEPRECATED
+    /// Tweets are now integrated into the unified timeline via timeline_json
+    @available(*, deprecated, message: "Use unified timeline - tweets now come from timeline_json")
     var socialSection: some View {
-        CollapsibleSectionCard(
-            title: "Social",
-            subtitle: "Team reactions",
-            isExpanded: $isSocialExpanded
-        ) {
-            socialContent
-        }
-        .accessibilityHint("Expands to show social posts")
+        EmptyView() // Removed - social posts now in unified timeline
     }
     
     @ViewBuilder

@@ -4,16 +4,10 @@ extension GameDetailView {
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
         CollapsibleSectionCard(
             title: "Timeline",
-            subtitle: "Play-by-play",
+            subtitle: timelineSubtitle,
             isExpanded: $isTimelineExpanded
         ) {
             timelineContent(using: proxy)
-        }
-        .onChange(of: viewModel.timelineQuarters) { quarters in
-            guard !hasInitializedQuarters else { return }
-            // Q1 expanded, Q2+ collapsed per spec
-            collapsedQuarters = Set(quarters.filter { $0.quarter > 1 }.map(\.quarter))
-            hasInitializedQuarters = true
         }
         .background(
             GeometryReader { proxy in
@@ -25,14 +19,57 @@ extension GameDetailView {
         )
         .accessibilityElement(children: .contain)
     }
+    
+    private var timelineSubtitle: String {
+        let events = viewModel.unifiedTimelineEvents
+        if events.isEmpty {
+            return "Play-by-play"
+        }
+        let pbpCount = events.filter { $0.eventType == .pbp }.count
+        let tweetCount = events.filter { $0.eventType == .tweet }.count
+        if tweetCount > 0 {
+            return "\(pbpCount) plays • \(tweetCount) posts"
+        }
+        return "\(pbpCount) plays"
+    }
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
+        VStack(spacing: GameDetailLayout.cardSpacing) {
+            timelineArtifactStatusView
+            
+            // UNIFIED TIMELINE: Render from timeline_json in server-provided order
+            if viewModel.hasUnifiedTimeline {
+                unifiedTimelineView
+            } else {
+                // Fallback to legacy quarters if timeline_json is empty
+                legacyTimelineView(using: proxy)
+            }
+        }
+    }
+    
+    // MARK: - Unified Timeline (Single Source of Truth)
+    
+    /// Renders events in server-provided order from timeline_json
+    /// Branches only on event_type (pbp vs tweet)
+    /// Compact mode affects layout density only, not content ordering
+    private var unifiedTimelineView: some View {
+        LazyVStack(spacing: isCompactMode ? GameDetailLayout.compactCardSpacing : GameDetailLayout.cardSpacing) {
+            ForEach(viewModel.unifiedTimelineEvents) { event in
+                UnifiedTimelineRowView(event: event, isCompact: isCompactMode)
+                    .id(event.id)
+            }
+        }
+    }
+    
+    // MARK: - Legacy Timeline (Fallback)
+    
+    /// Fallback to client-side grouped quarters if timeline_json is empty
+    @available(*, deprecated, message: "Use unifiedTimelineView when timeline_json is available")
+    private func legacyTimelineView(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
             if let liveMarker = viewModel.liveScoreMarker {
                 TimelineScoreChipView(marker: liveMarker)
             }
-
-            timelineArtifactStatusView
 
             ForEach(viewModel.timelineQuarters) { quarter in
                 quarterSection(quarter, using: proxy)

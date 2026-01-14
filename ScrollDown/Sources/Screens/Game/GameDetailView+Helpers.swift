@@ -218,22 +218,18 @@ extension GameDetailView {
         "quarter-\(quarter)"
     }
 
-    var aiSummaryView: some View {
+    /// Game summary view - renders pre-generated summary from server
+    /// No async loading, retry, or AI generation semantics
+    var summaryView: some View {
         Group {
             switch viewModel.summaryState {
-            case .loading:
-                // Phase F: Loading skeleton instead of spinner
-                LoadingSkeletonView(style: .textBlock)
-            case .failed:
-                // Phase F: Improved error state
+            case .unavailable:
+                // Static unavailable state - summaries are pre-generated, no retry
                 EmptySectionView(
-                    text: "Summary unavailable right now. Tap to retry.",
-                    icon: "exclamationmark.triangle"
+                    text: "Recap unavailable for this game.",
+                    icon: "doc.text"
                 )
-                .onTapGesture {
-                        Task { await viewModel.loadSummary(gameId: gameId, service: appConfig.gameService) }
-                }
-            case .loaded(let summary):
+            case .available(let summary):
                 Text(summary)
                     .font(.subheadline)
                     .foregroundColor(.primary)
@@ -241,18 +237,16 @@ extension GameDetailView {
             }
         }
         .frame(maxWidth: .infinity, minHeight: GameDetailLayout.summaryMinHeight, alignment: .leading)
-        .accessibilityLabel("Summary")
+        .accessibilityLabel("Game recap")
         .accessibilityValue(summaryAccessibilityValue)
     }
 
     var summaryAccessibilityValue: String {
         switch viewModel.summaryState {
-        case .loaded(let summary):
+        case .available(let summary):
             return summary
-        case .failed:
-            return "Summary unavailable"
-        case .loading:
-            return "Loading summary"
+        case .unavailable:
+            return "Recap unavailable"
         }
     }
 
@@ -285,26 +279,6 @@ extension GameDetailView {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Section navigation")
     }
-
-    func compactChapterSection(
-        number: Int,
-        title: String,
-        subtitle: String?,
-        isExpanded: Binding<Bool>,
-        @ViewBuilder content: () -> some View
-    ) -> some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.chapterSpacing) {
-            Text("Chapter \(number)")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, GameDetailLayout.chapterHorizontalPadding)
-            CollapsibleSectionCard(
-                title: title,
-                subtitle: subtitle,
-                isExpanded: isExpanded
-            ) {
-                content()
-            }
-        }
-    }
+    
+    // NOTE: Legacy compactSection helper removed - compact mode now affects layout density only
 }

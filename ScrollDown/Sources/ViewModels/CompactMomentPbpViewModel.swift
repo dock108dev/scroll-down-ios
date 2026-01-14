@@ -1,6 +1,12 @@
 import Foundation
 
-/// Represents a group of PBP events within a single period/quarter
+// MARK: - Deprecated Types
+// These types were used by the old CompactMoment-based approach
+// Timeline is now rendered via UnifiedTimelineRowView from timeline_json
+// These are kept for reference but should be deleted when cleanup is complete
+
+/// DEPRECATED: Represents a group of PBP events within a single period/quarter
+@available(*, deprecated, message: "Use UnifiedTimelineEvent from timeline_json")
 struct PeriodGroup: Identifiable, Equatable {
     let period: Int
     let events: [PbpEvent]
@@ -14,17 +20,20 @@ struct PeriodGroup: Identifiable, Equatable {
     }
 }
 
-/// Represents a narrative moment summary inserted between event clusters
+/// DEPRECATED: Represents a narrative moment summary inserted between event clusters
 /// CRITICAL: Summaries must be neutral and observational
 /// - Describe flow and momentum, not outcomes
 /// - Never mention final scores or winning/losing
-/// - Act as chapter headers, not conclusions
+/// - Act as section headers, not conclusions
+@available(*, deprecated, message: "Moment summaries are now server-generated in timeline_json")
 struct MomentSummary: Identifiable, Equatable {
     let id: String
     let text: String
     let position: Int // Position in the event sequence
 }
 
+/// DEPRECATED: ViewModel for the old CompactMoment-based PBP expanded view
+@available(*, deprecated, message: "Timeline now uses unified rendering from timeline_json")
 @MainActor
 final class CompactMomentPbpViewModel: ObservableObject {
     @Published private(set) var periodGroups: [PeriodGroup] = []

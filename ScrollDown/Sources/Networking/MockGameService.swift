@@ -103,7 +103,7 @@ final class MockGameService: GameService {
         }
         
         // Try to generate detail if not in cache
-        if let gameSummary = findOrGenerateSummary(for: gameId) {
+        if let gameSummary = findGameSummary(for: gameId) {
             let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
             gameCache[gameId] = detail
             return PbpResponse(events: mapPlaysToEvents(detail.plays, gameId: gameId))
@@ -148,7 +148,7 @@ final class MockGameService: GameService {
         }
         
         // Try to generate detail if not in cache
-        if let gameSummary = findOrGenerateSummary(for: gameId) {
+        if let gameSummary = findGameSummary(for: gameId) {
             let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
             gameCache[gameId] = detail
             return try await fetchSocialPosts(gameId: gameId)
@@ -161,15 +161,90 @@ final class MockGameService: GameService {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
 
+        // Generate timeline and summary from game data if available
+        let summaryJson: AnyCodable?
+        let timelineJson: AnyCodable
+        
+        if let gameSummary = findGameSummary(for: gameId),
+           let detail = gameCache[gameId] {
+            let summaryText = "\(gameSummary.awayTeamName) and \(gameSummary.homeTeamName) squared off in a competitive matchup. The game featured momentum swings on both sides with key plays defining the outcome."
+            summaryJson = AnyCodable(["overall": summaryText])
+            
+            // Generate unified timeline events from plays and social posts
+            timelineJson = AnyCodable(generateUnifiedTimeline(from: detail))
+        } else {
+            summaryJson = nil
+            timelineJson = AnyCodable([])
+        }
+
         return TimelineArtifactResponse(
             gameId: gameId,
             sport: "NBA",
             timelineVersion: "mock-1.0",
-            generatedAt: nil,
-            timelineJson: AnyCodable(Constants.emptyTimeline),
+            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            timelineJson: timelineJson,
             gameAnalysisJson: nil,
-            summaryJson: nil
+            summaryJson: summaryJson
         )
+    }
+    
+    /// Generate unified timeline events in chronological order
+    /// Interleaves PBP plays with tweets — server-provided order
+    private func generateUnifiedTimeline(from detail: GameDetailResponse) -> [[String: Any]] {
+        var events: [[String: Any]] = []
+        
+        // Add PBP events
+        for (index, play) in detail.plays.enumerated() {
+            var event: [String: Any] = [
+                "event_type": "pbp",
+                "synthetic_timestamp": "2026-01-13T19:\(String(format: "%02d", index)):00Z"
+            ]
+            
+            if let quarter = play.quarter {
+                event["period"] = quarter
+            }
+            if let clock = play.gameClock {
+                event["game_clock"] = clock
+            }
+            if let desc = play.description {
+                event["description"] = desc
+            }
+            if let team = play.teamAbbreviation {
+                event["team"] = team
+            }
+            if let player = play.playerName {
+                event["player_name"] = player
+            }
+            if let home = play.homeScore {
+                event["home_score"] = home
+            }
+            if let away = play.awayScore {
+                event["away_score"] = away
+            }
+            
+            events.append(event)
+            
+            // Interleave tweets at key moments (every 20 plays)
+            if index > 0 && index % 20 == 0 && index / 20 <= detail.socialPosts.count {
+                let postIndex = (index / 20) - 1
+                if postIndex < detail.socialPosts.count {
+                    let post = detail.socialPosts[postIndex]
+                    var tweetEvent: [String: Any] = [
+                        "event_type": "tweet",
+                        "synthetic_timestamp": post.postedAt,
+                        "tweet_text": post.tweetText ?? "",
+                        "source_handle": post.sourceHandle ?? "team",
+                        "tweet_url": post.postUrl
+                    ]
+                    if let imageUrl = post.imageUrl {
+                        tweetEvent["image_url"] = imageUrl
+                    }
+                    events.append(tweetEvent)
+                }
+            }
+        }
+        
+        return events
     }
 
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
@@ -179,54 +254,9 @@ final class MockGameService: GameService {
         return MockLoader.load("related-posts")
     }
 
-    func fetchSummary(gameId: Int, reveal: RevealLevel) async throws -> AISummaryResponse {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 180_000_000) // 180ms
-
-        if generatedGames == nil {
-            generatedGames = MockDataGenerator.generateGames()
-        }
-
-        let homeTeam: String?
-        let awayTeam: String?
-        let homeScore: Int?
-        let awayScore: Int?
-        
-        if let cachedGame = gameCache[gameId]?.game {
-            homeTeam = cachedGame.homeTeam
-            awayTeam = cachedGame.awayTeam
-            homeScore = cachedGame.homeScore
-            awayScore = cachedGame.awayScore
-        } else if let summary = generatedGames?.first(where: { $0.id == gameId }) {
-            homeTeam = summary.homeTeam
-            awayTeam = summary.awayTeam
-            homeScore = summary.homeScore
-            awayScore = summary.awayScore
-        } else {
-            homeTeam = nil
-            awayTeam = nil
-            homeScore = nil
-            awayScore = nil
-        }
-
-        guard let homeTeam, let awayTeam else {
-            throw GameServiceError.notFound
-        }
-
-        return AISummaryResponse(
-            summary: MockDataGenerator.generateSummary(
-                homeTeam: homeTeam,
-                awayTeam: awayTeam,
-                homeScore: homeScore,
-                awayScore: awayScore,
-                reveal: reveal
-            )
-        )
-    }
-
     // MARK: - Helpers
 
-    private func findOrGenerateSummary(for gameId: Int) -> GameSummary? {
+    private func findGameSummary(for gameId: Int) -> GameSummary? {
         if generatedGames == nil {
             generatedGames = MockDataGenerator.generateGames()
         }

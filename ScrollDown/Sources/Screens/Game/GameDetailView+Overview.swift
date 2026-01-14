@@ -6,7 +6,7 @@ extension GameDetailView {
             Toggle("Compact Mode", isOn: $isCompactMode)
                 .tint(GameTheme.accentColor)
         }
-        .accessibilityHint("Switch to a chapter-based recap flow")
+        .accessibilityHint("Reduces spacing and typography for denser timeline view")
     }
 
     var overviewSection: some View {
@@ -30,7 +30,7 @@ extension GameDetailView {
             
             // Recap content
             VStack(alignment: .leading, spacing: GameDetailLayout.textSpacing) {
-                aiSummaryView
+                summaryView
 
                 VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
                     ForEach(viewModel.recapBullets, id: \.self) { bullet in
@@ -93,9 +93,7 @@ extension GameDetailView {
                 Spacer()
                 
                 Button {
-                    Task {
-                        await viewModel.toggleOutcomeReveal(gameId: gameId, service: appConfig.gameService)
-                    }
+                    viewModel.toggleOutcomeReveal(for: gameId)
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: viewModel.isOutcomeRevealed ? "eye.slash" : "eye")

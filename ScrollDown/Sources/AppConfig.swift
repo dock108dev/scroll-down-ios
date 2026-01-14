@@ -25,18 +25,10 @@ enum AppEnvironment: String, CaseIterable {
 }
 
 enum FeatureFlags {
-    static let enableGamePreviewScores: Bool = {
-        #if DEBUG
-        return true
-        #else
-        return false
-        #endif
-    }()
-    
     /// Set to true to default to localhost on app launch (DEBUG only)
     /// Useful for local development sessions—change this instead of using Admin Settings each time
     /// NOTE: Requires local server running on port \(APIConfiguration.localhostPort)
-    static let defaultToLocalhost: Bool = true
+    static let defaultToLocalhost: Bool = false  // Changed to false to use mock mode
 }
 
 // MARK: - Dev Clock

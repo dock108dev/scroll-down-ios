@@ -70,11 +70,6 @@ final class RealGameService: GameService {
         throw GameServiceError.notImplemented
     }
 
-    func fetchSummary(gameId: Int, reveal: RevealLevel) async throws -> AISummaryResponse {
-        let queryItems = [URLQueryItem(name: "reveal", value: reveal.rawValue)]
-        return try await request(path: "games/\(gameId)/summary", queryItems: queryItems)
-    }
-
     // MARK: - Networking
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {

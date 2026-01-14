@@ -3,7 +3,6 @@ import SwiftUI
 /// Row view for displaying a game summary in a list
 struct GameRowView: View {
     let game: GameSummary
-    @State private var isNuggetSheetPresented = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -35,11 +34,9 @@ struct GameRowView: View {
                         .foregroundColor(.primary)
                     
                     // Status line
-                    Text(statusText)
+                    Text(game.statusLine)
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                    
-                    previewWidget
                 }
                 
                 Spacer()
@@ -62,96 +59,12 @@ struct GameRowView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
-        .sheet(isPresented: $isNuggetSheetPresented) {
-            NuggetDetailSheet(
-                nuggetText: nuggetText,
-                tags: Strings.nuggetTags
-            )
-        }
     }
     
     // MARK: - Helpers
-
-    private var previewWidget: some View {
-        VStack(alignment: .leading, spacing: Layout.previewSpacing) {
-            if shouldShowPlaceholder {
-                placeholderBadgeRow
-            } else {
-                HStack(spacing: Layout.previewSpacing) {
-                    previewBadge(title: Strings.excitementLabel, value: excitementScore)
-                    previewBadge(title: Strings.qualityLabel, value: qualityScore)
-                    
-                    Spacer()
-                    
-                    infoButton
-                }
-            }
-        }
-    }
-
-    private func previewBadge(title: String, value: Int) -> some View {
-        HStack(spacing: Layout.badgeSpacing) {
-            Text(title)
-                .font(.caption2.weight(.semibold))
-                .foregroundColor(.secondary)
-            Text("\(value)")
-                .font(.caption2.weight(.bold))
-                .foregroundColor(.primary)
-        }
-        .padding(.horizontal, Layout.badgeHorizontalPadding)
-        .padding(.vertical, Layout.badgeVerticalPadding)
-        .background(Color(.systemGray6))
-        .clipShape(Capsule())
-    }
-
-    private var infoButton: some View {
-        Button {
-            isNuggetSheetPresented = true
-        } label: {
-            Image(systemName: Strings.infoIconFilled)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(Layout.infoPadding)
-                .background(Color(.systemGray6))
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Strings.expandNuggetLabel)
-    }
-
-    private var placeholderBadgeRow: some View {
-        HStack(spacing: Layout.previewSpacing) {
-            skeletonBadge(width: Layout.skeletonBadgeWidthLarge)
-            skeletonBadge(width: Layout.skeletonBadgeWidthSmall)
-            
-            Spacer()
-            
-            Circle()
-                .fill(Color(.systemGray5))
-                .frame(width: Layout.skeletonInfoSize, height: Layout.skeletonInfoSize)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func skeletonBadge(width: CGFloat) -> some View {
-        Capsule()
-            .fill(Color(.systemGray5))
-            .frame(width: width, height: Layout.skeletonBadgeHeight)
-    }
     
     private var matchupTitle: String {
         "\(game.awayTeamName) at \(game.homeTeamName)"
-    }
-
-    private var statusText: String {
-        shouldShowPlaceholder ? Strings.evaluatingMatchup : game.statusLine
-    }
-
-    private var shouldShowPlaceholder: Bool {
-        // Show placeholder if no status or scheduled game
-        // hasRequiredData isn't in the snapshot API response, so derive from status
-        guard let status = game.status else { return true }
-        return status == .scheduled
     }
     
     private var leagueColor: Color {
@@ -169,28 +82,6 @@ struct GameRowView: View {
     private var accessibilityLabel: String {
         "\(game.awayTeamName) at \(game.homeTeamName). \(game.statusLine)."
     }
-
-    private var excitementScore: Int {
-        previewScore(from: game.playCount, fallbackSeed: game.id * 7 + 13, baseScore: 58)
-    }
-
-    private var qualityScore: Int {
-        previewScore(from: game.socialPostCount, fallbackSeed: game.id * 11 + 29, baseScore: 52)
-    }
-
-    private var nuggetText: String {
-        let nuggets = Strings.nuggets
-        let index = abs(game.id) % nuggets.count
-        return nuggets[index]
-    }
-
-    private func previewScore(from metric: Int?, fallbackSeed: Int, baseScore: Int) -> Int {
-        if let metric, metric > 0 {
-            return min(99, baseScore + (metric % 40))
-        }
-        let normalized = abs(fallbackSeed) % 30
-        return min(95, baseScore + normalized)
-    }
 }
 
 private enum Layout {
@@ -200,74 +91,6 @@ private enum Layout {
     static let contentSpacing: CGFloat = 12
     static let textSpacing: CGFloat = 6
     static let metaSpacing: CGFloat = 6
-    static let previewSpacing: CGFloat = 8
-    static let badgeSpacing: CGFloat = 4
-    static let badgeHorizontalPadding: CGFloat = 8
-    static let badgeVerticalPadding: CGFloat = 4
-    static let infoPadding: CGFloat = 6
-    static let skeletonBadgeHeight: CGFloat = 20
-    static let skeletonBadgeWidthLarge: CGFloat = 92
-    static let skeletonBadgeWidthSmall: CGFloat = 76
-    static let skeletonInfoSize: CGFloat = 24
-    static let nuggetSheetTagSpacing: CGFloat = 8
-    static let nuggetSheetTagPadding: CGFloat = 6
-    static let nuggetSheetHorizontalPadding: CGFloat = 16
-    static let nuggetSheetVerticalPadding: CGFloat = 20
-}
-
-private enum Strings {
-    static let excitementLabel = "Excitement"
-    static let qualityLabel = "Quality"
-    static let infoIconFilled = "info.circle.fill"
-    static let expandNuggetLabel = "Open game nugget"
-    static let nuggetSheetTitle = "Why this game matters"
-    static let nuggetTags = ["Rivalry", "Postseason Stakes", "Bubble Watch"]
-    static let evaluatingMatchup = "Evaluating matchup..."
-    static let nuggets = [
-        "Momentum swings make the late stages worth a peek.",
-        "A matchup of styles could set up a tight finish.",
-        "Expect a steady pace with a few key turning points.",
-        "Late-game execution may decide this one.",
-        "Plenty of back-and-forth keeps the tension high."
-    ]
-}
-
-private struct NuggetDetailSheet: View {
-    let nuggetText: String
-    let tags: [String]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Layout.nuggetSheetVerticalPadding) {
-            Text(Strings.nuggetSheetTitle)
-                .font(.title3.weight(.semibold))
-                .foregroundColor(.primary)
-
-            Text(nuggetText)
-                .font(.body)
-                .foregroundColor(.secondary)
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 120), alignment: .leading)],
-                alignment: .leading,
-                spacing: Layout.nuggetSheetTagSpacing
-            ) {
-                ForEach(tags, id: \.self) { tag in
-                    Text(tag)
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, Layout.nuggetSheetHorizontalPadding)
-                        .padding(.vertical, Layout.nuggetSheetTagPadding)
-                        .background(Color(.systemGray6))
-                        .clipShape(Capsule())
-                        .accessibilityLabel(tag)
-                }
-            }
-        }
-        .padding(.horizontal, Layout.nuggetSheetHorizontalPadding)
-        .padding(.vertical, Layout.nuggetSheetVerticalPadding)
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
-    }
 }
 
 #Preview {
@@ -366,4 +189,3 @@ private struct NuggetDetailSheet: View {
     .background(HomeTheme.background)
     .preferredColorScheme(.dark)
 }
-

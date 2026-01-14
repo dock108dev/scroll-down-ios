@@ -3,17 +3,17 @@ import OSLog
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
+    /// Summary state derived from timeline artifact
+    /// No async loading - summaries either exist or don't
     enum SummaryState: Equatable {
-        case loading
-        case loaded(String)
-        case failed(String)
+        case unavailable
+        case available(String)
     }
 
     @Published private(set) var detail: GameDetailResponse?
     @Published var isLoading: Bool
     @Published var errorMessage: String?
     @Published private(set) var isUnavailable: Bool = false
-    @Published private(set) var summaryState: SummaryState = .loading
     @Published private(set) var relatedPosts: [RelatedPost] = []
     @Published private(set) var relatedPostsState: RelatedPostsState = .idle
     @Published private(set) var revealedRelatedPostIds: Set<Int> = []
@@ -90,30 +90,11 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    func loadSummary(gameId: Int, service: GameService) async {
-        summaryState = .loading
-
-        do {
-            // Use reveal level based on user preference
-            // Default is always .pre (outcome-hidden)
-            let revealLevel: RevealLevel = isOutcomeRevealed ? .post : .pre
-            let response = try await service.fetchSummary(gameId: gameId, reveal: revealLevel)
-            let sanitized = sanitizeSummary(response.summary)
-            summaryState = .loaded(sanitized ?? overviewSummary)
-        } catch {
-            summaryState = .failed(error.localizedDescription)
-        }
-    }
-    
-    /// Toggle outcome reveal and reload summary
-    func toggleOutcomeReveal(gameId: Int, service: GameService) async {
+    /// Toggle outcome reveal (presentation-only, no data refetch)
+    /// Reveal is a client-side preference - summary content doesn't change
+    func toggleOutcomeReveal(for gameId: Int) {
         isOutcomeRevealed.toggle()
-        
-        // Persist preference
         UserDefaults.standard.set(isOutcomeRevealed, forKey: outcomeRevealKey(for: gameId))
-        
-        // Reload summary with new reveal level
-        await loadSummary(gameId: gameId, service: service)
     }
     
     /// Load persisted reveal preference
@@ -230,9 +211,12 @@ final class GameDetailViewModel: ObservableObject {
         detail?.game
     }
 
+    /// DEPRECATED: Client-side fallback summary generation
+    /// Summaries should come from timeline artifact's summary_json only
+    @available(*, deprecated, message: "Summaries are pre-generated server-side, no client fallback")
     var overviewSummary: String {
         guard let game = detail?.game else {
-            return Constants.summaryFallback
+            return "Game details unavailable."
         }
         return String(format: Constants.summaryTemplate, game.awayTeam, game.homeTeam)
     }
@@ -308,6 +292,8 @@ final class GameDetailViewModel: ObservableObject {
         detail?.socialPosts.filter { $0.hasVideo || $0.imageUrl != nil } ?? []
     }
 
+    /// DEPRECATED: Legacy compact timeline moments from the old chapter-based approach
+    @available(*, deprecated, message: "Use unifiedTimelineEvents from timeline_json")
     var compactTimelineMoments: [CompactMoment] {
         let moments = detail?.compactMoments ?? []
         if !moments.isEmpty {
@@ -317,17 +303,44 @@ final class GameDetailViewModel: ObservableObject {
         return (detail?.plays ?? []).map { CompactMoment(play: $0) }
     }
 
+    /// DEPRECATED: Pre-game posts - social posts are now in unified timeline
+    @available(*, deprecated, message: "Social posts are now integrated into timeline_json")
     var preGamePosts: [SocialPostEntry] {
         splitPosts().preGame
     }
 
+    /// DEPRECATED: Post-game posts - social posts are now in unified timeline
+    @available(*, deprecated, message: "Social posts are now integrated into timeline_json")
     var postGamePosts: [SocialPostEntry] {
         splitPosts().postGame
     }
 
+    // MARK: - Unified Timeline (Single Source of Truth)
+    
+    /// Unified timeline events parsed from timeline_json
+    /// Rendered in server-provided order — no client-side sorting or merging
+    var unifiedTimelineEvents: [UnifiedTimelineEvent] {
+        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
+            return []
+        }
+        
+        let rawEvents = extractTimelineEvents(from: timelineValue)
+        return rawEvents.enumerated().map { index, dict in
+            UnifiedTimelineEvent(from: dict, index: index)
+        }
+    }
+    
+    /// Whether timeline data is available from timeline_json
+    var hasUnifiedTimeline: Bool {
+        !unifiedTimelineEvents.isEmpty
+    }
+    
+    // MARK: - Legacy Timeline (deprecated - kept for fallback)
+    
+    @available(*, deprecated, message: "Use unifiedTimelineEvents instead - renders from timeline_json")
     var timelineQuarters: [QuarterTimeline] {
-        // NOTE: Timeline UI currently relies on client-side grouping/sorting of `detail.plays`.
-        // Social posts are also filtered client-side by reveal state; no server-side timeline merge exists yet.
+        // DEPRECATED: This groups/sorts detail.plays client-side
+        // Only used as fallback if timeline_json is empty
         let plays = detail?.plays ?? []
         let grouped = Dictionary(grouping: plays, by: { $0.quarter ?? Constants.unknownQuarter })
         return grouped
@@ -352,6 +365,42 @@ final class GameDetailViewModel: ObservableObject {
             firstTimestamp: firstTimestamp,
             lastTimestamp: lastTimestamp
         )
+    }
+
+    /// Summary state derived from timeline artifact
+    /// Summaries are pre-generated server-side - no async loading, retry, or client-side generation
+    var summaryState: SummaryState {
+        // Extract summary from timeline artifact's summary_json
+        // If missing, return unavailable - no client-side fallback generation
+        if let summaryText = extractSummaryFromArtifact() {
+            return .available(summaryText)
+        }
+        return .unavailable
+    }
+    
+    /// Extract narrative summary from timeline artifact's summary_json
+    private func extractSummaryFromArtifact() -> String? {
+        guard let summaryJson = timelineArtifact?.summaryJson,
+              let dict = summaryJson.value as? [String: Any] else {
+            return nil
+        }
+        
+        // Try "overall" key first (standard format)
+        if let overall = dict["overall"] as? String {
+            return sanitizeSummary(overall)
+        }
+        
+        // Try "summary" key as fallback
+        if let summary = dict["summary"] as? String {
+            return sanitizeSummary(summary)
+        }
+        
+        // If it's just a string value directly
+        if let directSummary = summaryJson.value as? String {
+            return sanitizeSummary(directSummary)
+        }
+        
+        return nil
     }
 
     var highlightByPlayIndex: [Int: [SocialPostEntry]] {
@@ -583,14 +632,13 @@ final class GameDetailViewModel: ObservableObject {
 
 private enum Constants {
     static let summaryTemplate = "Catch up on %@ at %@."
-    static let summaryFallback = "Summary will appear here soon."
     static let recapTeamsTemplate = "Matchup: %@ at %@."
     static let recapStatusTemplate = "Status: %@."
     static let recapHighlightsTemplate = "Key moments and highlights below."
     static let recapFallbackBullets = [
-        "Matchup details are loading.",
-        "Timeline updates will appear shortly.",
-        "Highlights will populate when available."
+        "Matchup details unavailable.",
+        "Check back later for timeline updates.",
+        "Highlights will appear when available."
     ]
     static let unknownQuarter = 0
     static let halftimeQuarter = 2
