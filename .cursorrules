@@ -1,102 +1,33 @@
-# AI Coding Rules
+# Cursor Rules for Scroll Down (iOS App)
 
-## Universal Standards
+## Core Product Principles
+1. **Progressive disclosure** — Show context before scores; users arrive after games are played
+2. **User-controlled pacing** — They decide when to reveal results
+3. **Mobile-first experience** — Designed for touch navigation and vertical scrolling
 
-### Code Quality
-- Write clear, self-documenting code. Comments explain WHY, not WHAT.
-- Small, focused functions. One responsibility per function.
-- No magic numbers or hardcoded strings—use constants.
-- Fail fast. Validate inputs early, handle errors explicitly.
-- No silent failures. Log or surface all errors.
+## Architecture
+- **MVVM Architecture** — Views don't contain business logic
+- **Swift Conventions** — Follow Swift API Design Guidelines
+- **SwiftUI** — Every view needs a `#Preview`, support dark mode
+- **No Force Unwrapping** — Use guard statements
+- **Incremental Changes** — Don't rewrite, improve incrementally
 
-### Change Philosophy
-- Prefer minimal, incremental changes over rewrites.
-- Don't refactor unrelated code while fixing bugs.
-- If something works, don't "improve" it without reason.
-- Leave code cleaner than you found it, but don't go overboard.
+## Coding Standards
+1. Follow Swift API Design Guidelines
+2. Use meaningful names for UI components
+3. Keep view models focused on presentation logic
+4. Add accessibility support where appropriate
+5. Test UI components with previews
 
-### Dependencies
-- Don't add new dependencies casually.
-- Justify any new package inline.
-- Prefer standard library solutions when reasonable.
+## Data Contract
+Models should align with `scroll-down-api-spec`. When API changes:
+1. Spec updates first
+2. Then update Swift models to match
 
-### Testing
-- Add tests for new logic.
-- If fixing a bug, add a regression test.
-- Tests should be deterministic and fast.
-
-### Documentation
-- Update README if behavior changes.
-- Add CHANGELOG entries for user-facing changes.
-- Document breaking changes explicitly.
-
-### What NOT to Do
-- Don't over-engineer or over-abstract.
-- Don't add features that weren't requested.
-- Don't guess—ask or leave a TODO.
-- Don't use print/console.log in production code.
-
----
-
-## Tech Stack: Swift / SwiftUI (iOS)
-
-### Architecture
-- MVVM pattern: Views → ViewModels → Models/Services
-- Views should not contain business logic
-- ViewModels handle state and business logic
-- Models are plain data structures (prefer structs)
-- Services handle external concerns (network, persistence)
-
-### Swift Conventions
-- Follow Swift API Design Guidelines
-- Use `camelCase` for properties/functions, `PascalCase` for types
-- Prefer `let` over `var`
-- Use guard for early exits
-- Avoid force unwrapping (!) without guard
-
-### SwiftUI Practices
-- Extract subviews when a view exceeds ~30 lines
-- Use `@State` for view-local state, `@StateObject` for owned objects
-- Support dark mode—use semantic colors
-- Every view file should have a `#Preview`
-- Use `.task` for async work, not `.onAppear` with Task
-
-### File Structure
-```
-AppName/
-├── Models/          # Data structures
-├── Views/           # SwiftUI views
-├── ViewModels/      # ObservableObject classes
-├── Services/        # Network, persistence, utilities
-└── Resources/       # Assets, localized strings
-```
-
-### Prohibited
-- Force unwrapping without guard
-- Empty catch blocks
-- Business logic in Views
-- Network calls without proper error handling
-
----
-
-## Project: Scroll Down (iOS App)
-
-### Purpose
-iOS client for the Scroll Down Sports platform—spoiler-free sports recaps.
-
-### Core Principles
-- **Spoiler-safe by default**: Users arrive after games are played
-- **Progressive disclosure**: Context before scores
-- **User control**: They decide when to reveal results
-
-### Key Directories
-- `ScrollDown/Sources/` — App source code
-- `ScrollDown/Resources/` — Mock data and assets
-- `ScrollDown/Tests/` — Unit tests
-
-### Data Flow
-- App consumes API defined in `scroll-down-api-spec`
-- Models should match OpenAPI spec definitions
-
-### Files to Handle With Care
-- `ScrollDown.xcodeproj/project.pbxproj` — Prefer editing via Xcode; manual edits are OK when you know what you’re doing (e.g. merge conflict resolution). Keep diffs minimal and validate with `xcodebuild`.
+## Do NOT
+- **Auto-commit changes** — Wait for user to review and commit manually
+- Run commands that require interactive input to quit
+- Run long-running commands (>5 seconds) without verbose logging (use logging that outputs every 30 seconds or so)
+- Break progressive disclosure defaults
+- Add dependencies without justification
+- Use `print()` in production code
