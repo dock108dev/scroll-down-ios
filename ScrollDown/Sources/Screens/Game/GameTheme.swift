@@ -1,6 +1,127 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Design System
+
+/// Unified design constants for consistent visual language
+/// All values are intentional and should be used consistently throughout the app
+enum DesignSystem {
+    
+    // MARK: - Corner Radii
+    // Tightened by ~15% for sharper, more premium feel
+    
+    enum Radius {
+        /// Large cards (section cards, main containers)
+        static let card: CGFloat = 10
+        /// Medium elements (timeline rows, stat rows, nested cards)
+        static let element: CGFloat = 8
+        /// Small elements (chips, tags, tooltips)
+        static let small: CGFloat = 5
+    }
+    
+    // MARK: - Spacing
+    // Tightened by ~15% to reduce "floatiness"
+    
+    enum Spacing {
+        /// Between major sections
+        static let section: CGFloat = 14
+        /// Between cards/rows in a list
+        static let list: CGFloat = 6
+        /// Internal card padding
+        static let cardPadding: CGFloat = 12
+        /// Internal element padding
+        static let elementPadding: CGFloat = 10
+        /// Between text elements
+        static let text: CGFloat = 3
+        /// Tight spacing
+        static let tight: CGFloat = 2
+    }
+    
+    // MARK: - Shadows
+    
+    enum Shadow {
+        static var color: Color { GameTheme.cardShadow }
+        static let radius: CGFloat = 6
+        static let y: CGFloat = 2
+        
+        /// Subtle shadow for nested elements
+        static let subtleRadius: CGFloat = 3
+        static let subtleY: CGFloat = 1
+    }
+    
+    // MARK: - Borders
+    
+    static let borderColor = Color(.systemGray4) // Slightly more visible
+    static let borderWidth: CGFloat = 0.5
+    
+    // MARK: - Typography
+    
+    enum Typography {
+        static let sectionTitle = Font.subheadline.weight(.semibold)
+        static let sectionSubtitle = Font.caption2
+        static let rowTitle = Font.footnote
+        static let rowMeta = Font.caption2
+        static let statValue = Font.caption
+        static let statLabel = Font.caption2.weight(.semibold)
+    }
+    
+    // MARK: - Text Contrast Tiers
+    // Three distinct tiers for proper hierarchy
+    
+    enum TextColor {
+        /// Primary text: key numbers, player names, headlines (90-100% opacity)
+        static let primary = Color.primary
+        /// Secondary text: labels, metadata (65-75% opacity)  
+        static let secondary = Color(.label).opacity(0.7)
+        /// Tertiary text: hints, placeholders, subdued info (50% opacity)
+        static let tertiary = Color(.label).opacity(0.50)
+    }
+    
+    // MARK: - Interaction Accent
+    // ONLY for navigation and focus states — NOT for team identity
+    
+    enum Accent {
+        /// Interaction accent - tabs, active states, navigation
+        static let primary = Color(.systemBlue)
+        /// Accent at reduced opacity for tab backgrounds
+        static let background = Color(.systemBlue).opacity(0.12)
+    }
+    
+    // MARK: - Dual-Team Color System
+    // Two peer colors for left/right comparison — neither is "accent"
+    // Think broadcast graphics, not marketing
+    
+    enum TeamColors {
+        // TEAM A (Left / Away) — Muted indigo/purple
+        static let teamA = Color(.systemIndigo)
+        static let teamABackground = Color(.systemIndigo).opacity(0.12)
+        static let teamABar = Color(.systemIndigo).opacity(0.7)
+        
+        // TEAM B (Right / Home) — Slightly brighter teal
+        static let teamB = Color(.systemTeal)
+        static let teamBBackground = Color(.systemTeal).opacity(0.12)
+        static let teamBBar = Color(.systemTeal).opacity(0.7)
+    }
+    
+    // MARK: - Colors
+    
+    enum Colors {
+        static var cardBackground: Color { GameTheme.cardBackground }
+        static let elevatedBackground = Color(.systemGray6)
+        static let rowBackground = Color(.systemBackground)
+        static let alternateRowBackground = Color(.systemGray6).opacity(0.4)
+        
+        /// Away team badge (Team A - indigo)
+        static let awayBadge = TeamColors.teamABackground
+        /// Home team badge (Team B - teal)
+        static let homeBadge = TeamColors.teamBBackground
+        /// Neutral badge for non-team contexts
+        static let neutralBadge = Color(.systemGray5)
+    }
+}
+
+// MARK: - Game Theme
+
 enum GameTheme {
     // Primary accent - confident blue
     static let accentColor = Color(uiColor: UIColor { traits in

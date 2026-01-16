@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
     @State private var showingAdminSettings = false // Beta admin access
+    @State private var hasLoadedInitialData = false // Prevents reload on back navigation
 
     var body: some View {
         ZStack {
@@ -39,6 +40,9 @@ struct HomeView: View {
             }
         }
         .task {
+            // Only load on first appearance — preserve data on back navigation
+            guard !hasLoadedInitialData else { return }
+            hasLoadedInitialData = true
             await loadGames()
         }
         .sheet(isPresented: $showingAdminSettings, onDismiss: {

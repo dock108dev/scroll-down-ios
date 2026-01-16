@@ -79,12 +79,9 @@ struct GameRowView: View {
 }
 
 private enum Layout {
-    static let accentStripHeight: CGFloat = 4
-    static let cardPadding: CGFloat = 16
-    static let cardCornerRadius: CGFloat = 16
-    static let contentSpacing: CGFloat = 12
-    static let textSpacing: CGFloat = 6
-    static let metaSpacing: CGFloat = 6
+    static let cardPadding: CGFloat = 14
+    static let contentSpacing: CGFloat = 10
+    static let textSpacing: CGFloat = 4
 }
 
 #Preview {

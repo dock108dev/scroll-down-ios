@@ -1,130 +1,263 @@
 import SwiftUI
 
+// MARK: - Matchup Header Card
+/// Premium, sports-native header card using typography and shape instead of logos.
+/// Design philosophy: Confident and finished even with zero images.
+
 struct GameHeaderView: View {
     let game: Game
     var scoreRevealed: Bool = false
+    
+    // Entrance animation state
+    @State private var hasAppeared = false
 
     var body: some View {
-        VStack(spacing: Layout.spacing) {
-            HStack(spacing: Layout.badgeSpacing) {
-                Text(game.status.rawValue.capitalized)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, Layout.badgeHorizontalPadding)
-                    .padding(.vertical, Layout.badgeVerticalPadding)
-                    .background(GameTheme.accentColor.opacity(Layout.badgeBackgroundOpacity))
-                    .foregroundColor(GameTheme.accentColor)
-                    .clipShape(Capsule())
-
-                if let date = game.parsedGameDate {
-                    Text(date, format: .dateTime.month(.abbreviated).day().hour().minute())
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+        VStack(spacing: Layout.verticalSpacing) {
+            // MARK: Primary Row - Team Matchup
+            // Abbreviations are the hero element; largest and most prominent
+            HStack(spacing: 0) {
+                // Away team (left side)
+                TeamBadgeView(
+                    teamName: game.awayTeam,
+                    isHome: false
+                )
+                
+                Spacer()
+                
+                // Center divider - reduced visual weight, not competing with teams
+                VStack(spacing: 2) {
+                    Text("@")
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(Color(.tertiaryLabel))
                 }
-
+                .frame(width: 24)
+                
+                Spacer()
+                
+                // Home team (right side) - slightly heavier to indicate home
+                TeamBadgeView(
+                    teamName: game.homeTeam,
+                    isHome: true
+                )
+            }
+            
+            // MARK: Secondary Row - Status + Metadata
+            // Visually subordinate to the matchup
+            HStack(spacing: 8) {
+                // Status pill - secondary prominence
+                statusPill
+                
+                // Date/time metadata - tertiary prominence
+                if let date = game.parsedGameDate {
+                    Text(date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute())
+                        .font(.caption2)
+                        .foregroundColor(Color(.tertiaryLabel))
+                }
+                
                 Spacer()
             }
-
-            HStack(spacing: Layout.teamSpacing) {
-                TeamHeaderView(teamName: game.awayTeam, alignment: .leading)
-                VStack(spacing: Layout.vsSpacing) {
-                    Text("vs")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                }
-                TeamHeaderView(teamName: game.homeTeam, alignment: .trailing)
-            }
-
-            Text(statusDescription)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(Layout.cardPadding)
-        .background(GameTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: Layout.cornerRadius)
-                .stroke(GameTheme.cardBorder, lineWidth: Layout.borderWidth)
-        )
-        .shadow(
-            color: GameTheme.cardShadow,
-            radius: Layout.shadowRadius,
-            x: 0,
-            y: Layout.shadowYOffset
-        )
         .padding(.horizontal, Layout.horizontalPadding)
+        .padding(.vertical, Layout.verticalPadding)
+        .background(cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.card))
+        .shadow(
+            color: DesignSystem.Shadow.color,
+            radius: DesignSystem.Shadow.radius,
+            x: 0,
+            y: DesignSystem.Shadow.y
+        )
+        .padding(.horizontal, Layout.cardInset)
+        // Subtle entrance animation - fade + slight rise
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared ? 0 : 4)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3).delay(0.1)) {
+                hasAppeared = true
+            }
+        }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Game header")
-        .accessibilityValue("\(game.awayTeam) at \(game.homeTeam), \(statusDescription)")
+        .accessibilityLabel("Matchup: \(game.awayTeam) at \(game.homeTeam)")
+        .accessibilityValue(statusAccessibilityLabel)
     }
-
-    private var statusDescription: String {
+    
+    // MARK: - Status Pill
+    /// Small, secondary status indicator. Subtle tint, not loud.
+    private var statusPill: some View {
+        Text(statusText)
+            .font(.caption2.weight(.semibold))
+            .foregroundColor(statusForeground)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(statusBackground)
+            .clipShape(Capsule())
+    }
+    
+    private var statusText: String {
         switch game.status {
         case .completed, .final:
-            return "Game complete"
+            return "Final"
         case .scheduled:
-            return "Starts soon"
+            return "Upcoming"
         case .inProgress:
-            return "Live — catching up available"
+            return "Live"
         case .postponed:
             return "Postponed"
         case .canceled:
             return "Canceled"
         }
     }
-}
-
-private struct TeamHeaderView: View {
-    let teamName: String
-    let alignment: HorizontalAlignment
-
-    var body: some View {
-        VStack(alignment: alignment, spacing: Layout.teamTextSpacing) {
-            ZStack {
-                Circle()
-                    .fill(GameTheme.accentColor.opacity(Layout.logoOpacity))
-                    .frame(width: Layout.logoSize, height: Layout.logoSize)
-
-                Text(initials(for: teamName))
-                    .font(.caption.weight(.bold))
-                    .foregroundColor(GameTheme.accentColor)
-            }
-
-            Text(teamName)
-                .font(.headline)
-                .multilineTextAlignment(alignment == .leading ? .leading : .trailing)
+    
+    // Status colors - muted, not attention-grabbing
+    private var statusForeground: Color {
+        switch game.status {
+        case .inProgress:
+            return Color(.systemGreen)
+        default:
+            return Color(.secondaryLabel)
         }
-        .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
     }
-
-    private func initials(for name: String) -> String {
-        let words = name.split(separator: " ")
-        let initials = words.prefix(2).compactMap { $0.first }
-        return initials.map { String($0) }.joined()
+    
+    private var statusBackground: Color {
+        switch game.status {
+        case .inProgress:
+            return Color(.systemGreen).opacity(0.12)
+        default:
+            return Color(.systemGray5)
+        }
+    }
+    
+    private var statusAccessibilityLabel: String {
+        switch game.status {
+        case .completed, .final:
+            return "Game complete"
+        case .scheduled:
+            return "Upcoming game"
+        case .inProgress:
+            return "Game in progress"
+        case .postponed:
+            return "Game postponed"
+        case .canceled:
+            return "Game canceled"
+        }
+    }
+    
+    // Card background with subtle material effect
+    private var cardBackground: some View {
+        DesignSystem.Colors.cardBackground
     }
 }
+
+// MARK: - Team Badge View
+/// Displays team as abbreviation badge + city name
+/// DUAL-TEAM COLORS: Away = Team A (indigo), Home = Team B (teal)
+
+private struct TeamBadgeView: View {
+    let teamName: String
+    let isHome: Bool
+    
+    var body: some View {
+        VStack(alignment: isHome ? .trailing : .leading, spacing: 5) {
+            // Abbreviation badge — each team gets its own color
+            Text(abbreviation)
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(teamColor)
+                .frame(width: 52, height: 34)
+                .background(badgeBackground)
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+            
+            // City/team name - neutral secondary text
+            Text(teamName)
+                .font(.caption2)
+                .foregroundColor(DesignSystem.TextColor.secondary)
+                .lineLimit(1)
+        }
+    }
+    
+    // Team color — Away (A) = indigo, Home (B) = teal
+    private var teamColor: Color {
+        isHome ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA
+    }
+    
+    // Badge background — each team gets its own tinted background
+    private var badgeBackground: Color {
+        isHome ? DesignSystem.Colors.homeBadge : DesignSystem.Colors.awayBadge
+    }
+    
+    /// Generate 2-3 letter abbreviation from team name
+    /// Uses common sports abbreviation patterns
+    private var abbreviation: String {
+        // Common NBA/NFL team abbreviations
+        let abbreviations: [String: String] = [
+            "Atlanta Hawks": "ATL",
+            "Boston Celtics": "BOS",
+            "Brooklyn Nets": "BKN",
+            "Charlotte Hornets": "CHA",
+            "Chicago Bulls": "CHI",
+            "Cleveland Cavaliers": "CLE",
+            "Dallas Mavericks": "DAL",
+            "Denver Nuggets": "DEN",
+            "Detroit Pistons": "DET",
+            "Golden State Warriors": "GSW",
+            "Houston Rockets": "HOU",
+            "Indiana Pacers": "IND",
+            "Los Angeles Clippers": "LAC",
+            "Los Angeles Lakers": "LAL",
+            "Memphis Grizzlies": "MEM",
+            "Miami Heat": "MIA",
+            "Milwaukee Bucks": "MIL",
+            "Minnesota Timberwolves": "MIN",
+            "New Orleans Pelicans": "NOP",
+            "New York Knicks": "NYK",
+            "Oklahoma City Thunder": "OKC",
+            "Orlando Magic": "ORL",
+            "Philadelphia 76ers": "PHI",
+            "Phoenix Suns": "PHX",
+            "Portland Trail Blazers": "POR",
+            "Sacramento Kings": "SAC",
+            "San Antonio Spurs": "SAS",
+            "Toronto Raptors": "TOR",
+            "Utah Jazz": "UTA",
+            "Washington Wizards": "WAS"
+        ]
+        
+        if let known = abbreviations[teamName] {
+            return known
+        }
+        
+        // Fallback: use first 3 letters of last word (team nickname)
+        let words = teamName.split(separator: " ")
+        if let lastWord = words.last {
+            return String(lastWord.prefix(3)).uppercased()
+        }
+        return String(teamName.prefix(3)).uppercased()
+    }
+}
+
+// MARK: - Layout Constants
+/// Intentional spacing values for tight, premium feel
 
 private enum Layout {
-    static let spacing: CGFloat = 16
-    static let badgeSpacing: CGFloat = 12
-    static let badgeHorizontalPadding: CGFloat = 10
-    static let badgeVerticalPadding: CGFloat = 6
-    static let badgeBackgroundOpacity: CGFloat = 0.15
-    static let teamSpacing: CGFloat = 12
-    static let teamTextSpacing: CGFloat = 8
-    static let vsSpacing: CGFloat = 6
-    static let logoSize: CGFloat = 54
-    static let logoOpacity: CGFloat = 0.12
-    static let cardPadding: CGFloat = 16
-    static let cornerRadius: CGFloat = 22
-    static let borderWidth: CGFloat = 1
-    static let horizontalPadding: CGFloat = 20
-    static let shadowRadius: CGFloat = 10
-    static let shadowYOffset: CGFloat = 4
+    // Vertical rhythm - tighter than before
+    static let verticalSpacing: CGFloat = 12
+    static let verticalPadding: CGFloat = 16
+    
+    // Horizontal balance
+    static let horizontalPadding: CGFloat = 16
+    static let cardInset: CGFloat = 20
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Final Game") {
     GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game, scoreRevealed: false)
-        .padding()
+        .padding(.vertical)
         .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Dark Mode") {
+    GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game, scoreRevealed: false)
+        .padding(.vertical)
+        .background(Color(.systemGroupedBackground))
+        .preferredColorScheme(.dark)
 }

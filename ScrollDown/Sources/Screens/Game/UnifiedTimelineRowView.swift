@@ -26,33 +26,33 @@ struct UnifiedTimelineRowView: View {
         VStack(spacing: 0) {
             // Main play row
             HStack(alignment: .top, spacing: layout.contentSpacing) {
-                // Time column
+                // Time column — TERTIARY contrast (metadata)
                 VStack(alignment: .trailing, spacing: layout.timeStackSpacing) {
                     if let clock = event.gameClock {
                         Text(clock)
                             .font(layout.timeFont)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
                             .monospacedDigit()
                     }
                     if let period = event.period {
                         Text("Q\(period)")
                             .font(layout.periodFont)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
                     }
                 }
                 .frame(width: layout.timeColumnWidth, alignment: .trailing)
                 
-                // Divider line
+                // Divider line — subtle
                 Rectangle()
-                    .fill(Color(.systemGray4))
+                    .fill(DesignSystem.borderColor)
                     .frame(width: layout.dividerWidth)
                 
-                // Content
+                // Content — PRIMARY contrast
                 VStack(alignment: .leading, spacing: layout.textSpacing) {
                     if let description = event.description {
                         Text(description)
                             .font(layout.descriptionFont)
-                            .foregroundColor(.primary)
+                            .foregroundColor(DesignSystem.TextColor.primary)
                     }
                 }
                 
@@ -65,11 +65,11 @@ struct UnifiedTimelineRowView: View {
                 scoreBar(home: home, away: away)
             }
         }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: layout.cornerRadius))
+        .background(DesignSystem.Colors.rowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
         .overlay(
-            RoundedRectangle(cornerRadius: layout.cornerRadius)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
+                .stroke(DesignSystem.borderColor.opacity(0.6), lineWidth: DesignSystem.borderWidth)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Play")
@@ -79,69 +79,70 @@ struct UnifiedTimelineRowView: View {
     private func scoreBar(home: Int, away: Int) -> some View {
         HStack(spacing: 6) {
             Rectangle()
-                .fill(Color(.systemGray4))
+                .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)
             
             Text("\(awayTeam) \(away) – \(home) \(homeTeam)")
                 .font(.caption2.weight(.medium))
-                .foregroundColor(Color(.secondaryLabel))
+                .foregroundColor(DesignSystem.TextColor.secondary)
                 .fixedSize()
             
             Rectangle()
-                .fill(Color(.systemGray4))
+                .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)
         }
         .padding(.horizontal, layout.rowPadding)
-        .padding(.bottom, 8)
+        .padding(.bottom, 6) // Tightened
     }
     
     // MARK: - Tweet Row
     
     private var tweetRow: some View {
         VStack(alignment: .leading, spacing: layout.textSpacing) {
-            // Header with source
+            // Header with source — Interaction accent for links (not team color)
             HStack {
                 Image(systemName: "bubble.left.fill")
                     .font(layout.metaFont)
-                    .foregroundColor(.blue)
+                    .foregroundColor(DesignSystem.Accent.primary)
                 
                 if let handle = event.sourceHandle {
                     Text("@\(handle)")
                         .font(layout.handleFont)
-                        .foregroundColor(.blue)
+                        .foregroundColor(DesignSystem.Accent.primary)
                 }
                 
                 Spacer()
                 
+                // Timestamp — NEUTRAL tertiary
                 if let postedAt = event.postedAt {
                     Text(formattedDate(postedAt))
                         .font(layout.timestampFont)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
                 }
             }
             
-            // Tweet text
+            // Tweet text — NEUTRAL primary
             if let text = event.tweetText {
                 Text(text)
                     .font(layout.tweetTextFont)
-                    .foregroundColor(.primary)
+                    .foregroundColor(DesignSystem.TextColor.primary)
             }
             
-            // Media preview
+            // Media preview — NEUTRAL secondary
             if event.imageUrl != nil || event.videoUrl != nil {
                 HStack {
                     Image(systemName: event.videoUrl != nil ? "play.rectangle.fill" : "photo.fill")
                         .font(layout.metaFont)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.TextColor.secondary)
                     Text(event.videoUrl != nil ? "Video" : "Image")
                         .font(layout.metaFont)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.TextColor.secondary)
                 }
             }
         }
         .padding(layout.rowPadding)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: layout.cornerRadius))
+        .background(DesignSystem.Colors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Tweet")
         .accessibilityValue(event.tweetText ?? "")
@@ -158,8 +159,8 @@ struct UnifiedTimelineRowView: View {
                 .foregroundColor(.secondary)
         }
         .padding(layout.rowPadding)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: layout.cornerRadius))
+        .background(DesignSystem.Colors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
     
     // MARK: - Helpers
@@ -220,22 +221,22 @@ private struct LayoutConfig {
     let timestampFont: Font
     let tweetTextFont: Font
     
-    // Standard layout - tighter, calmer
+    // Standard layout — tightened spacing, proper contrast
     static let standard = LayoutConfig(
-        contentSpacing: 10,
-        textSpacing: 3,
-        rowPadding: 10,
-        cornerRadius: 10,
-        timeColumnWidth: 44,
+        contentSpacing: 8,
+        textSpacing: DesignSystem.Spacing.text,
+        rowPadding: DesignSystem.Spacing.elementPadding,
+        cornerRadius: DesignSystem.Radius.element,
+        timeColumnWidth: 42,
         dividerWidth: 1,
-        timeStackSpacing: 1,
-        timeFont: .caption2.weight(.medium).monospacedDigit(),
-        periodFont: .caption2,
-        descriptionFont: .footnote,
-        metaFont: .caption2,
-        handleFont: .caption2.weight(.medium),
-        timestampFont: .caption2,
-        tweetTextFont: .footnote
+        timeStackSpacing: DesignSystem.Spacing.tight,
+        timeFont: DesignSystem.Typography.rowMeta.monospacedDigit(),
+        periodFont: DesignSystem.Typography.rowMeta,
+        descriptionFont: DesignSystem.Typography.rowTitle,
+        metaFont: DesignSystem.Typography.rowMeta,
+        handleFont: DesignSystem.Typography.rowMeta.weight(.medium),
+        timestampFont: DesignSystem.Typography.rowMeta,
+        tweetTextFont: DesignSystem.Typography.rowTitle
     )
 }
 

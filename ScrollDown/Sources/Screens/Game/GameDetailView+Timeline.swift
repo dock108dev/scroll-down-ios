@@ -45,23 +45,101 @@ extension GameDetailView {
                 legacyTimelineView(using: proxy)
             }
         }
+        .onAppear {
+            // Initialize Q2, Q3, Q4 as collapsed by default (only Q1 expanded)
+            initializeCollapsedQuarters()
+        }
     }
     
-    // MARK: - Unified Timeline (Single Source of Truth)
+    /// Sets all quarters as collapsed by default
+    private func initializeCollapsedQuarters() {
+        guard !hasInitializedQuarters else { return }
+        hasInitializedQuarters = true
+        
+        // Collapse all quarters including Q1
+        let quarters = groupedQuarters.map { $0.quarter }
+        for quarter in quarters {
+            collapsedQuarters.insert(quarter)
+        }
+    }
     
-    /// Renders events in server-provided order from plays data
-    /// Branches only on event_type (pbp vs tweet)
+    // MARK: - Unified Timeline (Grouped by Quarter)
+    
+    /// Groups events by quarter with Q2, Q3, Q4 collapsed by default
+    /// Maintains the collapsible card UX while using unified data
+    /// NOTE: Uses VStack (not LazyVStack) to ensure proper scroll measurement
     private var unifiedTimelineView: some View {
-        LazyVStack(spacing: GameDetailLayout.compactCardSpacing) {
-            ForEach(viewModel.unifiedTimelineEvents) { event in
-                UnifiedTimelineRowView(
-                    event: event,
-                    homeTeam: viewModel.game?.homeTeam ?? "Home",
-                    awayTeam: viewModel.game?.awayTeam ?? "Away"
-                )
-                .id(event.id)
+        VStack(spacing: DesignSystem.Spacing.list) {
+            ForEach(groupedQuarters, id: \.quarter) { group in
+                unifiedQuarterCard(group)
+            }
+            
+            // Tweets without a period go at the end
+            if !ungroupedTweets.isEmpty {
+                ForEach(ungroupedTweets) { event in
+                    UnifiedTimelineRowView(
+                        event: event,
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away"
+                    )
+                }
             }
         }
+    }
+    
+    /// Groups events by quarter/period
+    private var groupedQuarters: [QuarterGroup] {
+        let events = viewModel.unifiedTimelineEvents
+        var groups: [Int: [UnifiedTimelineEvent]] = [:]
+        
+        for event in events {
+            // Group by period, default to 0 for events without period
+            let period = event.period ?? 0
+            if period > 0 {
+                groups[period, default: []].append(event)
+            }
+        }
+        
+        return groups.keys.sorted().map { quarter in
+            QuarterGroup(quarter: quarter, events: groups[quarter] ?? [])
+        }
+    }
+    
+    /// Tweets without a period (pre/post game)
+    private var ungroupedTweets: [UnifiedTimelineEvent] {
+        viewModel.unifiedTimelineEvents.filter { $0.period == nil && $0.eventType == .tweet }
+    }
+    
+    /// Collapsible card for a single quarter
+    /// NOTE: Uses VStack (not LazyVStack) to ensure proper scroll measurement
+    private func unifiedQuarterCard(_ group: QuarterGroup) -> some View {
+        CollapsibleQuarterCard(
+            title: "\(quarterTitle(group.quarter)) (\(group.events.count) plays)",
+            isExpanded: Binding(
+                get: { !collapsedQuarters.contains(group.quarter) },
+                set: { isExpanded in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        if isExpanded {
+                            collapsedQuarters.remove(group.quarter)
+                        } else {
+                            collapsedQuarters.insert(group.quarter)
+                        }
+                    }
+                }
+            )
+        ) {
+            VStack(spacing: DesignSystem.Spacing.list) {
+                ForEach(group.events) { event in
+                    UnifiedTimelineRowView(
+                        event: event,
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away"
+                    )
+                    .id(event.id)
+                }
+            }
+        }
+        .id("quarter-\(group.quarter)")
     }
     
     // MARK: - Legacy Timeline (Fallback)
@@ -183,4 +261,10 @@ private enum TimelineVerificationConstants {
     static let firstTimestampText = "First timestamp: %@"
     static let lastTimestampText = "Last timestamp: %@"
     static let missingTimelineText = "Timeline artifact loaded (timeline_json missing)."
+}
+
+/// Helper struct for grouping events by quarter
+private struct QuarterGroup {
+    let quarter: Int
+    let events: [UnifiedTimelineEvent]
 }

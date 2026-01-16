@@ -26,27 +26,29 @@ struct CollapsibleSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) { // Tightened from 14
             Button(action: toggle) {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         if let collapsedTitle, !isExpanded {
                             Text(collapsedTitle)
                                 .font(.subheadline.weight(.semibold))
+                                .foregroundColor(DesignSystem.TextColor.primary)
                         } else {
                             Text(title)
                                 .font(.subheadline.weight(.semibold))
+                                .foregroundColor(DesignSystem.TextColor.primary)
                             if let subtitle {
                                 Text(subtitle)
                                     .font(.caption2)
-                                    .foregroundColor(Color(.secondaryLabel))
+                                    .foregroundColor(DesignSystem.TextColor.secondary)
                             }
                         }
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
-                        .foregroundColor(Color(.secondaryLabel))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
             }
@@ -113,15 +115,15 @@ struct CollapsibleQuarterCard<Content: View>: View {
                     ))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(GameTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+        .padding(.vertical, 8) // Tightened
+        .background(DesignSystem.Colors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
         .shadow(
-            color: GameTheme.cardShadow,
-            radius: 4,
+            color: DesignSystem.Shadow.color,
+            radius: DesignSystem.Shadow.subtleRadius,
             x: 0,
-            y: 1
+            y: DesignSystem.Shadow.subtleY
         )
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
     }

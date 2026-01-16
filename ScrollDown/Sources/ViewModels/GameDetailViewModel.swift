@@ -1,6 +1,15 @@
 import Foundation
 import OSLog
 
+/// ViewModel for GameDetailView - manages game data, timeline, and progressive disclosure state.
+///
+/// Key responsibilities:
+/// - Fetches game details, timeline artifact, and related content
+/// - Provides unified timeline events (PBP + tweets) from timeline_json
+/// - Computes derived stats for team comparisons
+/// - Manages reveal state for progressive disclosure
+///
+/// Data flow: API -> GameDetailResponse -> derived computed properties -> View
 @MainActor
 final class GameDetailViewModel: ObservableObject {
     /// Summary state derived from timeline artifact

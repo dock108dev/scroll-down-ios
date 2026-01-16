@@ -34,14 +34,18 @@ struct SectionCardView<Content: View>: View {
 struct SectionCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(Layout.padding)
-            .background(GameTheme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
+            .padding(DesignSystem.Spacing.cardPadding)
+            .background(DesignSystem.Colors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.card))
             .shadow(
-                color: GameTheme.cardShadow,
-                radius: GameTheme.cardShadowRadius,
+                color: DesignSystem.Shadow.color,
+                radius: DesignSystem.Shadow.radius,
                 x: 0,
-                y: GameTheme.cardShadowYOffset
+                y: DesignSystem.Shadow.y
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.card)
+                    .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: DesignSystem.borderWidth)
             )
     }
 }
