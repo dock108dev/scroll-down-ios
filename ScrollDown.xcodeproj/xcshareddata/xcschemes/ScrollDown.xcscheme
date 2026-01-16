@@ -15,8 +15,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0100000000000001"
-               BuildableName = "ScrollDown.app"
+               BlueprintIdentifier = "0500000000000001"
+               BuildableName = "ScrollDown"
                BlueprintName = "ScrollDown"
                ReferencedContainer = "container:ScrollDown.xcodeproj">
             </BuildableReference>
@@ -44,8 +44,8 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0100000000000001"
-            BuildableName = "ScrollDown.app"
+            BlueprintIdentifier = "0500000000000001"
+            BuildableName = "ScrollDown"
             BlueprintName = "ScrollDown"
             ReferencedContainer = "container:ScrollDown.xcodeproj">
          </BuildableReference>
@@ -61,8 +61,8 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0100000000000001"
-            BuildableName = "ScrollDown.app"
+            BlueprintIdentifier = "0500000000000001"
+            BuildableName = "ScrollDown"
             BlueprintName = "ScrollDown"
             ReferencedContainer = "container:ScrollDown.xcodeproj">
          </BuildableReference>
