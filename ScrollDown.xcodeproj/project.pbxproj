@@ -23,8 +23,6 @@
 		2CD104DA7B33C73E6DF92ACE /* game-list.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F4049B8F17A3BC69E2E3756 /* game-list.json */; };
 		2D4DDCCECD9C439F37203A66 /* TimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1AC093104FDC3AD864F1B2 /* TimelineRowView.swift */; };
 		325DE05DD803130A8E08E4E0 /* CompactMoment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F358022CD4B04F21668B91 /* CompactMoment.swift */; };
-		56B1C2D3E4F5G6H7I8J9K0L1 /* UnifiedTimelineEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A1B2C3D4E5F6A7B8C9D0E1 /* UnifiedTimelineEvent.swift */; };
-		56B1C2D3E4F5G6H7I8J9K0L2 /* UnifiedTimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A1B2C3D4E5F6A7B8C9D0E2 /* UnifiedTimelineRowView.swift */; };
 		328562E850676E37E002733A /* HighlightCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B13C2CF9E65EFC84AE5EF7DD /* HighlightCardView.swift */; };
 		39F9174BD84AB8E314F0857D /* GameDetailView+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2771084115126C2862300DB /* GameDetailView+Social.swift */; };
 		3A0BF70809513A6DFBBE7BE8 /* GameDetailView+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD12859B949FE45C68980D98 /* GameDetailView+Timeline.swift */; };
@@ -38,6 +36,8 @@
 		52618B4E744C9D63F083FC34 /* GameRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9127304134FB7B3819C47B7 /* GameRange.swift */; };
 		548E92D316546DB0C6C67CDB /* GameRoutingLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA5E9853782A831DDDAB964 /* GameRoutingLogger.swift */; };
 		55462CBA241AC4AD92EEEBBB /* MockLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63128D4AB7884CF5467D8EEB /* MockLoader.swift */; };
+		56B1C2D3E4F5G6H7I8J9K0L1 /* UnifiedTimelineEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A1B2C3D4E5F6A7B8C9D0E1 /* UnifiedTimelineEvent.swift */; };
+		56B1C2D3E4F5G6H7I8J9K0L2 /* UnifiedTimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A1B2C3D4E5F6A7B8C9D0E2 /* UnifiedTimelineRowView.swift */; };
 		57024D5CC2996DB7B200ED5D /* GameDetailView+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A34BB0087856726AC92504 /* GameDetailView+Layout.swift */; };
 		5D8E84354613520A9AEED6AA /* RelatedPostCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C871F85B8A023CC2A06830D /* RelatedPostCardView.swift */; };
 		675B4AD1545E903D1B4408B0 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC6373826023ED3867E7903 /* AppConfig.swift */; };
@@ -379,7 +379,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					0500000000000001 = {
 						CreatedOnToolsVersion = 15.0;
@@ -525,6 +525,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -548,6 +549,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -588,6 +590,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -604,6 +607,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -614,9 +618,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScrollDown/Info.plist;
@@ -625,6 +629,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -643,9 +648,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScrollDown/Info.plist;
@@ -654,6 +659,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
