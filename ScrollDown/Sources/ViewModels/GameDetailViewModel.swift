@@ -303,9 +303,18 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Unified Timeline (Single Source of Truth)
     
-    /// Unified timeline events parsed from timeline_json
-    /// Rendered in server-provided order — no client-side sorting or merging
+    /// Unified timeline events - uses detail.plays (which has scores) as primary source
+    /// Falls back to timeline_json artifact if plays are empty
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
+        // Primary: Use detail.plays which includes home_score/away_score
+        let plays = detail?.plays ?? []
+        if !plays.isEmpty {
+            return plays.enumerated().map { index, play in
+                UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+            }
+        }
+        
+        // Fallback: Use timeline artifact if available
         guard let timelineValue = timelineArtifact?.timelineJson?.value else {
             return []
         }
@@ -314,6 +323,23 @@ final class GameDetailViewModel: ObservableObject {
         return rawEvents.enumerated().map { index, dict in
             UnifiedTimelineEvent(from: dict, index: index)
         }
+    }
+    
+    /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
+    private func playToDictionary(_ play: PlayEntry) -> [String: Any] {
+        var dict: [String: Any] = [
+            "event_type": "pbp",
+            "play_index": play.playIndex
+        ]
+        if let quarter = play.quarter { dict["period"] = quarter }
+        if let clock = play.gameClock { dict["game_clock"] = clock }
+        if let desc = play.description { dict["description"] = desc }
+        if let team = play.teamAbbreviation { dict["team"] = team }
+        if let player = play.playerName { dict["player_name"] = player }
+        if let home = play.homeScore { dict["home_score"] = home }
+        if let away = play.awayScore { dict["away_score"] = away }
+        if let playType = play.playType { dict["play_type"] = playType.rawValue }
+        return dict
     }
     
     /// Whether timeline data is available from timeline_json
@@ -470,13 +496,27 @@ final class GameDetailViewModel: ObservableObject {
         detail?.teamStats ?? []
     }
     
-    // MARK: - Pregame Section Helpers
+    // MARK: - Pre/Post Game Tweet Helpers
     
-    /// Pre-game tweets (before Q1 starts - no period assigned)
+    /// Pre-game tweets (tweets before the first PBP event)
     var pregameTweets: [UnifiedTimelineEvent] {
-        unifiedTimelineEvents.filter { event in
-            event.eventType == .tweet && event.period == nil
+        guard let firstPbpIndex = unifiedTimelineEvents.firstIndex(where: { $0.eventType == .pbp }) else {
+            // No PBP events, all period-less tweets are pre-game
+            return unifiedTimelineEvents.filter { $0.eventType == .tweet && $0.period == nil }
         }
+        // Tweets before the first PBP event
+        return Array(unifiedTimelineEvents.prefix(upTo: firstPbpIndex)).filter { $0.eventType == .tweet }
+    }
+    
+    /// Post-game tweets (tweets after the last PBP event)
+    var postGameTweets: [UnifiedTimelineEvent] {
+        guard let lastPbpIndex = unifiedTimelineEvents.lastIndex(where: { $0.eventType == .pbp }) else {
+            // No PBP events, no post-game tweets
+            return []
+        }
+        // Tweets after the last PBP event
+        let afterLastPbp = unifiedTimelineEvents.suffix(from: unifiedTimelineEvents.index(after: lastPbpIndex))
+        return Array(afterLastPbp).filter { $0.eventType == .tweet }
     }
 
     private func highlightPlayIndex(for index: Int, spacing: Int, plays: [PlayEntry]) -> Int {
@@ -656,10 +696,23 @@ private enum Constants {
     static let scorePattern = #"(\d+)\s*(?:-|–|to)\s*(\d+)"#
     static let scoreRegex = try? NSRegularExpression(pattern: scorePattern, options: [])
     static let teamComparisonKeys: [(key: String, label: String)] = [
-        ("fg_pct", "Field %"),
-        ("fg3_pct", "3PT %"),
-        ("trb", "Rebounds"),
-        ("tov", "Turnovers")
+        ("fg_pct", "Field Goal %"),
+        ("fg", "Field Goals Made"),
+        ("fga", "Field Goals Attempted"),
+        ("fg3_pct", "3-Point %"),
+        ("fg3", "3-Pointers Made"),
+        ("fg3a", "3-Pointers Attempted"),
+        ("ft_pct", "Free Throw %"),
+        ("ft", "Free Throws Made"),
+        ("fta", "Free Throws Attempted"),
+        ("trb", "Total Rebounds"),
+        ("orb", "Offensive Rebounds"),
+        ("drb", "Defensive Rebounds"),
+        ("ast", "Assists"),
+        ("stl", "Steals"),
+        ("blk", "Blocks"),
+        ("tov", "Turnovers"),
+        ("pf", "Personal Fouls")
     ]
     static let defaultTimelineGameId = 401585601
     static let timelineEventsKey = "events"

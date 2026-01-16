@@ -108,6 +108,7 @@ struct CollapsibleQuarterCard<Content: View>: View {
                     .transition(.opacity)
             }
         }
+        .padding(.horizontal, CardLayout.horizontalPadding)
         .padding(.vertical, CardLayout.listSpacing)
         .background(GameTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CardLayout.cardCornerRadius))
@@ -136,6 +137,7 @@ struct CollapsibleQuarterCard<Content: View>: View {
 private enum CardLayout {
     static let sectionSpacing: CGFloat = 20
     static let listSpacing: CGFloat = 8
+    static let horizontalPadding: CGFloat = 12
     static let cardCornerRadius: CGFloat = 16
     static let borderWidth: CGFloat = 1
     static let shadowRadius: CGFloat = 10

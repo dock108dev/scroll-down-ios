@@ -62,9 +62,34 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             ?? dict["team_abbreviation"] as? String
         self.playerName = dict["player_name"] as? String
             ?? dict["player"] as? String
-        self.homeScore = dict["home_score"] as? Int
-        self.awayScore = dict["away_score"] as? Int
         self.playType = dict["play_type"] as? String
+        
+        // Score parsing - handle multiple formats
+        // Format 1: separate home_score/away_score fields
+        if let home = dict["home_score"] as? Int, let away = dict["away_score"] as? Int {
+            self.homeScore = home
+            self.awayScore = away
+        }
+        // Format 2: combined "score" string like "102-98" or "0-2"
+        else if let scoreStr = dict["score"] as? String {
+            let parts = scoreStr.split(separator: "-").map { String($0).trimmingCharacters(in: .whitespaces) }
+            if parts.count == 2, let away = Int(parts[0]), let home = Int(parts[1]) {
+                self.awayScore = away
+                self.homeScore = home
+            } else {
+                self.homeScore = nil
+                self.awayScore = nil
+            }
+        }
+        // Format 3: nested score object
+        else if let scoreDict = dict["score"] as? [String: Any] {
+            self.homeScore = scoreDict["home"] as? Int ?? scoreDict["home_score"] as? Int
+            self.awayScore = scoreDict["away"] as? Int ?? scoreDict["away_score"] as? Int
+        }
+        else {
+            self.homeScore = nil
+            self.awayScore = nil
+        }
         
         // Tweet fields
         self.tweetText = dict["tweet_text"] as? String

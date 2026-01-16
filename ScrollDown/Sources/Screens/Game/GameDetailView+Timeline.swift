@@ -49,24 +49,17 @@ extension GameDetailView {
     
     // MARK: - Unified Timeline (Single Source of Truth)
     
-    /// Renders events in server-provided order from timeline_json
+    /// Renders events in server-provided order from plays data
     /// Branches only on event_type (pbp vs tweet)
-    /// Rows default to compact; users tap to expand individual rows
     private var unifiedTimelineView: some View {
         LazyVStack(spacing: GameDetailLayout.compactCardSpacing) {
             ForEach(viewModel.unifiedTimelineEvents) { event in
-                let isExpanded = expandedTimelineRows.contains(event.id)
-                UnifiedTimelineRowView(event: event, isCompact: !isExpanded)
-                    .id(event.id)
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            if isExpanded {
-                                expandedTimelineRows.remove(event.id)
-                            } else {
-                                expandedTimelineRows.insert(event.id)
-                            }
-                        }
-                    }
+                UnifiedTimelineRowView(
+                    event: event,
+                    homeTeam: viewModel.game?.homeTeam ?? "Home",
+                    awayTeam: viewModel.game?.awayTeam ?? "Away"
+                )
+                .id(event.id)
             }
         }
     }

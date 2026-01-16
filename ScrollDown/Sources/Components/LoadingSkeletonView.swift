@@ -31,25 +31,34 @@ struct LoadingSkeletonView: View {
     // MARK: - Skeleton Styles
     
     private var gameCardSkeleton: some View {
-        VStack(alignment: .leading, spacing: Layout.cardSpacing) {
-            // Teams
-            HStack {
-                skeletonBox(width: 80, height: 20)
-                Text("at")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                skeletonBox(width: 80, height: 20)
+        VStack(alignment: .leading, spacing: 0) {
+            // Accent strip at top (matches GameRowView)
+            Rectangle()
+                .fill(Color(.systemGray4))
+                .frame(height: 4)
+            
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    // League + Date row
+                    HStack(spacing: 6) {
+                        skeletonBox(width: 36, height: 12)
+                        skeletonBox(width: 60, height: 12)
+                    }
+                    
+                    // Matchup title
+                    skeletonBox(width: 200, height: 16)
+                    
+                    // Status line
+                    skeletonBox(width: 100, height: 14)
+                }
+                
+                Spacer()
             }
-            
-            // Status/time
-            skeletonBox(width: 120, height: 16)
-            
-            // League badge
-            skeletonBox(width: 60, height: 14)
+            .padding(16)
         }
-        .padding(Layout.cardPadding)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
     }
     
     private var timelineRowSkeleton: some View {

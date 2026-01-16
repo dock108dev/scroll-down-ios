@@ -19,7 +19,7 @@ enum GameSection: String, CaseIterable, Hashable {
         case .header:
             return "Header"
         case .overview:
-            return "Overview"
+            return "Pregame"
         case .timeline:
             return "Timeline"
         case .social:
@@ -29,7 +29,7 @@ enum GameSection: String, CaseIterable, Hashable {
         case .teamStats:
             return "Team Stats"
         case .final:
-            return "Final Score"
+            return "Wrap-up"
         }
     }
 }

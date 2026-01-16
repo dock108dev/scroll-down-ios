@@ -32,11 +32,6 @@ struct GameRowView: View {
                     Text(matchupTitle)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.primary)
-                    
-                    // Status line
-                    Text(game.statusLine)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()

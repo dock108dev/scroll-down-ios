@@ -41,8 +41,6 @@ extension GameDetailView {
                     emptyText: "Post-game posts will appear here."
                 )
             }
-
-            relatedPostsCompactSection
         }
     }
 
@@ -152,26 +150,6 @@ extension GameDetailView {
                     }
                 }
             }
-        }
-    }
-
-    var relatedPostsSection: some View {
-        CollapsibleSectionCard(
-            title: "Related Posts",
-            subtitle: "More coverage",
-            isExpanded: $isRelatedPostsExpanded
-        ) {
-            relatedPostsContent
-        }
-        .accessibilityHint("Expands to show related posts")
-    }
-
-    var relatedPostsCompactSection: some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
-            Text("Related")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
-            relatedPostsContent
         }
     }
 

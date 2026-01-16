@@ -231,34 +231,33 @@ struct HomeView: View {
     @ViewBuilder
     private func sectionContent(for section: HomeSectionState) -> some View {
         if section.isLoading {
-            // Phase F: Loading skeleton instead of spinner
-            VStack(spacing: Layout.skeletonSpacing) {
-                ForEach(0..<2, id: \.self) { _ in
-                    LoadingSkeletonView(style: .gameCard)
-            .padding(.horizontal, Layout.horizontalPadding)
-                }
+            // Minimal loading indicator - just a subtle spinner
+            HStack {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(0.8)
+                Spacer()
             }
             .padding(.vertical, Layout.sectionStatePadding)
         } else if let error = section.errorMessage {
-            // Phase F: Improved error state with icon
             EmptySectionView(
                 text: sectionErrorMessage(for: section, error: error),
                 icon: "exclamationmark.triangle"
             )
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.sectionStatePadding)
+            .transition(.opacity)
         } else if section.games.isEmpty {
-            // Phase F: Improved empty state with contextual icon
             EmptySectionView(
                 text: sectionEmptyMessage(for: section),
                 icon: sectionEmptyIcon(for: section)
             )
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.sectionStatePadding)
+            .transition(.opacity)
         } else {
             ForEach(section.games) { game in
                 NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
-                    // Trust the backend-provided game.id for routing; never derive IDs locally.
                     GameRowView(game: game)
                 }
                 .buttonStyle(CardPressButtonStyle())
@@ -268,6 +267,7 @@ struct HomeView: View {
                     triggerHapticIfNeeded(for: game)
                 })
             }
+            .transition(.opacity.animation(.easeIn(duration: 0.2)))
         }
     }
 

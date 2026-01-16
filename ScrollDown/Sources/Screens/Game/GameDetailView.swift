@@ -17,11 +17,9 @@ struct GameDetailView: View {
     // NOTE: isPreGameExpanded removed - preGameSection deprecated
     @State var isTimelineExpanded = true
     @State var isPlayerStatsExpanded = false
+    @State var playerStatsTeamFilter: String? = nil  // nil = all teams
     @State var isTeamStatsExpanded = false
-    @State var isFinalScoreExpanded = false
-    // NOTE: isPostGameExpanded removed - postGameSection deprecated
-    // NOTE: isSocialExpanded removed - socialSection deprecated
-    @State var isRelatedPostsExpanded = false
+    @State var isWrapUpExpanded = false
     // NOTE: Removed legacy compact view state (isCompactSummaryExpanded, isCompactTimelineExpanded, 
     // isCompactPostsExpanded, selectedCompactMoment) - compact mode now affects layout density only
     @State var playRowFrames: [Int: CGRect] = [:]
@@ -173,13 +171,11 @@ struct GameDetailView: View {
                                 .onAppear {
                                     selectedSection = .teamStats
                                 }
-                            finalScoreSection
+                            wrapUpSection
                                 .id(GameSection.final)
                                 .onAppear {
                                     selectedSection = .final
                                 }
-                            // NOTE: postGameSection removed - social posts now come from timeline_json
-                            relatedPostsSection
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding)
                     }

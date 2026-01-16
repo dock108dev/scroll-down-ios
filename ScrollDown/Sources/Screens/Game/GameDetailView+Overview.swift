@@ -1,63 +1,28 @@
 import SwiftUI
 
 extension GameDetailView {
-    // MARK: - Pregame Section
+    // MARK: - Pregame Buzz Section
     
     var pregameSection: some View {
         CollapsibleSectionCard(
-            title: "Pregame",
-            subtitle: "Context and preview",
+            title: "Pregame Buzz",
+            subtitle: "Posts from gameday",
             isExpanded: $isOverviewExpanded
         ) {
-            pregameContent
+            pregameBuzzContent
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Pregame information")
+        .accessibilityLabel("Pregame buzz")
     }
 
-    private var pregameContent: some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.sectionSpacing) {
-            // Game context - when/where/who
-            if let context = viewModel.gameContext {
-                contextSection(context)
-            }
-            
-            // Pre-game social posts (lineup announcements, injury updates, etc.)
-            if !viewModel.pregameTweets.isEmpty {
-                pregameSocialSection
-            }
-        }
-    }
-    
-    /// Context section explaining the game matchup
-    private func contextSection(_ context: String) -> some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
-            Label("Context", systemImage: "info.circle")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-            
-            Text(context)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-                .padding(GameDetailLayout.contextPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.systemGray6).opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: GameDetailLayout.contextCornerRadius))
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Game context")
-        .accessibilityValue(context)
-    }
-    
-    /// Pre-game social posts (limited to 3)
-    private var pregameSocialSection: some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
-            Label("Pre-game", systemImage: "bubble.left.and.bubble.right")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-            
+    @ViewBuilder
+    private var pregameBuzzContent: some View {
+        let tweets = viewModel.pregameTweets
+        if tweets.isEmpty {
+            EmptySectionView(text: "No pregame posts available.")
+        } else {
             VStack(spacing: GameDetailLayout.listSpacing) {
-                ForEach(viewModel.pregameTweets.prefix(3)) { tweet in
+                ForEach(tweets) { tweet in
                     pregameTweetRow(tweet)
                 }
             }
@@ -66,24 +31,41 @@ extension GameDetailView {
     
     /// Individual pre-game tweet row
     private func pregameTweetRow(_ tweet: UnifiedTimelineEvent) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let handle = tweet.sourceHandle {
-                Text("@\(handle)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.blue)
+        VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
+            HStack {
+                if let handle = tweet.sourceHandle {
+                    Text("@\(handle)")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(GameTheme.accentColor)
+                }
+                Spacer()
+                if let postedAt = tweet.postedAt {
+                    Text(formatPregameDate(postedAt))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
             
             if let text = tweet.tweetText {
                 Text(text)
                     .font(.subheadline)
                     .foregroundColor(.primary)
-                    .lineLimit(3)
             }
         }
-        .padding(GameDetailLayout.contextPadding)
+        .padding(GameDetailLayout.listSpacing)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGray6).opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: GameDetailLayout.contextCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
+    private func formatPregameDate(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let parsedDate = formatter.date(from: dateString)
+            ?? ISO8601DateFormatter().date(from: dateString)
+        if let parsedDate {
+            return parsedDate.formatted(date: .omitted, time: .shortened)
+        }
+        return dateString
+    }
 }
