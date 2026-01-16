@@ -303,26 +303,39 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Unified Timeline (Single Source of Truth)
     
-    /// Unified timeline events - uses detail.plays (which has scores) as primary source
-    /// Falls back to timeline_json artifact if plays are empty
+    /// Unified timeline events - merges plays (with scores) and social posts
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
-        // Primary: Use detail.plays which includes home_score/away_score
+        var events: [UnifiedTimelineEvent] = []
+        
+        // Get PBP events from detail.plays (which has scores)
         let plays = detail?.plays ?? []
-        if !plays.isEmpty {
-            return plays.enumerated().map { index, play in
-                UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+        let pbpEvents = plays.enumerated().map { index, play in
+            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+        }
+        events.append(contentsOf: pbpEvents)
+        
+        // Get social/tweet events from timeline artifact if available
+        if let timelineValue = timelineArtifact?.timelineJson?.value {
+            let rawEvents = extractTimelineEvents(from: timelineValue)
+            let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
+                let eventType = dict["event_type"] as? String
+                // Only include tweet events from artifact (PBP comes from detail.plays)
+                guard eventType == "tweet" else { return nil }
+                return UnifiedTimelineEvent(from: dict, index: plays.count + index)
             }
+            events.append(contentsOf: tweetEvents)
         }
         
-        // Fallback: Use timeline artifact if available
-        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
-            return []
+        // If no plays, also include PBP from artifact as fallback
+        if plays.isEmpty, let timelineValue = timelineArtifact?.timelineJson?.value {
+            let rawEvents = extractTimelineEvents(from: timelineValue)
+            let fallbackEvents = rawEvents.enumerated().map { index, dict in
+                UnifiedTimelineEvent(from: dict, index: index)
+            }
+            return fallbackEvents
         }
         
-        let rawEvents = extractTimelineEvents(from: timelineValue)
-        return rawEvents.enumerated().map { index, dict in
-            UnifiedTimelineEvent(from: dict, index: index)
-        }
+        return events
     }
     
     /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
