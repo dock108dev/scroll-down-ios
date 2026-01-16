@@ -4,12 +4,14 @@ import SwiftUI
 
 /// A card that expands/collapses to show content with a title header.
 /// Used for major sections in the game detail view.
+/// iPad: Tighter internal spacing for density.
 struct CollapsibleSectionCard<Content: View>: View {
     let title: String
     let subtitle: String?
     let collapsedTitle: String?
     @Binding var isExpanded: Bool
     let content: Content
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(
         title: String,
@@ -26,7 +28,7 @@ struct CollapsibleSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) { // Tightened from 14
+        VStack(alignment: .leading, spacing: horizontalSizeClass == .regular ? 8 : 12) { // iPad: tighter internal spacing
             Button(action: toggle) {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -76,10 +78,12 @@ struct CollapsibleSectionCard<Content: View>: View {
 // MARK: - Collapsible Quarter Card
 
 /// A smaller collapsible card used for quarter sections within the timeline.
+/// iPad: Tighter spacing for density.
 struct CollapsibleQuarterCard<Content: View>: View {
     let title: String
     @Binding var isExpanded: Bool
     let content: Content
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(
         title: String,
@@ -92,7 +96,7 @@ struct CollapsibleQuarterCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: horizontalSizeClass == .regular ? 8 : 12) { // iPad: tighter spacing
             Button(action: toggle) {
                 HStack(spacing: 8) {
                     Text(title)

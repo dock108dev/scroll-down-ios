@@ -31,6 +31,8 @@ struct GameDetailView: View {
     @State var isResumeTrackingEnabled = true
     @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
+    // iPad: Size class for adaptive layouts (internal for extension access)
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     init(gameId: Int, leagueCode: String? = nil, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -144,13 +146,13 @@ struct GameDetailView: View {
         ScrollViewReader { proxy in
             ZStack(alignment: .topTrailing) {
                 ScrollView {
-                    VStack(spacing: GameDetailLayout.sectionSpacing) {
+                    VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                         if let game = viewModel.game {
                             GameHeaderView(game: game)
                                 .id(GameSection.header)
                         }
 
-                        VStack(spacing: GameDetailLayout.sectionSpacing) {
+                        VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             pregameSection
                                 .id(GameSection.overview)
                                 .background(sectionFrameTracker(for: .overview))
@@ -169,7 +171,9 @@ struct GameDetailView: View {
                                 .id(GameSection.final)
                                 .background(sectionFrameTracker(for: .final))
                         }
-                        .padding(.horizontal, GameDetailLayout.horizontalPadding)
+                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                        // iPad: Constrain content width for better readability
+                        .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                     }
                     .padding(.bottom, GameDetailLayout.bottomPadding)
                 }
@@ -210,7 +214,7 @@ struct GameDetailView: View {
                 if let viewingText = viewingPillText {
                     viewingPillView(text: viewingText)
                         .padding(.top, GameDetailLayout.viewingPillTopPadding)
-                        .padding(.horizontal, GameDetailLayout.horizontalPadding)
+                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                         .transition(.opacity)
                         .accessibilityLabel("Viewing \(viewingText)")
                 }

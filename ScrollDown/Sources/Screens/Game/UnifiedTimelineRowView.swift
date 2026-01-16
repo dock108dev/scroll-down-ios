@@ -2,12 +2,17 @@ import SwiftUI
 
 /// Unified timeline row that renders both pbp and tweet events
 /// Branches on event_type — no client-side type detection
+/// iPad: Wider layout for improved readability
 struct UnifiedTimelineRowView: View {
     let event: UnifiedTimelineEvent
     var homeTeam: String = "Home"
     var awayTeam: String = "Away"
-    
-    private var layout: LayoutConfig { .standard }
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var layout: LayoutConfig {
+        horizontalSizeClass == .regular ? .iPad : .standard
+    }
     
     var body: some View {
         switch event.eventType {
@@ -228,6 +233,24 @@ private struct LayoutConfig {
         rowPadding: DesignSystem.Spacing.elementPadding,
         cornerRadius: DesignSystem.Radius.element,
         timeColumnWidth: 42,
+        dividerWidth: 1,
+        timeStackSpacing: DesignSystem.Spacing.tight,
+        timeFont: DesignSystem.Typography.rowMeta.monospacedDigit(),
+        periodFont: DesignSystem.Typography.rowMeta,
+        descriptionFont: DesignSystem.Typography.rowTitle,
+        metaFont: DesignSystem.Typography.rowMeta,
+        handleFont: DesignSystem.Typography.rowMeta.weight(.medium),
+        timestampFont: DesignSystem.Typography.rowMeta,
+        tweetTextFont: DesignSystem.Typography.rowTitle
+    )
+
+    // iPad layout — wider columns, better spacing for larger screens
+    static let iPad = LayoutConfig(
+        contentSpacing: 12,
+        textSpacing: DesignSystem.Spacing.text,
+        rowPadding: DesignSystem.Spacing.elementPadding,
+        cornerRadius: DesignSystem.Radius.element,
+        timeColumnWidth: 50, // Wider time column for better readability
         dividerWidth: 1,
         timeStackSpacing: DesignSystem.Spacing.tight,
         timeFont: DesignSystem.Typography.rowMeta.monospacedDigit(),

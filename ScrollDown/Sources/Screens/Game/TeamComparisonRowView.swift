@@ -3,20 +3,75 @@ import SwiftUI
 // MARK: - Team Stats Container
 /// Simplified team stats view that tells the story of how the game tilted.
 /// Design: Team identity at top, stats grouped logically, numbers primary.
+/// iPad: Multi-column layout for better use of space and improved readability.
 
 struct TeamStatsContainer: View {
     let stats: [TeamComparisonStat]
     let homeTeam: String
     let awayTeam: String
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         VStack(spacing: 16) {
             // MARK: Team Identity Header
             // Show abbreviations once at top — not repeated per row
             teamIdentityHeader
-            
+
             // MARK: Stat Groups
-            // Organized into logical sections for faster scanning
+            // iPad: Multi-column layout for better space utilization
+            // iPhone: Single column for vertical scrolling efficiency
+            if horizontalSizeClass == .regular {
+                // iPad: Two-column layout
+                multiColumnStatGroups
+            } else {
+                // iPhone: Single column layout
+                singleColumnStatGroups
+            }
+        }
+    }
+
+    // MARK: - iPad Multi-Column Layout
+    private var multiColumnStatGroups: some View {
+        VStack(spacing: 16) {
+            // First row: Shooting and Volume side-by-side
+            HStack(alignment: .top, spacing: 16) {
+                if !shootingStats.isEmpty {
+                    StatGroupView(
+                        title: "Shooting",
+                        stats: shootingStats,
+                        homeAbbrev: homeAbbrev,
+                        awayAbbrev: awayAbbrev
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+
+                if !volumeStats.isEmpty {
+                    StatGroupView(
+                        title: "Volume",
+                        stats: volumeStats,
+                        homeAbbrev: homeAbbrev,
+                        awayAbbrev: awayAbbrev
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
+            // Second row: Discipline (full width when alone, or could pair with future categories)
+            if !disciplineStats.isEmpty {
+                StatGroupView(
+                    title: "Discipline",
+                    stats: disciplineStats,
+                    homeAbbrev: homeAbbrev,
+                    awayAbbrev: awayAbbrev
+                )
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: - iPhone Single Column Layout
+    private var singleColumnStatGroups: some View {
+        VStack(spacing: 16) {
             if !shootingStats.isEmpty {
                 StatGroupView(
                     title: "Shooting",
@@ -25,7 +80,7 @@ struct TeamStatsContainer: View {
                     awayAbbrev: awayAbbrev
                 )
             }
-            
+
             if !volumeStats.isEmpty {
                 StatGroupView(
                     title: "Volume",
@@ -34,7 +89,7 @@ struct TeamStatsContainer: View {
                     awayAbbrev: awayAbbrev
                 )
             }
-            
+
             if !disciplineStats.isEmpty {
                 StatGroupView(
                     title: "Discipline",

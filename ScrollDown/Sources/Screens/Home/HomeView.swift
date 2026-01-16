@@ -2,8 +2,10 @@ import SwiftUI
 import UIKit
 
 /// Main home screen displaying list of games
+/// iPad: Wider layout with constrained content width for optimal readability
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var earlierSection = HomeSectionState(range: .earlier, title: Strings.sectionEarlier, isExpanded: false)
     @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: Strings.sectionYesterday, isExpanded: true)
     @State private var todaySection = HomeSectionState(range: .current, title: Strings.sectionToday, isExpanded: true)
@@ -22,6 +24,8 @@ struct HomeView: View {
                 headerView
                 contentView
             }
+            // iPad: Constrain content width for better readability and density
+            .frame(maxWidth: horizontalSizeClass == .regular ? 900 : .infinity)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -34,9 +38,6 @@ struct HomeView: View {
                     Text(Strings.navigationTitle)
                         .font(.headline)
                 }
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                dataModeIndicator
             }
         }
         .task {
@@ -74,7 +75,7 @@ struct HomeView: View {
                 .padding(.vertical, 4)
                 .background(Color.orange.opacity(0.8))
                 .clipShape(Capsule())
-                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.horizontal, horizontalPadding)
                 .padding(.top, 8)
             }
             #endif
@@ -86,7 +87,7 @@ struct HomeView: View {
                         leagueFilterButton(league, label: league.rawValue)
                     }
                 }
-                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, Layout.filterVerticalPadding)
             }
             .background(HomeTheme.background)
@@ -160,28 +161,28 @@ struct HomeView: View {
     private var gameListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: Layout.cardSpacing) {
+                LazyVStack(alignment: .leading, spacing: Layout.cardSpacing(horizontalSizeClass)) {
                     // Earlier section (2+ days ago)
                     sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded)
                         .id(earlierSection.title)
                     if earlierSection.isExpanded {
                         sectionContent(for: earlierSection)
                     }
-                    
+
                     // Yesterday section
                     sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded)
                         .id(yesterdaySection.title)
                     if yesterdaySection.isExpanded {
                         sectionContent(for: yesterdaySection)
                     }
-                    
+
                     // Today section
                     sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
                         .id(todaySection.title)
                     if todaySection.isExpanded {
                         sectionContent(for: todaySection)
                     }
-                    
+
                     // Upcoming section
                     sectionHeader(for: upcomingSection, isExpanded: $upcomingSection.isExpanded)
                         .id(upcomingSection.title)
@@ -189,7 +190,7 @@ struct HomeView: View {
                         sectionContent(for: upcomingSection)
                     }
                 }
-                .padding(.bottom, Layout.bottomPadding)
+                .padding(.bottom, Layout.bottomPadding(horizontalSizeClass))
             }
             .onReceive(NotificationCenter.default.publisher(for: .scrollToToday)) { _ in
                 withAnimation(.easeOut(duration: 0.3)) {
@@ -204,7 +205,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 0) {
             if section.title != Strings.sectionEarlier {
                 Divider()
-                    .padding(.horizontal, Layout.horizontalPadding)
+                    .padding(.horizontal, horizontalPadding)
                     .padding(.bottom, Layout.sectionDividerPadding)
             }
 
@@ -225,9 +226,9 @@ struct HomeView: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundColor(Color(.secondaryLabel))
                 }
-                .padding(.horizontal, Layout.horizontalPadding)
-                .padding(.top, Layout.sectionHeaderTopPadding)
-                .padding(.bottom, 8)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, Layout.sectionHeaderTopPadding(horizontalSizeClass))
+                .padding(.bottom, horizontalSizeClass == .regular ? 6 : 8) // iPad: tighter bottom padding
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -244,14 +245,14 @@ struct HomeView: View {
                     .scaleEffect(0.8)
                 Spacer()
             }
-            .padding(.vertical, Layout.sectionStatePadding)
+            .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
         } else if let error = section.errorMessage {
             EmptySectionView(
                 text: sectionErrorMessage(for: section, error: error),
                 icon: "exclamationmark.triangle"
             )
             .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.sectionStatePadding)
+            .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
             .transition(.opacity)
         } else if section.games.isEmpty {
             EmptySectionView(
@@ -259,34 +260,48 @@ struct HomeView: View {
                 icon: sectionEmptyIcon(for: section)
             )
             .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.sectionStatePadding)
+            .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
             .transition(.opacity)
         } else {
-            ForEach(section.games) { game in
-                NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
-                    GameRowView(game: game)
+            if horizontalSizeClass == .regular {
+                // iPad: 2-column grid for information density and editorial feel
+                let columns = [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ]
+
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(section.games) { game in
+                        NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
+                            GameRowView(game: game)
+                        }
+                        .buttonStyle(CardPressButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            GameRoutingLogger.logTap(gameId: game.id, league: game.league)
+                            triggerHapticIfNeeded(for: game)
+                        })
+                    }
                 }
-                .buttonStyle(CardPressButtonStyle())
-                .padding(.horizontal, Layout.horizontalPadding)
-                .simultaneousGesture(TapGesture().onEnded {
-                    GameRoutingLogger.logTap(gameId: game.id, league: game.league)
-                    triggerHapticIfNeeded(for: game)
-                })
+                .padding(.horizontal, horizontalPadding)
+                .transition(.opacity.animation(.easeIn(duration: 0.2)))
+            } else {
+                // iPhone: Single column list for comfortable vertical scrolling
+                ForEach(section.games) { game in
+                    NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
+                        GameRowView(game: game)
+                    }
+                    .buttonStyle(CardPressButtonStyle())
+                    .padding(.horizontal, horizontalPadding)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        GameRoutingLogger.logTap(gameId: game.id, league: game.league)
+                        triggerHapticIfNeeded(for: game)
+                    })
+                }
+                .transition(.opacity.animation(.easeIn(duration: 0.2)))
             }
-            .transition(.opacity.animation(.easeIn(duration: 0.2)))
         }
     }
 
-    private var dataModeIndicator: some View {
-        HStack(spacing: Layout.dataModeSpacing) {
-            Circle()
-                .fill(appConfig.environment == .mock ? Color.orange : HomeTheme.accentColor)
-                .frame(width: Layout.dataModeIndicatorSize, height: Layout.dataModeIndicatorSize)
-            Text(appConfig.environment == .mock ? Strings.mockLabel : Strings.liveLabel)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
 
     // MARK: - Data Loading
 
@@ -452,6 +467,12 @@ struct HomeView: View {
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred()
     }
+
+    // MARK: - Adaptive Layout
+
+    private var horizontalPadding: CGFloat {
+        horizontalSizeClass == .regular ? 32 : Layout.horizontalPadding
+    }
 }
 
 private struct HomeSectionState: Identifiable {
@@ -478,21 +499,40 @@ private struct SectionResult {
 }
 
 private enum Layout {
+    // iPad: Much tighter spacing for information-dense, stacked feel
+    // iPhone: Preserves comfortable touch targets and visual breathing room
+
+    // Base horizontal padding for iPhone - iPad uses adaptive horizontalPadding computed property
     static let horizontalPadding: CGFloat = 16
+
+    static func cardSpacing(_ horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        horizontalSizeClass == .regular ? 8 : 12 // iPad: tighter card spacing for density
+    }
+
+    static func sectionHeaderTopPadding(_ horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        horizontalSizeClass == .regular ? 8 : 12 // iPad: less vertical whitespace
+    }
+
+    static func sectionStatePadding(_ horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        horizontalSizeClass == .regular ? 8 : 12 // iPad: tighter state padding
+    }
+
+    static func bottomPadding(_ horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        horizontalSizeClass == .regular ? 24 : 32 // iPad: less bottom padding
+    }
+
     static let filterSpacing: CGFloat = 12
     static let filterHorizontalPadding: CGFloat = 16
     static let filterVerticalPadding: CGFloat = 8
     static let stateSpacing: CGFloat = 16
     static let statePadding: CGFloat = 24
     static let errorIconSize: CGFloat = 48
-    static let cardSpacing: CGFloat = 12
+    static let cardSpacing: CGFloat = 12 // Fallback for backward compatibility
     static let sectionHeaderTopPadding: CGFloat = 12
     static let sectionDividerPadding: CGFloat = 8
     static let sectionStatePadding: CGFloat = 12
-    static let skeletonSpacing: CGFloat = 12 // Phase F: Skeleton placeholder spacing
-    static let bottomPadding: CGFloat = 32
-    static let dataModeSpacing: CGFloat = 4
-    static let dataModeIndicatorSize: CGFloat = 8
+    static let skeletonSpacing: CGFloat = 12
+    static let bottomPadding: CGFloat = 32 // Fallback for backward compatibility
     static let freshnessBottomPadding: CGFloat = 8
 }
 
@@ -512,8 +552,6 @@ private enum Strings {
     static let errorIconName = "exclamationmark.triangle"
     static let errorTitle = "Error"
     static let retryLabel = "Retry"
-    static let mockLabel = "Mock"
-    static let liveLabel = "Live"
     static let sectionEarlier = "Earlier"
     static let sectionYesterday = "Yesterday"
     static let sectionToday = "Today"
