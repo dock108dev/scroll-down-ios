@@ -17,7 +17,10 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var relatedPosts: [RelatedPost] = []
     @Published private(set) var relatedPostsState: RelatedPostsState = .idle
     @Published private(set) var revealedRelatedPostIds: Set<Int> = []
-    @Published var isOutcomeRevealed: Bool = false // User-controlled outcome visibility
+    
+    // Outcome is always hidden per progressive disclosure principles
+    // Users reveal scores by scrolling through the timeline
+    var isOutcomeRevealed: Bool { false }
     
     // Social posts (Phase E)
     @Published private(set) var socialPosts: [SocialPostResponse] = []
@@ -88,23 +91,6 @@ final class GameDetailViewModel: ObservableObject {
             errorMessage = error.localizedDescription
             isLoading = false
         }
-    }
-
-    /// Toggle outcome reveal (presentation-only, no data refetch)
-    /// Reveal is a client-side preference - summary content doesn't change
-    func toggleOutcomeReveal(for gameId: Int) {
-        isOutcomeRevealed.toggle()
-        UserDefaults.standard.set(isOutcomeRevealed, forKey: outcomeRevealKey(for: gameId))
-    }
-    
-    /// Load persisted reveal preference
-    func loadRevealPreference(for gameId: Int) {
-        // Default is always false (pre-reveal)
-        isOutcomeRevealed = UserDefaults.standard.bool(forKey: outcomeRevealKey(for: gameId))
-    }
-    
-    private func outcomeRevealKey(for gameId: Int) -> String {
-        "game.outcomeRevealed.\(gameId)"
     }
 
     func loadRelatedPosts(gameId: Int, service: GameService) async {
@@ -482,6 +468,15 @@ final class GameDetailViewModel: ObservableObject {
 
     var teamStats: [TeamStat] {
         detail?.teamStats ?? []
+    }
+    
+    // MARK: - Pregame Section Helpers
+    
+    /// Pre-game tweets (before Q1 starts - no period assigned)
+    var pregameTweets: [UnifiedTimelineEvent] {
+        unifiedTimelineEvents.filter { event in
+            event.eventType == .tweet && event.period == nil
+        }
     }
 
     private func highlightPlayIndex(for index: Int, spacing: Int, plays: [PlayEntry]) -> Int {

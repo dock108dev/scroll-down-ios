@@ -85,6 +85,11 @@ struct UnifiedTimelineRowView: View {
             }
             
             Spacer(minLength: 0)
+            
+            // Expand/collapse indicator
+            Image(systemName: isCompact ? "chevron.down" : "chevron.up")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(layout.rowPadding)
         .background(Color(.systemBackground))
@@ -93,9 +98,11 @@ struct UnifiedTimelineRowView: View {
             RoundedRectangle(cornerRadius: layout.cornerRadius)
                 .stroke(Color(.systemGray5), lineWidth: 1)
         )
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Play")
         .accessibilityValue(event.description ?? "")
+        .accessibilityHint(isCompact ? "Tap to expand" : "Tap to collapse")
     }
     
     // MARK: - Tweet Row
@@ -121,6 +128,11 @@ struct UnifiedTimelineRowView: View {
                         .font(layout.timestampFont)
                         .foregroundColor(.secondary)
                 }
+                
+                // Expand/collapse indicator
+                Image(systemName: isCompact ? "chevron.down" : "chevron.up")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             
             // Tweet text
@@ -128,7 +140,7 @@ struct UnifiedTimelineRowView: View {
                 Text(text)
                     .font(layout.tweetTextFont)
                     .foregroundColor(.primary)
-                    .lineLimit(isCompact ? 2 : 4)
+                    .lineLimit(isCompact ? 2 : nil)
             }
             
             // Media preview - collapsed in compact mode
@@ -146,9 +158,11 @@ struct UnifiedTimelineRowView: View {
         .padding(layout.rowPadding)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: layout.cornerRadius))
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Tweet")
         .accessibilityValue(event.tweetText ?? "")
+        .accessibilityHint(isCompact ? "Tap to expand" : "Tap to collapse")
     }
     
     // MARK: - Unknown Event Row

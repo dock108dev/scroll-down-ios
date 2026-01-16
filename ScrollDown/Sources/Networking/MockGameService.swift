@@ -68,15 +68,25 @@ final class MockGameService: GameService {
     }
 
     private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
+        let calendar = Calendar.current
         let todayStart = AppDate.startOfToday
         let todayEnd = AppDate.endOfToday
+        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+        let earlierEnd = yesterdayStart
 
         switch range {
-        case .last2:
+        case .earlier:
+            // 2+ days ago
             let historyStart = AppDate.historyWindowStart
             return games.filter { game in
                 guard let date = game.parsedGameDate else { return false }
-                return date >= historyStart && date < todayStart
+                return date >= historyStart && date < earlierEnd
+            }
+        case .yesterday:
+            // 1 day ago
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= yesterdayStart && date < todayStart
             }
         case .current:
             return games.filter { game in

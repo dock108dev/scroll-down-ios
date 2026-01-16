@@ -45,7 +45,61 @@ final class RealGameService: GameService {
         // - range param is ignored (returns all games paginated)
         // - no status field (inferred from has_required_data/scores)
         // TODO: Switch to /games when snapshot endpoint is deployed
-        return try await request(path: "api/admin/sports/games", queryItems: queryItems)
+        let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
+        
+        // Client-side range filtering until backend supports it
+        let filteredGames = filterGames(response.games, for: range)
+        
+        return GameListResponse(
+            range: range.rawValue,
+            games: filteredGames,
+            total: filteredGames.count,
+            nextOffset: nil,
+            withBoxscoreCount: response.withBoxscoreCount,
+            withPlayerStatsCount: response.withPlayerStatsCount,
+            withOddsCount: response.withOddsCount,
+            withSocialCount: response.withSocialCount,
+            withPbpCount: response.withPbpCount,
+            lastUpdatedAt: response.lastUpdatedAt
+        )
+    }
+    
+    /// Client-side range filtering (mirrors MockGameService logic)
+    /// TODO: Remove when backend supports range filtering
+    private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
+        let now = TimeService.shared.now
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: now)
+        let todayEnd = calendar.date(byAdding: .day, value: 1, to: todayStart)!.addingTimeInterval(-1)
+        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+        let earlierEnd = yesterdayStart
+        
+        switch range {
+        case .earlier:
+            // 2+ days ago
+            let historyStart = calendar.date(byAdding: .day, value: -2, to: todayStart)!
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= historyStart && date < earlierEnd
+            }
+        case .yesterday:
+            // 1 day ago
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= yesterdayStart && date < todayStart
+            }
+        case .current:
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date >= todayStart && date <= todayEnd
+            }
+        case .next24:
+            let windowEnd = now.addingTimeInterval(24 * 60 * 60)
+            return games.filter { game in
+                guard let date = game.parsedGameDate else { return false }
+                return date > now && date <= windowEnd
+            }
+        }
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {

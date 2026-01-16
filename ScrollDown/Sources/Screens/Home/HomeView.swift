@@ -4,9 +4,10 @@ import UIKit
 /// Main home screen displaying list of games
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
-    @State private var earlierSection = HomeSectionState(range: .last2, title: Strings.sectionEarlier)
-    @State private var todaySection = HomeSectionState(range: .current, title: Strings.sectionToday)
-    @State private var upcomingSection = HomeSectionState(range: .next24, title: Strings.sectionUpcoming)
+    @State private var earlierSection = HomeSectionState(range: .earlier, title: Strings.sectionEarlier, isExpanded: false)
+    @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: Strings.sectionYesterday, isExpanded: true)
+    @State private var todaySection = HomeSectionState(range: .current, title: Strings.sectionToday, isExpanded: true)
+    @State private var upcomingSection = HomeSectionState(range: .next24, title: Strings.sectionUpcoming, isExpanded: false)
     @State private var errorMessage: String?
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
@@ -156,12 +157,32 @@ struct HomeView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: Layout.cardSpacing) {
-                    ForEach(sectionsInOrder) { section in
-                        // Section header with ID for scrolling
-                        sectionHeader(for: section)
-                            .id(section.title)
-
-                        sectionContent(for: section)
+                    // Earlier section (2+ days ago)
+                    sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded)
+                        .id(earlierSection.title)
+                    if earlierSection.isExpanded {
+                        sectionContent(for: earlierSection)
+                    }
+                    
+                    // Yesterday section
+                    sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded)
+                        .id(yesterdaySection.title)
+                    if yesterdaySection.isExpanded {
+                        sectionContent(for: yesterdaySection)
+                    }
+                    
+                    // Today section
+                    sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
+                        .id(todaySection.title)
+                    if todaySection.isExpanded {
+                        sectionContent(for: todaySection)
+                    }
+                    
+                    // Upcoming section
+                    sectionHeader(for: upcomingSection, isExpanded: $upcomingSection.isExpanded)
+                        .id(upcomingSection.title)
+                    if upcomingSection.isExpanded {
+                        sectionContent(for: upcomingSection)
                     }
                 }
                 .padding(.bottom, Layout.bottomPadding)
@@ -175,7 +196,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func sectionHeader(for section: HomeSectionState) -> some View {
+    private func sectionHeader(for section: HomeSectionState, isExpanded: Binding<Bool>) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if section.title != Strings.sectionEarlier {
                 Divider()
@@ -183,11 +204,27 @@ struct HomeView: View {
                     .padding(.bottom, Layout.sectionDividerPadding)
             }
 
-            Text(section.title)
-                .font(.title3.weight(.bold))
-                .foregroundColor(.primary)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.wrappedValue.toggle()
+                }
+            } label: {
+                HStack {
+                    Text(section.title)
+                        .font(.title3.weight(.bold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
+                }
                 .padding(.horizontal, Layout.horizontalPadding)
                 .padding(.top, Layout.sectionHeaderTopPadding)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -251,19 +288,22 @@ struct HomeView: View {
         errorMessage = nil
 
         earlierSection.isLoading = true
+        yesterdaySection.isLoading = true
         todaySection.isLoading = true
         upcomingSection.isLoading = true
         earlierSection.errorMessage = nil
+        yesterdaySection.errorMessage = nil
         todaySection.errorMessage = nil
         upcomingSection.errorMessage = nil
 
         let service = appConfig.gameService
 
-        async let earlierResult = loadSection(range: .last2, service: service)
+        async let earlierResult = loadSection(range: .earlier, service: service)
+        async let yesterdayResult = loadSection(range: .yesterday, service: service)
         async let todayResult = loadSection(range: .current, service: service)
         async let upcomingResult = loadSection(range: .next24, service: service)
 
-        let results = await [earlierResult, todayResult, upcomingResult]
+        let results = await [earlierResult, yesterdayResult, todayResult, upcomingResult]
 
         applySectionResults(results)
         updateLastUpdatedAt(from: results)
@@ -302,17 +342,30 @@ struct HomeView: View {
 
     private func applySectionResults(_ results: [SectionResult]) {
         for result in results {
+            // Sort games by date (chronologically) within each section
+            let sortedGames = result.games.sorted { lhs, rhs in
+                guard let lhsDate = lhs.parsedGameDate,
+                      let rhsDate = rhs.parsedGameDate else {
+                    return false
+                }
+                return lhsDate < rhsDate
+            }
+            
             switch result.range {
-            case .last2:
-                earlierSection.games = result.games
+            case .earlier:
+                earlierSection.games = sortedGames
                 earlierSection.errorMessage = result.errorMessage
                 earlierSection.isLoading = false
+            case .yesterday:
+                yesterdaySection.games = sortedGames
+                yesterdaySection.errorMessage = result.errorMessage
+                yesterdaySection.isLoading = false
             case .current:
-                todaySection.games = result.games
+                todaySection.games = sortedGames
                 todaySection.errorMessage = result.errorMessage
                 todaySection.isLoading = false
             case .next24:
-                upcomingSection.games = result.games
+                upcomingSection.games = sortedGames
                 upcomingSection.errorMessage = result.errorMessage
                 upcomingSection.isLoading = false
             }
@@ -343,13 +396,15 @@ struct HomeView: View {
     }
 
     private var sectionsInOrder: [HomeSectionState] {
-        [earlierSection, todaySection, upcomingSection]
+        [earlierSection, yesterdaySection, todaySection, upcomingSection]
     }
 
     private func sectionEmptyMessage(for section: HomeSectionState) -> String {
         switch section.range {
-        case .last2:
+        case .earlier:
             return Strings.earlierEmpty
+        case .yesterday:
+            return Strings.yesterdayEmpty
         case .current:
             return Strings.todayEmpty
         case .next24:
@@ -360,7 +415,9 @@ struct HomeView: View {
     /// Phase F: Contextual icons for empty states
     private func sectionEmptyIcon(for section: HomeSectionState) -> String {
         switch section.range {
-        case .last2:
+        case .earlier:
+            return "clock.arrow.circlepath"
+        case .yesterday:
             return "clock.arrow.circlepath"
         case .current:
             return "calendar"
@@ -371,8 +428,10 @@ struct HomeView: View {
 
     private func sectionErrorMessage(for section: HomeSectionState, error: String) -> String {
         switch section.range {
-        case .last2:
+        case .earlier:
             return String(format: Strings.earlierError, error)
+        case .yesterday:
+            return String(format: Strings.yesterdayError, error)
         case .current:
             return String(format: Strings.todayError, error)
         case .next24:
@@ -396,6 +455,13 @@ private struct HomeSectionState: Identifiable {
     var games: [GameSummary] = []
     var isLoading = true
     var errorMessage: String?
+    var isExpanded: Bool
+    
+    init(range: GameRange, title: String, isExpanded: Bool = true) {
+        self.range = range
+        self.title = title
+        self.isExpanded = isExpanded
+    }
 }
 
 private struct SectionResult {
@@ -443,16 +509,19 @@ private enum Strings {
     static let mockLabel = "Mock"
     static let liveLabel = "Live"
     static let sectionEarlier = "Earlier"
+    static let sectionYesterday = "Yesterday"
     static let sectionToday = "Today"
     static let sectionUpcoming = "Coming Up"
     static let sectionLoading = "Loading section..."
-    static let earlierEmpty = "No games from the last two days."
+    static let earlierEmpty = "No games from earlier."
+    static let yesterdayEmpty = "No games from yesterday."
     static let todayEmpty = "No games scheduled for today."
     static let upcomingEmpty = "No games scheduled in the next 24 hours."
     static let updatedTemplate = "Updated %@"
     static let updateUnavailable = "Update time unavailable"
     static let globalErrorMessage = "We couldn't reach the latest game feeds."
     static let earlierError = "Earlier games unavailable. %@"
+    static let yesterdayError = "Yesterday's games unavailable. %@"
     static let todayError = "Today's games unavailable. %@"
     static let upcomingError = "Coming up games unavailable. %@"
 }

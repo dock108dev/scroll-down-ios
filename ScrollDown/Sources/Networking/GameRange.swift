@@ -2,7 +2,8 @@ import Foundation
 
 /// Backend-defined snapshot windows for home feed sections.
 enum GameRange: String, CaseIterable {
-    case last2
-    case current
-    case next24
+    case earlier    // 2+ days ago
+    case yesterday  // 1 day ago
+    case current    // today
+    case next24     // upcoming 24 hours
 }

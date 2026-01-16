@@ -40,6 +40,7 @@ See `.cursorrules` for complete coding standards. Key points:
 - **Auto-commit changes** — Wait for user to review and commit manually
 - Run commands that require interactive input to quit
 - Run long-running commands (>5 seconds) without verbose logging (use logging that outputs every 30 seconds or so)
+- Update code on remote servers through SSH unless specifically asked — all code changes should be done locally and applied through approved channels only
 - Break progressive disclosure defaults
 - Add dependencies without justification
 - Use `print()` in production code

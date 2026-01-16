@@ -25,6 +25,31 @@ struct GameListResponse: Decodable {
         case withPbpCount = "with_pbp_count"
         case lastUpdatedAt = "last_updated_at"
     }
+    
+    /// Memberwise initializer for creating filtered responses
+    init(
+        range: String?,
+        games: [GameSummary],
+        total: Int?,
+        nextOffset: Int?,
+        withBoxscoreCount: Int?,
+        withPlayerStatsCount: Int?,
+        withOddsCount: Int?,
+        withSocialCount: Int?,
+        withPbpCount: Int?,
+        lastUpdatedAt: String?
+    ) {
+        self.range = range
+        self.games = games
+        self.total = total
+        self.nextOffset = nextOffset
+        self.withBoxscoreCount = withBoxscoreCount
+        self.withPlayerStatsCount = withPlayerStatsCount
+        self.withOddsCount = withOddsCount
+        self.withSocialCount = withSocialCount
+        self.withPbpCount = withPbpCount
+        self.lastUpdatedAt = lastUpdatedAt
+    }
 }
 
 

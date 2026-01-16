@@ -7,7 +7,8 @@ struct GameDetailView: View {
     let leagueCode: String?
 
     @StateObject var viewModel: GameDetailViewModel
-    @AppStorage("compactModeEnabled") var isCompactMode = false
+    // Timeline rows default to compact, users expand individual rows as needed
+    @State var expandedTimelineRows: Set<String> = []
     @State var selectedSection: GameSection = .overview
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
@@ -67,7 +68,6 @@ struct GameDetailView: View {
 
             if !viewModel.isUnavailable {
                 // Load user preferences
-                viewModel.loadRevealPreference(for: gameId)
                 viewModel.loadSocialTabPreference(for: gameId)
                 
                 // Load timeline artifact (contains summary_json)
@@ -151,8 +151,7 @@ struct GameDetailView: View {
                         }
 
                         VStack(spacing: GameDetailLayout.sectionSpacing) {
-                            displayOptionsSection
-                            overviewSection
+                            pregameSection
                                 .id(GameSection.overview)
                                 .onAppear {
                                     selectedSection = .overview
