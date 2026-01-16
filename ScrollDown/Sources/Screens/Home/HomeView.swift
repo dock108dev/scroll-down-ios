@@ -210,18 +210,20 @@ struct HomeView: View {
                 }
             } label: {
                 HStack {
-                    Text(section.title)
-                        .font(.title3.weight(.bold))
-                        .foregroundColor(.primary)
+                    Text(section.title.uppercased())
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(Color(.secondaryLabel))
+                        .tracking(0.8)
                     
                     Spacer()
                     
                     Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(Color(.secondaryLabel))
                 }
                 .padding(.horizontal, Layout.horizontalPadding)
                 .padding(.top, Layout.sectionHeaderTopPadding)
+                .padding(.bottom, 8)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

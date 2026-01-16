@@ -25,10 +25,12 @@ struct GameDetailView: View {
     @State var playRowFrames: [Int: CGRect] = [:]
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
+    @State var sectionFrames: [GameSection: CGRect] = [:]
     @State var savedResumePlayIndex: Int?
     @State var hasLoadedResumeMarker = false
     @State var isResumeTrackingEnabled = true
     @State var shouldShowResumePrompt = false
+    @State var isManualTabSelection = false
 
     init(gameId: Int, leagueCode: String? = nil, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
@@ -151,31 +153,21 @@ struct GameDetailView: View {
                         VStack(spacing: GameDetailLayout.sectionSpacing) {
                             pregameSection
                                 .id(GameSection.overview)
-                                .onAppear {
-                                    selectedSection = .overview
-                                }
+                                .background(sectionFrameTracker(for: .overview))
                             // NOTE: preGameSection removed - social posts now come from timeline_json
                             timelineSection(using: proxy)
                                 .id(GameSection.timeline)
-                                .onAppear {
-                                    selectedSection = .timeline
-                                }
+                                .background(sectionFrameTracker(for: .timeline))
                             // NOTE: socialSection removed - tweets are now integrated into unified timeline
                             playerStatsSection(viewModel.playerStats)
                                 .id(GameSection.playerStats)
-                                .onAppear {
-                                    selectedSection = .playerStats
-                                }
+                                .background(sectionFrameTracker(for: .playerStats))
                             teamStatsSection(viewModel.teamStats)
                                 .id(GameSection.teamStats)
-                                .onAppear {
-                                    selectedSection = .teamStats
-                                }
+                                .background(sectionFrameTracker(for: .teamStats))
                             wrapUpSection
                                 .id(GameSection.final)
-                                .onAppear {
-                                    selectedSection = .final
-                                }
+                                .background(sectionFrameTracker(for: .final))
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding)
                     }
@@ -193,9 +185,17 @@ struct GameDetailView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     VStack(spacing: 0) {
                         sectionNavigationBar { section in
-                            withAnimation(.easeInOut) {
-                                selectedSection = section
+                            // Mark as manual selection to prevent scroll tracking from fighting
+                            isManualTabSelection = true
+                            selectedSection = section
+                            
+                            withAnimation(.easeInOut(duration: 0.35)) {
                                 proxy.scrollTo(section, anchor: .top)
+                            }
+                            
+                            // Re-enable scroll tracking after animation completes
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                isManualTabSelection = false
                             }
                         }
                         if shouldShowResumePrompt {
@@ -226,6 +226,10 @@ struct GameDetailView: View {
             .onPreferenceChange(ScrollViewFramePreferenceKey.self) { value in
                 scrollViewFrame = value
                 updateResumeMarkerIfNeeded()
+            }
+            .onPreferenceChange(SectionFramePreferenceKey.self) { value in
+                sectionFrames = value
+                updateSelectedSectionFromScroll()
             }
             .onAppear {
                 loadResumeMarkerIfNeeded()

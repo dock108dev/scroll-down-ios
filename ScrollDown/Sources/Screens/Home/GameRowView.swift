@@ -5,46 +5,45 @@ struct GameRowView: View {
     let game: GameSummary
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Accent strip at top
-            Rectangle()
-                .fill(leagueColor)
-                .frame(height: Layout.accentStripHeight)
+        HStack(alignment: .center, spacing: 10) {
+            // Subtle league accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(leagueColor.opacity(0.8))
+                .frame(width: 3)
             
-            HStack(alignment: .center, spacing: Layout.contentSpacing) {
-                VStack(alignment: .leading, spacing: Layout.textSpacing) {
-                    // League + Date row
-                    HStack(spacing: Layout.metaSpacing) {
-                        Text(game.league)
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(leagueColor)
-                        
-                        Text("•")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text(game.shortFormattedDate)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+            VStack(alignment: .leading, spacing: 4) {
+                // Matchup title - primary
+                Text(matchupTitle)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.primary)
+                
+                // League + Date row - secondary, calmer
+                HStack(spacing: 4) {
+                    Text(game.league)
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(leagueColor)
                     
-                    // Matchup title
-                    Text(matchupTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
+                    Text("·")
+                        .font(.caption2)
+                        .foregroundColor(Color(.secondaryLabel))
+                    
+                    Text(game.shortFormattedDate)
+                        .font(.caption2)
+                        .foregroundColor(Color(.secondaryLabel))
                 }
-                
-                Spacer()
-                
-                // Chevron
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(Color(.tertiaryLabel))
             }
-            .padding(Layout.cardPadding)
+            
+            Spacer()
+            
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.medium))
+                .foregroundColor(Color(.tertiaryLabel))
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
         .background(HomeTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: HomeTheme.cardCornerRadius))
         .shadow(
             color: HomeTheme.cardShadow,
             radius: HomeTheme.cardShadowRadius,

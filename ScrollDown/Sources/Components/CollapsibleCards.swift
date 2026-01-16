@@ -26,44 +26,46 @@ struct CollapsibleSectionCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CardLayout.sectionSpacing) {
+        VStack(alignment: .leading, spacing: 14) {
             Button(action: toggle) {
-                HStack(spacing: CardLayout.headerSpacing) {
-                    VStack(alignment: .leading, spacing: CardLayout.subtitleSpacing) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
                         if let collapsedTitle, !isExpanded {
                             Text(collapsedTitle)
-                                .font(.headline)
+                                .font(.subheadline.weight(.semibold))
                         } else {
                             Text(title)
-                                .font(.headline)
+                                .font(.subheadline.weight(.semibold))
                             if let subtitle {
                                 Text(subtitle)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .font(.caption2)
+                                    .foregroundColor(Color(.secondaryLabel))
                             }
                         }
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(Color(.secondaryLabel))
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
                 }
             }
             .buttonStyle(.plain)
 
             if isExpanded {
                 content
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)),
+                        removal: .opacity
+                    ))
             }
         }
         .sectionCard()
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
     }
 
     private func toggle() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded.toggle()
         }
     }
@@ -88,45 +90,44 @@ struct CollapsibleQuarterCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CardLayout.sectionSpacing) {
+        VStack(alignment: .leading, spacing: 12) {
             Button(action: toggle) {
-                HStack(spacing: CardLayout.headerSpacing) {
+                HStack(spacing: 8) {
                     Text(title)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.primary)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(Color(.secondaryLabel))
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
                 }
             }
             .buttonStyle(.plain)
 
             if isExpanded {
                 content
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)),
+                        removal: .opacity
+                    ))
             }
         }
-        .padding(.horizontal, CardLayout.horizontalPadding)
-        .padding(.vertical, CardLayout.listSpacing)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(GameTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: CardLayout.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: CardLayout.cardCornerRadius)
-                .stroke(GameTheme.cardBorder, lineWidth: CardLayout.borderWidth)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(
             color: GameTheme.cardShadow,
-            radius: CardLayout.shadowRadius,
+            radius: 4,
             x: 0,
-            y: CardLayout.shadowYOffset
+            y: 1
         )
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
     }
 
     private func toggle() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded.toggle()
         }
     }

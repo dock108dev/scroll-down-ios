@@ -251,33 +251,109 @@ extension GameDetailView {
     }
 
     func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: GameDetailLayout.navigationSpacing) {
-                ForEach(GameSection.navigationSections, id: \.self) { section in
-                    Button {
-                        onSelect(section)
-                    } label: {
-                        Text(section.title)
-                            .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, GameDetailLayout.navigationHorizontalPadding)
-                            .padding(.vertical, GameDetailLayout.navigationVerticalPadding)
-                            .foregroundColor(selectedSection == section ? .white : .primary)
-                            .background(selectedSection == section ? GameTheme.accentColor : Color(.systemGray5))
-                            .clipShape(Capsule())
+        ScrollViewReader { scrollProxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 24) {
+                    ForEach(GameSection.navigationSections, id: \.self) { section in
+                        Button {
+                            onSelect(section)
+                        } label: {
+                            VStack(spacing: 6) {
+                                Text(section.title)
+                                    .font(.footnote.weight(selectedSection == section ? .semibold : .medium))
+                                    .foregroundColor(selectedSection == section ? .primary : Color(.secondaryLabel))
+                                
+                                // Underline indicator
+                                Rectangle()
+                                    .fill(selectedSection == section ? GameTheme.accentColor : Color.clear)
+                                    .frame(height: 2)
+                                    .animation(.easeInOut(duration: 0.2), value: selectedSection)
+                            }
+                        }
+                        .id(section)
+                        .accessibilityLabel("Jump to \(section.title)")
                     }
-                    .accessibilityLabel("Jump to \(section.title)")
+                }
+                .padding(.horizontal, GameDetailLayout.horizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, 2)
+            }
+            .background(Color(.systemBackground))
+            .overlay(
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.3))
+                    .frame(height: 0.5),
+                alignment: .bottom
+            )
+            .onChange(of: selectedSection) { newSection in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    scrollProxy.scrollTo(newSection, anchor: .center)
                 }
             }
-            .padding(.horizontal, GameDetailLayout.horizontalPadding)
-            .padding(.vertical, GameDetailLayout.listSpacing)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Section navigation")
         }
-        .background(Color(.systemBackground))
-        .overlay(
-            Divider(),
-            alignment: .bottom
-        )
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Section navigation")
+    }
+    
+    // MARK: - Section Frame Tracking
+    
+    func sectionFrameTracker(for section: GameSection) -> some View {
+        GeometryReader { geo in
+            Color.clear.preference(
+                key: SectionFramePreferenceKey.self,
+                value: [section: geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
+            )
+        }
+    }
+    
+    func updateSelectedSectionFromScroll() {
+        // Skip scroll-based updates during manual tab selection
+        guard !isManualTabSelection else { return }
+        
+        // Find the section whose top is closest to the top of the visible area
+        // with a threshold to prevent jitter
+        let threshold: CGFloat = 100
+        
+        var bestSection: GameSection?
+        var bestDistance: CGFloat = .infinity
+        
+        for section in GameSection.navigationSections {
+            guard let frame = sectionFrames[section] else { continue }
+            
+            // Distance from section top to viewport top
+            let distance = frame.minY
+            
+            // Prefer sections that are at or just past the top
+            if distance < threshold && distance > -frame.height * 0.5 {
+                let absDistance = abs(distance)
+                if absDistance < bestDistance {
+                    bestDistance = absDistance
+                    bestSection = section
+                }
+            }
+        }
+        
+        // Fallback: if no section is near the top, find the one that's most visible
+        if bestSection == nil {
+            for section in GameSection.navigationSections {
+                guard let frame = sectionFrames[section] else { continue }
+                
+                // Section is visible if its top is above viewport bottom
+                if frame.minY < scrollViewFrame.height {
+                    let distance = abs(frame.minY)
+                    if distance < bestDistance {
+                        bestDistance = distance
+                        bestSection = section
+                    }
+                }
+            }
+        }
+        
+        if let section = bestSection, section != selectedSection {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedSection = section
+            }
+        }
     }
     
     // NOTE: Legacy compactSection helper removed - compact mode now affects layout density only

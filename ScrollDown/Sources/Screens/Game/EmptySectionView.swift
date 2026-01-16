@@ -1,46 +1,39 @@
 import SwiftUI
 
-/// Empty state view with clear, neutral messaging
-/// Phase F: Intentional empty states that explain why content is absent
+/// Empty state view with calm, intentional messaging
+/// Confident tone - states facts without apologizing
 struct EmptySectionView: View {
     let text: String
     let icon: String
     
-    init(text: String, icon: String = "tray") {
+    init(text: String, icon: String = "ellipsis") {
         self.text = text
         self.icon = icon
     }
 
     var body: some View {
-        VStack(spacing: Layout.contentSpacing) {
+        VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: Layout.iconSize))
-                .foregroundColor(.secondary)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(Color(.tertiaryLabel))
             
             Text(text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(.footnote)
+                .foregroundColor(Color(.tertiaryLabel))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.verticalPadding)
-        .padding(.horizontal, Layout.horizontalPadding)
+        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
         .accessibilityLabel(text)
     }
 }
 
-private enum Layout {
-    static let contentSpacing: CGFloat = 12
-    static let iconSize: CGFloat = 32
-    static let verticalPadding: CGFloat = 24
-    static let horizontalPadding: CGFloat = 20
-}
-
 #Preview {
     VStack(spacing: 20) {
-        EmptySectionView(text: "No games in this window yet")
-        EmptySectionView(text: "This game doesn't have play-by-play available", icon: "list.bullet.clipboard")
-        EmptySectionView(text: "Updates are still coming in", icon: "clock")
+        EmptySectionView(text: "Nothing here yet")
+        EmptySectionView(text: "Play-by-play not available", icon: "list.bullet")
+        EmptySectionView(text: "Still loading", icon: "clock")
     }
         .padding()
         .background(Color(.systemGroupedBackground))

@@ -77,22 +77,22 @@ struct UnifiedTimelineRowView: View {
     }
     
     private func scoreBar(home: Int, away: Int) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Rectangle()
                 .fill(Color(.systemGray4))
-                .frame(height: 1)
+                .frame(height: 0.5)
             
-            Text("\(awayTeam) \(away) - \(home) \(homeTeam)")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+            Text("\(awayTeam) \(away) – \(home) \(homeTeam)")
+                .font(.caption2.weight(.medium))
+                .foregroundColor(Color(.secondaryLabel))
                 .fixedSize()
             
             Rectangle()
                 .fill(Color(.systemGray4))
-                .frame(height: 1)
+                .frame(height: 0.5)
         }
         .padding(.horizontal, layout.rowPadding)
-        .padding(.bottom, 10)
+        .padding(.bottom, 8)
     }
     
     // MARK: - Tweet Row
@@ -220,22 +220,22 @@ private struct LayoutConfig {
     let timestampFont: Font
     let tweetTextFont: Font
     
-    // Standard layout
+    // Standard layout - tighter, calmer
     static let standard = LayoutConfig(
-        contentSpacing: 12,
-        textSpacing: 4,
-        rowPadding: 12,
-        cornerRadius: 12,
-        timeColumnWidth: 48,
-        dividerWidth: 2,
-        timeStackSpacing: 2,
-        timeFont: .caption.weight(.semibold),
+        contentSpacing: 10,
+        textSpacing: 3,
+        rowPadding: 10,
+        cornerRadius: 10,
+        timeColumnWidth: 44,
+        dividerWidth: 1,
+        timeStackSpacing: 1,
+        timeFont: .caption2.weight(.medium).monospacedDigit(),
         periodFont: .caption2,
-        descriptionFont: .subheadline,
-        metaFont: .caption,
-        handleFont: .caption.weight(.semibold),
+        descriptionFont: .footnote,
+        metaFont: .caption2,
+        handleFont: .caption2.weight(.medium),
         timestampFont: .caption2,
-        tweetTextFont: .subheadline
+        tweetTextFont: .footnote
     )
 }
 

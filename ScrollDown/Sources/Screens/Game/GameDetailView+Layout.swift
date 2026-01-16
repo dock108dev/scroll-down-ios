@@ -63,3 +63,11 @@ struct ScrollViewFramePreferenceKey: PreferenceKey {
         value = nextValue()
     }
 }
+
+struct SectionFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [GameSection: CGRect] = [:]
+
+    static func reduce(value: inout [GameSection: CGRect], nextValue: () -> [GameSection: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}

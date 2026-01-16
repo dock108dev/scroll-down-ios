@@ -39,9 +39,9 @@ struct SectionCardModifier: ViewModifier {
             .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
             .shadow(
                 color: GameTheme.cardShadow,
-                radius: Layout.shadowRadius,
+                radius: GameTheme.cardShadowRadius,
                 x: 0,
-                y: Layout.shadowYOffset
+                y: GameTheme.cardShadowYOffset
             )
     }
 }
@@ -53,12 +53,12 @@ extension View {
 }
 
 private enum Layout {
-    static let spacing: CGFloat = 12
-    static let subtitleSpacing: CGFloat = 4
-    static let padding: CGFloat = 16
-    static let cornerRadius: CGFloat = 16
-    static let shadowRadius: CGFloat = 6
-    static let shadowYOffset: CGFloat = 2
+    static let spacing: CGFloat = 10
+    static let subtitleSpacing: CGFloat = 2
+    static let padding: CGFloat = 14
+    static let cornerRadius: CGFloat = 12
+    static let shadowRadius: CGFloat = 4
+    static let shadowYOffset: CGFloat = 1
 }
 
 #Preview {
