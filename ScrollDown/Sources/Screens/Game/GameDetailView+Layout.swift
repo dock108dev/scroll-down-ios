@@ -13,10 +13,9 @@ enum GameDetailLayout {
     static let smallSpacing: CGFloat = 4
 
     static func cardSpacing(_ horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
-        horizontalSizeClass == .regular ? 6 : 16 // iPad: very tight spacing between cards
+        horizontalSizeClass == .regular ? 6 : 16
     }
 
-    // Default value for backward compatibility in extensions without size class access
     static let cardSpacing: CGFloat = 16
     static let sectionSpacing: CGFloat = 20
 
@@ -27,7 +26,6 @@ enum GameDetailLayout {
         horizontalSizeClass == .regular ? 32 : 20
     }
 
-    // Default value for backward compatibility in extensions without size class access
     static let horizontalPadding: CGFloat = 20
 
     static let bottomPadding: CGFloat = 32
@@ -65,8 +63,8 @@ enum GameDetailLayout {
 }
 
 enum GameDetailConstants {
-    static let statFallback = "--"
-    static let scoreFallback = "--"
+    static let statPlaceholder = "--"
+    static let scorePlaceholder = "--"
 }
 
 struct PlayRowFramePreferenceKey: PreferenceKey {

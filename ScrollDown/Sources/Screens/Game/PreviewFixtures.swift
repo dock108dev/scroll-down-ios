@@ -16,7 +16,6 @@ enum PreviewFixtures {
             socialPosts: Array(base.socialPosts.prefix(1)),
             plays: base.plays,
             moments: base.moments,
-            compactMoments: base.compactMoments,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )
@@ -44,7 +43,6 @@ enum PreviewFixtures {
             socialPosts: base.socialPosts,
             plays: plays,
             moments: base.moments,
-            compactMoments: base.compactMoments,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )
@@ -52,27 +50,14 @@ enum PreviewFixtures {
 
     static let preGameOnlyGame: GameDetailResponse = {
         let base: GameDetailResponse = MockLoader.load("game-001")
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let gameDate = formatter.date(from: base.game.gameDate)
-        let preGamePosts = base.socialPosts.filter { post in
-            guard let gameDate else {
-                return true
-            }
-            guard let postDate = formatter.date(from: post.postedAt) else {
-                return true
-            }
-            return postDate < gameDate
-        }
         return GameDetailResponse(
             game: base.game,
             teamStats: [],
             playerStats: [],
             odds: [],
-            socialPosts: preGamePosts,
+            socialPosts: base.socialPosts,
             plays: [],
             moments: nil,
-            compactMoments: base.compactMoments,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )

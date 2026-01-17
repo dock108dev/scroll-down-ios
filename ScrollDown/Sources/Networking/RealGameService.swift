@@ -40,11 +40,6 @@ final class RealGameService: GameService {
         }
         #endif
         
-        // NOTE: The /games snapshot endpoint is not deployed yet on Hetzner
-        // Using admin endpoint with workarounds:
-        // - range param is ignored (returns all games paginated)
-        // - no status field (inferred from has_required_data/scores)
-        // TODO: Switch to /games when snapshot endpoint is deployed
         let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
         
         // Client-side range filtering until backend supports it
@@ -64,8 +59,7 @@ final class RealGameService: GameService {
         )
     }
     
-    /// Client-side range filtering (mirrors MockGameService logic)
-    /// TODO: Remove when backend supports range filtering
+    /// Client-side range filtering
     private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
         let now = TimeService.shared.now
         let calendar = Calendar.current
@@ -103,10 +97,6 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        throw GameServiceError.notImplemented
-    }
-
-    func fetchCompactMomentPbp(momentId: StringOrInt) async throws -> PbpResponse {
         throw GameServiceError.notImplemented
     }
 

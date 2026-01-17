@@ -9,7 +9,6 @@ struct GameDetailResponse: Codable {
     let socialPosts: [SocialPostEntry]
     let plays: [PlayEntry]
     let moments: [Moment]?
-    let compactMoments: [CompactMoment]?
     let derivedMetrics: [String: AnyCodable]
     let rawPayloads: [String: AnyCodable]
     
@@ -21,7 +20,6 @@ struct GameDetailResponse: Codable {
         case socialPosts = "social_posts"
         case plays
         case moments
-        case compactMoments = "compact_moments"
         case derivedMetrics = "derived_metrics"
         case rawPayloads = "raw_payloads"
     }

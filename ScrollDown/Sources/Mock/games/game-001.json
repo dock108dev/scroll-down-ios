@@ -249,22 +249,6 @@
     "team_boxscores": [],
     "player_boxscores": [],
     "odds": []
-  },
-  "compact_moments": [
-    {
-      "id": 1,
-      "period": 1,
-      "game_clock": "12:00",
-      "description": "Opening tip sets the tempo early.",
-      "team_abbreviation": "BOS"
-    },
-    {
-      "id": 2,
-      "period": 4,
-      "game_clock": "01:12",
-      "description": "Late push seals the outcome.",
-      "team_abbreviation": "LAL"
-    }
-  ]
+  }
 }
 

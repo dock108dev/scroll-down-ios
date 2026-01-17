@@ -22,7 +22,6 @@
 		2916265C6557233A8296D0BC /* GameDetailView+Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0933EFD998ED9CB2C2B27C /* GameDetailView+Stats.swift */; };
 		2CD104DA7B33C73E6DF92ACE /* game-list.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F4049B8F17A3BC69E2E3756 /* game-list.json */; };
 		2D4DDCCECD9C439F37203A66 /* TimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1AC093104FDC3AD864F1B2 /* TimelineRowView.swift */; };
-		325DE05DD803130A8E08E4E0 /* CompactMoment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F358022CD4B04F21668B91 /* CompactMoment.swift */; };
 		M0M3NT001000000000000001 /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000002 /* Moment.swift */; };
 		M0M3NT001000000000000003 /* MomentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000004 /* MomentCardView.swift */; };
 		M0M3NT001000000000000005 /* moments-001.json in Resources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000006 /* moments-001.json */; };
@@ -90,7 +89,6 @@
 		4388D761310256CAA8B9F768 /* TimeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeService.swift; sourceTree = "<group>"; };
 		48EA8126B015E4B4AF86450D /* GameDetailDisplayModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailDisplayModels.swift; sourceTree = "<group>"; };
 		4EA5E9853782A831DDDAB964 /* GameRoutingLogger.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRoutingLogger.swift; sourceTree = "<group>"; };
-		55F358022CD4B04F21668B91 /* CompactMoment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompactMoment.swift; sourceTree = "<group>"; };
 		M0M3NT001000000000000002 /* Moment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
 		M0M3NT001000000000000004 /* MomentCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentCardView.swift; sourceTree = "<group>"; };
 		M0M3NT001000000000000006 /* moments-001.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "moments-001.json"; sourceTree = "<group>"; };
@@ -311,7 +309,6 @@
 		C1D1412ABA4C8BA8CBF564E2 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				55F358022CD4B04F21668B91 /* CompactMoment.swift */,
 				M0M3NT001000000000000002 /* Moment.swift */,
 				56A1B2C3D4E5F6A7B8C9D0E1 /* UnifiedTimelineEvent.swift */,
 				F95D753106C9E23F1CCAF32F /* GameListResponse.swift */,
@@ -435,7 +432,6 @@
 				055F3D27BD6A844858305041 /* MockDataGenerator.swift in Sources */,
 				037238B5678E56309A67E681 /* GameService.swift in Sources */,
 				55462CBA241AC4AD92EEEBBB /* MockLoader.swift in Sources */,
-				325DE05DD803130A8E08E4E0 /* CompactMoment.swift in Sources */,
 				M0M3NT001000000000000001 /* Moment.swift in Sources */,
 				M0M3NT001000000000000003 /* MomentCardView.swift in Sources */,
 				56B1C2D3E4F5G6H7I8J9K0L1 /* UnifiedTimelineEvent.swift in Sources */,

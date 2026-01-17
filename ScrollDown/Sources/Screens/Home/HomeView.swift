@@ -527,12 +527,12 @@ private enum Layout {
     static let stateSpacing: CGFloat = 16
     static let statePadding: CGFloat = 24
     static let errorIconSize: CGFloat = 48
-    static let cardSpacing: CGFloat = 12 // Fallback for backward compatibility
+    static let cardSpacing: CGFloat = 12
     static let sectionHeaderTopPadding: CGFloat = 12
     static let sectionDividerPadding: CGFloat = 8
     static let sectionStatePadding: CGFloat = 12
     static let skeletonSpacing: CGFloat = 12
-    static let bottomPadding: CGFloat = 32 // Fallback for backward compatibility
+    static let bottomPadding: CGFloat = 32
     static let freshnessBottomPadding: CGFloat = 8
 }
 

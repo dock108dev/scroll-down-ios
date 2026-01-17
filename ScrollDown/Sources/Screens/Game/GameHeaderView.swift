@@ -225,7 +225,7 @@ private struct TeamBadgeView: View {
             return known
         }
         
-        // Fallback: use first 3 letters of last word (team nickname)
+        // Default: use first 3 letters of last word (team nickname)
         let words = teamName.split(separator: " ")
         if let lastWord = words.last {
             return String(lastWord.prefix(3)).uppercased()

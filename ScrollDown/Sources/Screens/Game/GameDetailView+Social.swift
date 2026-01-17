@@ -1,8 +1,6 @@
 import SwiftUI
 
-// MARK: - Social Content (Legacy)
-// Social posts are now integrated into the unified timeline via timeline_json.
-// This file retains only the RelatedPosts functionality which may be re-enabled later.
+// MARK: - Related Posts
 
 extension GameDetailView {
     

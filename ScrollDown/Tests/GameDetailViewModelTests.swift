@@ -100,7 +100,7 @@ final class GameDetailViewModelTests: XCTestCase {
             odds: [],
             socialPosts: [],
             plays: plays,
-            compactMoments: nil,
+            moments: nil,
             derivedMetrics: [:],
             rawPayloads: [:]
         )
@@ -144,7 +144,7 @@ final class GameDetailViewModelTests: XCTestCase {
             odds: [],
             socialPosts: [],
             plays: [],
-            compactMoments: nil,
+            moments: nil,
             derivedMetrics: [:],
             rawPayloads: [:]
         )
@@ -184,10 +184,6 @@ private struct StubGameService: GameService {
         PbpResponse(events: [])
     }
 
-    func fetchCompactMomentPbp(momentId: StringOrInt) async throws -> PbpResponse {
-        PbpResponse(events: [])
-    }
-
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
         SocialPostListResponse(posts: [], total: 0)
     }
@@ -206,5 +202,15 @@ private struct StubGameService: GameService {
 
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
         RelatedPostListResponse(posts: [], total: 0)
+    }
+
+    func fetchMoments(gameId: Int) async throws -> MomentsResponse {
+        MomentsResponse(
+            gameId: gameId,
+            generatedAt: nil,
+            moments: [],
+            totalCount: 0,
+            highlightCount: 0
+        )
     }
 }

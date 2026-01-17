@@ -210,12 +210,10 @@ final class GameDetailViewModel: ObservableObject {
         
         do {
             let response = try await service.fetchMoments(gameId: gameId)
-            // Store in a separate property if needed, but prefer detail.moments
             momentsState = .loaded
             logger.info("Loaded \(response.moments.count) moments from endpoint (\(response.highlightCount) highlights)")
         } catch {
-            // Not a critical failure - timeline will fall back to PBP
-            logger.info("Moments endpoint not available, using PBP fallback: \(error.localizedDescription, privacy: .public)")
+            logger.error("Moments endpoint failed: \(error.localizedDescription, privacy: .public)")
             momentsState = .failed(error.localizedDescription)
         }
     }
@@ -296,16 +294,6 @@ final class GameDetailViewModel: ObservableObject {
         detail?.game
     }
 
-    /// DEPRECATED: Client-side fallback summary generation
-    /// Summaries should come from timeline artifact's summary_json only
-    @available(*, deprecated, message: "Summaries are pre-generated server-side, no client fallback")
-    var overviewSummary: String {
-        guard let game = detail?.game else {
-            return "Game details unavailable."
-        }
-        return String(format: Constants.summaryTemplate, game.awayTeam, game.homeTeam)
-    }
-    
     /// Game context - why this game matters
     /// Returns nil if context is unavailable (section will be hidden)
     var gameContext: String? {
@@ -362,7 +350,7 @@ final class GameDetailViewModel: ObservableObject {
 
     var recapBullets: [String] {
         guard let game = detail?.game else {
-            return Constants.recapFallbackBullets
+            return []
         }
 
         let statusText = game.status.rawValue.capitalized
@@ -375,29 +363,6 @@ final class GameDetailViewModel: ObservableObject {
 
     var highlights: [SocialPostEntry] {
         detail?.socialPosts.filter { $0.hasVideo || $0.imageUrl != nil } ?? []
-    }
-
-    /// DEPRECATED: Legacy compact timeline moments from the old chapter-based approach
-    @available(*, deprecated, message: "Use unifiedTimelineEvents from timeline_json")
-    var compactTimelineMoments: [CompactMoment] {
-        let moments = detail?.compactMoments ?? []
-        if !moments.isEmpty {
-            return moments
-        }
-
-        return (detail?.plays ?? []).map { CompactMoment(play: $0) }
-    }
-
-    /// DEPRECATED: Pre-game posts - social posts are now in unified timeline
-    @available(*, deprecated, message: "Social posts are now integrated into timeline_json")
-    var preGamePosts: [SocialPostEntry] {
-        splitPosts().preGame
-    }
-
-    /// DEPRECATED: Post-game posts - social posts are now in unified timeline
-    @available(*, deprecated, message: "Social posts are now integrated into timeline_json")
-    var postGamePosts: [SocialPostEntry] {
-        splitPosts().postGame
     }
 
     // MARK: - Unified Timeline (Single Source of Truth)
@@ -425,15 +390,6 @@ final class GameDetailViewModel: ObservableObject {
             events.append(contentsOf: tweetEvents)
         }
         
-        // If no plays, also include PBP from artifact as fallback
-        if plays.isEmpty, let timelineValue = timelineArtifact?.timelineJson?.value {
-            let rawEvents = extractTimelineEvents(from: timelineValue)
-            let fallbackEvents = rawEvents.enumerated().map { index, dict in
-                UnifiedTimelineEvent(from: dict, index: index)
-            }
-            return fallbackEvents
-        }
-        
         return events
     }
     
@@ -457,19 +413,6 @@ final class GameDetailViewModel: ObservableObject {
     /// Whether timeline data is available from timeline_json
     var hasUnifiedTimeline: Bool {
         !unifiedTimelineEvents.isEmpty
-    }
-    
-    // MARK: - Legacy Timeline (deprecated - kept for fallback)
-    
-    @available(*, deprecated, message: "Use unifiedTimelineEvents instead - renders from timeline_json")
-    var timelineQuarters: [QuarterTimeline] {
-        // DEPRECATED: This groups/sorts detail.plays client-side
-        // Only used as fallback if timeline_json is empty
-        let plays = detail?.plays ?? []
-        let grouped = Dictionary(grouping: plays, by: { $0.quarter ?? Constants.unknownQuarter })
-        return grouped
-            .map { QuarterTimeline(quarter: $0.key, plays: $0.value.sorted { $0.playIndex < $1.playIndex }) }
-            .sorted { $0.quarter < $1.quarter }
     }
 
     var timelineArtifactSummary: TimelineArtifactSummary? {
@@ -514,7 +457,7 @@ final class GameDetailViewModel: ObservableObject {
             return sanitizeSummary(overall)
         }
         
-        // Try "summary" key as fallback
+        // Try "summary" key (alternative format)
         if let summary = dict["summary"] as? String {
             return sanitizeSummary(summary)
         }
@@ -594,8 +537,8 @@ final class GameDetailViewModel: ObservableObject {
                 name: key.label,
                 homeValue: homeValue,
                 awayValue: awayValue,
-                homeDisplay: formattedStat(homeValue, fallback: Constants.statFallback),
-                awayDisplay: formattedStat(awayValue, fallback: Constants.statFallback)
+                homeDisplay: formattedStat(homeValue, placeholder: Constants.statPlaceholder),
+                awayDisplay: formattedStat(awayValue, placeholder: Constants.statPlaceholder)
             )
         }
     }
@@ -634,30 +577,6 @@ final class GameDetailViewModel: ObservableObject {
     private func highlightPlayIndex(for index: Int, spacing: Int, plays: [PlayEntry]) -> Int {
         let targetIndex = min(index * spacing, plays.count - 1)
         return plays[targetIndex].playIndex
-    }
-
-    private func splitPosts() -> (preGame: [SocialPostEntry], postGame: [SocialPostEntry]) {
-        let posts = detail?.socialPosts ?? []
-        guard let gameDate = detail?.game.parsedGameDate else {
-            return (posts, [])
-        }
-
-        var preGame: [SocialPostEntry] = []
-        var postGame: [SocialPostEntry] = []
-
-        for post in posts {
-            if let postedAt = parseDate(post.postedAt), postedAt < gameDate {
-                preGame.append(post)
-            } else {
-                postGame.append(post)
-            }
-        }
-
-        return (preGame, postGame)
-    }
-
-    private func parseDate(_ string: String) -> Date? {
-        Constants.dateFormatter.date(from: string)
     }
 
     private func statValue(for key: String, in stats: [String: AnyCodable]) -> Double? {
@@ -727,9 +646,9 @@ final class GameDetailViewModel: ObservableObject {
         return nil
     }
 
-    private func formattedStat(_ value: Double?, fallback: String) -> String {
+    private func formattedStat(_ value: Double?, placeholder: String) -> String {
         guard let value else {
-            return fallback
+            return placeholder
         }
 
         if value >= Constants.percentageFloor && value <= Constants.percentageCeiling {
@@ -778,33 +697,21 @@ final class GameDetailViewModel: ObservableObject {
 }
 
 private enum Constants {
-    static let summaryTemplate = "Catch up on %@ at %@."
     static let recapTeamsTemplate = "Matchup: %@ at %@."
     static let recapStatusTemplate = "Status: %@."
     static let recapHighlightsTemplate = "Key moments and highlights below."
-    static let recapFallbackBullets = [
-        "Matchup details unavailable.",
-        "Check back later for timeline updates.",
-        "Highlights will appear when available."
-    ]
-    static let unknownQuarter = 0
     static let halftimeQuarter = 2
     static let halftimeLabel = "Halftime"
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
     static let minimumHighlightSpacing = 1
-    static let dateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
     static let percentageFloor = 0.0
     static let percentageCeiling = 1.0
     static let percentageFormat = "%.3f"
     static let integerFormat = "%.0f"
     static let decimalFormat = "%.1f"
-    static let statFallback = "--"
+    static let statPlaceholder = "--"
     static let scorePattern = #"(\d+)\s*(?:-|–|to)\s*(\d+)"#
     static let scoreRegex = try? NSRegularExpression(pattern: scorePattern, options: [])
     static let teamComparisonKeys: [(key: String, label: String)] = [

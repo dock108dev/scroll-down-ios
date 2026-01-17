@@ -31,7 +31,6 @@ extension GameDetailView {
             return "\(momentCount) moments"
         }
         
-        // Fallback to events-based subtitle
         let events = viewModel.unifiedTimelineEvents
         if events.isEmpty {
             return "Play-by-play"
@@ -52,12 +51,11 @@ extension GameDetailView {
             if viewModel.hasMoments {
                 momentsTimelineView
             }
-            // UNIFIED TIMELINE: Fallback when moments not available but timeline_json exists
+            // UNIFIED TIMELINE: Rendering from timeline_json when moments unavailable
             else if viewModel.hasUnifiedTimeline {
                 unifiedTimelineView
             } else {
-                // Fallback to legacy quarters if timeline_json is empty
-                legacyTimelineView(using: proxy)
+                EmptySectionView(text: "No timeline data available.")
             }
         }
         .onAppear {
@@ -266,77 +264,6 @@ extension GameDetailView {
             }
         }
         .id("quarter-\(group.quarter)")
-    }
-    
-    // MARK: - Legacy Timeline (Fallback)
-    
-    /// Fallback to client-side grouped quarters if timeline_json is empty
-    @available(*, deprecated, message: "Use unifiedTimelineView when timeline_json is available")
-    private func legacyTimelineView(using proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: GameDetailLayout.cardSpacing) {
-            if let liveMarker = viewModel.liveScoreMarker {
-                TimelineScoreChipView(marker: liveMarker)
-            }
-
-            ForEach(viewModel.timelineQuarters) { quarter in
-                quarterSection(quarter, using: proxy)
-            }
-
-            if viewModel.timelineQuarters.isEmpty {
-                EmptySectionView(text: "No play-by-play data available.")
-            }
-        }
-    }
-
-    func quarterSection(
-        _ quarter: QuarterTimeline,
-        using proxy: ScrollViewProxy
-    ) -> some View {
-        CollapsibleQuarterCard(
-            title: "\(quarterTitle(quarter.quarter)) (\(quarter.plays.count) plays)",
-            isExpanded: Binding(
-                get: { !collapsedQuarters.contains(quarter.quarter) },
-                set: { isExpanded in
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                        if isExpanded {
-                            collapsedQuarters.remove(quarter.quarter)
-                        } else {
-                            collapsedQuarters.insert(quarter.quarter)
-                        }
-                    }
-                    if isExpanded {
-                        scrollToQuarterHeader(quarter.quarter, using: proxy)
-                    }
-                }
-            )
-        ) {
-            VStack(spacing: GameDetailLayout.cardSpacing) {
-                ForEach(quarter.plays) { play in
-                    if let highlights = viewModel.highlightByPlayIndex[play.playIndex] {
-                        ForEach(highlights) { highlight in
-                            HighlightCardView(post: highlight)
-                        }
-                    }
-
-                    TimelineRowView(play: play)
-                        .id("play-\(play.playIndex)")
-                        .background(
-                            GeometryReader { proxy in
-                                Color.clear.preference(
-                                    key: PlayRowFramePreferenceKey.self,
-                                    value: [play.playIndex: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
-                                )
-                            }
-                        )
-
-                    if let marker = viewModel.scoreMarker(for: play) {
-                        TimelineScoreChipView(marker: marker)
-                    }
-                }
-            }
-            .padding(.top, GameDetailLayout.listSpacing)
-        }
-        .id(quarterAnchorId(quarter.quarter))
     }
 
     @ViewBuilder

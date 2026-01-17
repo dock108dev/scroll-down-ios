@@ -316,7 +316,7 @@ extension GameDetailView {
             return abbrev
         }
         
-        // Fallback: take first 3 letters of last word
+        // Default: take first 3 letters of last word
         let words = fullName.split(separator: " ")
         if let lastWord = words.last {
             return String(lastWord.prefix(3)).uppercased()
@@ -417,7 +417,7 @@ extension GameDetailView {
                         }
                     }
                 } else {
-                    Text(GameDetailConstants.scoreFallback)
+                    Text(GameDetailConstants.scorePlaceholder)
                         .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
                 }
                 Text("Final")

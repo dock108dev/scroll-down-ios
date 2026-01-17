@@ -19,7 +19,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
     let hasSocial: Bool?
     let lastUpdatedAt: String?
     
-    // Legacy fields for mock data compatibility
+    // Mock data uses different keys (league_code, game_date)
     let leagueCode: String?
     let gameDate: String?
     let homeTeam: String?
@@ -47,7 +47,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         case hasPbp = "has_pbp"
         case hasSocial = "has_social"
         case lastUpdatedAt = "last_updated_at"
-        // Legacy keys
+        // Mock data keys
         case leagueCode = "league_code"
         case gameDate = "game_date"
         case homeScore = "home_score"
@@ -244,13 +244,12 @@ extension GameSummary {
         return nil
     }
     
-    /// Convenience accessors for team names (for backward compatibility)
+    /// Convenience accessors for team names
     var homeTeamName: String { homeTeamInfo.name }
     var awayTeamName: String { awayTeamInfo.name }
     var homeTeamAbbreviation: String { homeTeamInfo.abbreviation ?? String(homeTeamInfo.name.prefix(3)).uppercased() }
     var awayTeamAbbreviation: String { awayTeamInfo.abbreviation ?? String(awayTeamInfo.name.prefix(3)).uppercased() }
     
-    /// League code for backward compatibility
     var leagueCodeValue: String { league }
 
     /// Formatted score string (e.g., "112 - 108")

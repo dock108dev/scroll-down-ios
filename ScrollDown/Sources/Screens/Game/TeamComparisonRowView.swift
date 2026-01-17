@@ -344,8 +344,7 @@ private struct SimplifiedStatRow: View {
     }
 }
 
-// MARK: - Legacy View (kept for compatibility)
-/// Original row view — now deprecated in favor of TeamStatsContainer
+// MARK: - Single Row View
 
 struct TeamComparisonRowView: View {
     let stat: TeamComparisonStat

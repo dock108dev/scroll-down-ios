@@ -121,13 +121,6 @@ final class MockGameService: GameService {
         
         return MockLoader.load("pbp-001")
     }
-
-    func fetchCompactMomentPbp(momentId: StringOrInt) async throws -> PbpResponse {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 120_000_000) // 120ms
-
-        return MockLoader.load("pbp-001")
-    }
     
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
         // Simulate network delay
@@ -280,7 +273,6 @@ final class MockGameService: GameService {
             return generateMoments(from: detail, gameId: gameId)
         }
         
-        // Fallback to empty moments
         return MomentsResponse(
             gameId: gameId,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
