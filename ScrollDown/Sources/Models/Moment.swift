@@ -137,6 +137,109 @@ struct Moment: Codable, Identifiable, Equatable {
         }
         return String(clock[clock.index(after: spaceIndex)...])
     }
+    
+    // MARK: - Narrative Headline Generation
+    
+    /// Human-readable narrative headline describing what happened
+    /// Uses moment context to generate story-like description
+    func narrativeHeadline(homeTeam: String, awayTeam: String) -> String {
+        let driver = primaryTeam ?? (teamInControl == "home" ? homeTeam : awayTeam)
+        let scoreDelta = parseScoreDelta()
+        let isQuickStretch = playCount < 12
+        let isLongStretch = playCount > 25
+        
+        switch type {
+        case .flip:
+            if isPeriodStart {
+                return "\(driver) take an early lead"
+            }
+            return "\(driver) flip the lead after sustained pressure"
+            
+        case .leadBuild:
+            if let delta = scoreDelta, delta >= 8 {
+                return "\(driver) pull away with a \(delta)-point run"
+            }
+            if isQuickStretch {
+                return "\(driver) extend their lead with a quick burst"
+            }
+            return "\(driver) build on their momentum"
+            
+        case .cut:
+            if let delta = scoreDelta, delta >= 8 {
+                return "\(driver) storm back, cutting the deficit"
+            }
+            if isQuickStretch {
+                return "\(driver) respond quickly to trim the lead"
+            }
+            return "\(driver) chip away at the lead"
+            
+        case .tie:
+            return "Game tied after back-and-forth stretch"
+            
+        case .closingControl:
+            return "\(driver) close it out in the final stretch"
+            
+        case .highImpact:
+            return note ?? "Key moment shifts the momentum"
+            
+        case .neutral:
+            if isPeriodStart && quarter == 1 {
+                return "Game underway with early exchanges"
+            }
+            if isPeriodStart {
+                return "Teams trade baskets to open the period"
+            }
+            if isLongStretch {
+                return "Slow, physical stretch keeps the game tight"
+            }
+            return "Neither team separates during this stretch"
+        }
+    }
+    
+    /// Compact metadata line (e.g., "Q1 · 11:46–9:16 · 22 plays")
+    var compactMetadata: String {
+        let quarterLabel = quarter.map { "Q\($0)" } ?? ""
+        let timeLabel = timeRange ?? ""
+        let playLabel = "\(playCount) plays"
+        
+        if !quarterLabel.isEmpty && !timeLabel.isEmpty {
+            return "\(quarterLabel) · \(timeLabel) · \(playLabel)"
+        } else if !timeLabel.isEmpty {
+            return "\(timeLabel) · \(playLabel)"
+        }
+        return playLabel
+    }
+    
+    /// Whether this moment represents a major inflection point
+    /// Used for accent styling (only these get visual emphasis)
+    var isMajorInflection: Bool {
+        switch type {
+        case .flip, .closingControl:
+            return true
+        case .cut, .leadBuild:
+            // Major if large swing
+            if let delta = parseScoreDelta(), delta >= 10 {
+                return true
+            }
+            return false
+        default:
+            return false
+        }
+    }
+    
+    /// Parse score delta from scoreStart/scoreEnd
+    private func parseScoreDelta() -> Int? {
+        let startScores = scoreStart.replacingOccurrences(of: "–", with: "-").split(separator: "-").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        let endScores = scoreEnd.replacingOccurrences(of: "–", with: "-").split(separator: "-").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        
+        guard startScores.count == 2, endScores.count == 2 else { return nil }
+        
+        let startDiff = abs(startScores[0] - startScores[1])
+        let endDiff = abs(endScores[0] - endScores[1])
+        
+        // Return the change in lead magnitude
+        return abs(endDiff - startDiff)
+    }
 }
 
 /// Type of moment - determines styling and importance

@@ -1,16 +1,13 @@
 import SwiftUI
 
 /// Expandable card view for a game moment
-/// Shows moment header with type badge, note, clock range, and score delta
-/// When expanded, shows player contributions and all plays within the moment
+/// Clean, professional design - narrative headlines, minimal color, compressed metadata
 struct MomentCardView: View {
     let moment: Moment
     let plays: [UnifiedTimelineEvent]
     let homeTeam: String
     let awayTeam: String
     @Binding var isExpanded: Bool
-    
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -23,93 +20,85 @@ struct MomentCardView: View {
             // Expanded content
             if isExpanded {
                 expandedContent
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity
-                    ))
+                    .transition(.opacity)
             }
         }
         .background(DesignSystem.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
         .overlay(
             RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
-                .stroke(borderColor, lineWidth: DesignSystem.borderWidth)
+                .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: 0.5)
         )
-        .shadow(
-            color: DesignSystem.Shadow.color,
-            radius: DesignSystem.Shadow.subtleRadius,
-            x: 0,
-            y: DesignSystem.Shadow.subtleY
-        )
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
     
     // MARK: - Header Content
     
     private var headerContent: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.elementPadding) {
-            // Left: Type badge and main content
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.text) {
-                // Type badge and note
+        HStack(alignment: .center, spacing: 12) {
+            // Left edge accent (only for major inflections)
+            if moment.isMajorInflection {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(DesignSystem.Colors.accent)
+                    .frame(width: 3)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                // Primary: Narrative headline
+                Text(moment.narrativeHeadline(homeTeam: homeTeam, awayTeam: awayTeam))
+                    .font(.subheadline.weight(moment.isMajorInflection ? .semibold : .regular))
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                    .lineLimit(2)
+                
+                // Secondary: Compressed metadata + score
                 HStack(spacing: 6) {
-                    momentTypeBadge
+                    Text(moment.compactMetadata)
+                        .font(.caption)
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
                     
-                    Text(moment.displayLabel)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(DesignSystem.TextColor.primary)
+                    Text("·")
+                        .font(.caption)
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                    
+                    scoreLabel
                 }
                 
-                // Clock and score range
-                HStack(spacing: 8) {
-                    if let timeRange = moment.timeRange {
-                        Label(timeRange, systemImage: "clock")
-                            .font(.caption2)
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                    }
-                    
-                    scoreRangeChip
-                }
-                
-                // Player preview (collapsed: top 2 players)
-                if !moment.players.isEmpty && !isExpanded {
+                // Tertiary: Player preview (collapsed only, if notable)
+                if !moment.players.isEmpty && !isExpanded && moment.isNotable {
                     playerPreview
+                        .padding(.top, 2)
                 }
             }
             
             Spacer()
             
-            // Right: Expansion indicator and play count
-            VStack(alignment: .trailing, spacing: 4) {
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                
-                Text("\(moment.playCount) plays")
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-            }
+            // Right: Expansion indicator
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.medium))
+                .foregroundColor(DesignSystem.TextColor.tertiary)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
         }
-        .padding(DesignSystem.Spacing.elementPadding)
+        .padding(.vertical, 12)
+        .padding(.horizontal, moment.isMajorInflection ? 8 : 12)
         .contentShape(Rectangle())
     }
     
     // MARK: - Expanded Content
     
     private var expandedContent: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.list) {
+        VStack(alignment: .leading, spacing: 12) {
             Divider()
-                .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+                .padding(.horizontal, 12)
             
-            // Player contributions (expanded: all players)
+            // Player contributions
             if !moment.players.isEmpty {
                 playerContributionsSection
-                    .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+                    .padding(.horizontal, 12)
             }
             
             // Plays list
             if !plays.isEmpty {
-                VStack(spacing: DesignSystem.Spacing.list) {
+                VStack(spacing: 8) {
                     ForEach(plays) { event in
                         UnifiedTimelineRowView(
                             event: event,
@@ -118,60 +107,37 @@ struct MomentCardView: View {
                         )
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.elementPadding)
-                .padding(.bottom, DesignSystem.Spacing.elementPadding)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
             }
         }
     }
     
     // MARK: - Helper Views
     
-    private var momentTypeBadge: some View {
-        HStack(spacing: 3) {
-            Image(systemName: moment.type.iconName)
-                .font(.caption2)
-            if moment.isNotable {
-                Text(moment.type.displayName.uppercased())
-                    .font(.caption2.weight(.bold))
-            }
-        }
-        .foregroundColor(badgeTextColor)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(badgeBackgroundColor)
-        .clipShape(Capsule())
-    }
-    
-    private var scoreRangeChip: some View {
+    private var scoreLabel: some View {
         HStack(spacing: 4) {
             Text(moment.scoreStart)
-                .font(.caption2.monospacedDigit())
-                .foregroundColor(DesignSystem.TextColor.secondary)
+                .font(.caption.monospacedDigit())
+                .foregroundColor(DesignSystem.TextColor.tertiary)
             
             Image(systemName: "arrow.right")
-                .font(.system(size: 8, weight: .semibold))
+                .font(.system(size: 8))
                 .foregroundColor(DesignSystem.TextColor.tertiary)
             
             Text(moment.scoreEnd)
-                .font(.caption2.weight(.medium).monospacedDigit())
-                .foregroundColor(DesignSystem.TextColor.primary)
+                .font(.caption.weight(.medium).monospacedDigit())
+                .foregroundColor(DesignSystem.TextColor.secondary)
         }
     }
     
     private var playerPreview: some View {
         let topPlayers = Array(moment.players.prefix(2))
-        return HStack(spacing: 8) {
+        return HStack(spacing: 6) {
             ForEach(topPlayers, id: \.name) { player in
-                HStack(spacing: 4) {
-                    Text(player.name)
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.TextColor.secondary)
-                    if let summary = player.summary {
-                        Text("(\(summary))")
-                            .font(.caption2)
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                    }
-                }
+                Text("\(player.name) \(player.summary ?? "")")
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.secondary)
             }
             
             if moment.players.count > 2 {
@@ -183,81 +149,27 @@ struct MomentCardView: View {
     }
     
     private var playerContributionsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.text) {
-            Text("Key contributors")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(DesignSystem.TextColor.secondary)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(moment.players, id: \.name) { player in
-                    HStack {
-                        Text(player.name)
-                            .font(.caption)
-                            .foregroundColor(DesignSystem.TextColor.primary)
-                        
-                        Spacer()
-                        
-                        Text(player.displayStats)
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(DesignSystem.TextColor.secondary)
-                    }
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(moment.players, id: \.name) { player in
+                HStack {
+                    Text(player.name)
+                        .font(.caption)
+                        .foregroundColor(DesignSystem.TextColor.primary)
+                    
+                    Spacer()
+                    
+                    Text(player.displayStats)
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(DesignSystem.TextColor.secondary)
                 }
             }
         }
-        .padding(.vertical, DesignSystem.Spacing.text)
-    }
-    
-    // MARK: - Styling
-    
-    private var badgeBackgroundColor: Color {
-        switch moment.type {
-        case .leadBuild:
-            return Color.green.opacity(0.15)
-        case .cut:
-            return Color.orange.opacity(0.15)
-        case .tie:
-            return Color.yellow.opacity(0.15)
-        case .flip:
-            return Color.purple.opacity(0.15)
-        case .closingControl:
-            return Color.red.opacity(0.15)
-        case .highImpact:
-            return Color.red.opacity(0.20)
-        case .neutral:
-            return DesignSystem.Colors.neutralBadge
-        }
-    }
-    
-    private var badgeTextColor: Color {
-        switch moment.type {
-        case .leadBuild:
-            return Color.green
-        case .cut:
-            return Color.orange
-        case .tie:
-            return Color.yellow
-        case .flip:
-            return Color.purple
-        case .closingControl:
-            return Color.red
-        case .highImpact:
-            return Color.red
-        case .neutral:
-            return DesignSystem.TextColor.tertiary
-        }
-    }
-    
-    private var borderColor: Color {
-        if moment.isNotable {
-            return badgeTextColor.opacity(0.3)
-        }
-        return DesignSystem.borderColor.opacity(0.6)
     }
     
     // MARK: - Actions
     
     private func toggleExpansion() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(.easeInOut(duration: 0.2)) {
             isExpanded.toggle()
         }
     }
@@ -265,113 +177,92 @@ struct MomentCardView: View {
 
 // MARK: - Preview
 
-#Preview("Lead Build Moment - Collapsed") {
+#Preview("Major Inflection - Lead Change") {
     let moment = Moment(
         id: "m_001",
-        type: .leadBuild,
+        type: .flip,
         startPlay: 21,
         endPlay: 34,
         playCount: 14,
-        teams: ["BOS", "LAL"],
-        primaryTeam: "Boston Celtics",
+        teams: ["SAS", "OKC"],
+        primaryTeam: "San Antonio Spurs",
         players: [
-            PlayerContribution(name: "J. Tatum", stats: ["pts": 8, "ast": 2], summary: "8 pts, 2 ast"),
-            PlayerContribution(name: "J. Brown", stats: ["pts": 4], summary: "4 pts"),
-            PlayerContribution(name: "D. White", stats: ["stl": 2], summary: "2 stl")
+            PlayerContribution(name: "V. Wembanyama", stats: ["pts": 8, "blk": 2], summary: "8 pts, 2 blk"),
+            PlayerContribution(name: "D. Murray", stats: ["pts": 4], summary: "4 pts")
         ],
-        scoreStart: "9–12",
-        scoreEnd: "9–18",
-        clock: "Q1 9:12–7:48",
+        scoreStart: "7–5",
+        scoreEnd: "15–10",
+        clock: "Q1 9:16–7:15",
         isNotable: true,
-        note: "8-0 run extends lead",
-        teamInControl: "home"
-    )
-    
-    MomentCardView(
-        moment: moment,
-        plays: [],
-        homeTeam: "Celtics",
-        awayTeam: "Lakers",
-        isExpanded: .constant(false)
-    )
-    .padding()
-}
-
-#Preview("Flip Moment - Expanded") {
-    let moment = Moment(
-        id: "m_002",
-        type: .flip,
-        startPlay: 35,
-        endPlay: 52,
-        playCount: 18,
-        teams: ["BOS", "LAL"],
-        primaryTeam: "Los Angeles Lakers",
-        players: [
-            PlayerContribution(name: "L. James", stats: ["pts": 6, "ast": 3], summary: "6 pts, 3 ast"),
-            PlayerContribution(name: "J. Tatum", stats: ["pts": 5], summary: "5 pts")
-        ],
-        scoreStart: "18–22",
-        scoreEnd: "26–28",
-        clock: "Q1 7:48–4:30",
-        isNotable: true,
-        note: "Lead changes hands",
+        note: nil,
         teamInControl: "away"
     )
     
-    let events = [
-        UnifiedTimelineEvent(from: [
-            "event_type": "pbp",
-            "period": 1,
-            "game_clock": "7:30",
-            "description": "L. James makes 2-pt shot",
-            "home_score": 20,
-            "away_score": 22
-        ], index: 0),
-        UnifiedTimelineEvent(from: [
-            "event_type": "pbp",
-            "period": 1,
-            "game_clock": "7:12",
-            "description": "J. Tatum makes 3-pt shot",
-            "home_score": 23,
-            "away_score": 22
-        ], index: 1)
-    ]
-    
     MomentCardView(
         moment: moment,
-        plays: events,
-        homeTeam: "Celtics",
-        awayTeam: "Lakers",
-        isExpanded: .constant(true)
+        plays: [],
+        homeTeam: "Thunder",
+        awayTeam: "Spurs",
+        isExpanded: .constant(false)
     )
     .padding()
 }
 
-#Preview("Period Start Moment") {
+#Preview("Normal Stretch") {
+    let moment = Moment(
+        id: "m_002",
+        type: .neutral,
+        startPlay: 35,
+        endPlay: 52,
+        playCount: 18,
+        teams: ["SAS", "OKC"],
+        players: [],
+        scoreStart: "15–10",
+        scoreEnd: "22–18",
+        clock: "Q1 7:15–4:30",
+        isNotable: false,
+        note: nil,
+        teamInControl: "away"
+    )
+    
+    MomentCardView(
+        moment: moment,
+        plays: [],
+        homeTeam: "Thunder",
+        awayTeam: "Spurs",
+        isExpanded: .constant(false)
+    )
+    .padding()
+}
+
+#Preview("Expanded with Players") {
     let moment = Moment(
         id: "m_003",
-        type: .neutral,
+        type: .leadBuild,
         startPlay: 1,
         endPlay: 20,
         playCount: 20,
-        teams: ["BOS", "LAL"],
-        primaryTeam: "Boston Celtics",
-        players: [],
-        scoreStart: "0–0",
-        scoreEnd: "9–12",
-        clock: "Q1 12:00–9:12",
+        teams: ["SAS", "OKC"],
+        primaryTeam: "Oklahoma City Thunder",
+        players: [
+            PlayerContribution(name: "S. Gilgeous-Alexander", stats: ["pts": 12], summary: "12 pts"),
+            PlayerContribution(name: "J. Williams", stats: ["pts": 6, "ast": 3], summary: "6 pts, 3 ast")
+        ],
+        scoreStart: "22–18",
+        scoreEnd: "34–20",
+        clock: "Q2 12:00–8:00",
         isNotable: true,
         isPeriodStart: true,
-        note: "Game starts",
+        note: nil,
         teamInControl: "home"
     )
     
     MomentCardView(
         moment: moment,
         plays: [],
-        homeTeam: "Celtics",
-        awayTeam: "Lakers",
-        isExpanded: .constant(false)
+        homeTeam: "Thunder",
+        awayTeam: "Spurs",
+        isExpanded: .constant(true)
     )
     .padding()
 }

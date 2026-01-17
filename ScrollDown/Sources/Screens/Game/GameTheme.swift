@@ -111,6 +111,10 @@ enum DesignSystem {
         static let rowBackground = Color(.systemBackground)
         static let alternateRowBackground = Color(.systemGray6).opacity(0.4)
         
+        /// Primary accent color for major inflection points
+        /// Used sparingly - only for key moments that deserve visual emphasis
+        static var accent: Color { GameTheme.accentColor }
+        
         /// Away team badge (Team A - indigo)
         static let awayBadge = TeamColors.teamABackground
         /// Home team badge (Team B - teal)
