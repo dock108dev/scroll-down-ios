@@ -124,6 +124,10 @@ final class RealGameService: GameService {
         throw GameServiceError.notImplemented
     }
 
+    func fetchMoments(gameId: Int) async throws -> MomentsResponse {
+        try await request(path: "api/admin/sports/games/\(gameId)/moments", queryItems: [])
+    }
+
     // MARK: - Networking
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {

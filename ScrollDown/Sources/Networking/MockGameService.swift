@@ -264,6 +264,240 @@ final class MockGameService: GameService {
         return MockLoader.load("related-posts")
     }
 
+    func fetchMoments(gameId: Int) async throws -> MomentsResponse {
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
+        
+        // Generate moments from game detail if available
+        if let detail = gameCache[gameId] {
+            return generateMoments(from: detail, gameId: gameId)
+        }
+        
+        // Try to generate detail if not in cache
+        if let gameSummary = findGameSummary(for: gameId) {
+            let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
+            gameCache[gameId] = detail
+            return generateMoments(from: detail, gameId: gameId)
+        }
+        
+        // Fallback to empty moments
+        return MomentsResponse(
+            gameId: gameId,
+            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            moments: [],
+            totalCount: 0,
+            highlightCount: 0
+        )
+    }
+    
+    /// Generate moments from game detail
+    /// Partitions plays into meaningful segments based on scoring patterns
+    private func generateMoments(from detail: GameDetailResponse, gameId: Int) -> MomentsResponse {
+        let plays = detail.plays
+        guard !plays.isEmpty else {
+            return MomentsResponse(
+                gameId: gameId,
+                generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+                moments: [],
+                totalCount: 0,
+                highlightCount: 0
+            )
+        }
+        
+        var moments: [Moment] = []
+        let playsByQuarter = Dictionary(grouping: plays, by: { $0.quarter ?? 1 })
+        let sortedQuarters = playsByQuarter.keys.sorted()
+        
+        for quarter in sortedQuarters {
+            guard let quarterPlays = playsByQuarter[quarter]?.sorted(by: { $0.playIndex < $1.playIndex }) else {
+                continue
+            }
+            
+            // Generate 2-4 moments per quarter
+            let momentCount = min(4, max(2, quarterPlays.count / 15))
+            let playsPerMoment = quarterPlays.count / momentCount
+            
+            for momentIndex in 0..<momentCount {
+                let startIndex = momentIndex * playsPerMoment
+                let endIndex = (momentIndex == momentCount - 1) ? quarterPlays.count - 1 : (momentIndex + 1) * playsPerMoment - 1
+                
+                guard startIndex <= endIndex && startIndex < quarterPlays.count else { continue }
+                
+                let momentPlays = Array(quarterPlays[startIndex...min(endIndex, quarterPlays.count - 1)])
+                guard let firstPlay = momentPlays.first, let lastPlay = momentPlays.last else { continue }
+                
+                // Determine moment type based on scoring pattern
+                let (momentType, isNotable, note) = determineMomentType(
+                    plays: momentPlays,
+                    quarter: quarter,
+                    momentIndex: momentIndex,
+                    isLastMoment: momentIndex == momentCount - 1
+                )
+                
+                // Extract player contributions
+                let players = extractPlayerContributions(from: momentPlays)
+                
+                // Build clock string
+                let startClock = firstPlay.gameClock ?? "12:00"
+                let endClock = lastPlay.gameClock ?? "0:00"
+                let clockString = "Q\(quarter) \(startClock)-\(endClock)"
+                
+                // Build score strings
+                let scoreStart = formatScore(home: firstPlay.homeScore, away: firstPlay.awayScore)
+                let scoreEnd = formatScore(home: lastPlay.homeScore, away: lastPlay.awayScore)
+                
+                // Get teams involved
+                let teams = Array(Set(momentPlays.compactMap { $0.teamAbbreviation }))
+                
+                let moment = Moment(
+                    id: "m_q\(quarter)_\(momentIndex)",
+                    type: momentType,
+                    startPlay: firstPlay.playIndex,
+                    endPlay: lastPlay.playIndex,
+                    playCount: momentPlays.count,
+                    teams: teams,
+                    players: players,
+                    scoreStart: scoreStart,
+                    scoreEnd: scoreEnd,
+                    clock: clockString,
+                    isNotable: isNotable,
+                    note: note
+                )
+                moments.append(moment)
+            }
+        }
+        
+        let highlightCount = moments.filter { $0.isNotable }.count
+        
+        return MomentsResponse(
+            gameId: gameId,
+            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            moments: moments,
+            totalCount: moments.count,
+            highlightCount: highlightCount
+        )
+    }
+    
+    private func determineMomentType(
+        plays: [PlayEntry],
+        quarter: Int,
+        momentIndex: Int,
+        isLastMoment: Bool
+    ) -> (MomentType, Bool, String?) {
+        // Last moment of Q4 or OT is CLOSING
+        if (quarter >= 4) && isLastMoment {
+            return (.closing, true, "Closing time")
+        }
+        
+        // Check for scoring runs (8+ point swing)
+        var homeRun = 0
+        var awayRun = 0
+        var lastHomeScore = plays.first?.homeScore ?? 0
+        var lastAwayScore = plays.first?.awayScore ?? 0
+        
+        for play in plays {
+            if let home = play.homeScore, let away = play.awayScore {
+                let homeDelta = home - lastHomeScore
+                let awayDelta = away - lastAwayScore
+                
+                if homeDelta > 0 && awayDelta == 0 {
+                    homeRun += homeDelta
+                    awayRun = 0
+                } else if awayDelta > 0 && homeDelta == 0 {
+                    awayRun += awayDelta
+                    homeRun = 0
+                }
+                
+                lastHomeScore = home
+                lastAwayScore = away
+            }
+        }
+        
+        if homeRun >= 8 || awayRun >= 8 {
+            let runPoints = max(homeRun, awayRun)
+            return (.run, true, "\(runPoints)-0 run")
+        }
+        
+        // Check for lead changes (BATTLE)
+        var leadChanges = 0
+        var lastLead: Int? = nil
+        for play in plays {
+            if let home = play.homeScore, let away = play.awayScore {
+                let currentLead = home - away
+                if let last = lastLead, (last > 0 && currentLead < 0) || (last < 0 && currentLead > 0) {
+                    leadChanges += 1
+                }
+                lastLead = currentLead
+            }
+        }
+        
+        if leadChanges >= 2 {
+            return (.battle, true, "Lead changes")
+        }
+        
+        // Default to NEUTRAL
+        return (.neutral, false, nil)
+    }
+    
+    private func extractPlayerContributions(from plays: [PlayEntry]) -> [PlayerContribution] {
+        var playerStats: [String: [String: Int]] = [:]
+        
+        for play in plays {
+            guard let playerName = play.playerName else { continue }
+            
+            if playerStats[playerName] == nil {
+                playerStats[playerName] = [:]
+            }
+            
+            // Check if this was a scoring play based on description
+            if let desc = play.description?.lowercased() {
+                if desc.contains("makes") {
+                    if desc.contains("3-pt") || desc.contains("three") {
+                        playerStats[playerName]?["pts", default: 0] += 3
+                    } else if desc.contains("free throw") {
+                        playerStats[playerName]?["pts", default: 0] += 1
+                    } else {
+                        playerStats[playerName]?["pts", default: 0] += 2
+                    }
+                }
+                if desc.contains("assist") {
+                    playerStats[playerName]?["ast", default: 0] += 1
+                }
+                if desc.contains("steal") {
+                    playerStats[playerName]?["stl", default: 0] += 1
+                }
+                if desc.contains("block") {
+                    playerStats[playerName]?["blk", default: 0] += 1
+                }
+            }
+        }
+        
+        // Convert to PlayerContribution and sort by points
+        return playerStats
+            .map { name, stats in
+                let summary = formatPlayerSummary(stats)
+                return PlayerContribution(name: name, stats: stats, summary: summary)
+            }
+            .sorted { ($0.stats["pts"] ?? 0) > ($1.stats["pts"] ?? 0) }
+            .prefix(3)
+            .map { $0 }
+    }
+    
+    private func formatPlayerSummary(_ stats: [String: Int]) -> String? {
+        var parts: [String] = []
+        if let pts = stats["pts"], pts > 0 { parts.append("\(pts) pts") }
+        if let ast = stats["ast"], ast > 0 { parts.append("\(ast) ast") }
+        if let stl = stats["stl"], stl > 0 { parts.append("\(stl) stl") }
+        if let blk = stats["blk"], blk > 0 { parts.append("\(blk) blk") }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+    
+    private func formatScore(home: Int?, away: Int?) -> String {
+        let h = home ?? 0
+        let a = away ?? 0
+        return "\(a)-\(h)"
+    }
+
     // MARK: - Helpers
 
     private func findGameSummary(for gameId: Int) -> GameSummary? {

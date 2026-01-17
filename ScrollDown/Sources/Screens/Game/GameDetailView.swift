@@ -12,6 +12,9 @@ struct GameDetailView: View {
     @State var selectedSection: GameSection = .overview
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
+    // Moments-based timeline state
+    @State var collapsedMoments: Set<String> = []
+    @State var hasInitializedMoments = false
     // Default expansion states per spec
     @State var isOverviewExpanded = true
     // NOTE: isPreGameExpanded removed - preGameSection deprecated
@@ -74,6 +77,9 @@ struct GameDetailView: View {
                 
                 // Load timeline artifact (contains summary_json)
                 await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
+                
+                // Load moments (partitioned timeline segments)
+                await viewModel.loadMoments(gameId: gameId, service: appConfig.gameService)
                 
                 // Load social posts if enabled
                 if viewModel.isSocialTabEnabled {

@@ -40,6 +40,17 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var timelineArtifact: TimelineArtifactResponse?
     @Published private(set) var timelineArtifactState: TimelineArtifactState = .idle
     
+    // Moments (partitioned timeline segments)
+    @Published private(set) var moments: [Moment] = []
+    @Published private(set) var momentsState: MomentsState = .idle
+    
+    enum MomentsState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+    
     enum SocialPostsState: Equatable {
         case idle
         case loading
@@ -167,6 +178,68 @@ final class GameDetailViewModel: ObservableObject {
             logger.error("Timeline fetch failed: \(error.localizedDescription, privacy: .public)")
             timelineArtifactState = .failed(error.localizedDescription)
         }
+    }
+    
+    /// Load moments for the game
+    /// Moments partition the entire game timeline - every play belongs to exactly one moment
+    func loadMoments(gameId: Int, service: GameService) async {
+        switch momentsState {
+        case .loaded, .loading:
+            return
+        case .idle, .failed:
+            break
+        }
+        
+        momentsState = .loading
+        
+        do {
+            let response = try await service.fetchMoments(gameId: gameId)
+            moments = response.moments
+            momentsState = .loaded
+            logger.info("Loaded \(response.moments.count) moments (\(response.highlightCount) highlights)")
+        } catch {
+            logger.error("Moments fetch failed: \(error.localizedDescription, privacy: .public)")
+            momentsState = .failed(error.localizedDescription)
+        }
+    }
+    
+    // MARK: - Moments Computed Properties
+    
+    /// Highlight moments (notable moments only)
+    /// Use for showing key moments in compressed views
+    var highlightMoments: [Moment] {
+        moments.filter { $0.isNotable }
+    }
+    
+    /// Moments grouped by quarter
+    /// Uses the quarter parsed from the clock field
+    var momentsByQuarter: [Int: [Moment]] {
+        Dictionary(grouping: moments) { $0.quarter ?? 1 }
+    }
+    
+    /// Get plays for a specific moment
+    /// Returns plays where playIndex is within the moment's start_play...end_play range
+    func playsForMoment(_ moment: Moment) -> [PlayEntry] {
+        let plays = detail?.plays ?? []
+        return plays.filter { $0.playIndex >= moment.startPlay && $0.playIndex <= moment.endPlay }
+            .sorted { $0.playIndex < $1.playIndex }
+    }
+    
+    /// Get unified timeline events for a specific moment
+    /// Returns events where the play index is within the moment's range
+    func unifiedEventsForMoment(_ moment: Moment) -> [UnifiedTimelineEvent] {
+        // Get plays for the moment range
+        let momentPlays = playsForMoment(moment)
+        
+        // Convert to unified events
+        return momentPlays.enumerated().map { index, play in
+            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+        }
+    }
+    
+    /// Whether moments data is available
+    var hasMoments: Bool {
+        !moments.isEmpty
     }
     
     /// Get social posts filtered by reveal level

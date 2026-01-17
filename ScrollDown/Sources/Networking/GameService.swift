@@ -39,6 +39,12 @@ protocol GameService {
     /// - Parameter gameId: The game ID
     /// - Returns: Related post list response
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse
+    
+    /// Fetch moments for a game
+    /// Moments partition the entire game timeline - every play belongs to exactly one moment
+    /// - Parameter gameId: The game ID
+    /// - Returns: Moments response with all moments for the game
+    func fetchMoments(gameId: Int) async throws -> MomentsResponse
 }
 
 // MARK: - Reveal Level

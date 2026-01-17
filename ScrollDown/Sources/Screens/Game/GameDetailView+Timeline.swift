@@ -21,6 +21,17 @@ extension GameDetailView {
     }
     
     private var timelineSubtitle: String {
+        // Use moments-based subtitle when moments are available
+        if viewModel.hasMoments {
+            let momentCount = viewModel.moments.count
+            let highlightCount = viewModel.highlightMoments.count
+            if highlightCount > 0 {
+                return "\(momentCount) moments • \(highlightCount) highlights"
+            }
+            return "\(momentCount) moments"
+        }
+        
+        // Fallback to events-based subtitle
         let events = viewModel.unifiedTimelineEvents
         if events.isEmpty {
             return "Play-by-play"
@@ -37,8 +48,12 @@ extension GameDetailView {
         VStack(spacing: GameDetailLayout.cardSpacing) {
             timelineArtifactStatusView
             
-            // UNIFIED TIMELINE: Render from timeline_json in server-provided order
-            if viewModel.hasUnifiedTimeline {
+            // MOMENTS-BASED TIMELINE: Primary rendering when moments are available
+            if viewModel.hasMoments {
+                momentsTimelineView
+            }
+            // UNIFIED TIMELINE: Fallback when moments not available but timeline_json exists
+            else if viewModel.hasUnifiedTimeline {
                 unifiedTimelineView
             } else {
                 // Fallback to legacy quarters if timeline_json is empty
@@ -46,8 +61,18 @@ extension GameDetailView {
             }
         }
         .onAppear {
-            // Initialize Q2, Q3, Q4 as collapsed by default (only Q1 expanded)
-            initializeCollapsedQuarters()
+            // Initialize collapsed state based on which data is available
+            if viewModel.hasMoments {
+                initializeCollapsedMoments()
+            } else {
+                initializeCollapsedQuarters()
+            }
+        }
+        .onChange(of: viewModel.moments.count) { _ in
+            // Re-initialize when moments load
+            if viewModel.hasMoments && !hasInitializedMoments {
+                initializeCollapsedMoments()
+            }
         }
     }
     
@@ -61,6 +86,111 @@ extension GameDetailView {
         for quarter in quarters {
             collapsedQuarters.insert(quarter)
         }
+    }
+    
+    /// Sets moments as collapsed by default, except Q1 moments which are expanded
+    private func initializeCollapsedMoments() {
+        guard !hasInitializedMoments else { return }
+        hasInitializedMoments = true
+        
+        // Collapse all non-Q1 moments
+        for moment in viewModel.moments {
+            let quarter = moment.quarter ?? 1
+            if quarter > 1 {
+                collapsedMoments.insert(moment.id)
+            }
+            // Q1 moments stay expanded (not in collapsedMoments set)
+        }
+    }
+    
+    // MARK: - Moments-Based Timeline (Primary)
+    
+    /// Timeline view grouped by moments
+    /// Moments partition the entire game - every play belongs to exactly one moment
+    /// Only Q1 moments are expanded by default
+    private var momentsTimelineView: some View {
+        VStack(spacing: DesignSystem.Spacing.list) {
+            // Group moments by quarter for visual organization
+            ForEach(sortedQuarters, id: \.self) { quarter in
+                momentQuarterSection(quarter: quarter)
+            }
+            
+            // Tweets without a period go at the end
+            if !ungroupedTweets.isEmpty {
+                ForEach(ungroupedTweets) { event in
+                    UnifiedTimelineRowView(
+                        event: event,
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away"
+                    )
+                }
+            }
+        }
+    }
+    
+    /// Sorted list of quarters that have moments
+    private var sortedQuarters: [Int] {
+        Array(viewModel.momentsByQuarter.keys).sorted()
+    }
+    
+    /// Section for a single quarter containing its moments
+    private func momentQuarterSection(quarter: Int) -> some View {
+        let quarterMoments = viewModel.momentsByQuarter[quarter] ?? []
+        let highlightCount = quarterMoments.filter { $0.isNotable }.count
+        
+        return CollapsibleQuarterCard(
+            title: quarterSectionTitle(quarter: quarter, momentCount: quarterMoments.count, highlightCount: highlightCount),
+            isExpanded: Binding(
+                get: { !collapsedQuarters.contains(quarter) },
+                set: { isExpanded in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        if isExpanded {
+                            collapsedQuarters.remove(quarter)
+                        } else {
+                            collapsedQuarters.insert(quarter)
+                        }
+                    }
+                }
+            )
+        ) {
+            VStack(spacing: DesignSystem.Spacing.list) {
+                ForEach(quarterMoments) { moment in
+                    MomentCardView(
+                        moment: moment,
+                        plays: viewModel.unifiedEventsForMoment(moment),
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        isExpanded: momentExpandedBinding(for: moment)
+                    )
+                }
+            }
+        }
+        .id("quarter-moments-\(quarter)")
+    }
+    
+    /// Title for quarter section showing moment and highlight counts
+    private func quarterSectionTitle(quarter: Int, momentCount: Int, highlightCount: Int) -> String {
+        let quarterName = quarterTitle(quarter)
+        if highlightCount > 0 {
+            return "\(quarterName) (\(momentCount) moments, \(highlightCount) highlights)"
+        }
+        return "\(quarterName) (\(momentCount) moments)"
+    }
+    
+    /// Binding for moment expansion state
+    private func momentExpandedBinding(for moment: Moment) -> Binding<Bool> {
+        Binding(
+            get: { !collapsedMoments.contains(moment.id) },
+            set: { isExpanded in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    if isExpanded {
+                        collapsedMoments.remove(moment.id)
+                    } else {
+                        collapsedMoments.insert(moment.id)
+                    }
+                }
+            }
+        )
     }
     
     // MARK: - Unified Timeline (Grouped by Quarter)
