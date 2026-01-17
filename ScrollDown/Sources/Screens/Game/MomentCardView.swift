@@ -211,12 +211,20 @@ struct MomentCardView: View {
     
     private var badgeBackgroundColor: Color {
         switch moment.type {
-        case .run:
+        case .leadBuild:
+            return Color.green.opacity(0.15)
+        case .cut:
             return Color.orange.opacity(0.15)
-        case .battle:
+        case .tie:
+            return Color.yellow.opacity(0.15)
+        case .flip:
             return Color.purple.opacity(0.15)
-        case .closing:
+        case .closingControl:
             return Color.red.opacity(0.15)
+        case .highImpact:
+            return Color.red.opacity(0.20)
+        case .opener:
+            return Color.blue.opacity(0.15)
         case .neutral:
             return DesignSystem.Colors.neutralBadge
         }
@@ -224,12 +232,20 @@ struct MomentCardView: View {
     
     private var badgeTextColor: Color {
         switch moment.type {
-        case .run:
+        case .leadBuild:
+            return Color.green
+        case .cut:
             return Color.orange
-        case .battle:
+        case .tie:
+            return Color.yellow
+        case .flip:
             return Color.purple
-        case .closing:
+        case .closingControl:
             return Color.red
+        case .highImpact:
+            return Color.red
+        case .opener:
+            return Color.blue
         case .neutral:
             return DesignSystem.TextColor.tertiary
         }
@@ -253,10 +269,10 @@ struct MomentCardView: View {
 
 // MARK: - Preview
 
-#Preview("Run Moment - Collapsed") {
+#Preview("Lead Build Moment - Collapsed") {
     let moment = Moment(
         id: "m_001",
-        type: .run,
+        type: .leadBuild,
         startPlay: 21,
         endPlay: 34,
         playCount: 14,
@@ -266,11 +282,16 @@ struct MomentCardView: View {
             PlayerContribution(name: "J. Brown", stats: ["pts": 4], summary: "4 pts"),
             PlayerContribution(name: "D. White", stats: ["stl": 2], summary: "2 stl")
         ],
-        scoreStart: "9-12",
-        scoreEnd: "9-18",
-        clock: "Q1 9:12-7:48",
+        scoreStart: "9–12",
+        scoreEnd: "9–18",
+        clock: "Q1 9:12–7:48",
         isNotable: true,
-        note: "8-0 run"
+        note: "8-0 run extends lead",
+        runInfo: nil,
+        ladderTierBefore: nil,
+        ladderTierAfter: nil,
+        teamInControl: nil,
+        keyPlayIds: nil
     )
     
     MomentCardView(
@@ -283,10 +304,10 @@ struct MomentCardView: View {
     .padding()
 }
 
-#Preview("Battle Moment - Expanded") {
+#Preview("Flip Moment - Expanded") {
     let moment = Moment(
         id: "m_002",
-        type: .battle,
+        type: .flip,
         startPlay: 35,
         endPlay: 52,
         playCount: 18,
@@ -295,11 +316,16 @@ struct MomentCardView: View {
             PlayerContribution(name: "L. James", stats: ["pts": 6, "ast": 3], summary: "6 pts, 3 ast"),
             PlayerContribution(name: "J. Tatum", stats: ["pts": 5], summary: "5 pts")
         ],
-        scoreStart: "18-22",
-        scoreEnd: "26-28",
-        clock: "Q1 7:48-4:30",
+        scoreStart: "18–22",
+        scoreEnd: "26–28",
+        clock: "Q1 7:48–4:30",
         isNotable: true,
-        note: "Lead changes"
+        note: "Lead changes hands",
+        runInfo: nil,
+        ladderTierBefore: nil,
+        ladderTierAfter: nil,
+        teamInControl: nil,
+        keyPlayIds: nil
     )
     
     let events = [
@@ -340,11 +366,16 @@ struct MomentCardView: View {
         playCount: 20,
         teams: ["BOS", "LAL"],
         players: [],
-        scoreStart: "0-0",
-        scoreEnd: "9-12",
-        clock: "Q1 12:00-9:12",
+        scoreStart: "0–0",
+        scoreEnd: "9–12",
+        clock: "Q1 12:00–9:12",
         isNotable: false,
-        note: nil
+        note: nil,
+        runInfo: nil,
+        ladderTierBefore: nil,
+        ladderTierAfter: nil,
+        teamInControl: nil,
+        keyPlayIds: nil
     )
     
     MomentCardView(

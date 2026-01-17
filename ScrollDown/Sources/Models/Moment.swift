@@ -17,6 +17,13 @@ struct Moment: Codable, Identifiable, Equatable {
     let isNotable: Bool
     let note: String?
     
+    // v2 optional fields
+    let runInfo: RunInfo?
+    let ladderTierBefore: Int?
+    let ladderTierAfter: Int?
+    let teamInControl: String?
+    let keyPlayIds: [Int]?
+    
     enum CodingKeys: String, CodingKey {
         case id
         case type
@@ -30,6 +37,11 @@ struct Moment: Codable, Identifiable, Equatable {
         case clock
         case isNotable = "is_notable"
         case note
+        case runInfo = "run_info"
+        case ladderTierBefore = "ladder_tier_before"
+        case ladderTierAfter = "ladder_tier_after"
+        case teamInControl = "team_in_control"
+        case keyPlayIds = "key_play_ids"
     }
     
     /// Parse quarter number from clock string (e.g., "Q1 9:12-7:48" -> 1)
@@ -57,23 +69,36 @@ struct Moment: Codable, Identifiable, Equatable {
 }
 
 /// Type of moment - determines styling and importance
+/// Based on Lead Ladder system from backend
 enum MomentType: String, Codable {
+    case leadBuild = "LEAD_BUILD"
+    case cut = "CUT"
+    case tie = "TIE"
+    case flip = "FLIP"
+    case closingControl = "CLOSING_CONTROL"
+    case highImpact = "HIGH_IMPACT"
+    case opener = "OPENER"
     case neutral = "NEUTRAL"
-    case run = "RUN"
-    case battle = "BATTLE"
-    case closing = "CLOSING"
     
     /// Human-readable display name
     var displayName: String {
         switch self {
+        case .leadBuild:
+            return "Lead extends"
+        case .cut:
+            return "Cutting in"
+        case .tie:
+            return "Tied up"
+        case .flip:
+            return "Lead change"
+        case .closingControl:
+            return "Dagger"
+        case .highImpact:
+            return "Key moment"
+        case .opener:
+            return "Period start"
         case .neutral:
             return "Normal play"
-        case .run:
-            return "Scoring run"
-        case .battle:
-            return "Lead changes"
-        case .closing:
-            return "Closing time"
         }
     }
     
@@ -85,15 +110,38 @@ enum MomentType: String, Codable {
     /// SF Symbol name for the moment type
     var iconName: String {
         switch self {
+        case .leadBuild:
+            return "arrow.up.right"
+        case .cut:
+            return "arrow.down.left"
+        case .tie:
+            return "equal"
+        case .flip:
+            return "arrow.left.arrow.right"
+        case .closingControl:
+            return "checkmark.seal.fill"
+        case .highImpact:
+            return "exclamationmark.triangle.fill"
+        case .opener:
+            return "flag.fill"
         case .neutral:
             return "circle"
-        case .run:
-            return "flame.fill"
-        case .battle:
-            return "arrow.left.arrow.right"
-        case .closing:
-            return "clock.fill"
         }
+    }
+}
+
+/// Run information when a scoring run contributed to a moment
+struct RunInfo: Codable, Equatable {
+    let team: String  // "home" or "away"
+    let points: Int
+    let unanswered: Bool
+    let playIds: [Int]
+    
+    enum CodingKeys: String, CodingKey {
+        case team
+        case points
+        case unanswered
+        case playIds = "play_ids"
     }
 }
 

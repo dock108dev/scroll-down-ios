@@ -361,7 +361,12 @@ final class MockGameService: GameService {
                     scoreEnd: scoreEnd,
                     clock: clockString,
                     isNotable: isNotable,
-                    note: note
+                    note: note,
+                    runInfo: nil,
+                    ladderTierBefore: nil,
+                    ladderTierAfter: nil,
+                    teamInControl: nil,
+                    keyPlayIds: nil
                 )
                 moments.append(moment)
             }
@@ -384,9 +389,31 @@ final class MockGameService: GameService {
         momentIndex: Int,
         isLastMoment: Bool
     ) -> (MomentType, Bool, String?) {
-        // Last moment of Q4 or OT is CLOSING
+        // Last moment of Q4 or OT is CLOSING_CONTROL
         if (quarter >= 4) && isLastMoment {
-            return (.closing, true, "Closing time")
+            return (.closingControl, true, "Closing time")
+        }
+        
+        // First moment of a period is OPENER
+        if momentIndex == 0 {
+            return (.opener, quarter == 1, quarter == 1 ? "Game starts" : nil)
+        }
+        
+        // Check for lead changes (FLIP)
+        var leadChanges = 0
+        var lastLead: Int? = nil
+        for play in plays {
+            if let home = play.homeScore, let away = play.awayScore {
+                let currentLead = home - away
+                if let last = lastLead, (last > 0 && currentLead < 0) || (last < 0 && currentLead > 0) {
+                    leadChanges += 1
+                }
+                lastLead = currentLead
+            }
+        }
+        
+        if leadChanges >= 1 {
+            return (.flip, true, "Lead changes hands")
         }
         
         // Check for scoring runs (8+ point swing)
@@ -415,24 +442,23 @@ final class MockGameService: GameService {
         
         if homeRun >= 8 || awayRun >= 8 {
             let runPoints = max(homeRun, awayRun)
-            return (.run, true, "\(runPoints)-0 run")
-        }
-        
-        // Check for lead changes (BATTLE)
-        var leadChanges = 0
-        var lastLead: Int? = nil
-        for play in plays {
-            if let home = play.homeScore, let away = play.awayScore {
-                let currentLead = home - away
-                if let last = lastLead, (last > 0 && currentLead < 0) || (last < 0 && currentLead > 0) {
-                    leadChanges += 1
+            // Determine if building lead or cutting deficit
+            if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore {
+                let leadingTeamScoring = (homeRun >= 8 && firstHome > firstAway) || (awayRun >= 8 && firstAway > firstHome)
+                if leadingTeamScoring {
+                    return (.leadBuild, true, "\(runPoints)-0 run extends lead")
+                } else {
+                    return (.cut, true, "\(runPoints)-0 run cuts deficit")
                 }
-                lastLead = currentLead
             }
+            return (.leadBuild, true, "\(runPoints)-0 run")
         }
         
-        if leadChanges >= 2 {
-            return (.battle, true, "Lead changes")
+        // Check for tie
+        if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore, lastHome == lastAway {
+            if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore, firstHome != firstAway {
+                return (.tie, true, "Game tied")
+            }
         }
         
         // Default to NEUTRAL

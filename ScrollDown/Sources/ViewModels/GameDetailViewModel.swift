@@ -40,8 +40,7 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var timelineArtifact: TimelineArtifactResponse?
     @Published private(set) var timelineArtifactState: TimelineArtifactState = .idle
     
-    // Moments (partitioned timeline segments)
-    @Published private(set) var moments: [Moment] = []
+    // Moments state (for separate fetch if needed)
     @Published private(set) var momentsState: MomentsState = .idle
     
     enum MomentsState: Equatable {
@@ -49,6 +48,12 @@ final class GameDetailViewModel: ObservableObject {
         case loading
         case loaded
         case failed(String)
+    }
+    
+    /// Moments from game detail response
+    /// Moments partition the entire game - every play belongs to exactly one moment
+    var moments: [Moment] {
+        detail?.moments ?? []
     }
     
     enum SocialPostsState: Equatable {
@@ -181,8 +186,19 @@ final class GameDetailViewModel: ObservableObject {
     }
     
     /// Load moments for the game
-    /// Moments partition the entire game timeline - every play belongs to exactly one moment
+    /// Primary source: moments from game detail response
+    /// Fallback: separate moments endpoint if needed
     func loadMoments(gameId: Int, service: GameService) async {
+        // If moments already loaded from game detail, mark as loaded
+        let currentMoments = self.moments
+        if !currentMoments.isEmpty {
+            momentsState = .loaded
+            let highlightCount = self.highlightMoments.count
+            logger.info("Using \(currentMoments.count) moments from game detail (\(highlightCount) highlights)")
+            return
+        }
+        
+        // Only fetch separately if game detail didn't include moments
         switch momentsState {
         case .loaded, .loading:
             return
@@ -194,11 +210,12 @@ final class GameDetailViewModel: ObservableObject {
         
         do {
             let response = try await service.fetchMoments(gameId: gameId)
-            moments = response.moments
+            // Store in a separate property if needed, but prefer detail.moments
             momentsState = .loaded
-            logger.info("Loaded \(response.moments.count) moments (\(response.highlightCount) highlights)")
+            logger.info("Loaded \(response.moments.count) moments from endpoint (\(response.highlightCount) highlights)")
         } catch {
-            logger.error("Moments fetch failed: \(error.localizedDescription, privacy: .public)")
+            // Not a critical failure - timeline will fall back to PBP
+            logger.info("Moments endpoint not available, using PBP fallback: \(error.localizedDescription, privacy: .public)")
             momentsState = .failed(error.localizedDescription)
         }
     }

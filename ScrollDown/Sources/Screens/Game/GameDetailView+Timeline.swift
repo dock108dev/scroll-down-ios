@@ -88,18 +88,14 @@ extension GameDetailView {
         }
     }
     
-    /// Sets moments as collapsed by default, except Q1 moments which are expanded
+    /// Sets all moments as collapsed by default
     private func initializeCollapsedMoments() {
         guard !hasInitializedMoments else { return }
         hasInitializedMoments = true
         
-        // Collapse all non-Q1 moments
+        // Collapse all moments - user taps to expand individual ones
         for moment in viewModel.moments {
-            let quarter = moment.quarter ?? 1
-            if quarter > 1 {
-                collapsedMoments.insert(moment.id)
-            }
-            // Q1 moments stay expanded (not in collapsedMoments set)
+            collapsedMoments.insert(moment.id)
         }
     }
     
@@ -345,6 +341,17 @@ extension GameDetailView {
 
     @ViewBuilder
     private var timelineArtifactStatusView: some View {
+        // Don't show timeline artifact status when moments are loaded
+        // Moments are the primary data source now
+        if viewModel.hasMoments {
+            EmptyView()
+        } else {
+            timelineArtifactStatusContent
+        }
+    }
+    
+    @ViewBuilder
+    private var timelineArtifactStatusContent: some View {
         switch viewModel.timelineArtifactState {
         case .idle:
             EmptyView()
