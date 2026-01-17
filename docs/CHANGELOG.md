@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Removed - Legacy Code Cleanup
+- Deleted `CompactMoment` model and all references
+- Removed deprecated `timelineQuarters`, `compactTimelineMoments`, `preGamePosts`, `postGamePosts` from ViewModel
+- Removed `legacyTimelineView` fallback from timeline rendering
+- Removed `fetchCompactMomentPbp` from GameService protocol
+- Timeline now uses `Moment` + `UnifiedTimelineEvent` as single source of truth
+
 ### Added - Phase G (Timeline API Integration)
 - Read-only timeline artifact fetch from `/games/{game_id}/timeline` with minimal verification stats in the timeline section
 

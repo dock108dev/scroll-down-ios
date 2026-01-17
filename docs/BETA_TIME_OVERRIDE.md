@@ -307,39 +307,13 @@ In production builds:
 
 ---
 
-## Future Enhancements
+## Troubleshooting Support
 
-Potential improvements for future iterations:
+For issues with snapshot mode:
 
-- **Preset library**: Save custom snapshot dates
-- **Auto-advance**: Slowly advance time to simulate live progression
-- **Snapshot profiles**: Named configurations for common test scenarios
-- **Backend sync**: Coordinate snapshot mode with backend test environments
-- **Screenshot mode**: Hide snapshot indicator for clean screenshots
-
----
-
-## Definition of Done
-
-This feature is complete when:
-
-- ✅ You can safely "time travel" the app
-- ✅ Large historical datasets are testable
-- ✅ The app behaves deterministically
-- ✅ No live data interferes with testing
-- ✅ Production builds are unaffected
-
-This unlocks serious beta validation without risky backend hacks.
-
----
-
-## Support
-
-For issues or questions about snapshot mode:
-
-1. Check Console.app logs (filter: `com.scrolldown.app.time`)
-2. Verify environment variable format
-3. Confirm backend has data for snapshot date
-4. Review this documentation
+1. Check Console.app logs (filter: `com.scrolldown.app`, category: `time`)
+2. Verify environment variable format is ISO8601
+3. Confirm backend has data for the snapshot date
+4. Ensure you're in a debug build
 
 **Remember**: This is a beta testing tool. If something breaks in snapshot mode, it's not a production issue.

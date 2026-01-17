@@ -7,7 +7,7 @@
 
 **What is this?** Native iOS client for Scroll Down Sports — a thoughtful way to catch up on games.
 
-**Tech Stack:** Swift, SwiftUI, MVVM architecture
+**Tech Stack:** Swift 5.9+, SwiftUI, MVVM architecture, iOS 17+
 
 **Key Directories:**
 - `ScrollDown/Sources/` — App source code
@@ -25,16 +25,26 @@
 ## Architecture Overview
 
 ```
-ScrollDownApp.swift          # App entry point
-├── ContentView.swift        # Root navigation
+ScrollDownApp.swift           # App entry point
+├── ContentView.swift         # Root navigation
 ├── Screens/
-│   ├── Home/                # Game list (HomeView)
-│   └── Game/                # Game detail (GameDetailView + extensions)
-├── ViewModels/              # Presentation logic
-├── Models/                  # Data models (aligned with API spec)
-├── Networking/              # API services
-└── Components/              # Reusable UI components
+│   ├── Home/                 # Game list (HomeView)
+│   ├── Game/                 # Game detail (GameDetailView + extensions)
+│   └── AdminSettingsView     # Debug settings (snapshot mode)
+├── ViewModels/
+│   └── GameDetailViewModel   # Game data, timeline, reveal state
+├── Models/                   # Data models (aligned with API spec)
+├── Networking/               # GameService protocol + implementations
+├── Services/
+│   └── TimeService           # Time override for snapshot mode
+└── Components/               # Reusable UI components
 ```
+
+## Key Concepts
+
+- **Moment** — Server-generated timeline segment grouping multiple plays
+- **UnifiedTimelineEvent** — Single timeline entry (PBP play or tweet)
+- **Snapshot Mode** — Beta feature to freeze time for historical testing
 
 ## Related Repos
 
@@ -51,7 +61,7 @@ Models align with `scroll-down-api-spec`. When API changes:
 ## Testing
 
 ```bash
-xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
 ```
 
 ## Do NOT

@@ -18,61 +18,50 @@ This isn't about hiding information — it's about letting you experience the ga
 
 | Feature | Status |
 |---------|--------|
-| Home feed with Earlier/Today/Upcoming sections | ✅ Live |
+| Home feed with Earlier/Yesterday/Today/Upcoming sections | ✅ Live |
 | Game detail view with collapsible sections | ✅ Live |
-| Compact timeline with chapter-style moments | ✅ Live |
-| Expanded play-by-play slices per moment | ✅ Live |
+| Moments-based timeline grouped by quarter | ✅ Live |
+| Unified timeline with PBP and social posts | ✅ Live |
 | Progressive disclosure UI patterns | ✅ Live |
 | Dark mode support | ✅ Live |
 | Backend API integration | ✅ Live |
-| Timeline artifact fetch (read-only verification) | ✅ Live |
+| iPad adaptive layout | ✅ Live |
+| Beta time override (snapshot mode) | ✅ Live |
 | Push notifications | 📋 Planned |
 | User preferences & favorites | 📋 Planned |
 
 ## Data Sources
 
-The app supports two environments, toggled via `AppConfig.environment`:
+The app supports three environments, toggled via `AppConfig.environment`:
 
-- **Mock Mode**: Uses realistic local JSON data for offline development and UI testing.
-- **Live Mode**: Connects to the backend API for real-time data.
+| Mode | Description |
+|------|-------------|
+| `.live` | Connects to production API at `sports-data-admin.dock108.ai` |
+| `.localhost` | Connects to local dev server at `localhost:8000` |
+| `.mock` | Uses generated local data for offline development |
 
-Models are strictly aligned with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec) contract. Local development defaults to **Live Mode** pointing at `https://sports-data-admin.dock108.ai`.
+**Default:** Live mode. Set `FeatureFlags.defaultToLocalhost = true` to auto-use localhost during development.
 
-## Relationship to Web UI
-
-This iOS app complements the [scroll-down-sports-ui](https://github.com/scroll-down-sports/scroll-down-sports-ui) web experience:
-
-| Aspect | Web UI | iOS App |
-|--------|--------|---------|
-| Platform | Browser-based | Native iOS (SwiftUI) |
-| Navigation | Traditional web patterns | Mobile-native gestures |
-| Offline | Limited | Planned offline support |
-| Notifications | None | Push notifications (planned) |
-
-Both share the same core philosophy and will consume the same backend APIs, but each is optimized for its platform's strengths.
+Models align with the [scroll-down-api-spec](https://github.com/scroll-down-sports/scroll-down-api-spec).
 
 ## Local Development
 
-**Requirements:** Xcode 15+, iOS 16+
+**Requirements:** Xcode 16+, iOS 17+ (iOS 26 supported)
 
 ```bash
 # Open in Xcode
 open ScrollDown.xcodeproj
 
-# Or build from command line
+# Build from command line
 xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
-
-# Run tests
-xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 ## Documentation
 
-Deeper documentation lives in [`/docs`](docs/README.md):
-
-- [Architecture](docs/architecture.md) — MVVM structure and data flow
-- [Development](docs/development.md) — Mock mode, testing, QA checklist
-- [Changelog](docs/CHANGELOG.md) — Feature history and updates
-- [Beta Time Override](docs/BETA_TIME_OVERRIDE.md) — Time-travel mode for testing historical data
-
-Agent notes for AI coding assistants are in [`AGENTS.md`](AGENTS.md).
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | MVVM structure, data flow, and design principles |
+| [Development](docs/development.md) | Environment modes, testing, QA checklist |
+| [Beta Time Override](docs/BETA_TIME_OVERRIDE.md) | Snapshot mode for testing historical data |
+| [Changelog](docs/CHANGELOG.md) | Feature history and updates |
+| [AGENTS.md](AGENTS.md) | Context for AI coding assistants |

@@ -4,109 +4,110 @@ Guide for local development, testing, and debugging.
 
 ## Data Modes
 
-The app supports two environments, controlled via `AppConfig.shared.environment`:
+The app supports three environments, controlled via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
-| `.mock` | Structured local JSON data | UI development, offline work |
-| `.live` | Live backend API calls | Integration testing, production |
+| `.live` | Production backend API | Default, real data |
+| `.localhost` | Local dev server (port 8000) | Backend development |
+| `.mock` | Generated local data | Offline UI development |
 
-**Default:** The app runs in mock mode. No backend connection required.
+**Default:** Live mode. To use localhost by default, set `FeatureFlags.defaultToLocalhost = true` in `AppConfig.swift`.
 
 ### Mock Data
 
-Mock data lives in `ScrollDown/Sources/Mock/games/` and includes:
+Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 - `game-list.json` — Sample game feed
 - `game-001.json`, `game-002.json` — Full game detail payloads
 - `pbp-001.json` — Play-by-play event data
-- Dynamically generated data via `MockDataGenerator`
+- `moments-001.json` — Moment data samples
 
-The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping (Earlier/Today/Upcoming) behaves consistently.
+`MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
 
 ### Switching Modes
 
 ```swift
-// In code (for debugging)
-AppConfig.shared.environment = .live
+// In code
+AppConfig.shared.environment = .mock
+
+// Or via Admin Settings (debug builds only)
+// Long-press "Updated X ago" in Home feed
 ```
 
-A runtime toggle UI is planned for debug builds.
+## Timeline Architecture
 
-## Compact Timeline UX
+The timeline displays game progression in two modes:
 
-The compact timeline presents game moments as expandable chapters:
+### 1. Moments-Based (Primary)
+When `Moment` data is available from the backend:
+- Timeline is grouped by quarter
+- Each moment shows a narrative summary
+- Expanding a moment reveals its play-by-play events
+- Highlights are marked with `isNotable`
 
-1. **Collapsed state** — Shows moment summary (e.g., "Duke extends lead")
-2. **Expanded state** — Reveals play-by-play slice with event details
-3. **Score separators** — Scores appear at natural breakpoints (halftime, period end), not inline with individual plays
+### 2. Unified Timeline (Fallback)
+When moments aren't available:
+- `UnifiedTimelineEvent` entries render directly
+- Events grouped by period
+- Interleaves PBP plays with tweets chronologically
 
-This design lets users control their pacing through the game narrative.
-
-## Running Tests
+## Building & Testing
 
 ```bash
-# Run all tests
-xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16'
+# Build for simulator
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
 
-# Run specific test file
-xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' \
-  -only-testing:ScrollDownTests/GameDetailViewModelTests
+# Build for iOS 26
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,OS=26.0,name=iPhone 16 Pro' build
 ```
 
 ## Beta Features
 
-### 1. Time Override (Snapshot Mode)
+### Snapshot Mode (Time Override)
 Freeze the app to a specific date to test historical data. **Debug builds only.**
 
-**Enable via Environment Variable:**
 ```bash
+# Enable via environment variable
 export IOS_BETA_ASSUME_NOW=2024-10-23T04:00:00Z
 ```
 
-**Enable via Admin UI:**
-1. Long-press (2s) on "Updated X ago" in the Home feed.
-2. Select a date or preset.
-3. Tap "Done" to reload with the override.
+Or use Admin Settings (long-press "Updated X ago" in Home feed).
 
-**Visual Indicator:** An orange badge appears at the top when active.
+See [BETA_TIME_OVERRIDE.md](BETA_TIME_OVERRIDE.md) for full documentation.
 
-### 2. Admin Settings
-Accessible via long-press on freshness text. Controls:
-- Snapshot date selection
-- Data mode info
-- Environment toggle visibility
-
-## QA & Validation Checklist
-
-Verify these behaviors before submitting changes:
+## QA Checklist
 
 ### General UI
-- [ ] **Appearance** — Dark and light mode support
-- [ ] **Text Overflow** — Long team names/titles truncate gracefully
-- [ ] **Accessibility** — VoiceOver labels and Dynamic Type scaling
+- [ ] Dark and light mode support
+- [ ] Long team names truncate gracefully
+- [ ] VoiceOver labels present
+- [ ] iPad adaptive layout works
 
 ### Data & Logic
-- [ ] **Empty States** — Contextual icons and messages show when data is missing
-- [ ] **Loading** — Skeleton placeholders show before content flashes in
-- [ ] **Reveal Logic** — Outcomes stay hidden until explicitly revealed
-- [ ] **Persistence** — Reveal states and overrides persist correctly
+- [ ] Empty states show contextual messages
+- [ ] Loading skeletons appear before content
+- [ ] Outcomes stay hidden until revealed
+- [ ] Reveal states persist across sessions
 
-### Navigation & Routing
-- [ ] **Deep Linking** — Routing to specific games by ID
-- [ ] **Stability** — Scrolling doesn't jump when expanding/collapsing sections
-- [ ] **Logs** — Check `GameRoutingLogger` in Console for navigation tracing
+### Navigation
+- [ ] Deep linking to specific games works
+- [ ] Scrolling stable when expanding sections
+- [ ] Back navigation preserves state
 
-## Debugging Tips
+## Debugging
 
-### Check current data mode
+### Check current environment
 ```swift
-print(AppConfig.shared.environment)
+print(AppConfig.shared.environment)  // .live, .localhost, or .mock
 ```
 
 ### Inspect dev clock
 ```swift
-print(AppDate.now())  // Should be Nov 12, 2024 in mock mode
+print(AppDate.now())  // Nov 12, 2024 in mock mode
 ```
 
-### Force a specific game
-The mock service generates unique detail for each game ID. Pass different IDs to test various states.
+### Console logs
+Filter by subsystem `com.scrolldown.app` in Console.app:
+- `time` — Snapshot mode events
+- `timeline` — Timeline loading
+- `networking` — API calls
