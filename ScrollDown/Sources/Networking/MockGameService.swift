@@ -277,8 +277,33 @@ final class MockGameService: GameService {
             gameId: gameId,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
             moments: [],
-            totalCount: 0,
-            highlightCount: 0
+            totalCount: 0
+        )
+    }
+    
+    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse {
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
+        
+        // Get full moments first
+        let momentsResponse = try await fetchMoments(gameId: gameId)
+        
+        // Filter based on level
+        let filteredMoments: [Moment]
+        switch level {
+        case .notable:
+            filteredMoments = momentsResponse.moments.filter { $0.isNotable }
+        case .standard:
+            filteredMoments = momentsResponse.moments
+        case .detailed:
+            filteredMoments = momentsResponse.moments
+        }
+        
+        return CompactTimelineResponse(
+            gameId: gameId,
+            level: level.rawValue,
+            moments: filteredMoments,
+            generatedAt: momentsResponse.generatedAt
         )
     }
     
@@ -291,14 +316,17 @@ final class MockGameService: GameService {
                 gameId: gameId,
                 generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
                 moments: [],
-                totalCount: 0,
-                highlightCount: 0
+                totalCount: 0
             )
         }
         
         var moments: [Moment] = []
         let playsByQuarter = Dictionary(grouping: plays, by: { $0.quarter ?? 1 })
         let sortedQuarters = playsByQuarter.keys.sorted()
+        
+        // Get team info from game
+        let homeTeam = detail.game.homeTeam
+        let awayTeam = detail.game.awayTeam
         
         for quarter in sortedQuarters {
             guard let quarterPlays = playsByQuarter[quarter]?.sorted(by: { $0.playIndex < $1.playIndex }) else {
@@ -319,11 +347,13 @@ final class MockGameService: GameService {
                 guard let firstPlay = momentPlays.first, let lastPlay = momentPlays.last else { continue }
                 
                 // Determine moment type based on scoring pattern
-                let (momentType, isNotable, note) = determineMomentType(
+                let (momentType, isNotable, isPeriodStart, note, primaryTeam, teamInControl) = determineMomentType(
                     plays: momentPlays,
                     quarter: quarter,
                     momentIndex: momentIndex,
-                    isLastMoment: momentIndex == momentCount - 1
+                    isLastMoment: momentIndex == momentCount - 1,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam
                 )
                 
                 // Extract player contributions
@@ -348,48 +378,73 @@ final class MockGameService: GameService {
                     endPlay: lastPlay.playIndex,
                     playCount: momentPlays.count,
                     teams: teams,
+                    primaryTeam: primaryTeam,
                     players: players,
                     scoreStart: scoreStart,
                     scoreEnd: scoreEnd,
                     clock: clockString,
                     isNotable: isNotable,
+                    isPeriodStart: isPeriodStart,
                     note: note,
                     runInfo: nil,
                     ladderTierBefore: nil,
                     ladderTierAfter: nil,
-                    teamInControl: nil,
+                    teamInControl: teamInControl,
                     keyPlayIds: nil
                 )
                 moments.append(moment)
             }
         }
         
-        let highlightCount = moments.filter { $0.isNotable }.count
-        
         return MomentsResponse(
             gameId: gameId,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
             moments: moments,
-            totalCount: moments.count,
-            highlightCount: highlightCount
+            totalCount: moments.count
         )
     }
     
+    /// Determines moment type, notable status, and note
+    /// Returns: (type, isNotable, isPeriodStart, note, primaryTeam, teamInControl)
     private func determineMomentType(
         plays: [PlayEntry],
         quarter: Int,
         momentIndex: Int,
-        isLastMoment: Bool
-    ) -> (MomentType, Bool, String?) {
-        // Last moment of Q4 or OT is CLOSING_CONTROL
-        if (quarter >= 4) && isLastMoment {
-            return (.closingControl, true, "Closing time")
+        isLastMoment: Bool,
+        homeTeam: String?,
+        awayTeam: String?
+    ) -> (MomentType, Bool, Bool, String?, String?, String?) {
+        // Track which team is scoring more in this segment
+        var homePoints = 0
+        var awayPoints = 0
+        var lastHomeScore = plays.first?.homeScore ?? 0
+        var lastAwayScore = plays.first?.awayScore ?? 0
+        
+        for play in plays {
+            if let home = play.homeScore, let away = play.awayScore {
+                homePoints += home - lastHomeScore
+                awayPoints += away - lastAwayScore
+                lastHomeScore = home
+                lastAwayScore = away
+            }
         }
         
-        // First moment of a period is OPENER
-        if momentIndex == 0 {
-            return (.opener, quarter == 1, quarter == 1 ? "Game starts" : nil)
+        let primaryTeam = homePoints > awayPoints ? homeTeam : (awayPoints > homePoints ? awayTeam : nil)
+        let teamInControl: String? = {
+            if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore {
+                if lastHome > lastAway { return "home" }
+                if lastAway > lastHome { return "away" }
+            }
+            return nil
+        }()
+        
+        // Last moment of Q4 or OT is CLOSING_CONTROL
+        if (quarter >= 4) && isLastMoment {
+            return (.closingControl, true, false, "Closing time", primaryTeam, teamInControl)
         }
+        
+        // First moment of a period - use isPeriodStart flag, not a special type
+        let isPeriodStart = momentIndex == 0
         
         // Check for lead changes (FLIP)
         var leadChanges = 0
@@ -405,14 +460,14 @@ final class MockGameService: GameService {
         }
         
         if leadChanges >= 1 {
-            return (.flip, true, "Lead changes hands")
+            return (.flip, true, isPeriodStart, "Lead changes hands", primaryTeam, teamInControl)
         }
         
         // Check for scoring runs (8+ point swing)
         var homeRun = 0
         var awayRun = 0
-        var lastHomeScore = plays.first?.homeScore ?? 0
-        var lastAwayScore = plays.first?.awayScore ?? 0
+        lastHomeScore = plays.first?.homeScore ?? 0
+        lastAwayScore = plays.first?.awayScore ?? 0
         
         for play in plays {
             if let home = play.homeScore, let away = play.awayScore {
@@ -438,23 +493,28 @@ final class MockGameService: GameService {
             if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore {
                 let leadingTeamScoring = (homeRun >= 8 && firstHome > firstAway) || (awayRun >= 8 && firstAway > firstHome)
                 if leadingTeamScoring {
-                    return (.leadBuild, true, "\(runPoints)-0 run extends lead")
+                    return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run extends lead", primaryTeam, teamInControl)
                 } else {
-                    return (.cut, true, "\(runPoints)-0 run cuts deficit")
+                    return (.cut, true, isPeriodStart, "\(runPoints)-0 run cuts deficit", primaryTeam, teamInControl)
                 }
             }
-            return (.leadBuild, true, "\(runPoints)-0 run")
+            return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run", primaryTeam, teamInControl)
         }
         
         // Check for tie
         if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore, lastHome == lastAway {
             if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore, firstHome != firstAway {
-                return (.tie, true, "Game tied")
+                return (.tie, true, isPeriodStart, "Game tied", nil, nil)
             }
         }
         
+        // First moment of game gets a note
+        if isPeriodStart && quarter == 1 {
+            return (.neutral, true, true, "Game starts", primaryTeam, teamInControl)
+        }
+        
         // Default to NEUTRAL
-        return (.neutral, false, nil)
+        return (.neutral, false, isPeriodStart, nil, primaryTeam, teamInControl)
     }
     
     private func extractPlayerContributions(from plays: [PlayEntry]) -> [PlayerContribution] {

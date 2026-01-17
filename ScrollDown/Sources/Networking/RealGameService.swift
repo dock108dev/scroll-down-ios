@@ -118,6 +118,11 @@ final class RealGameService: GameService {
         try await request(path: "api/admin/sports/games/\(gameId)/moments", queryItems: [])
     }
 
+    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse {
+        let queryItems = [URLQueryItem(name: "level", value: String(level.rawValue))]
+        return try await request(path: "api/games/\(gameId)/timeline/compact", queryItems: queryItems)
+    }
+
     // MARK: - Networking
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {

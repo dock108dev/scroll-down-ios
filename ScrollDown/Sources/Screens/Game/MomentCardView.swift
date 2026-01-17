@@ -223,8 +223,6 @@ struct MomentCardView: View {
             return Color.red.opacity(0.15)
         case .highImpact:
             return Color.red.opacity(0.20)
-        case .opener:
-            return Color.blue.opacity(0.15)
         case .neutral:
             return DesignSystem.Colors.neutralBadge
         }
@@ -244,8 +242,6 @@ struct MomentCardView: View {
             return Color.red
         case .highImpact:
             return Color.red
-        case .opener:
-            return Color.blue
         case .neutral:
             return DesignSystem.TextColor.tertiary
         }
@@ -277,6 +273,7 @@ struct MomentCardView: View {
         endPlay: 34,
         playCount: 14,
         teams: ["BOS", "LAL"],
+        primaryTeam: "Boston Celtics",
         players: [
             PlayerContribution(name: "J. Tatum", stats: ["pts": 8, "ast": 2], summary: "8 pts, 2 ast"),
             PlayerContribution(name: "J. Brown", stats: ["pts": 4], summary: "4 pts"),
@@ -287,11 +284,7 @@ struct MomentCardView: View {
         clock: "Q1 9:12–7:48",
         isNotable: true,
         note: "8-0 run extends lead",
-        runInfo: nil,
-        ladderTierBefore: nil,
-        ladderTierAfter: nil,
-        teamInControl: nil,
-        keyPlayIds: nil
+        teamInControl: "home"
     )
     
     MomentCardView(
@@ -312,6 +305,7 @@ struct MomentCardView: View {
         endPlay: 52,
         playCount: 18,
         teams: ["BOS", "LAL"],
+        primaryTeam: "Los Angeles Lakers",
         players: [
             PlayerContribution(name: "L. James", stats: ["pts": 6, "ast": 3], summary: "6 pts, 3 ast"),
             PlayerContribution(name: "J. Tatum", stats: ["pts": 5], summary: "5 pts")
@@ -321,11 +315,7 @@ struct MomentCardView: View {
         clock: "Q1 7:48–4:30",
         isNotable: true,
         note: "Lead changes hands",
-        runInfo: nil,
-        ladderTierBefore: nil,
-        ladderTierAfter: nil,
-        teamInControl: nil,
-        keyPlayIds: nil
+        teamInControl: "away"
     )
     
     let events = [
@@ -357,7 +347,7 @@ struct MomentCardView: View {
     .padding()
 }
 
-#Preview("Neutral Moment") {
+#Preview("Period Start Moment") {
     let moment = Moment(
         id: "m_003",
         type: .neutral,
@@ -365,17 +355,15 @@ struct MomentCardView: View {
         endPlay: 20,
         playCount: 20,
         teams: ["BOS", "LAL"],
+        primaryTeam: "Boston Celtics",
         players: [],
         scoreStart: "0–0",
         scoreEnd: "9–12",
         clock: "Q1 12:00–9:12",
-        isNotable: false,
-        note: nil,
-        runInfo: nil,
-        ladderTierBefore: nil,
-        ladderTierAfter: nil,
-        teamInControl: nil,
-        keyPlayIds: nil
+        isNotable: true,
+        isPeriodStart: true,
+        note: "Game starts",
+        teamInControl: "home"
     )
     
     MomentCardView(

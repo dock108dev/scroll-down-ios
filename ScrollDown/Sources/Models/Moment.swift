@@ -2,7 +2,7 @@ import Foundation
 
 /// Moment representing a segment of the game timeline
 /// Moments partition the entire game - every play belongs to exactly one moment
-/// Use `is_notable` to filter for highlights
+/// Use `isNotable` to filter for highlights
 struct Moment: Codable, Identifiable, Equatable {
     let id: String
     let type: MomentType
@@ -10,18 +10,20 @@ struct Moment: Codable, Identifiable, Equatable {
     let endPlay: Int
     let playCount: Int
     let teams: [String]
+    let primaryTeam: String?  // The team that drove the narrative for this moment
     let players: [PlayerContribution]
     let scoreStart: String
     let scoreEnd: String
     let clock: String
     let isNotable: Bool
+    let isPeriodStart: Bool  // True if this moment starts a new period
     let note: String?
     
-    // v2 optional fields
+    // Optional extended fields
     let runInfo: RunInfo?
     let ladderTierBefore: Int?
     let ladderTierAfter: Int?
-    let teamInControl: String?
+    let teamInControl: String?  // "home", "away", or null
     let keyPlayIds: [Int]?
     
     enum CodingKeys: String, CodingKey {
@@ -31,17 +33,86 @@ struct Moment: Codable, Identifiable, Equatable {
         case endPlay = "end_play"
         case playCount = "play_count"
         case teams
+        case primaryTeam = "primary_team"
         case players
         case scoreStart = "score_start"
         case scoreEnd = "score_end"
         case clock
         case isNotable = "is_notable"
+        case isPeriodStart = "is_period_start"
         case note
         case runInfo = "run_info"
         case ladderTierBefore = "ladder_tier_before"
         case ladderTierAfter = "ladder_tier_after"
         case teamInControl = "team_in_control"
         case keyPlayIds = "key_play_ids"
+    }
+    
+    // Custom init for decoding with defaults for new fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        type = try container.decode(MomentType.self, forKey: .type)
+        startPlay = try container.decode(Int.self, forKey: .startPlay)
+        endPlay = try container.decode(Int.self, forKey: .endPlay)
+        playCount = try container.decode(Int.self, forKey: .playCount)
+        teams = try container.decode([String].self, forKey: .teams)
+        primaryTeam = try container.decodeIfPresent(String.self, forKey: .primaryTeam)
+        players = try container.decode([PlayerContribution].self, forKey: .players)
+        scoreStart = try container.decode(String.self, forKey: .scoreStart)
+        scoreEnd = try container.decode(String.self, forKey: .scoreEnd)
+        clock = try container.decode(String.self, forKey: .clock)
+        isNotable = try container.decode(Bool.self, forKey: .isNotable)
+        isPeriodStart = try container.decodeIfPresent(Bool.self, forKey: .isPeriodStart) ?? false
+        note = try container.decodeIfPresent(String.self, forKey: .note)
+        runInfo = try container.decodeIfPresent(RunInfo.self, forKey: .runInfo)
+        ladderTierBefore = try container.decodeIfPresent(Int.self, forKey: .ladderTierBefore)
+        ladderTierAfter = try container.decodeIfPresent(Int.self, forKey: .ladderTierAfter)
+        teamInControl = try container.decodeIfPresent(String.self, forKey: .teamInControl)
+        keyPlayIds = try container.decodeIfPresent([Int].self, forKey: .keyPlayIds)
+    }
+    
+    // Memberwise init for previews and tests
+    init(
+        id: String,
+        type: MomentType,
+        startPlay: Int,
+        endPlay: Int,
+        playCount: Int,
+        teams: [String],
+        primaryTeam: String? = nil,
+        players: [PlayerContribution],
+        scoreStart: String,
+        scoreEnd: String,
+        clock: String,
+        isNotable: Bool,
+        isPeriodStart: Bool = false,
+        note: String?,
+        runInfo: RunInfo? = nil,
+        ladderTierBefore: Int? = nil,
+        ladderTierAfter: Int? = nil,
+        teamInControl: String? = nil,
+        keyPlayIds: [Int]? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.startPlay = startPlay
+        self.endPlay = endPlay
+        self.playCount = playCount
+        self.teams = teams
+        self.primaryTeam = primaryTeam
+        self.players = players
+        self.scoreStart = scoreStart
+        self.scoreEnd = scoreEnd
+        self.clock = clock
+        self.isNotable = isNotable
+        self.isPeriodStart = isPeriodStart
+        self.note = note
+        self.runInfo = runInfo
+        self.ladderTierBefore = ladderTierBefore
+        self.ladderTierAfter = ladderTierAfter
+        self.teamInControl = teamInControl
+        self.keyPlayIds = keyPlayIds
     }
     
     /// Parse quarter number from clock string (e.g., "Q1 9:12-7:48" -> 1)
@@ -77,14 +148,13 @@ enum MomentType: String, Codable {
     case flip = "FLIP"
     case closingControl = "CLOSING_CONTROL"
     case highImpact = "HIGH_IMPACT"
-    case opener = "OPENER"
     case neutral = "NEUTRAL"
     
     /// Human-readable display name
     var displayName: String {
         switch self {
         case .leadBuild:
-            return "Lead extends"
+            return "Lead extended"
         case .cut:
             return "Cutting in"
         case .tie:
@@ -95,8 +165,6 @@ enum MomentType: String, Codable {
             return "Dagger"
         case .highImpact:
             return "Key moment"
-        case .opener:
-            return "Period start"
         case .neutral:
             return "Normal play"
         }
@@ -122,8 +190,6 @@ enum MomentType: String, Codable {
             return "checkmark.seal.fill"
         case .highImpact:
             return "exclamationmark.triangle.fill"
-        case .opener:
-            return "flag.fill"
         case .neutral:
             return "circle"
         }
@@ -181,13 +247,16 @@ struct MomentsResponse: Codable {
     let generatedAt: String
     let moments: [Moment]
     let totalCount: Int
-    let highlightCount: Int
     
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
         case generatedAt = "generated_at"
         case moments
         case totalCount = "total_count"
-        case highlightCount = "highlight_count"
+    }
+    
+    /// Computed highlight count (moments where isNotable=true)
+    var highlightCount: Int {
+        moments.filter { $0.isNotable }.count
     }
 }

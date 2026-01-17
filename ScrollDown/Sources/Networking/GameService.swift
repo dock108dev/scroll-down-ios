@@ -40,6 +40,37 @@ protocol GameService {
     /// - Parameter gameId: The game ID
     /// - Returns: Moments response with all moments for the game
     func fetchMoments(gameId: Int) async throws -> MomentsResponse
+    
+    /// Fetch compact timeline for efficient app display
+    /// - Parameters:
+    ///   - gameId: The game ID
+    ///   - level: Detail level (1=notable moments only, 2=standard, 3=detailed)
+    /// - Returns: Compact timeline response
+    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse
+}
+
+// MARK: - Compact Timeline
+
+/// Detail level for compact timeline requests
+enum CompactTimelineLevel: Int {
+    case notable = 1   // Notable moments only (fastest)
+    case standard = 2  // Standard detail
+    case detailed = 3  // Full detail
+}
+
+/// Response from compact timeline endpoint
+struct CompactTimelineResponse: Codable {
+    let gameId: Int
+    let level: Int
+    let moments: [Moment]
+    let generatedAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case gameId = "game_id"
+        case level
+        case moments
+        case generatedAt = "generated_at"
+    }
 }
 
 // MARK: - Reveal Level

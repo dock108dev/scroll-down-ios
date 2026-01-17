@@ -250,7 +250,7 @@ enum MockDataGenerator {
                 guard let firstPlay = momentPlays.first, let lastPlay = momentPlays.last else { continue }
                 
                 // Determine moment type based on position and scoring
-                let (momentType, isNotable, note) = determineMomentTypeV2(
+                let (momentType, isNotable, isPeriodStart, note) = determineMomentTypeV2(
                     plays: momentPlays,
                     quarter: quarter,
                     momentIndex: momentIndex,
@@ -272,6 +272,15 @@ enum MockDataGenerator {
                 // Get teams involved
                 let teams = Array(Set(momentPlays.compactMap { $0.teamAbbreviation }))
                 
+                // Determine team in control based on score at end
+                let teamInControl: String? = {
+                    if let lastHome = lastPlay.homeScore, let lastAway = lastPlay.awayScore {
+                        if lastHome > lastAway { return "home" }
+                        if lastAway > lastHome { return "away" }
+                    }
+                    return nil
+                }()
+                
                 let moment = Moment(
                     id: "m_q\(quarter)_\(momentIndex)",
                     type: momentType,
@@ -284,12 +293,9 @@ enum MockDataGenerator {
                     scoreEnd: scoreEnd,
                     clock: clockString,
                     isNotable: isNotable,
+                    isPeriodStart: isPeriodStart,
                     note: note,
-                    runInfo: nil,
-                    ladderTierBefore: nil,
-                    ladderTierAfter: nil,
-                    teamInControl: nil,
-                    keyPlayIds: nil
+                    teamInControl: teamInControl
                 )
                 moments.append(moment)
             }
@@ -298,20 +304,18 @@ enum MockDataGenerator {
         return moments
     }
     
+    /// Returns: (type, isNotable, isPeriodStart, note)
     private static func determineMomentTypeV2(
         plays: [PlayEntry],
         quarter: Int,
         momentIndex: Int,
         isLastMoment: Bool
-    ) -> (MomentType, Bool, String?) {
+    ) -> (MomentType, Bool, Bool, String?) {
+        let isPeriodStart = momentIndex == 0
+        
         // Last moment of Q4 or OT is CLOSING_CONTROL
         if quarter >= 4 && isLastMoment {
-            return (.closingControl, true, "Closing time")
-        }
-        
-        // First moment of a period is OPENER
-        if momentIndex == 0 {
-            return (.opener, quarter == 1, quarter == 1 ? "Game starts" : nil)
+            return (.closingControl, true, isPeriodStart, "Closing time")
         }
         
         // Check for lead changes (FLIP)
@@ -328,7 +332,7 @@ enum MockDataGenerator {
         }
         
         if leadChanges >= 1 {
-            return (.flip, true, "Lead changes hands")
+            return (.flip, true, isPeriodStart, "Lead changes hands")
         }
         
         // Check for scoring runs (LEAD_BUILD or CUT)
@@ -361,23 +365,28 @@ enum MockDataGenerator {
             if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore {
                 let leadingTeamScoring = (homeRun >= 8 && firstHome > firstAway) || (awayRun >= 8 && firstAway > firstHome)
                 if leadingTeamScoring {
-                    return (.leadBuild, true, "\(runPoints)-0 run extends lead")
+                    return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run extends lead")
                 } else {
-                    return (.cut, true, "\(runPoints)-0 run cuts deficit")
+                    return (.cut, true, isPeriodStart, "\(runPoints)-0 run cuts deficit")
                 }
             }
-            return (.leadBuild, true, "\(runPoints)-0 run")
+            return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run")
         }
         
         // Check for tie
         if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore, lastHome == lastAway {
             if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore, firstHome != firstAway {
-                return (.tie, true, "Game tied")
+                return (.tie, true, isPeriodStart, "Game tied")
             }
         }
         
+        // First moment of game gets a note
+        if isPeriodStart && quarter == 1 {
+            return (.neutral, true, true, "Game starts")
+        }
+        
         // Default to NEUTRAL
-        return (.neutral, false, nil)
+        return (.neutral, false, isPeriodStart, nil)
     }
     
     private static func extractMomentPlayers(from plays: [PlayEntry]) -> [PlayerContribution] {

@@ -9,20 +9,24 @@
       "end_play": 20,
       "play_count": 20,
       "teams": ["BOS", "LAL"],
+      "primary_team": "Boston Celtics",
       "players": [],
       "score_start": "0-0",
       "score_end": "9-12",
       "clock": "Q1 12:00-9:12",
-      "is_notable": false,
-      "note": null
+      "is_notable": true,
+      "is_period_start": true,
+      "note": "Game starts",
+      "team_in_control": "away"
     },
     {
       "id": "m_q1_1",
-      "type": "RUN",
+      "type": "LEAD_BUILD",
       "start_play": 21,
       "end_play": 34,
       "play_count": 14,
       "teams": ["BOS"],
+      "primary_team": "Boston Celtics",
       "players": [
         { "name": "J. Tatum", "stats": { "pts": 8, "ast": 2 }, "summary": "8 pts, 2 ast" },
         { "name": "J. Brown", "stats": { "pts": 4 }, "summary": "4 pts" }
@@ -31,15 +35,18 @@
       "score_end": "9-20",
       "clock": "Q1 9:12-7:48",
       "is_notable": true,
-      "note": "8-0 run"
+      "is_period_start": false,
+      "note": "8-0 run extends lead",
+      "team_in_control": "away"
     },
     {
       "id": "m_q1_2",
-      "type": "BATTLE",
+      "type": "FLIP",
       "start_play": 35,
       "end_play": 52,
       "play_count": 18,
       "teams": ["BOS", "LAL"],
+      "primary_team": "Los Angeles Lakers",
       "players": [
         { "name": "L. James", "stats": { "pts": 6, "ast": 3 }, "summary": "6 pts, 3 ast" },
         { "name": "J. Tatum", "stats": { "pts": 5 }, "summary": "5 pts" }
@@ -48,7 +55,9 @@
       "score_end": "28-26",
       "clock": "Q1 7:48-4:30",
       "is_notable": true,
-      "note": "Lead changes"
+      "is_period_start": false,
+      "note": "Lead changes hands",
+      "team_in_control": "home"
     },
     {
       "id": "m_q1_3",
@@ -62,15 +71,18 @@
       "score_end": "32-30",
       "clock": "Q1 4:30-0:00",
       "is_notable": false,
-      "note": null
+      "is_period_start": false,
+      "note": null,
+      "team_in_control": "home"
     },
     {
       "id": "m_q2_0",
-      "type": "RUN",
+      "type": "LEAD_BUILD",
       "start_play": 71,
       "end_play": 88,
       "play_count": 18,
       "teams": ["LAL"],
+      "primary_team": "Los Angeles Lakers",
       "players": [
         { "name": "A. Davis", "stats": { "pts": 10 }, "summary": "10 pts" },
         { "name": "L. James", "stats": { "pts": 4, "ast": 2 }, "summary": "4 pts, 2 ast" }
@@ -79,7 +91,9 @@
       "score_end": "32-42",
       "clock": "Q2 12:00-9:00",
       "is_notable": true,
-      "note": "12-0 run"
+      "is_period_start": true,
+      "note": "12-0 run extends lead",
+      "team_in_control": "away"
     },
     {
       "id": "m_q2_1",
@@ -93,15 +107,18 @@
       "score_end": "48-52",
       "clock": "Q2 9:00-4:00",
       "is_notable": false,
-      "note": null
+      "is_period_start": false,
+      "note": null,
+      "team_in_control": "away"
     },
     {
       "id": "m_q2_2",
-      "type": "BATTLE",
+      "type": "FLIP",
       "start_play": 121,
       "end_play": 145,
       "play_count": 25,
       "teams": ["BOS", "LAL"],
+      "primary_team": "Boston Celtics",
       "players": [
         { "name": "D. White", "stats": { "pts": 6, "stl": 2 }, "summary": "6 pts, 2 stl" }
       ],
@@ -109,7 +126,9 @@
       "score_end": "56-54",
       "clock": "Q2 4:00-0:00",
       "is_notable": true,
-      "note": "Lead changes"
+      "is_period_start": false,
+      "note": "Lead changes hands",
+      "team_in_control": "home"
     },
     {
       "id": "m_q3_0",
@@ -123,15 +142,18 @@
       "score_end": "72-68",
       "clock": "Q3 12:00-6:00",
       "is_notable": false,
-      "note": null
+      "is_period_start": true,
+      "note": null,
+      "team_in_control": "home"
     },
     {
       "id": "m_q3_1",
-      "type": "RUN",
+      "type": "LEAD_BUILD",
       "start_play": 181,
       "end_play": 200,
       "play_count": 20,
       "teams": ["BOS"],
+      "primary_team": "Boston Celtics",
       "players": [
         { "name": "J. Tatum", "stats": { "pts": 9 }, "summary": "9 pts" },
         { "name": "D. White", "stats": { "pts": 6, "blk": 1 }, "summary": "6 pts, 1 blk" }
@@ -140,7 +162,9 @@
       "score_end": "87-72",
       "clock": "Q3 6:00-2:00",
       "is_notable": true,
-      "note": "15-4 run"
+      "is_period_start": false,
+      "note": "15-4 run extends lead",
+      "team_in_control": "home"
     },
     {
       "id": "m_q3_2",
@@ -154,15 +178,18 @@
       "score_end": "92-78",
       "clock": "Q3 2:00-0:00",
       "is_notable": false,
-      "note": null
+      "is_period_start": false,
+      "note": null,
+      "team_in_control": "home"
     },
     {
       "id": "m_q4_0",
-      "type": "RUN",
+      "type": "CUT",
       "start_play": 221,
       "end_play": 250,
       "play_count": 30,
       "teams": ["LAL"],
+      "primary_team": "Los Angeles Lakers",
       "players": [
         { "name": "L. James", "stats": { "pts": 12, "ast": 4 }, "summary": "12 pts, 4 ast" },
         { "name": "A. Davis", "stats": { "pts": 8 }, "summary": "8 pts" }
@@ -171,15 +198,18 @@
       "score_end": "98-100",
       "clock": "Q4 12:00-6:00",
       "is_notable": true,
-      "note": "22-6 run"
+      "is_period_start": true,
+      "note": "22-6 run cuts deficit",
+      "team_in_control": "away"
     },
     {
       "id": "m_q4_1",
-      "type": "BATTLE",
+      "type": "FLIP",
       "start_play": 251,
       "end_play": 280,
       "play_count": 30,
       "teams": ["BOS", "LAL"],
+      "primary_team": "Boston Celtics",
       "players": [
         { "name": "J. Tatum", "stats": { "pts": 8 }, "summary": "8 pts" },
         { "name": "L. James", "stats": { "pts": 6 }, "summary": "6 pts" }
@@ -188,15 +218,18 @@
       "score_end": "108-106",
       "clock": "Q4 6:00-2:00",
       "is_notable": true,
-      "note": "Intense battle"
+      "is_period_start": false,
+      "note": "Lead changes hands",
+      "team_in_control": "home"
     },
     {
       "id": "m_q4_2",
-      "type": "CLOSING",
+      "type": "CLOSING_CONTROL",
       "start_play": 281,
       "end_play": 300,
       "play_count": 20,
       "teams": ["BOS", "LAL"],
+      "primary_team": "Boston Celtics",
       "players": [
         { "name": "J. Tatum", "stats": { "pts": 4 }, "summary": "4 pts" },
         { "name": "D. White", "stats": { "stl": 1 }, "summary": "1 stl" }
@@ -205,9 +238,10 @@
       "score_end": "112-108",
       "clock": "Q4 2:00-0:00",
       "is_notable": true,
-      "note": "Closing time"
+      "is_period_start": false,
+      "note": "Closing time",
+      "team_in_control": "home"
     }
   ],
-  "total_count": 13,
-  "highlight_count": 8
+  "total_count": 13
 }
