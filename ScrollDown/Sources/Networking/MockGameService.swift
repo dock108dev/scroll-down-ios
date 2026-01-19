@@ -277,7 +277,9 @@ final class MockGameService: GameService {
             gameId: gameId,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
             moments: [],
-            totalCount: 0
+            totalCount: 0,
+            gameHeadline: nil,
+            gameSubhead: nil
         )
     }
     
@@ -303,7 +305,7 @@ final class MockGameService: GameService {
             gameId: gameId,
             level: level.rawValue,
             moments: filteredMoments,
-            generatedAt: momentsResponse.generatedAt
+            generatedAt: momentsResponse.generatedAt ?? ISO8601DateFormatter().string(from: Date())
         )
     }
     
@@ -316,7 +318,9 @@ final class MockGameService: GameService {
                 gameId: gameId,
                 generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
                 moments: [],
-                totalCount: 0
+                totalCount: 0,
+                gameHeadline: nil,
+                gameSubhead: nil
             )
         }
         
@@ -400,7 +404,9 @@ final class MockGameService: GameService {
             gameId: gameId,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
             moments: moments,
-            totalCount: moments.count
+            totalCount: moments.count,
+            gameHeadline: nil,
+            gameSubhead: nil
         )
     }
     

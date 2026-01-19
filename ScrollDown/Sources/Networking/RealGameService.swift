@@ -105,9 +105,8 @@ final class RealGameService: GameService {
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        // NOTE: The timeline endpoint is at /games/{id}/timeline (not under /api/admin/sports/)
-        // This is the new artifact endpoint from the sports-data-admin backfill pipeline
-        try await request(path: "games/\(gameId)/timeline", queryItems: [])
+        // Timeline endpoint is at /api/games/{id}/timeline (app-facing endpoint)
+        try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
     }
 
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {

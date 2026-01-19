@@ -179,8 +179,26 @@ struct Moment: Codable, Identifiable, Equatable {
         case .closingControl:
             return "\(driver) close it out in the final stretch"
             
+        case .momentumShift:
+            if let delta = scoreDelta, delta >= 10 {
+                return "\(driver) ignite a \(delta)-point run to shift momentum"
+            }
+            return "\(driver) seize momentum with a decisive run"
+            
         case .highImpact:
             return note ?? "Key moment shifts the momentum"
+            
+        case .halftimeRecap:
+            return note ?? "Halftime summary"
+            
+        case .periodRecap:
+            return note ?? "End of period"
+            
+        case .gameRecap:
+            return note ?? "Final recap"
+            
+        case .overtimeRecap:
+            return note ?? "Overtime recap"
             
         case .neutral:
             if isPeriodStart && quarter == 1 {
@@ -250,8 +268,13 @@ enum MomentType: String, Codable {
     case tie = "TIE"
     case flip = "FLIP"
     case closingControl = "CLOSING_CONTROL"
+    case momentumShift = "MOMENTUM_SHIFT"
     case highImpact = "HIGH_IMPACT"
     case neutral = "NEUTRAL"
+    case halftimeRecap = "HALFTIME_RECAP"
+    case periodRecap = "PERIOD_RECAP"
+    case gameRecap = "GAME_RECAP"
+    case overtimeRecap = "OVERTIME_RECAP"
     
     /// Human-readable display name
     var displayName: String {
@@ -266,10 +289,20 @@ enum MomentType: String, Codable {
             return "Lead change"
         case .closingControl:
             return "Dagger"
+        case .momentumShift:
+            return "Momentum shift"
         case .highImpact:
             return "Key moment"
         case .neutral:
             return "Normal play"
+        case .halftimeRecap:
+            return "Halftime"
+        case .periodRecap:
+            return "Period recap"
+        case .gameRecap:
+            return "Final"
+        case .overtimeRecap:
+            return "Overtime recap"
         }
     }
     
@@ -291,10 +324,20 @@ enum MomentType: String, Codable {
             return "arrow.left.arrow.right"
         case .closingControl:
             return "checkmark.seal.fill"
+        case .momentumShift:
+            return "bolt.fill"
         case .highImpact:
             return "exclamationmark.triangle.fill"
         case .neutral:
             return "circle"
+        case .halftimeRecap:
+            return "clock.badge.checkmark"
+        case .periodRecap:
+            return "clock.badge.checkmark"
+        case .gameRecap:
+            return "flag.checkered"
+        case .overtimeRecap:
+            return "clock.arrow.circlepath"
         }
     }
 }
@@ -347,15 +390,19 @@ struct PlayerContribution: Codable, Equatable {
 /// Response from the moments API endpoint
 struct MomentsResponse: Codable {
     let gameId: Int
-    let generatedAt: String
+    let generatedAt: String?  // Nullable when moments haven't been generated yet
     let moments: [Moment]
     let totalCount: Int
+    let gameHeadline: String?
+    let gameSubhead: String?
     
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
         case generatedAt = "generated_at"
         case moments
         case totalCount = "total_count"
+        case gameHeadline = "game_headline"
+        case gameSubhead = "game_subhead"
     }
     
     /// Computed highlight count (moments where isNotable=true)
