@@ -45,6 +45,9 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
+            // Debug: Show story state
+            storyDebugView
+
             // Compact story: AI-generated narrative
             if let compactStory = viewModel.compactStory {
                 compactStorySection(compactStory)
@@ -94,6 +97,27 @@ extension GameDetailView {
         for section in viewModel.sections {
             collapsedSections.insert(section.id)
         }
+    }
+
+    // MARK: - Debug View
+
+    private var storyDebugView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Story Debug")
+                .font(.caption.bold())
+            Text("storyState: \(String(describing: viewModel.storyState))")
+                .font(.caption2)
+            Text("chapters: \(viewModel.chapters.count)")
+                .font(.caption2)
+            Text("sections: \(viewModel.sections.count)")
+                .font(.caption2)
+            Text("hasStoryData: \(viewModel.hasStoryData ? "YES" : "NO")")
+                .font(.caption2)
+                .foregroundColor(viewModel.hasStoryData ? .green : .red)
+        }
+        .padding(8)
+        .background(Color.yellow.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Compact Story Section

@@ -374,18 +374,13 @@ final class GameDetailViewModel: ObservableObject {
     var hasStoryData: Bool {
         let loaded = storyState == .loaded
         let hasSections = !sections.isEmpty
-        let chapterCount = gameStory?.chapters.count ?? 0
-        let sectionCount = sections.count
-        print("📖 hasStoryData: loaded=\(loaded), sectionCount=\(sectionCount), chapterCount=\(chapterCount)")
         return loaded && hasSections
     }
 
     /// Load story from Chapters-First Story API
     func loadStory(gameId: Int, service: GameService) async {
-        print("📖 loadStory called for gameId=\(gameId), current state=\(storyState)")
         switch storyState {
         case .loaded, .loading:
-            print("📖 loadStory skipping - already \(storyState)")
             return
         case .idle, .failed:
             break
@@ -397,11 +392,9 @@ final class GameDetailViewModel: ObservableObject {
             let response = try await service.fetchStory(gameId: gameId)
             gameStory = response
             storyState = .loaded
-            print("📖 Loaded story: \(response.sectionCount) API sections, \(response.chapterCount) chapters, compact_story=\(response.compactStory != nil)")
-            let chapterDetail = response.chapters.map { "ch\($0.index):plays=\($0.plays.count)" }.joined(separator: ", ")
-            print("📖 Chapters detail: \(chapterDetail)")
+            logger.info("📖 Loaded story: \(response.sectionCount, privacy: .public) API sections, \(response.chapterCount, privacy: .public) chapters")
         } catch {
-            print("📖 Story API failed: \(error.localizedDescription)")
+            logger.error("📖 Story API failed: \(error.localizedDescription, privacy: .public)")
             storyState = .failed(error.localizedDescription)
         }
     }
