@@ -8,10 +8,9 @@ struct GameDetailResponse: Codable {
     let odds: [OddsEntry]
     let socialPosts: [SocialPostEntry]
     let plays: [PlayEntry]
-    let moments: [Moment]?
     let derivedMetrics: [String: AnyCodable]
     let rawPayloads: [String: AnyCodable]
-    
+
     enum CodingKeys: String, CodingKey {
         case game
         case teamStats = "team_stats"
@@ -19,7 +18,6 @@ struct GameDetailResponse: Codable {
         case odds
         case socialPosts = "social_posts"
         case plays
-        case moments
         case derivedMetrics = "derived_metrics"
         case rawPayloads = "raw_payloads"
     }

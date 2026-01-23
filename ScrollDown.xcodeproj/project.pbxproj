@@ -68,9 +68,8 @@
 		EC6F593C7CE99636B229F060 /* PlayerStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC5233841162F11987FAF6C /* PlayerStat.swift */; };
 		F565F95EAD2D1AB1CDC547AF /* ScrollDownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880FB613006C951586FFDA0D /* ScrollDownApp.swift */; };
 		FE1D381FDC873B5BAB938189 /* game-001.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C3E1CA0DC85903F544E917 /* game-001.json */; };
-		M0M3NT001000000000000001 /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000002 /* Moment.swift */; };
-		M0M3NT001000000000000003 /* MomentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000004 /* MomentCardView.swift */; };
-		M0M3NT001000000000000005 /* moments-001.json in Resources */ = {isa = PBXBuildFile; fileRef = M0M3NT001000000000000006 /* moments-001.json */; };
+		STORY001000000000000001 /* GameStory.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000002 /* GameStory.swift */; };
+		STORY001000000000000003 /* StorySectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000004 /* StorySectionCardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -135,9 +134,8 @@
 		FAD114683271A58615ABCE51 /* AdminSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminSettingsView.swift; sourceTree = "<group>"; };
 		FB1851F0828607968AE4B751 /* pbp-001.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "pbp-001.json"; sourceTree = "<group>"; };
 		FFEDD72AB15D6E74583ECE63 /* PbpEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PbpEvent.swift; sourceTree = "<group>"; };
-		M0M3NT001000000000000002 /* Moment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
-		M0M3NT001000000000000004 /* MomentCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentCardView.swift; sourceTree = "<group>"; };
-		M0M3NT001000000000000006 /* moments-001.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "moments-001.json"; sourceTree = "<group>"; };
+		STORY001000000000000002 /* GameStory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameStory.swift; sourceTree = "<group>"; };
+		STORY001000000000000004 /* StorySectionCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorySectionCardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -278,7 +276,7 @@
 				CE0933EFD998ED9CB2C2B27C /* GameDetailView+Stats.swift */,
 				F2771084115126C2862300DB /* GameDetailView+Social.swift */,
 				AD12859B949FE45C68980D98 /* GameDetailView+Timeline.swift */,
-				M0M3NT001000000000000004 /* MomentCardView.swift */,
+				STORY001000000000000004 /* StorySectionCardView.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -309,7 +307,7 @@
 		C1D1412ABA4C8BA8CBF564E2 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				M0M3NT001000000000000002 /* Moment.swift */,
+				STORY001000000000000002 /* GameStory.swift */,
 				56A1B2C3D4E5F6A7B8C9D0E1 /* UnifiedTimelineEvent.swift */,
 				F95D753106C9E23F1CCAF32F /* GameListResponse.swift */,
 				03CBB42D2772608C0E2EFA78 /* Game.swift */,
@@ -344,7 +342,6 @@
 				0F4049B8F17A3BC69E2E3756 /* game-list.json */,
 				784E51CC06BECE994AA7DE32 /* game-002.json */,
 				FB1851F0828607968AE4B751 /* pbp-001.json */,
-				M0M3NT001000000000000006 /* moments-001.json */,
 			);
 			path = games;
 			sourceTree = "<group>";
@@ -413,7 +410,6 @@
 				2CD104DA7B33C73E6DF92ACE /* game-list.json in Resources */,
 				525D7497F91710305BA1C096 /* game-002.json in Resources */,
 				BA9845F1EDE4D3A195A1A1F4 /* pbp-001.json in Resources */,
-				M0M3NT001000000000000005 /* moments-001.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -432,8 +428,6 @@
 				055F3D27BD6A844858305041 /* MockDataGenerator.swift in Sources */,
 				037238B5678E56309A67E681 /* GameService.swift in Sources */,
 				55462CBA241AC4AD92EEEBBB /* MockLoader.swift in Sources */,
-				M0M3NT001000000000000001 /* Moment.swift in Sources */,
-				M0M3NT001000000000000003 /* MomentCardView.swift in Sources */,
 				56B1C2D3E4F5G6H7I8J9K0L1 /* UnifiedTimelineEvent.swift in Sources */,
 				56B1C2D3E4F5G6H7I8J9K0L2 /* UnifiedTimelineRowView.swift in Sources */,
 				CC4EBE99A508A028BDF7CD25 /* GameListResponse.swift in Sources */,
@@ -480,6 +474,8 @@
 				2916265C6557233A8296D0BC /* GameDetailView+Stats.swift in Sources */,
 				39F9174BD84AB8E314F0857D /* GameDetailView+Social.swift in Sources */,
 				3A0BF70809513A6DFBBE7BE8 /* GameDetailView+Timeline.swift in Sources */,
+				STORY001000000000000001 /* GameStory.swift in Sources */,
+				STORY001000000000000003 /* StorySectionCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -539,7 +535,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -598,7 +594,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -621,7 +617,7 @@
 				DEPLOYMENT_LOCATION = YES;
 				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_TESTABILITY = NO;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScrollDown/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -629,7 +625,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -639,6 +635,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.scrolldown.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -657,7 +657,7 @@
 				DEPLOYMENT_LOCATION = YES;
 				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_TESTABILITY = YES;
+				ENABLE_TESTABILITY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScrollDown/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -665,7 +665,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -675,6 +675,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.scrolldown.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

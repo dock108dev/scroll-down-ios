@@ -113,13 +113,8 @@ final class RealGameService: GameService {
         throw GameServiceError.notImplemented
     }
 
-    func fetchMoments(gameId: Int) async throws -> MomentsResponse {
-        try await request(path: "api/admin/sports/games/\(gameId)/moments", queryItems: [])
-    }
-
-    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse {
-        let queryItems = [URLQueryItem(name: "level", value: String(level.rawValue))]
-        return try await request(path: "api/games/\(gameId)/timeline/compact", queryItems: queryItems)
+    func fetchStory(gameId: Int) async throws -> GameStoryResponse {
+        try await request(path: "api/games/\(gameId)/story", queryItems: [])
     }
 
     // MARK: - Networking

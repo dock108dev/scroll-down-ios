@@ -26,36 +26,31 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var relatedPosts: [RelatedPost] = []
     @Published private(set) var relatedPostsState: RelatedPostsState = .idle
     @Published private(set) var revealedRelatedPostIds: Set<Int> = []
-    
+
     // Outcome is always hidden per progressive disclosure principles
     // Users reveal scores by scrolling through the timeline
     var isOutcomeRevealed: Bool { false }
-    
-    // Social posts (Phase E)
+
+    // Social posts
     @Published private(set) var socialPosts: [SocialPostResponse] = []
     @Published private(set) var socialPostsState: SocialPostsState = .idle
-    @Published var isSocialTabEnabled: Bool = false // User preference for social tab
+    @Published var isSocialTabEnabled: Bool = false
 
     // Timeline artifact (read-only fetch)
     @Published private(set) var timelineArtifact: TimelineArtifactResponse?
     @Published private(set) var timelineArtifactState: TimelineArtifactState = .idle
-    
-    // Moments state (for separate fetch if needed)
-    @Published private(set) var momentsState: MomentsState = .idle
-    
-    enum MomentsState: Equatable {
+
+    // Story state (Chapters-First Story API)
+    @Published private(set) var storyState: StoryState = .idle
+    @Published private(set) var gameStory: GameStoryResponse?
+
+    enum StoryState: Equatable {
         case idle
         case loading
         case loaded
         case failed(String)
     }
-    
-    /// Moments from game detail response
-    /// Moments partition the entire game - every play belongs to exactly one moment
-    var moments: [Moment] {
-        detail?.moments ?? []
-    }
-    
+
     enum SocialPostsState: Equatable {
         case idle
         case loading
@@ -103,7 +98,6 @@ final class GameDetailViewModel: ObservableObject {
         do {
             let response = try await service.fetchGame(id: gameId)
             guard response.game.id == gameId else {
-                // Block fallback routing if the backend returns a different ID.
                 GameRoutingLogger.logMismatch(tappedId: gameId, destinationId: response.game.id, league: league)
                 detail = nil
                 isUnavailable = true
@@ -136,27 +130,25 @@ final class GameDetailViewModel: ObservableObject {
             relatedPostsState = .failed(error.localizedDescription)
         }
     }
-    
-    /// Load social posts for the game (Phase E)
+
+    /// Load social posts for the game
     /// Only loads if user has enabled social tab
     func loadSocialPosts(gameId: Int, service: GameService) async {
         guard isSocialTabEnabled else {
-            return // Social tab disabled, don't load
+            return
         }
-        
+
         switch socialPostsState {
         case .loaded, .loading:
             return
         case .idle, .failed:
             break
         }
-        
+
         socialPostsState = .loading
-        
+
         do {
             let response = try await service.fetchSocialPosts(gameId: gameId)
-            // Backend provides posts in chronological order
-            // Client preserves that order
             socialPosts = response.posts
             socialPostsState = .loaded
         } catch {
@@ -184,100 +176,253 @@ final class GameDetailViewModel: ObservableObject {
             timelineArtifactState = .failed(error.localizedDescription)
         }
     }
-    
-    /// Load moments for the game
-    /// Primary source: moments from game detail response
-    /// Fallback: separate moments endpoint if needed
-    func loadMoments(gameId: Int, service: GameService) async {
-        // If moments already loaded from game detail, mark as loaded
-        let currentMoments = self.moments
-        if !currentMoments.isEmpty {
-            momentsState = .loaded
-            let highlightCount = self.highlightMoments.count
-            logger.info("Using \(currentMoments.count) moments from game detail (\(highlightCount) highlights)")
-            return
+
+    // MARK: - Story Computed Properties
+
+    /// Sections from game story response (or derived from chapters if empty)
+    var sections: [SectionEntry] {
+        let apiSections = gameStory?.sections ?? []
+        if !apiSections.isEmpty {
+            return apiSections
         }
-        
-        // Only fetch separately if game detail didn't include moments
-        switch momentsState {
+        // Derive sections from chapters if API doesn't provide them
+        return deriveSectionsFromChapters()
+    }
+
+    /// Derive sections from chapters when API doesn't provide them
+    private func deriveSectionsFromChapters() -> [SectionEntry] {
+        guard let story = gameStory, !story.chapters.isEmpty else { return [] }
+
+        let allPlays = detail?.plays ?? []
+        var sections: [SectionEntry] = []
+        let sortedChapters = story.chapters.sorted { $0.index < $1.index }
+
+        for (index, chapter) in sortedChapters.enumerated() {
+            let beatType = deriveBeatType(from: chapter.reasonCodes, chapterIndex: index, totalChapters: sortedChapters.count)
+            let header = deriveHeader(from: chapter, beatType: beatType)
+
+            // Get plays for this chapter from main plays array using indices
+            let chapterPlays = getPlaysForChapter(chapter, from: allPlays)
+            let startScore = deriveStartScore(from: chapterPlays)
+            let endScore = deriveEndScore(from: chapterPlays)
+
+            let section = SectionEntry(
+                sectionIndex: index,
+                beatType: beatType,
+                header: header,
+                chaptersIncluded: [chapter.chapterId],
+                startScore: startScore,
+                endScore: endScore,
+                notes: deriveNotes(from: chapter, playCount: chapterPlays.count)
+            )
+            sections.append(section)
+        }
+
+        return sections
+    }
+
+    /// Get plays for a chapter using play indices
+    private func getPlaysForChapter(_ chapter: ChapterEntry, from allPlays: [PlayEntry]) -> [PlayEntry] {
+        // First try chapter's embedded plays
+        if !chapter.plays.isEmpty {
+            return chapter.plays
+        }
+        // Fall back to using play indices
+        return allPlays.filter { $0.playIndex >= chapter.playStartIdx && $0.playIndex <= chapter.playEndIdx }
+    }
+
+    /// Map chapter reason codes to beat type
+    private func deriveBeatType(from reasonCodes: [String], chapterIndex: Int, totalChapters: Int) -> BeatType {
+        let codes = Set(reasonCodes.map { $0.uppercased() })
+
+        if codes.contains("OVERTIME_START") || codes.contains("OVERTIME") {
+            return .overtime
+        }
+        if codes.contains("GAME_END") || chapterIndex == totalChapters - 1 {
+            return .closingSequence
+        }
+        if codes.contains("RUN_BOUNDARY") || codes.contains("SCORING_RUN") {
+            return .run
+        }
+        if codes.contains("PERIOD_START") && chapterIndex < 2 {
+            return .fastStart
+        }
+        if codes.contains("TIMEOUT") {
+            return .stall
+        }
+
+        if chapterIndex < totalChapters / 4 {
+            return .earlyControl
+        } else if chapterIndex > totalChapters * 3 / 4 {
+            return .crunchSetup
+        }
+        return .backAndForth
+    }
+
+    /// Generate header text from chapter data
+    private func deriveHeader(from chapter: ChapterEntry, beatType: BeatType) -> String {
+        let periodText = chapter.period.map { "Q\($0)" } ?? ""
+        let timeText = chapter.timeRange?.displayString ?? ""
+
+        switch beatType {
+        case .fastStart:
+            return "Game gets underway"
+        case .overtime:
+            return "Overtime period"
+        case .closingSequence:
+            return "Final stretch"
+        case .run:
+            return "Scoring run"
+        case .crunchSetup:
+            return "Crunch time approaching"
+        case .stall:
+            return "Teams regroup"
+        default:
+            if !periodText.isEmpty && !timeText.isEmpty {
+                return "\(periodText) • \(timeText)"
+            }
+            return chapter.boundaryDescription.isEmpty ? "Game action" : chapter.boundaryDescription
+        }
+    }
+
+    /// Get start score from plays
+    private func deriveStartScore(from plays: [PlayEntry]) -> ScoreSnapshot {
+        if let firstPlay = plays.first {
+            return ScoreSnapshot(home: firstPlay.homeScore ?? 0, away: firstPlay.awayScore ?? 0)
+        }
+        return ScoreSnapshot(home: 0, away: 0)
+    }
+
+    /// Get end score from plays
+    private func deriveEndScore(from plays: [PlayEntry]) -> ScoreSnapshot {
+        if let lastPlay = plays.last {
+            return ScoreSnapshot(home: lastPlay.homeScore ?? 0, away: lastPlay.awayScore ?? 0)
+        }
+        return ScoreSnapshot(home: 0, away: 0)
+    }
+
+    /// Generate notes from chapter data
+    private func deriveNotes(from chapter: ChapterEntry, playCount: Int) -> [String] {
+        var notes: [String] = []
+        let count = playCount > 0 ? playCount : chapter.playCount
+        if count > 0 {
+            notes.append("\(count) plays")
+        }
+        if !chapter.reasonCodes.isEmpty {
+            notes.append(chapter.boundaryDescription)
+        }
+        return notes
+    }
+
+    /// Chapters from game story response (structural divisions)
+    var chapters: [ChapterEntry] {
+        gameStory?.chapters ?? []
+    }
+
+    /// Highlight sections (sections with notable beat types)
+    var highlightSections: [SectionEntry] {
+        sections.filter { $0.isHighlight }
+    }
+
+    /// Compact story narrative (single AI-generated game recap)
+    var compactStory: String? {
+        gameStory?.compactStory
+    }
+
+    /// Story quality level
+    var storyQuality: StoryQuality? {
+        gameStory?.quality
+    }
+
+    /// Sections grouped by period (derived from chapters)
+    var sectionsByPeriod: [Int: [SectionEntry]] {
+        var result: [Int: [SectionEntry]] = [:]
+        for section in sections {
+            if let firstChapterId = section.chaptersIncluded.first,
+               let chapter = chapters.first(where: { $0.chapterId == firstChapterId }),
+               let period = chapter.period {
+                result[period, default: []].append(section)
+            } else {
+                result[1, default: []].append(section)
+            }
+        }
+        return result
+    }
+
+    /// Get plays for a section by looking up its chapters
+    func playsForSection(_ section: SectionEntry) -> [PlayEntry] {
+        let allPlays = detail?.plays ?? []
+        var plays: [PlayEntry] = []
+        for chapterId in section.chaptersIncluded {
+            if let chapter = chapters.first(where: { $0.chapterId == chapterId }) {
+                let chapterPlays = getPlaysForChapter(chapter, from: allPlays)
+                plays.append(contentsOf: chapterPlays)
+            }
+        }
+        return plays.sorted { $0.playIndex < $1.playIndex }
+    }
+
+    /// Get unified timeline events for a section
+    func unifiedEventsForSection(_ section: SectionEntry) -> [UnifiedTimelineEvent] {
+        let sectionPlays = playsForSection(section)
+        return sectionPlays.enumerated().map { index, play in
+            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+        }
+    }
+
+    /// Whether story data is available
+    var hasStoryData: Bool {
+        let loaded = storyState == .loaded
+        let hasSections = !sections.isEmpty
+        let chapterCount = gameStory?.chapters.count ?? 0
+        let sectionCount = sections.count
+        print("📖 hasStoryData: loaded=\(loaded), sectionCount=\(sectionCount), chapterCount=\(chapterCount)")
+        return loaded && hasSections
+    }
+
+    /// Load story from Chapters-First Story API
+    func loadStory(gameId: Int, service: GameService) async {
+        print("📖 loadStory called for gameId=\(gameId), current state=\(storyState)")
+        switch storyState {
         case .loaded, .loading:
+            print("📖 loadStory skipping - already \(storyState)")
             return
         case .idle, .failed:
             break
         }
-        
-        momentsState = .loading
-        
+
+        storyState = .loading
+
         do {
-            let response = try await service.fetchMoments(gameId: gameId)
-            momentsState = .loaded
-            logger.info("Loaded \(response.moments.count) moments from endpoint (\(response.highlightCount) highlights)")
+            let response = try await service.fetchStory(gameId: gameId)
+            gameStory = response
+            storyState = .loaded
+            print("📖 Loaded story: \(response.sectionCount) API sections, \(response.chapterCount) chapters, compact_story=\(response.compactStory != nil)")
+            let chapterDetail = response.chapters.map { "ch\($0.index):plays=\($0.plays.count)" }.joined(separator: ", ")
+            print("📖 Chapters detail: \(chapterDetail)")
         } catch {
-            logger.error("Moments endpoint failed: \(error.localizedDescription, privacy: .public)")
-            momentsState = .failed(error.localizedDescription)
+            print("📖 Story API failed: \(error.localizedDescription)")
+            storyState = .failed(error.localizedDescription)
         }
     }
-    
-    // MARK: - Moments Computed Properties
-    
-    /// Highlight moments (notable moments only)
-    /// Use for showing key moments in compressed views
-    var highlightMoments: [Moment] {
-        moments.filter { $0.isNotable }
-    }
-    
-    /// Moments grouped by quarter
-    /// Uses the quarter parsed from the clock field
-    var momentsByQuarter: [Int: [Moment]] {
-        Dictionary(grouping: moments) { $0.quarter ?? 1 }
-    }
-    
-    /// Get plays for a specific moment
-    /// Returns plays where playIndex is within the moment's start_play...end_play range
-    func playsForMoment(_ moment: Moment) -> [PlayEntry] {
-        let plays = detail?.plays ?? []
-        return plays.filter { $0.playIndex >= moment.startPlay && $0.playIndex <= moment.endPlay }
-            .sorted { $0.playIndex < $1.playIndex }
-    }
-    
-    /// Get unified timeline events for a specific moment
-    /// Returns events where the play index is within the moment's range
-    func unifiedEventsForMoment(_ moment: Moment) -> [UnifiedTimelineEvent] {
-        // Get plays for the moment range
-        let momentPlays = playsForMoment(moment)
-        
-        // Convert to unified events
-        return momentPlays.enumerated().map { index, play in
-            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
-        }
-    }
-    
-    /// Whether moments data is available
-    var hasMoments: Bool {
-        !moments.isEmpty
-    }
-    
+
     /// Get social posts filtered by reveal level
-    /// CRITICAL: Respects outcome visibility preference
     var filteredSocialPosts: [SocialPostResponse] {
         socialPosts.filter { $0.isSafeToShow(outcomeRevealed: isOutcomeRevealed) }
     }
-    
+
     /// Enable social tab and load posts
     func enableSocialTab(gameId: Int, service: GameService) async {
         isSocialTabEnabled = true
-        // Persist preference
         UserDefaults.standard.set(true, forKey: socialTabEnabledKey(for: gameId))
-        // Load posts
         await loadSocialPosts(gameId: gameId, service: service)
     }
-    
+
     /// Load social tab preference
     func loadSocialTabPreference(for gameId: Int) {
-        // Default is false (social tab disabled)
         isSocialTabEnabled = UserDefaults.standard.bool(forKey: socialTabEnabledKey(for: gameId))
     }
-    
+
     private func socialTabEnabledKey(for gameId: Int) -> String {
         "game.socialTabEnabled.\(gameId)"
     }
@@ -295,26 +440,19 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     /// Game context - why this game matters
-    /// Returns nil if context is unavailable (section will be hidden)
     var gameContext: String? {
         guard let game = detail?.game else {
             return nil
         }
-        
-        // For now, provide basic context based on teams and league
-        // In the future, backend could provide richer context (rivalry, rankings, etc.)
+
         let context = generateBasicContext(for: game)
-        
-        // Only return context if it's meaningful
         return context.isEmpty ? nil : context
     }
-    
+
     /// Generate basic context from available game data
-    /// CRITICAL: Context must be neutral and non-conclusive
     private func generateBasicContext(for game: Game) -> String {
         var contextParts: [String] = []
-        
-        // League context
+
         switch game.leagueCode {
         case "NBA":
             contextParts.append("NBA matchup")
@@ -325,11 +463,9 @@ final class GameDetailViewModel: ObservableObject {
         default:
             contextParts.append("\(game.leagueCode) game")
         }
-        
-        // Team matchup
+
         contextParts.append("featuring \(game.awayTeam) at \(game.homeTeam)")
-        
-        // Status context (non-conclusive)
+
         switch game.status {
         case .scheduled:
             if let date = game.parsedGameDate {
@@ -344,7 +480,7 @@ final class GameDetailViewModel: ObservableObject {
         default:
             break
         }
-        
+
         return contextParts.joined(separator: ", ") + "."
     }
 
@@ -365,36 +501,33 @@ final class GameDetailViewModel: ObservableObject {
         detail?.socialPosts.filter { $0.hasVideo || $0.imageUrl != nil } ?? []
     }
 
-    // MARK: - Unified Timeline (Single Source of Truth)
-    
+    // MARK: - Unified Timeline
+
     /// Unified timeline events - merges plays (with scores) and social posts
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
         var events: [UnifiedTimelineEvent] = []
-        
-        // Get PBP events from detail.plays (which has scores)
+
         let plays = detail?.plays ?? []
         let pbpEvents = plays.enumerated().map { index, play in
             UnifiedTimelineEvent(from: playToDictionary(play), index: index)
         }
         events.append(contentsOf: pbpEvents)
-        
-        // Get social/tweet events from timeline artifact if available
+
         if let timelineValue = timelineArtifact?.timelineJson?.value {
             let rawEvents = extractTimelineEvents(from: timelineValue)
             let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
                 let eventType = dict["event_type"] as? String
-                // Only include tweet events from artifact (PBP comes from detail.plays)
                 guard eventType == "tweet" else { return nil }
                 return UnifiedTimelineEvent(from: dict, index: plays.count + index)
             }
             events.append(contentsOf: tweetEvents)
         }
-        
+
         return events
     }
-    
+
     /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
-    private func playToDictionary(_ play: PlayEntry) -> [String: Any] {
+    func playToDictionary(_ play: PlayEntry) -> [String: Any] {
         var dict: [String: Any] = [
             "event_type": "pbp",
             "play_index": play.playIndex
@@ -409,7 +542,7 @@ final class GameDetailViewModel: ObservableObject {
         if let playType = play.playType { dict["play_type"] = playType.rawValue }
         return dict
     }
-    
+
     /// Whether timeline data is available from timeline_json
     var hasUnifiedTimeline: Bool {
         !unifiedTimelineEvents.isEmpty
@@ -435,38 +568,32 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     /// Summary state derived from timeline artifact
-    /// Summaries are pre-generated server-side - no async loading, retry, or client-side generation
     var summaryState: SummaryState {
-        // Extract summary from timeline artifact's summary_json
-        // If missing, return unavailable - no client-side fallback generation
         if let summaryText = extractSummaryFromArtifact() {
             return .available(summaryText)
         }
         return .unavailable
     }
-    
+
     /// Extract narrative summary from timeline artifact's summary_json
     private func extractSummaryFromArtifact() -> String? {
         guard let summaryJson = timelineArtifact?.summaryJson,
               let dict = summaryJson.value as? [String: Any] else {
             return nil
         }
-        
-        // Try "overall" key first (standard format)
+
         if let overall = dict["overall"] as? String {
             return sanitizeSummary(overall)
         }
-        
-        // Try "summary" key (alternative format)
+
         if let summary = dict["summary"] as? String {
             return sanitizeSummary(summary)
         }
-        
-        // If it's just a string value directly
+
         if let directSummary = summaryJson.value as? String {
             return sanitizeSummary(directSummary)
         }
-        
+
         return nil
     }
 
@@ -550,26 +677,22 @@ final class GameDetailViewModel: ObservableObject {
     var teamStats: [TeamStat] {
         detail?.teamStats ?? []
     }
-    
+
     // MARK: - Pre/Post Game Tweet Helpers
-    
+
     /// Pre-game tweets (tweets before the first PBP event)
     var pregameTweets: [UnifiedTimelineEvent] {
         guard let firstPbpIndex = unifiedTimelineEvents.firstIndex(where: { $0.eventType == .pbp }) else {
-            // No PBP events, all period-less tweets are pre-game
             return unifiedTimelineEvents.filter { $0.eventType == .tweet && $0.period == nil }
         }
-        // Tweets before the first PBP event
         return Array(unifiedTimelineEvents.prefix(upTo: firstPbpIndex)).filter { $0.eventType == .tweet }
     }
-    
+
     /// Post-game tweets (tweets after the last PBP event)
     var postGameTweets: [UnifiedTimelineEvent] {
         guard let lastPbpIndex = unifiedTimelineEvents.lastIndex(where: { $0.eventType == .pbp }) else {
-            // No PBP events, no post-game tweets
             return []
         }
-        // Tweets after the last PBP event
         let afterLastPbp = unifiedTimelineEvents.suffix(from: unifiedTimelineEvents.index(after: lastPbpIndex))
         return Array(afterLastPbp).filter { $0.eventType == .tweet }
     }

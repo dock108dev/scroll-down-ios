@@ -7,19 +7,19 @@ protocol GameService {
     /// - Parameter id: The game ID
     /// - Returns: Full game detail response
     func fetchGame(id: Int) async throws -> GameDetailResponse
-    
+
     /// Fetch list of games for a snapshot range.
     /// - Parameters:
     ///   - range: Backend-defined time window
     ///   - league: Optional league filter
     /// - Returns: Game list response with summaries
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse
-    
+
     /// Fetch play-by-play events for a game
     /// - Parameter gameId: The game ID
     /// - Returns: PBP response with events
     func fetchPbp(gameId: Int) async throws -> PbpResponse
-    
+
     /// Fetch social posts for a game
     /// - Parameter gameId: The game ID
     /// - Returns: Social post list response
@@ -34,43 +34,11 @@ protocol GameService {
     /// - Parameter gameId: The game ID
     /// - Returns: Related post list response
     func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse
-    
-    /// Fetch moments for a game
-    /// Moments partition the entire game timeline - every play belongs to exactly one moment
+
+    /// Fetch game story (chapters, sections, narrative)
     /// - Parameter gameId: The game ID
-    /// - Returns: Moments response with all moments for the game
-    func fetchMoments(gameId: Int) async throws -> MomentsResponse
-    
-    /// Fetch compact timeline for efficient app display
-    /// - Parameters:
-    ///   - gameId: The game ID
-    ///   - level: Detail level (1=notable moments only, 2=standard, 3=detailed)
-    /// - Returns: Compact timeline response
-    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse
-}
-
-// MARK: - Compact Timeline
-
-/// Detail level for compact timeline requests
-enum CompactTimelineLevel: Int {
-    case notable = 1   // Notable moments only (fastest)
-    case standard = 2  // Standard detail
-    case detailed = 3  // Full detail
-}
-
-/// Response from compact timeline endpoint
-struct CompactTimelineResponse: Codable {
-    let gameId: Int
-    let level: Int
-    let moments: [Moment]
-    let generatedAt: String
-    
-    enum CodingKeys: String, CodingKey {
-        case gameId = "game_id"
-        case level
-        case moments
-        case generatedAt = "generated_at"
-    }
+    /// - Returns: Game story response with chapters, sections, and compact narrative
+    func fetchStory(gameId: Int) async throws -> GameStoryResponse
 }
 
 // MARK: - Reveal Level
@@ -87,7 +55,7 @@ enum GameServiceError: LocalizedError {
     case networkError(Error)
     case decodingError(Error)
     case notImplemented
-    
+
     var errorDescription: String? {
         switch self {
         case .notFound:

@@ -12,19 +12,17 @@ struct GameDetailView: View {
     @State var selectedSection: GameSection = .overview
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
-    // Moments-based timeline state
-    @State var collapsedMoments: Set<String> = []
-    @State var hasInitializedMoments = false
+    // Story sections state
+    @State var collapsedSections: Set<Int> = []
+    @State var hasInitializedSections = false
+    @State var isCompactStoryExpanded = false
     // Default expansion states per spec
     @State var isOverviewExpanded = true
-    // NOTE: isPreGameExpanded removed - preGameSection deprecated
     @State var isTimelineExpanded = true
     @State var isPlayerStatsExpanded = false
     @State var playerStatsTeamFilter: String? = nil  // nil = all teams
     @State var isTeamStatsExpanded = false
     @State var isWrapUpExpanded = false
-    // NOTE: Removed legacy compact view state (isCompactSummaryExpanded, isCompactTimelineExpanded, 
-    // isCompactPostsExpanded, selectedCompactMoment) - compact mode now affects layout density only
     @State var playRowFrames: [Int: CGRect] = [:]
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
@@ -74,13 +72,13 @@ struct GameDetailView: View {
             if !viewModel.isUnavailable {
                 // Load user preferences
                 viewModel.loadSocialTabPreference(for: gameId)
-                
+
                 // Load timeline artifact (contains summary_json)
                 await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
-                
-                // Load moments (partitioned timeline segments)
-                await viewModel.loadMoments(gameId: gameId, service: appConfig.gameService)
-                
+
+                // Load story (chapters + sections + narrative)
+                await viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
+
                 // Load social posts if enabled
                 if viewModel.isSocialTabEnabled {
                     await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
@@ -162,11 +160,9 @@ struct GameDetailView: View {
                             pregameSection
                                 .id(GameSection.overview)
                                 .background(sectionFrameTracker(for: .overview))
-                            // NOTE: preGameSection removed - social posts now come from timeline_json
                             timelineSection(using: proxy)
                                 .id(GameSection.timeline)
                                 .background(sectionFrameTracker(for: .timeline))
-                            // NOTE: socialSection removed - tweets are now integrated into unified timeline
                             playerStatsSection(viewModel.playerStats)
                                 .id(GameSection.playerStats)
                                 .background(sectionFrameTracker(for: .playerStats))
@@ -250,10 +246,6 @@ struct GameDetailView: View {
         }
     }
 
-    // NOTE: Legacy compactContentView deleted
-    // Compact mode is now implemented as layout density changes in standardContentView
-    // The old view hid sections instead of just changing layout, violating the principle
-    // that compact mode should only affect presentation, not content
 }
 
 #Preview {

@@ -257,202 +257,225 @@ final class MockGameService: GameService {
         return MockLoader.load("related-posts")
     }
 
-    func fetchMoments(gameId: Int) async throws -> MomentsResponse {
+    func fetchStory(gameId: Int) async throws -> GameStoryResponse {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-        
-        // Generate moments from game detail if available
+
+        // Generate story from game detail if available
         if let detail = gameCache[gameId] {
-            return generateMoments(from: detail, gameId: gameId)
+            return generateStory(from: detail, gameId: gameId)
         }
-        
+
         // Try to generate detail if not in cache
         if let gameSummary = findGameSummary(for: gameId) {
             let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
             gameCache[gameId] = detail
-            return generateMoments(from: detail, gameId: gameId)
+            return generateStory(from: detail, gameId: gameId)
         }
-        
-        return MomentsResponse(
+
+        // Return minimal response if no game data
+        return GameStoryResponse(
             gameId: gameId,
+            sport: "NBA",
+            storyVersion: "2.0.0",
+            chapters: [],
+            chapterCount: 0,
+            totalPlays: 0,
+            sections: [],
+            sectionCount: 0,
+            compactStory: nil,
+            wordCount: nil,
+            targetWordCount: nil,
+            quality: nil,
+            readingTimeEstimateMinutes: nil,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
-            moments: [],
-            totalCount: 0,
-            gameHeadline: nil,
-            gameSubhead: nil
+            hasCompactStory: false,
+            metadata: nil
         )
     }
-    
-    func fetchCompactTimeline(gameId: Int, level: CompactTimelineLevel) async throws -> CompactTimelineResponse {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-        
-        // Get full moments first
-        let momentsResponse = try await fetchMoments(gameId: gameId)
-        
-        // Filter based on level
-        let filteredMoments: [Moment]
-        switch level {
-        case .notable:
-            filteredMoments = momentsResponse.moments.filter { $0.isNotable }
-        case .standard:
-            filteredMoments = momentsResponse.moments
-        case .detailed:
-            filteredMoments = momentsResponse.moments
-        }
-        
-        return CompactTimelineResponse(
-            gameId: gameId,
-            level: level.rawValue,
-            moments: filteredMoments,
-            generatedAt: momentsResponse.generatedAt ?? ISO8601DateFormatter().string(from: Date())
-        )
-    }
-    
-    /// Generate moments from game detail
-    /// Partitions plays into meaningful segments based on scoring patterns
-    private func generateMoments(from detail: GameDetailResponse, gameId: Int) -> MomentsResponse {
+
+    /// Generate game story from game detail (Chapters-First Story API)
+    private func generateStory(from detail: GameDetailResponse, gameId: Int) -> GameStoryResponse {
         let plays = detail.plays
-        guard !plays.isEmpty else {
-            return MomentsResponse(
-                gameId: gameId,
-                generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
-                moments: [],
-                totalCount: 0,
-                gameHeadline: nil,
-                gameSubhead: nil
-            )
-        }
-        
-        var moments: [Moment] = []
+        let game = detail.game
+
+        // Generate chapters from plays (group by period boundaries)
+        let chapters = generateChapters(from: plays)
+
+        // Generate sections from chapters (3-10 narrative beats)
+        let sections = generateSections(from: chapters, game: game)
+
+        // Generate compact story narrative
+        let compactStory = generateCompactStory(sections: sections, game: game)
+        let wordCount = compactStory?.split(separator: " ").count
+
+        // Determine quality based on game characteristics
+        let quality: StoryQuality = {
+            let highlightCount = sections.filter { $0.isHighlight }.count
+            if highlightCount >= 4 { return .high }
+            if highlightCount >= 2 { return .medium }
+            return .low
+        }()
+
+        return GameStoryResponse(
+            gameId: gameId,
+            sport: game.leagueCode,
+            storyVersion: "2.0.0",
+            chapters: chapters,
+            chapterCount: chapters.count,
+            totalPlays: plays.count,
+            sections: sections,
+            sectionCount: sections.count,
+            compactStory: compactStory,
+            wordCount: wordCount,
+            targetWordCount: quality.targetWordCount,
+            quality: quality,
+            readingTimeEstimateMinutes: Double(wordCount ?? 0) / 200.0,
+            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            hasCompactStory: compactStory != nil,
+            metadata: nil
+        )
+    }
+
+    /// Generate chapters from plays (structural divisions by period)
+    private func generateChapters(from plays: [PlayEntry]) -> [ChapterEntry] {
+        guard !plays.isEmpty else { return [] }
+
+        var chapters: [ChapterEntry] = []
         let playsByQuarter = Dictionary(grouping: plays, by: { $0.quarter ?? 1 })
         let sortedQuarters = playsByQuarter.keys.sorted()
-        
-        // Get team info from game
-        let homeTeam = detail.game.homeTeam
-        let awayTeam = detail.game.awayTeam
-        
+
         for quarter in sortedQuarters {
             guard let quarterPlays = playsByQuarter[quarter]?.sorted(by: { $0.playIndex < $1.playIndex }) else {
                 continue
             }
-            
-            // Generate 2-4 moments per quarter
-            let momentCount = min(4, max(2, quarterPlays.count / 15))
-            let playsPerMoment = quarterPlays.count / momentCount
-            
-            for momentIndex in 0..<momentCount {
-                let startIndex = momentIndex * playsPerMoment
-                let endIndex = (momentIndex == momentCount - 1) ? quarterPlays.count - 1 : (momentIndex + 1) * playsPerMoment - 1
-                
+
+            // Create 2-3 chapters per quarter (split by timeouts/breaks)
+            let chapterCount = min(3, max(2, quarterPlays.count / 20))
+            let playsPerChapter = quarterPlays.count / chapterCount
+
+            for chapterIndex in 0..<chapterCount {
+                let startIndex = chapterIndex * playsPerChapter
+                let endIndex = (chapterIndex == chapterCount - 1) ? quarterPlays.count - 1 : (chapterIndex + 1) * playsPerChapter - 1
+
                 guard startIndex <= endIndex && startIndex < quarterPlays.count else { continue }
-                
-                let momentPlays = Array(quarterPlays[startIndex...min(endIndex, quarterPlays.count - 1)])
-                guard let firstPlay = momentPlays.first, let lastPlay = momentPlays.last else { continue }
-                
-                // Determine moment type based on scoring pattern
-                let (momentType, isNotable, isPeriodStart, note, primaryTeam, teamInControl) = determineMomentType(
-                    plays: momentPlays,
-                    quarter: quarter,
-                    momentIndex: momentIndex,
-                    isLastMoment: momentIndex == momentCount - 1,
-                    homeTeam: homeTeam,
-                    awayTeam: awayTeam
+
+                let chapterPlays = Array(quarterPlays[startIndex...min(endIndex, quarterPlays.count - 1)])
+                guard let firstPlay = chapterPlays.first, let lastPlay = chapterPlays.last else { continue }
+
+                let reasonCodes: [String] = {
+                    var codes: [String] = []
+                    if chapterIndex == 0 { codes.append("period_start") }
+                    if chapterIndex == chapterCount - 1 { codes.append("period_end") }
+                    if chapterPlays.count > 15 { codes.append("timeout") }
+                    return codes
+                }()
+
+                let timeRange: TimeRange? = {
+                    if let start = firstPlay.gameClock, let end = lastPlay.gameClock {
+                        return TimeRange(start: start, end: end)
+                    }
+                    return nil
+                }()
+
+                let chapter = ChapterEntry(
+                    chapterId: "ch_q\(quarter)_\(chapterIndex)",
+                    index: chapters.count,
+                    playStartIdx: firstPlay.playIndex,
+                    playEndIdx: lastPlay.playIndex,
+                    playCount: chapterPlays.count,
+                    reasonCodes: reasonCodes,
+                    period: quarter,
+                    timeRange: timeRange,
+                    plays: chapterPlays
                 )
-                
-                // Extract player contributions
-                let players = extractPlayerContributions(from: momentPlays)
-                
-                // Build clock string
-                let startClock = firstPlay.gameClock ?? "12:00"
-                let endClock = lastPlay.gameClock ?? "0:00"
-                let clockString = "Q\(quarter) \(startClock)-\(endClock)"
-                
-                // Build score strings
-                let scoreStart = formatScore(home: firstPlay.homeScore, away: firstPlay.awayScore)
-                let scoreEnd = formatScore(home: lastPlay.homeScore, away: lastPlay.awayScore)
-                
-                // Get teams involved
-                let teams = Array(Set(momentPlays.compactMap { $0.teamAbbreviation }))
-                
-                let moment = Moment(
-                    id: "m_q\(quarter)_\(momentIndex)",
-                    type: momentType,
-                    startPlay: firstPlay.playIndex,
-                    endPlay: lastPlay.playIndex,
-                    playCount: momentPlays.count,
-                    teams: teams,
-                    primaryTeam: primaryTeam,
-                    players: players,
-                    scoreStart: scoreStart,
-                    scoreEnd: scoreEnd,
-                    clock: clockString,
-                    isNotable: isNotable,
-                    isPeriodStart: isPeriodStart,
-                    note: note,
-                    runInfo: nil,
-                    ladderTierBefore: nil,
-                    ladderTierAfter: nil,
-                    teamInControl: teamInControl,
-                    keyPlayIds: nil
-                )
-                moments.append(moment)
+                chapters.append(chapter)
             }
         }
-        
-        return MomentsResponse(
-            gameId: gameId,
-            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
-            moments: moments,
-            totalCount: moments.count,
-            gameHeadline: nil,
-            gameSubhead: nil
-        )
+
+        return chapters
     }
-    
-    /// Determines moment type, notable status, and note
-    /// Returns: (type, isNotable, isPeriodStart, note, primaryTeam, teamInControl)
-    private func determineMomentType(
+
+    /// Generate sections from chapters (3-10 narrative beats)
+    private func generateSections(from chapters: [ChapterEntry], game: Game) -> [SectionEntry] {
+        guard !chapters.isEmpty else { return [] }
+
+        var sections: [SectionEntry] = []
+        let homeTeam = game.homeTeam
+        let awayTeam = game.awayTeam
+
+        // Group chapters into 3-8 sections based on scoring patterns
+        let targetSectionCount = min(8, max(3, chapters.count / 2))
+        let chaptersPerSection = max(1, chapters.count / targetSectionCount)
+
+        for sectionIndex in 0..<targetSectionCount {
+            let startChapterIndex = sectionIndex * chaptersPerSection
+            let endChapterIndex = min((sectionIndex + 1) * chaptersPerSection - 1, chapters.count - 1)
+
+            guard startChapterIndex <= endChapterIndex else { continue }
+
+            let sectionChapters = Array(chapters[startChapterIndex...endChapterIndex])
+            let chapterIds = sectionChapters.map { $0.chapterId }
+
+            // Get all plays in this section
+            let sectionPlays = sectionChapters.flatMap { $0.plays }
+            guard let firstPlay = sectionPlays.first, let lastPlay = sectionPlays.last else { continue }
+
+            // Calculate scores
+            let startScore = ScoreSnapshot(
+                home: firstPlay.homeScore ?? 0,
+                away: firstPlay.awayScore ?? 0
+            )
+            let endScore = ScoreSnapshot(
+                home: lastPlay.homeScore ?? 0,
+                away: lastPlay.awayScore ?? 0
+            )
+
+            // Determine beat type and generate header/notes
+            let (beatType, header, notes) = determineBeatType(
+                plays: sectionPlays,
+                sectionIndex: sectionIndex,
+                totalSections: targetSectionCount,
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                startScore: startScore,
+                endScore: endScore
+            )
+
+            let section = SectionEntry(
+                sectionIndex: sectionIndex,
+                beatType: beatType,
+                header: header,
+                chaptersIncluded: chapterIds,
+                startScore: startScore,
+                endScore: endScore,
+                notes: notes
+            )
+            sections.append(section)
+        }
+
+        return sections
+    }
+
+    /// Determine beat type, header, and notes for a section
+    private func determineBeatType(
         plays: [PlayEntry],
-        quarter: Int,
-        momentIndex: Int,
-        isLastMoment: Bool,
-        homeTeam: String?,
-        awayTeam: String?
-    ) -> (MomentType, Bool, Bool, String?, String?, String?) {
-        // Track which team is scoring more in this segment
-        var homePoints = 0
-        var awayPoints = 0
-        var lastHomeScore = plays.first?.homeScore ?? 0
-        var lastAwayScore = plays.first?.awayScore ?? 0
-        
-        for play in plays {
-            if let home = play.homeScore, let away = play.awayScore {
-                homePoints += home - lastHomeScore
-                awayPoints += away - lastAwayScore
-                lastHomeScore = home
-                lastAwayScore = away
-            }
-        }
-        
-        let primaryTeam = homePoints > awayPoints ? homeTeam : (awayPoints > homePoints ? awayTeam : nil)
-        let teamInControl: String? = {
-            if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore {
-                if lastHome > lastAway { return "home" }
-                if lastAway > lastHome { return "away" }
-            }
-            return nil
-        }()
-        
-        // Last moment of Q4 or OT is CLOSING_CONTROL
-        if (quarter >= 4) && isLastMoment {
-            return (.closingControl, true, false, "Closing time", primaryTeam, teamInControl)
-        }
-        
-        // First moment of a period - use isPeriodStart flag, not a special type
-        let isPeriodStart = momentIndex == 0
-        
-        // Check for lead changes (FLIP)
+        sectionIndex: Int,
+        totalSections: Int,
+        homeTeam: String,
+        awayTeam: String,
+        startScore: ScoreSnapshot,
+        endScore: ScoreSnapshot
+    ) -> (BeatType, String, [String]) {
+        var notes: [String] = []
+
+        // Calculate scoring differential
+        let homeScored = endScore.home - startScore.home
+        let awayScored = endScore.away - startScore.away
+        let scoringTeam = homeScored > awayScored ? homeTeam : awayTeam
+        let leadingTeam = endScore.home > endScore.away ? homeTeam : awayTeam
+
+        // Check for lead changes
         var leadChanges = 0
         var lastLead: Int? = nil
         for play in plays {
@@ -464,122 +487,144 @@ final class MockGameService: GameService {
                 lastLead = currentLead
             }
         }
-        
-        if leadChanges >= 1 {
-            return (.flip, true, isPeriodStart, "Lead changes hands", primaryTeam, teamInControl)
-        }
-        
-        // Check for scoring runs (8+ point swing)
-        var homeRun = 0
-        var awayRun = 0
-        lastHomeScore = plays.first?.homeScore ?? 0
-        lastAwayScore = plays.first?.awayScore ?? 0
-        
+
+        // Check for scoring runs
+        var maxRun = 0
+        var currentRun = 0
+        var runTeam = ""
+        var lastHome = startScore.home
+        var lastAway = startScore.away
+
         for play in plays {
             if let home = play.homeScore, let away = play.awayScore {
-                let homeDelta = home - lastHomeScore
-                let awayDelta = away - lastAwayScore
-                
+                let homeDelta = home - lastHome
+                let awayDelta = away - lastAway
+
                 if homeDelta > 0 && awayDelta == 0 {
-                    homeRun += homeDelta
-                    awayRun = 0
-                } else if awayDelta > 0 && homeDelta == 0 {
-                    awayRun += awayDelta
-                    homeRun = 0
-                }
-                
-                lastHomeScore = home
-                lastAwayScore = away
-            }
-        }
-        
-        if homeRun >= 8 || awayRun >= 8 {
-            let runPoints = max(homeRun, awayRun)
-            // Determine if building lead or cutting deficit
-            if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore {
-                let leadingTeamScoring = (homeRun >= 8 && firstHome > firstAway) || (awayRun >= 8 && firstAway > firstHome)
-                if leadingTeamScoring {
-                    return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run extends lead", primaryTeam, teamInControl)
-                } else {
-                    return (.cut, true, isPeriodStart, "\(runPoints)-0 run cuts deficit", primaryTeam, teamInControl)
-                }
-            }
-            return (.leadBuild, true, isPeriodStart, "\(runPoints)-0 run", primaryTeam, teamInControl)
-        }
-        
-        // Check for tie
-        if let lastHome = plays.last?.homeScore, let lastAway = plays.last?.awayScore, lastHome == lastAway {
-            if let firstHome = plays.first?.homeScore, let firstAway = plays.first?.awayScore, firstHome != firstAway {
-                return (.tie, true, isPeriodStart, "Game tied", nil, nil)
-            }
-        }
-        
-        // First moment of game gets a note
-        if isPeriodStart && quarter == 1 {
-            return (.neutral, true, true, "Game starts", primaryTeam, teamInControl)
-        }
-        
-        // Default to NEUTRAL
-        return (.neutral, false, isPeriodStart, nil, primaryTeam, teamInControl)
-    }
-    
-    private func extractPlayerContributions(from plays: [PlayEntry]) -> [PlayerContribution] {
-        var playerStats: [String: [String: Int]] = [:]
-        
-        for play in plays {
-            guard let playerName = play.playerName else { continue }
-            
-            if playerStats[playerName] == nil {
-                playerStats[playerName] = [:]
-            }
-            
-            // Check if this was a scoring play based on description
-            if let desc = play.description?.lowercased() {
-                if desc.contains("makes") {
-                    if desc.contains("3-pt") || desc.contains("three") {
-                        playerStats[playerName]?["pts", default: 0] += 3
-                    } else if desc.contains("free throw") {
-                        playerStats[playerName]?["pts", default: 0] += 1
+                    if runTeam == homeTeam {
+                        currentRun += homeDelta
                     } else {
-                        playerStats[playerName]?["pts", default: 0] += 2
+                        currentRun = homeDelta
+                        runTeam = homeTeam
                     }
+                } else if awayDelta > 0 && homeDelta == 0 {
+                    if runTeam == awayTeam {
+                        currentRun += awayDelta
+                    } else {
+                        currentRun = awayDelta
+                        runTeam = awayTeam
+                    }
+                } else {
+                    currentRun = 0
                 }
-                if desc.contains("assist") {
-                    playerStats[playerName]?["ast", default: 0] += 1
-                }
-                if desc.contains("steal") {
-                    playerStats[playerName]?["stl", default: 0] += 1
-                }
-                if desc.contains("block") {
-                    playerStats[playerName]?["blk", default: 0] += 1
-                }
+
+                maxRun = max(maxRun, currentRun)
+                lastHome = home
+                lastAway = away
             }
         }
-        
-        // Convert to PlayerContribution and sort by points
-        return playerStats
-            .map { name, stats in
-                let summary = formatPlayerSummary(stats)
-                return PlayerContribution(name: name, stats: stats, summary: summary)
+
+        // Determine beat type based on patterns
+        let beatType: BeatType
+        var header: String
+
+        // Last section is CLOSING_SEQUENCE
+        if sectionIndex == totalSections - 1 {
+            beatType = .closingSequence
+            header = "\(leadingTeam) close out the game."
+            notes.append("Final stretch of play")
+        }
+        // High lead changes = BACK_AND_FORTH
+        else if leadChanges >= 2 {
+            beatType = .backAndForth
+            header = "Teams trade the lead in competitive stretch."
+            notes.append("\(leadChanges) lead changes")
+        }
+        // Big scoring run = RUN
+        else if maxRun >= 8 {
+            beatType = .run
+            header = "\(runTeam) go on a \(maxRun)-0 run."
+            notes.append("\(maxRun) unanswered points")
+        }
+        // Early section with fast scoring = FAST_START
+        else if sectionIndex == 0 && (homeScored + awayScored) > 20 {
+            beatType = .fastStart
+            header = "Both teams come out firing."
+            notes.append("High-scoring start")
+        }
+        // Tied score = BACK_AND_FORTH
+        else if endScore.home == endScore.away {
+            beatType = .backAndForth
+            header = "Score tied after back-and-forth play."
+            notes.append("Even matchup")
+        }
+        // One team clearly winning segment = EARLY_CONTROL
+        else if abs(homeScored - awayScored) >= 8 {
+            beatType = .earlyControl
+            header = "\(scoringTeam) take control."
+            notes.append("\(scoringTeam) outscore opponents \(max(homeScored, awayScored))-\(min(homeScored, awayScored))")
+        }
+        // Low scoring = STALL
+        else if (homeScored + awayScored) < 10 {
+            beatType = .stall
+            header = "Scoring slows as defenses tighten."
+            notes.append("Defensive stretch")
+        }
+        // Default = BACK_AND_FORTH
+        else {
+            beatType = .backAndForth
+            header = "Teams trade baskets."
+            notes.append("Competitive play continues")
+        }
+
+        // Add score note
+        notes.append("Score: \(endScore.away)-\(endScore.home)")
+
+        return (beatType, header, notes)
+    }
+
+    /// Generate compact story narrative from sections
+    private func generateCompactStory(sections: [SectionEntry], game: Game) -> String? {
+        guard !sections.isEmpty else { return nil }
+
+        var story = "\(game.awayTeam) visited \(game.homeTeam) in a "
+
+        let highlightCount = sections.filter { $0.isHighlight }.count
+        if highlightCount >= 3 {
+            story += "thrilling contest"
+        } else if highlightCount >= 1 {
+            story += "competitive matchup"
+        } else {
+            story += "regular season game"
+        }
+
+        story += ". "
+
+        // Add section summaries
+        for section in sections {
+            switch section.beatType {
+            case .fastStart:
+                story += "The game started fast with both teams trading baskets early. "
+            case .run:
+                story += "\(section.header) "
+            case .closingSequence:
+                story += "In the closing minutes, the outcome was decided. "
+            case .backAndForth:
+                if section.sectionIndex == sections.count / 2 {
+                    story += "The middle portion saw neither team able to pull away. "
+                }
+            case .crunchSetup:
+                story += "Late in the game, the tension mounted. "
+            default:
+                break
             }
-            .sorted { ($0.stats["pts"] ?? 0) > ($1.stats["pts"] ?? 0) }
-            .prefix(3)
-            .map { $0 }
-    }
-    
-    private func formatPlayerSummary(_ stats: [String: Int]) -> String? {
-        var parts: [String] = []
-        if let pts = stats["pts"], pts > 0 { parts.append("\(pts) pts") }
-        if let ast = stats["ast"], ast > 0 { parts.append("\(ast) ast") }
-        if let stl = stats["stl"], stl > 0 { parts.append("\(stl) stl") }
-        if let blk = stats["blk"], blk > 0 { parts.append("\(blk) blk") }
-        return parts.isEmpty ? nil : parts.joined(separator: ", ")
-    }
-    
-    private func formatScore(home: Int?, away: Int?) -> String {
-        let h = home ?? 0
-        let a = away ?? 0
-        return "\(a)-\(h)"
+        }
+
+        if let lastSection = sections.last {
+            story += "Final: \(lastSection.endScore.away)-\(lastSection.endScore.home)."
+        }
+
+        return story
     }
 
     // MARK: - Helpers

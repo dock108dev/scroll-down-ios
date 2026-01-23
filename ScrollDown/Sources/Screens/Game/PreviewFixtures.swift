@@ -15,7 +15,6 @@ enum PreviewFixtures {
             odds: base.odds,
             socialPosts: Array(base.socialPosts.prefix(1)),
             plays: base.plays,
-            moments: base.moments,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )
@@ -42,7 +41,6 @@ enum PreviewFixtures {
             odds: base.odds,
             socialPosts: base.socialPosts,
             plays: plays,
-            moments: base.moments,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )
@@ -57,7 +55,6 @@ enum PreviewFixtures {
             odds: [],
             socialPosts: base.socialPosts,
             plays: [],
-            moments: nil,
             derivedMetrics: base.derivedMetrics,
             rawPayloads: base.rawPayloads
         )
