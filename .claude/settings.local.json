@@ -5,7 +5,10 @@
       "Bash(xcrun simctl boot:*)",
       "Bash(xcrun simctl:*)",
       "Bash(open -a Simulator:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(xcrun xctrace:*)",
+      "Bash(security find-identity:*)",
+      "Bash(xcrun devicectl:*)"
     ]
   }
 }
