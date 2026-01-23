@@ -73,16 +73,17 @@ struct GameDetailView: View {
                 // Load user preferences
                 viewModel.loadSocialTabPreference(for: gameId)
 
-                // Load timeline artifact (contains summary_json)
-                await viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
+                // Load timeline, story, and social posts in parallel
+                async let timelineTask: () = viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
+                async let storyTask: () = viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
+                async let socialTask: () = {
+                    if viewModel.isSocialTabEnabled {
+                        await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
+                    }
+                }()
 
-                // Load story (chapters + sections + narrative)
-                await viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
-
-                // Load social posts if enabled
-                if viewModel.isSocialTabEnabled {
-                    await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
-                }
+                // Await all in parallel
+                _ = await (timelineTask, storyTask, socialTask)
             }
         }
     }

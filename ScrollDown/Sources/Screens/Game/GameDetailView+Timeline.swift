@@ -45,21 +45,24 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Debug: Show story state
-            storyDebugView
-
-            // Compact story: AI-generated narrative
+            // Compact story: AI-generated narrative (show when available)
             if let compactStory = viewModel.compactStory {
                 compactStorySection(compactStory)
             }
 
-            // Story sections: primary rendering
+            // Story sections: primary rendering when loaded
             if viewModel.hasStoryData {
                 storySectionsTimelineView
             }
-            // Unified timeline: raw PBP + tweets when no story
+            // Show unified timeline while story loads or if story fails
             else if viewModel.hasUnifiedTimeline {
+                // Show loading indicator above timeline while story fetches
+                if viewModel.storyState == .loading {
+                    storyLoadingBanner
+                }
                 unifiedTimelineView
+            } else if viewModel.storyState == .loading {
+                timelineLoadingView
             } else {
                 EmptySectionView(text: "No timeline data available.")
             }
@@ -76,6 +79,31 @@ extension GameDetailView {
                 initializeCollapsedSections()
             }
         }
+    }
+
+    private var storyLoadingBanner: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .scaleEffect(0.8)
+            Text("Loading enhanced timeline...")
+                .font(.caption)
+                .foregroundColor(DesignSystem.TextColor.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var timelineLoadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Loading timeline...")
+                .font(.subheadline)
+                .foregroundColor(DesignSystem.TextColor.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
     }
 
     /// Sets all quarters as collapsed by default
@@ -97,27 +125,6 @@ extension GameDetailView {
         for section in viewModel.sections {
             collapsedSections.insert(section.id)
         }
-    }
-
-    // MARK: - Debug View
-
-    private var storyDebugView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Story Debug")
-                .font(.caption.bold())
-            Text("storyState: \(String(describing: viewModel.storyState))")
-                .font(.caption2)
-            Text("chapters: \(viewModel.chapters.count)")
-                .font(.caption2)
-            Text("sections: \(viewModel.sections.count)")
-                .font(.caption2)
-            Text("hasStoryData: \(viewModel.hasStoryData ? "YES" : "NO")")
-                .font(.caption2)
-                .foregroundColor(viewModel.hasStoryData ? .green : .red)
-        }
-        .padding(8)
-        .background(Color.yellow.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Compact Story Section
