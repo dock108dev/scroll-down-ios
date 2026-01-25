@@ -103,8 +103,7 @@ struct SocialPostMatcher {
             }
         }
 
-        // Fallback: check if section's score range suggests this period
-        // Quarters typically have ~25-35 point swings per team
+        // Estimate period from score progression
         let totalPoints = section.endScore.home + section.endScore.away
         let estimatedPeriod = max(1, min(4, (totalPoints / 50) + 1))
         return estimatedPeriod == period
@@ -117,12 +116,10 @@ struct SocialPostMatcher {
         chapters: [ChapterEntry],
         allPlays: [PlayEntry]
     ) -> Bool {
-        // Get time range from chapters included in this section
+        // Check if section has chapters with time range context
         for chapterId in section.chaptersIncluded {
             if let chapter = chapters.first(where: { $0.chapterId == chapterId }),
-               let timeRange = chapter.timeRange {
-                // If we have time range context, this is a valid match candidate
-                // Posts about a game segment typically come during or shortly after
+               chapter.timeRange != nil {
                 return true
             }
         }

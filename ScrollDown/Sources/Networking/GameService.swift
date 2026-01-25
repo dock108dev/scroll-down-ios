@@ -30,11 +30,6 @@ protocol GameService {
     /// - Returns: Timeline artifact response
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse
 
-    /// Fetch related posts for a game
-    /// - Parameter gameId: The game ID
-    /// - Returns: Related post list response
-    func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse
-
     /// Fetch game story (chapters, sections, narrative)
     /// - Parameter gameId: The game ID
     /// - Returns: Game story response with chapters, sections, and compact narrative

@@ -231,13 +231,7 @@ struct SectionEntry: Codable, Identifiable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sectionIndex = try container.decode(Int.self, forKey: .sectionIndex)
-        // Decode beat type with fallback for unknown values
-        if let rawBeatType = try? container.decode(BeatType.self, forKey: .beatType) {
-            beatType = rawBeatType
-        } else {
-            // Fallback for unrecognized beat types
-            beatType = .backAndForth
-        }
+        beatType = (try? container.decode(BeatType.self, forKey: .beatType)) ?? .backAndForth
         header = try container.decodeIfPresent(String.self, forKey: .header) ?? ""
         // chaptersIncluded only from admin endpoint
         chaptersIncluded = try container.decodeIfPresent([String].self, forKey: .chaptersIncluded) ?? []
@@ -285,7 +279,6 @@ struct SectionEntry: Codable, Identifiable, Equatable {
 // MARK: - Beat Type
 
 /// Beat type for narrative sections - determines styling and importance
-/// API spec v2.0: FAST_START, BACK_AND_FORTH, EARLY_CONTROL, RUN, RESPONSE, STALL, CRUNCH_SETUP, CLOSING_SEQUENCE, OVERTIME
 enum BeatType: String, Codable, CaseIterable {
     case fastStart = "FAST_START"
     case backAndForth = "BACK_AND_FORTH"

@@ -141,10 +141,6 @@ struct GameDetailView: View {
     }
 
     func gameContentView() -> some View {
-        // NOTE: Compact mode temporarily disabled (visual no-op)
-        // The toggle remains in UI but always shows standard view
-        // Compact mode previously hid sections, which violated the principle
-        // that it should only change layout, not which data is rendered
         standardContentView
     }
 

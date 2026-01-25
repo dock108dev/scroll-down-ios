@@ -44,8 +44,8 @@ enum MediaType: String, Codable {
 }
 
 // MARK: - Play Type
-/// Play-by-play event type classification as defined in the OpenAPI spec
-/// Supports NBA, NHL, and other leagues with graceful fallback for unknown types
+/// Play-by-play event type classification
+/// Supports NBA, NHL, and other leagues
 enum PlayType: RawRepresentable, Codable, Equatable {
     // Basketball (NBA/NCAAB)
     case shot
@@ -79,7 +79,6 @@ enum PlayType: RawRepresentable, Codable, Equatable {
     case highlight
     case play
 
-    // Fallback for unknown types
     case unknown(String)
 
     var rawValue: String {

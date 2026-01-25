@@ -340,7 +340,7 @@ extension GameDetailView {
             }
         }
         
-        // Fallback: if no section is near the top, find the one that's most visible
+        // Find most visible section if none near top
         if bestSection == nil {
             for section in GameSection.navigationSections {
                 guard let frame = sectionFrames[section] else { continue }
@@ -362,6 +362,4 @@ extension GameDetailView {
             }
         }
     }
-    
-    // NOTE: Legacy compactSection helper removed - compact mode now affects layout density only
 }

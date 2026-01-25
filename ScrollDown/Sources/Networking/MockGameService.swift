@@ -250,13 +250,6 @@ final class MockGameService: GameService {
         return events
     }
 
-    func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-
-        return MockLoader.load("related-posts")
-    }
-
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
         // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms

@@ -109,10 +109,6 @@ final class RealGameService: GameService {
         try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
     }
 
-    func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
-        throw GameServiceError.notImplemented
-    }
-
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
         try await request(path: "api/games/\(gameId)/story", queryItems: [])
     }

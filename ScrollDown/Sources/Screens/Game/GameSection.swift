@@ -4,13 +4,11 @@ enum GameSection: String, CaseIterable, Hashable {
     case header
     case overview
     case timeline
-    case social
     case playerStats
     case teamStats
     case final
 
     static var navigationSections: [GameSection] {
-        // NOTE: .social removed - tweets are now integrated into unified timeline
         [.overview, .timeline, .playerStats, .teamStats, .final]
     }
 
@@ -22,8 +20,6 @@ enum GameSection: String, CaseIterable, Hashable {
             return "Pregame"
         case .timeline:
             return "Timeline"
-        case .social:
-            return "Social"
         case .playerStats:
             return "Player Stats"
         case .teamStats:

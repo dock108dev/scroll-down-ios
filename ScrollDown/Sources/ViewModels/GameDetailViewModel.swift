@@ -23,9 +23,6 @@ final class GameDetailViewModel: ObservableObject {
     @Published var isLoading: Bool
     @Published var errorMessage: String?
     @Published private(set) var isUnavailable: Bool = false
-    @Published private(set) var relatedPosts: [RelatedPost] = []
-    @Published private(set) var relatedPostsState: RelatedPostsState = .idle
-    @Published private(set) var revealedRelatedPostIds: Set<Int> = []
 
     // Outcome is always hidden per progressive disclosure principles
     // Users reveal scores by scrolling through the timeline
@@ -71,13 +68,6 @@ final class GameDetailViewModel: ObservableObject {
         let lastTimestamp: String?
     }
 
-    enum RelatedPostsState: Equatable {
-        case idle
-        case loading
-        case loaded
-        case failed(String)
-    }
-
     private let logger = Logger(subsystem: "com.scrolldown.app", category: "timeline")
 
     init(detail: GameDetailResponse? = nil) {
@@ -109,25 +99,6 @@ final class GameDetailViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             isLoading = false
-        }
-    }
-
-    func loadRelatedPosts(gameId: Int, service: GameService) async {
-        switch relatedPostsState {
-        case .loaded, .loading:
-            return
-        case .idle, .failed:
-            break
-        }
-
-        relatedPostsState = .loading
-
-        do {
-            let response = try await service.fetchRelatedPosts(gameId: gameId)
-            relatedPosts = response.posts
-            relatedPostsState = .loaded
-        } catch {
-            relatedPostsState = .failed(error.localizedDescription)
         }
     }
 
@@ -450,14 +421,6 @@ final class GameDetailViewModel: ObservableObject {
 
     private func socialTabEnabledKey(for gameId: Int) -> String {
         "game.socialTabEnabled.\(gameId)"
-    }
-
-    func revealRelatedPost(id: Int) {
-        revealedRelatedPostIds.insert(id)
-    }
-
-    func isRelatedPostRevealed(_ post: RelatedPost) -> Bool {
-        !post.containsScore || revealedRelatedPostIds.contains(post.id)
     }
 
     var game: Game? {
