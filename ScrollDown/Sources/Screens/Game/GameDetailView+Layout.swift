@@ -59,7 +59,7 @@ enum GameDetailLayout {
 
     // MARK: - iPad-specific constants (tighter constraints for density)
     static let maxContentWidth: CGFloat = 700 // Tighter max width for better reading density on iPad
-    static let statsTableMaxWidth: CGFloat = 550 // Tighter stats table width for iPad
+    static let statsTableMaxWidth: CGFloat = 680 // Stats table width for iPad - fits all columns including +/-
 }
 
 enum GameDetailConstants {

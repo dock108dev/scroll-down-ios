@@ -10,7 +10,8 @@
       "Bash(security find-identity:*)",
       "Bash(xcrun devicectl:*)",
       "Bash(python3:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ]
   }
 }

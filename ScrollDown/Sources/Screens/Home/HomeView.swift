@@ -190,9 +190,9 @@ struct HomeView: View {
                 }
                 .padding(.bottom, Layout.bottomPadding(horizontalSizeClass))
             }
-            .onReceive(NotificationCenter.default.publisher(for: .scrollToToday)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
                 withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo(Strings.sectionToday, anchor: .top)
+                    proxy.scrollTo(Strings.sectionYesterday, anchor: .top)
                 }
             }
         }
@@ -324,7 +324,7 @@ struct HomeView: View {
 
         if scrollToToday {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                NotificationCenter.default.post(name: .scrollToToday, object: nil)
+                NotificationCenter.default.post(name: .scrollToYesterday, object: nil)
             }
         }
     }
@@ -560,7 +560,7 @@ private let dateFormatter: ISO8601DateFormatter = {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let scrollToToday = Notification.Name("scrollToToday")
+    static let scrollToYesterday = Notification.Name("scrollToYesterday")
 }
 
 #Preview {

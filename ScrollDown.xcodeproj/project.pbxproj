@@ -70,6 +70,11 @@
 		FE1D381FDC873B5BAB938189 /* game-001.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C3E1CA0DC85903F544E917 /* game-001.json */; };
 		STORY001000000000000001 /* GameStory.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000002 /* GameStory.swift */; };
 		STORY001000000000000003 /* StorySectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000004 /* StorySectionCardView.swift */; };
+		STORY001000000000000005 /* SocialPostMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000006 /* SocialPostMatcher.swift */; };
+		STORY001000000000000007 /* GameStoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000008 /* GameStoryView.swift */; };
+		STORY001000000000000009 /* StorySectionBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000A /* StorySectionBlockView.swift */; };
+		STORY00100000000000000B /* MoreReactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000C /* MoreReactionsView.swift */; };
+		STORY00100000000000000D /* FullPlayByPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000E /* FullPlayByPlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -136,6 +141,11 @@
 		FFEDD72AB15D6E74583ECE63 /* PbpEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PbpEvent.swift; sourceTree = "<group>"; };
 		STORY001000000000000002 /* GameStory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameStory.swift; sourceTree = "<group>"; };
 		STORY001000000000000004 /* StorySectionCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorySectionCardView.swift; sourceTree = "<group>"; };
+		STORY001000000000000006 /* SocialPostMatcher.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SocialPostMatcher.swift; sourceTree = "<group>"; };
+		STORY001000000000000008 /* GameStoryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameStoryView.swift; sourceTree = "<group>"; };
+		STORY00100000000000000A /* StorySectionBlockView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorySectionBlockView.swift; sourceTree = "<group>"; };
+		STORY00100000000000000C /* MoreReactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoreReactionsView.swift; sourceTree = "<group>"; };
+		STORY00100000000000000E /* FullPlayByPlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FullPlayByPlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -204,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				4388D761310256CAA8B9F768 /* TimeService.swift */,
+				STORY001000000000000006 /* SocialPostMatcher.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -277,6 +288,10 @@
 				F2771084115126C2862300DB /* GameDetailView+Social.swift */,
 				AD12859B949FE45C68980D98 /* GameDetailView+Timeline.swift */,
 				STORY001000000000000004 /* StorySectionCardView.swift */,
+				STORY001000000000000008 /* GameStoryView.swift */,
+				STORY00100000000000000A /* StorySectionBlockView.swift */,
+				STORY00100000000000000C /* MoreReactionsView.swift */,
+				STORY00100000000000000E /* FullPlayByPlayView.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -476,6 +491,11 @@
 				3A0BF70809513A6DFBBE7BE8 /* GameDetailView+Timeline.swift in Sources */,
 				STORY001000000000000001 /* GameStory.swift in Sources */,
 				STORY001000000000000003 /* StorySectionCardView.swift in Sources */,
+				STORY001000000000000005 /* SocialPostMatcher.swift in Sources */,
+				STORY001000000000000007 /* GameStoryView.swift in Sources */,
+				STORY001000000000000009 /* StorySectionBlockView.swift in Sources */,
+				STORY00100000000000000B /* MoreReactionsView.swift in Sources */,
+				STORY00100000000000000D /* FullPlayByPlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

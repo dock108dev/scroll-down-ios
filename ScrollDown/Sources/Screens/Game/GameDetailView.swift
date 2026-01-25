@@ -32,6 +32,7 @@ struct GameDetailView: View {
     @State var isResumeTrackingEnabled = true
     @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
+    @State var scrollToSection: GameSection? = nil  // Triggers scroll when set
     // iPad: Size class for adaptive layouts (internal for extension access)
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
@@ -164,14 +165,8 @@ struct GameDetailView: View {
                         sectionNavigationBar { section in
                             isManualTabSelection = true
                             selectedSection = section
-
-                            withAnimation(.easeInOut(duration: 0.35)) {
-                                proxy.scrollTo(section, anchor: .top)
-                            }
-
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                isManualTabSelection = false
-                            }
+                            // Trigger scroll via state change (handled by .onChange below)
+                            scrollToSection = section
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                         .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
@@ -186,23 +181,37 @@ struct GameDetailView: View {
                             .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                         }
 
-                        // Content sections
+                        // Content sections - each has an anchor view for reliable scrollTo
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
-                            pregameSection
-                                .id(GameSection.overview)
-                                .background(sectionFrameTracker(for: .overview))
-                            timelineSection(using: proxy)
-                                .id(GameSection.timeline)
-                                .background(sectionFrameTracker(for: .timeline))
-                            playerStatsSection(viewModel.playerStats)
-                                .id(GameSection.playerStats)
-                                .background(sectionFrameTracker(for: .playerStats))
-                            teamStatsSection(viewModel.teamStats)
-                                .id(GameSection.teamStats)
-                                .background(sectionFrameTracker(for: .teamStats))
-                            wrapUpSection
-                                .id(GameSection.final)
-                                .background(sectionFrameTracker(for: .final))
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id(GameSection.overview)
+                                pregameSection
+                            }
+                            .background(sectionFrameTracker(for: .overview))
+
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id(GameSection.timeline)
+                                timelineSection(using: proxy)
+                            }
+                            .background(sectionFrameTracker(for: .timeline))
+
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id(GameSection.playerStats)
+                                playerStatsSection(viewModel.playerStats)
+                            }
+                            .background(sectionFrameTracker(for: .playerStats))
+
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id(GameSection.teamStats)
+                                teamStatsSection(viewModel.teamStats)
+                            }
+                            .background(sectionFrameTracker(for: .teamStats))
+
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id(GameSection.final)
+                                wrapUpSection
+                            }
+                            .background(sectionFrameTracker(for: .final))
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                         // iPad: Constrain content width for better readability
@@ -249,6 +258,17 @@ struct GameDetailView: View {
             }
             .onChange(of: viewModel.detail?.plays.count ?? 0) { _ in
                 loadResumeMarkerIfNeeded()
+            }
+            .onChange(of: scrollToSection) { target in
+                guard let target = target else { return }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(target, anchor: .top)
+                }
+                // Reset after scroll
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    scrollToSection = nil
+                    isManualTabSelection = false
+                }
             }
         }
     }
