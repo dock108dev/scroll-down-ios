@@ -218,6 +218,7 @@ private struct StubGameService: GameService {
             quality: nil,
             readingTimeEstimateMinutes: nil,
             generatedAt: nil,
+            hasStory: false,
             hasCompactStory: false,
             metadata: nil
         )

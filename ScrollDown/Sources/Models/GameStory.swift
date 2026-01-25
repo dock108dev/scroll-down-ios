@@ -2,18 +2,20 @@ import Foundation
 
 // MARK: - Game Story Response
 
-/// Response from the /games/{id}/story endpoint (Chapters-First Story API v2.0)
+/// Response from the /api/games/{id}/story endpoint
+/// App endpoint returns a simplified response (no chapters, metadata)
+/// Admin endpoint returns full response with chapters
 struct GameStoryResponse: Codable {
     let gameId: Int
     let sport: String
     let storyVersion: String
 
-    // Chapter data (structural divisions)
+    // Chapter data (admin endpoint only - not returned by app endpoint)
     let chapters: [ChapterEntry]
     let chapterCount: Int
     let totalPlays: Int
 
-    // Section data (narrative units - replaces moments)
+    // Section data (narrative units - 3-10 per game)
     let sections: [SectionEntry]
     let sectionCount: Int
 
@@ -26,6 +28,9 @@ struct GameStoryResponse: Codable {
 
     // Metadata
     let generatedAt: String?
+    /// App endpoint uses `has_story`, admin uses `has_compact_story`
+    let hasStory: Bool
+    /// Admin endpoint only
     let hasCompactStory: Bool
     let metadata: [String: AnyCodable]?
 
@@ -44,6 +49,7 @@ struct GameStoryResponse: Codable {
         case quality
         case readingTimeEstimateMinutes = "reading_time_estimate_minutes"
         case generatedAt = "generated_at"
+        case hasStory = "has_story"
         case hasCompactStory = "has_compact_story"
         case metadata
     }
@@ -53,18 +59,23 @@ struct GameStoryResponse: Codable {
         gameId = try container.decode(Int.self, forKey: .gameId)
         sport = try container.decode(String.self, forKey: .sport)
         storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion) ?? "2.0.0"
+        // Chapters only from admin endpoint
         chapters = try container.decodeIfPresent([ChapterEntry].self, forKey: .chapters) ?? []
-        chapterCount = try container.decodeIfPresent(Int.self, forKey: .chapterCount) ?? 0
+        chapterCount = try container.decodeIfPresent(Int.self, forKey: .chapterCount) ?? chapters.count
         totalPlays = try container.decodeIfPresent(Int.self, forKey: .totalPlays) ?? 0
         sections = try container.decodeIfPresent([SectionEntry].self, forKey: .sections) ?? []
-        sectionCount = try container.decodeIfPresent(Int.self, forKey: .sectionCount) ?? 0
+        sectionCount = try container.decodeIfPresent(Int.self, forKey: .sectionCount) ?? sections.count
         compactStory = try container.decodeIfPresent(String.self, forKey: .compactStory)
         wordCount = try container.decodeIfPresent(Int.self, forKey: .wordCount)
         targetWordCount = try container.decodeIfPresent(Int.self, forKey: .targetWordCount)
         quality = try container.decodeIfPresent(StoryQuality.self, forKey: .quality)
         readingTimeEstimateMinutes = try container.decodeIfPresent(Double.self, forKey: .readingTimeEstimateMinutes)
         generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
-        hasCompactStory = try container.decodeIfPresent(Bool.self, forKey: .hasCompactStory) ?? (compactStory != nil)
+        // App endpoint: has_story, Admin endpoint: has_compact_story
+        let hasStoryValue = try container.decodeIfPresent(Bool.self, forKey: .hasStory)
+        let hasCompactStoryValue = try container.decodeIfPresent(Bool.self, forKey: .hasCompactStory)
+        hasStory = hasStoryValue ?? hasCompactStoryValue ?? (compactStory != nil)
+        hasCompactStory = hasCompactStoryValue ?? hasStoryValue ?? (compactStory != nil)
         metadata = try container.decodeIfPresent([String: AnyCodable].self, forKey: .metadata)
     }
 
@@ -84,6 +95,7 @@ struct GameStoryResponse: Codable {
         quality: StoryQuality? = nil,
         readingTimeEstimateMinutes: Double? = nil,
         generatedAt: String? = nil,
+        hasStory: Bool = false,
         hasCompactStory: Bool = false,
         metadata: [String: AnyCodable]? = nil
     ) {
@@ -101,6 +113,7 @@ struct GameStoryResponse: Codable {
         self.quality = quality
         self.readingTimeEstimateMinutes = readingTimeEstimateMinutes
         self.generatedAt = generatedAt
+        self.hasStory = hasStory
         self.hasCompactStory = hasCompactStory
         self.metadata = metadata
     }
@@ -197,6 +210,7 @@ struct SectionEntry: Codable, Identifiable, Equatable {
     let sectionIndex: Int
     let beatType: BeatType
     let header: String
+    /// Admin endpoint only - not returned by app endpoint
     let chaptersIncluded: [String]
     let startScore: ScoreSnapshot
     let endScore: ScoreSnapshot
@@ -217,8 +231,15 @@ struct SectionEntry: Codable, Identifiable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sectionIndex = try container.decode(Int.self, forKey: .sectionIndex)
-        beatType = try container.decode(BeatType.self, forKey: .beatType)
+        // Decode beat type with fallback for unknown values
+        if let rawBeatType = try? container.decode(BeatType.self, forKey: .beatType) {
+            beatType = rawBeatType
+        } else {
+            // Fallback for unrecognized beat types
+            beatType = .backAndForth
+        }
         header = try container.decodeIfPresent(String.self, forKey: .header) ?? ""
+        // chaptersIncluded only from admin endpoint
         chaptersIncluded = try container.decodeIfPresent([String].self, forKey: .chaptersIncluded) ?? []
         startScore = try container.decode(ScoreSnapshot.self, forKey: .startScore)
         endScore = try container.decode(ScoreSnapshot.self, forKey: .endScore)
@@ -264,9 +285,9 @@ struct SectionEntry: Codable, Identifiable, Equatable {
 // MARK: - Beat Type
 
 /// Beat type for narrative sections - determines styling and importance
+/// API spec v2.0: FAST_START, BACK_AND_FORTH, EARLY_CONTROL, RUN, RESPONSE, STALL, CRUNCH_SETUP, CLOSING_SEQUENCE, OVERTIME
 enum BeatType: String, Codable, CaseIterable {
     case fastStart = "FAST_START"
-    case missedShotFest = "MISSED_SHOT_FEST"
     case backAndForth = "BACK_AND_FORTH"
     case earlyControl = "EARLY_CONTROL"
     case run = "RUN"
@@ -280,7 +301,6 @@ enum BeatType: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .fastStart: return "Fast Start"
-        case .missedShotFest: return "Low Scoring"
         case .backAndForth: return "Back & Forth"
         case .earlyControl: return "Early Control"
         case .run: return "Scoring Run"
@@ -296,7 +316,6 @@ enum BeatType: String, Codable, CaseIterable {
     var iconName: String {
         switch self {
         case .fastStart: return "flame.fill"
-        case .missedShotFest: return "xmark.circle"
         case .backAndForth: return "arrow.left.arrow.right"
         case .earlyControl: return "arrow.up.right"
         case .run: return "bolt.fill"
@@ -313,7 +332,7 @@ enum BeatType: String, Codable, CaseIterable {
         switch self {
         case .run, .crunchSetup, .closingSequence, .overtime:
             return true
-        case .fastStart, .missedShotFest, .backAndForth, .earlyControl, .response, .stall:
+        case .fastStart, .backAndForth, .earlyControl, .response, .stall:
             return false
         }
     }

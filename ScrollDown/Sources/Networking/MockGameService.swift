@@ -289,6 +289,7 @@ final class MockGameService: GameService {
             quality: nil,
             readingTimeEstimateMinutes: nil,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            hasStory: false,
             hasCompactStory: false,
             metadata: nil
         )
@@ -332,6 +333,7 @@ final class MockGameService: GameService {
             quality: quality,
             readingTimeEstimateMinutes: Double(wordCount ?? 0) / 200.0,
             generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
+            hasStory: compactStory != nil,
             hasCompactStory: compactStory != nil,
             metadata: nil
         )
