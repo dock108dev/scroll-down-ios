@@ -1,76 +1,62 @@
 # Changelog
 
-All notable changes to this project are documented here.
+Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
-### Removed - Legacy Code Cleanup
-- Deleted `CompactMoment` model and all references
-- Removed deprecated `timelineQuarters`, `compactTimelineMoments`, `preGamePosts`, `postGamePosts` from ViewModel
-- Removed `legacyTimelineView` fallback from timeline rendering
-- Removed `fetchCompactMomentPbp` from GameService protocol
-- Timeline now uses `Moment` + `UnifiedTimelineEvent` as single source of truth
+### Removed - Code Cleanup (Jan 2025)
+- Deleted `RelatedPost` model and `RelatedPostCardView`
+- Removed `fetchRelatedPosts` from GameService protocol
+- Removed `GameDetailView+Social.swift` (unused view)
+- Deleted `related-posts.json` mock file
+- Removed legacy `.social` case from `GameSection` enum
+- Cleaned up legacy comments and fallback documentation
 
-### Added - Phase G (Timeline API Integration)
-- Read-only timeline artifact fetch from `/games/{game_id}/timeline` with minimal verification stats in the timeline section
+### Added - NHL Support
+- `NHLSkaterStat` and `NHLGoalieStat` models
+- Dedicated NHL stats tables (Skaters/Goalies)
+- Sport-aware period labels (Period 1/2/3 vs Q1/Q2/Q3/Q4)
 
-### Added - Phase F (Quality Polish)
-- Loading skeleton placeholders for all loading states
+### Added - Game Story View
+- `GameStoryView` for completed games with story data
+- `StorySectionBlockView` with matched social posts
+- `SocialPostMatcher` for section-aware tweet placement
+- `FullPlayByPlayView` with period grouping
+
+### Removed - Legacy Code Cleanup (Jan 2025)
+- Deleted `CompactMoment` model
+- Removed `legacyTimelineView` fallback
+- Timeline now uses `SectionEntry` + `UnifiedTimelineEvent`
+
+## Phase G - Timeline API Integration
+- Timeline artifact fetch from `/games/{game_id}/timeline`
+
+## Phase F - Quality Polish
+- Loading skeleton placeholders
 - Enhanced empty states with contextual icons
 - Tap-to-retry for error states
-- LoadingSkeletonView component with multiple styles
 
-### Added - Phase E (Social Blending)
-- Social feed in Game Detail with tap-to-reveal blur for outcome-aware posts
-- Related posts section with reveal-aware rendering
-- Social service implementation in Mock/Real environments
+## Phase E - Social Blending
+- Social feed with tap-to-reveal blur
+- Social service in Mock/Real environments
 
-### Added - Phase D (Recaps & Reveal Control)
-- Explicit reveal control (Outcome Reveal Gate) in Game Detail
-- Neutral, flow-focused pre-reveal AI summaries
-- Outcome-visible post-reveal AI summaries
-- Per-game reveal preference persistence in UserDefaults
-- Context section explaining "why the game mattered" without spoilers
+## Phase D - Recaps & Reveal Control
+- Explicit reveal control in Game Detail
+- Per-game reveal preference persistence
+- Context section ("why the game mattered")
 
-### Added - Phase C (Timeline Usability)
-- Period/quarter grouping for PBP events with collapsible sections
-- Pagination for long PBP sequences (20 events per chunk, per period)
-- Moment summaries inserted between event clusters as narrative bridges
-- LIVE indicator for current period in timeline
-- Context-aware empty states for partial/delayed PBP
-- Reveal-aware rendering philosophy documented in models
+## Phase C - Timeline Usability
+- Period/quarter grouping with collapsible sections
+- Pagination for long PBP sequences
+- LIVE indicator for current period
 
-### Changed - Phase C
-- CompactMomentExpandedView now uses period-grouped timeline instead of flat list
-- PBP events render in collapsible period sections with expansion state
-- Timeline shows game clock only (period shown in section header)
-- Moment summaries use neutral, observational language (no outcome spoilers)
-- Empty PBP states provide helpful context about data availability
+## Phase B - Real Feeds
+- Home feed with Earlier/Today/Upcoming sections
+- Game detail with collapsible sections
+- Dev-mode clock for consistent mock data
+- Feature flag for game preview scores
 
-### Added - Phase B (Real Feeds)
-- Home feed with Earlier/Today/Upcoming sections and scroll-to-today behavior
-- Game list with progressive disclosure and contextual status display
-- Game detail view with collapsible sections (Overview, Timeline, Stats, etc.)
-- Compact timeline view for chapter-style game moments
-- Compact moment expanded view with play-by-play slice
-- Dev-mode clock for consistent mock data generation (fixed to Nov 12, 2024)
-- Reusable `CollapsibleCards` component extracted to Components/
-- Related posts section with tap-to-reveal blur for posts containing outcomes
-- Game preview networking service for API integration
-- Feature flag for game preview scores (enabled in debug builds)
-- Routing diagnostics via structured logs (tap, navigate, detail load, ID mismatch)
-- Home feed snapshot wiring for Earlier/Today/Coming Up ranges with backend-driven ordering
-- Data freshness label on the home feed sourced from backend `last_updated_at`
-
-### Changed - Phase B
-- Documentation consolidated under `/docs` with a lean root README
-- GameDetailView split into focused files to keep views under 500 LOC
-- Mock data generator extracted for cleaner networking layout
-- Timeline play-by-play now surfaces scores via separators (halftime, period end)
-- Environment configuration now uses `AppConfig.environment` to keep mock/live sources in sync
-
-### Fixed - Phase A & B
-- Navigation tap reliability improved (List → ScrollView+LazyVStack)
-- Mock service now generates unique game detail for each game ID
-- Timeline quarter expansion no longer jumps ahead in the feed
-- Game detail routing now rejects mismatched backend IDs to prevent wrong-game opens
+## Phase A - Foundation
+- Basic MVVM architecture
+- SwiftUI views with dark mode
+- Mock and real service implementations

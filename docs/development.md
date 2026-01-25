@@ -2,9 +2,9 @@
 
 Guide for local development, testing, and debugging.
 
-## Data Modes
+## Environments
 
-The app supports three environments, controlled via `AppConfig.shared.environment`:
+The app supports three environments via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
@@ -13,16 +13,6 @@ The app supports three environments, controlled via `AppConfig.shared.environmen
 | `.mock` | Generated local data | Offline UI development |
 
 **Default:** Live mode. To use localhost by default, set `FeatureFlags.defaultToLocalhost = true` in `AppConfig.swift`.
-
-### Mock Data
-
-Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
-- `game-list.json` — Sample game feed
-- `game-001.json`, `game-002.json` — Full game detail payloads
-- `pbp-001.json` — Play-by-play event data
-- `moments-001.json` — Moment data samples
-
-`MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
 
 ### Switching Modes
 
@@ -34,22 +24,34 @@ AppConfig.shared.environment = .mock
 // Long-press "Updated X ago" in Home feed
 ```
 
+## Mock Data
+
+Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
+
+| File | Content |
+|------|---------|
+| `game-list.json` | Sample game feed |
+| `game-001.json` | Full game detail |
+| `game-002.json` | Full game detail (variant) |
+| `pbp-001.json` | Play-by-play events |
+| `social-posts.json` | Social post samples |
+
+`MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
+
 ## Timeline Architecture
 
-The timeline displays game progression in two modes:
+### 1. Story-Based (Primary)
+When story data is available from `/games/{id}/story`:
+- Timeline grouped by period
+- Each section has a narrative header and beat type
+- Expanding a section reveals play-by-play
+- Social posts matched to sections
 
-### 1. Moments-Based (Primary)
-When `Moment` data is available from the backend:
-- Timeline is grouped by quarter
-- Each moment shows a narrative summary
-- Expanding a moment reveals its play-by-play events
-- Highlights are marked with `isNotable`
-
-### 2. Unified Timeline (Fallback)
-When moments aren't available:
-- `UnifiedTimelineEvent` entries render directly
-- Events grouped by period
-- Interleaves PBP plays with tweets chronologically
+### 2. PBP-Based (Fallback)
+When story data isn't available:
+- `UnifiedTimelineEvent` entries grouped by quarter/period
+- Chronological play-by-play
+- Collapsible period sections
 
 ## Building & Testing
 
@@ -57,17 +59,18 @@ When moments aren't available:
 # Build for simulator
 xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
 
-# Build for iOS 26
-xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,OS=26.0,name=iPhone 16 Pro' build
+# Build for specific iOS version
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro' build
+
+# Clean build
+xcodebuild -scheme ScrollDown clean build
 ```
 
-## Beta Features
+## Snapshot Mode (Time Override)
 
-### Snapshot Mode (Time Override)
 Freeze the app to a specific date to test historical data. **Debug builds only.**
 
 ```bash
-# Enable via environment variable
 export IOS_BETA_ASSUME_NOW=2024-10-23T04:00:00Z
 ```
 
@@ -77,20 +80,19 @@ See [BETA_TIME_OVERRIDE.md](BETA_TIME_OVERRIDE.md) for full documentation.
 
 ## QA Checklist
 
-### General UI
-- [ ] Dark and light mode support
+### UI
+- [ ] Dark and light mode
 - [ ] Long team names truncate gracefully
 - [ ] VoiceOver labels present
-- [ ] iPad adaptive layout works
+- [ ] iPad adaptive layout
 
-### Data & Logic
+### Data
 - [ ] Empty states show contextual messages
-- [ ] Loading skeletons appear before content
+- [ ] Loading skeletons appear
 - [ ] Outcomes stay hidden until revealed
-- [ ] Reveal states persist across sessions
+- [ ] Reveal states persist
 
 ### Navigation
-- [ ] Deep linking to specific games works
 - [ ] Scrolling stable when expanding sections
 - [ ] Back navigation preserves state
 
@@ -108,6 +110,9 @@ print(AppDate.now())  // Nov 12, 2024 in mock mode
 
 ### Console logs
 Filter by subsystem `com.scrolldown.app` in Console.app:
-- `time` — Snapshot mode events
-- `timeline` — Timeline loading
-- `networking` — API calls
+
+| Category | Content |
+|----------|---------|
+| `time` | Snapshot mode events |
+| `timeline` | Timeline loading |
+| `networking` | API calls |

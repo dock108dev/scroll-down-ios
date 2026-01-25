@@ -1,21 +1,21 @@
 # Architecture
 
-This document describes the iOS app's structure, data flow, and design principles.
+iOS app structure, data flow, and design principles.
 
 ## Directory Layout
 
 ```
 ScrollDown/Sources/
-├── Models/           # Codable data models (aligned with API spec)
+├── Models/           # Codable data models (API-aligned)
 ├── ViewModels/       # Business logic and state management
-├── Screens/          # Full-screen SwiftUI views
-│   ├── Home/         # Game list and feed views
-│   └── Game/         # Game detail, timeline, stats, social views
+├── Screens/
+│   ├── Home/         # Game list and feed
+│   └── Game/         # Game detail (split into extensions)
 ├── Components/       # Reusable UI components
-├── Networking/       # GameService protocol + mock/real implementations
-├── Services/         # TimeService (snapshot mode)
+├── Networking/       # GameService protocol + implementations
+├── Services/         # TimeService, SocialPostMatcher
 ├── Logging/          # Structured logging utilities
-└── Mock/             # Structured mock data for development
+└── Mock/games/       # Static mock JSON for development
 ```
 
 ## MVVM Data Flow
@@ -23,7 +23,7 @@ ScrollDown/Sources/
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         SwiftUI View                            │
-│   (HomeView, GameDetailView, MomentCardView, etc.)              │
+│   (HomeView, GameDetailView, StorySectionCardView, etc.)        │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ observes
                           ▼
@@ -47,19 +47,18 @@ ScrollDown/Sources/
 
 Views never call services directly. ViewModels mediate all data access.
 
-## Core Product Principles
+## Core Principles
 
 ### 1. Progressive Disclosure
-The app reveals information in layers. Users see context, matchups, and game flow before outcomes. This respects how games unfold over time.
+The app reveals information in layers. Users see context, matchups, and game flow before outcomes.
 
 ### 2. The Reveal Principle
-We never use the word "spoiler." Instead, we talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
-- **Default:** Always outcome-hidden (`reveal=pre`).
-- **User Choice:** Users must explicitly choose to uncover scores and results.
-- **Why:** The app respects curiosity, not impatience.
+We talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
+- **Default:** Outcome-hidden
+- **User Choice:** Users explicitly choose to uncover scores
 
 ### 3. User-Controlled Pacing
-Nothing is auto-revealed. The user moves through timeline moments at their own pace, tapping to expand details when they're ready.
+Nothing is auto-revealed. Users move through timeline at their own pace.
 
 ## Key Data Models
 
@@ -67,28 +66,35 @@ Nothing is auto-revealed. The user moves through timeline moments at their own p
 |-------|-------------|
 | `GameSummary` | List view representation from `/games` endpoint |
 | `GameDetailResponse` | Full game detail from `/games/{id}` |
-| `Moment` | Server-generated timeline segment (groups plays) |
-| `UnifiedTimelineEvent` | Single timeline entry (PBP or tweet) |
+| `GameStoryResponse` | Story with chapters, sections, and compact narrative |
+| `SectionEntry` | Narrative segment (beat type, score range, header) |
+| `ChapterEntry` | Grouping of plays within a section |
+| `UnifiedTimelineEvent` | Single timeline entry (PBP play or tweet) |
 | `PlayEntry` | Individual play-by-play event |
 
-## Key Mechanisms
+### NHL-Specific Models
 
-### Timeline Rendering
+| Model | Description |
+|-------|-------------|
+| `NHLSkaterStat` | Skater stats (TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM) |
+| `NHLGoalieStat` | Goalie stats (TOI, SA, SV, GA, SV%) |
+
+## Timeline Rendering
 
 The timeline uses a two-tier system:
 
-1. **Moments** (primary) — Server-generated segments that partition the game. Each moment groups related plays with narrative context.
-2. **UnifiedTimelineEvents** (fallback) — Direct PBP + tweet events when moments aren't available.
+### 1. Story-Based (Primary)
+When `GameStoryResponse` is available from `/games/{id}/story`:
+- Sections grouped by period with narrative headers
+- Each section has a beat type (FAST_START, RUN, BACK_AND_FORTH, etc.)
+- Expanding a section reveals its play-by-play events
+- Social posts matched to relevant sections via `SocialPostMatcher`
 
-Timeline is grouped by quarter with collapsible sections.
-
-### Outcome Reveal Gate
-Implemented in the `Overview` section of `GameDetailView`.
-- **Persistence:** Saved per-game in `UserDefaults` using the key `game.outcomeRevealed.{gameId}`.
-- **Reversibility:** Users can toggle back to "Hidden" at any time.
-
-### Reveal-Aware Social
-Social posts that may contain outcomes are blurred by default. Tapping the post reveals the content, matching the overall reveal philosophy.
+### 2. PBP-Based (Fallback)
+When story data isn't available:
+- `UnifiedTimelineEvent` entries grouped by quarter/period
+- Chronological play-by-play with interleaved tweets
+- Collapsible period sections
 
 ## Configuration
 
@@ -113,3 +119,16 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 - **Mock mode:** Fixed to November 12, 2024
 - **Snapshot mode:** Frozen to user-specified date
 - **Live mode:** Real system time
+
+## Game Detail View Structure
+
+`GameDetailView` is split into focused extensions:
+
+| File | Responsibility |
+|------|---------------|
+| `GameDetailView.swift` | Main view, navigation, state |
+| `GameDetailView+Overview.swift` | Pregame section |
+| `GameDetailView+Timeline.swift` | Timeline/story section |
+| `GameDetailView+Stats.swift` | Player and team stats |
+| `GameDetailView+Helpers.swift` | Utility functions |
+| `GameDetailView+Layout.swift` | Layout constants |
