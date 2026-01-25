@@ -76,7 +76,5 @@ secrets/
 
 # Debug
 *.log
-
-
-
 .env
+.claude/
