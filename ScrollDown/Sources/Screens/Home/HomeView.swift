@@ -245,21 +245,15 @@ struct HomeView: View {
             }
             .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
         } else if let error = section.errorMessage {
-            EmptySectionView(
-                text: sectionErrorMessage(for: section, error: error),
-                icon: "exclamationmark.triangle"
-            )
-            .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
-            .transition(.opacity)
+            EmptySectionView(text: sectionErrorMessage(for: section, error: error))
+                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
+                .transition(.opacity)
         } else if section.games.isEmpty {
-            EmptySectionView(
-                text: sectionEmptyMessage(for: section),
-                icon: sectionEmptyIcon(for: section)
-            )
-            .padding(.horizontal, Layout.horizontalPadding)
-            .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
-            .transition(.opacity)
+            EmptySectionView(text: sectionEmptyMessage(for: section))
+                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
+                .transition(.opacity)
         } else {
             // iPad: 4 columns, iPhone: 2 columns
             let columnCount = horizontalSizeClass == .regular ? 4 : 2
@@ -425,20 +419,6 @@ struct HomeView: View {
             return Strings.todayEmpty
         case .next24:
             return Strings.upcomingEmpty
-        }
-    }
-    
-    /// Phase F: Contextual icons for empty states
-    private func sectionEmptyIcon(for section: HomeSectionState) -> String {
-        switch section.range {
-        case .earlier:
-            return "clock.arrow.circlepath"
-        case .yesterday:
-            return "clock.arrow.circlepath"
-        case .current:
-            return "calendar"
-        case .next24:
-            return "clock"
         }
     }
 

@@ -1,40 +1,27 @@
 import SwiftUI
 
-/// Empty state view with calm, intentional messaging
-/// Confident tone - states facts without apologizing
+/// Empty state view with calm, intentional design.
+/// Empty ≠ broken. Absence of content feels intentional.
+/// Rules: No error language, no icons, subdued text style.
 struct EmptySectionView: View {
     let text: String
-    let icon: String
-    
-    init(text: String, icon: String = "ellipsis") {
-        self.text = text
-        self.icon = icon
-    }
 
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(Color(.tertiaryLabel))
-            
-            Text(text)
-                .font(.footnote)
-                .foregroundColor(Color(.tertiaryLabel))
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .padding(.horizontal, 16)
-        .accessibilityLabel(text)
+        Text(text)
+            .font(.footnote)
+            .foregroundColor(Color(.tertiaryLabel))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 12)
+            .accessibilityLabel(text)
     }
 }
 
 #Preview {
     VStack(spacing: 20) {
-        EmptySectionView(text: "Nothing here yet")
-        EmptySectionView(text: "Play-by-play not available", icon: "list.bullet")
-        EmptySectionView(text: "Still loading", icon: "clock")
+        EmptySectionView(text: "Nothing here yet.")
+        EmptySectionView(text: "Pregame posts will appear here.")
+        EmptySectionView(text: "Stats available after the game.")
     }
-        .padding()
-        .background(Color(.systemGroupedBackground))
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }
