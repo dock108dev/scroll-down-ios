@@ -152,11 +152,41 @@ struct GameDetailView: View {
             ZStack(alignment: .topTrailing) {
                 ScrollView {
                     VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
+                        // Header - constrained to max-width on iPad
                         if let game = viewModel.game {
                             GameHeaderView(game: game)
+                                .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                                .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                 .id(GameSection.header)
                         }
 
+                        // Tab navigation - scrolls with content (not sticky)
+                        sectionNavigationBar { section in
+                            isManualTabSelection = true
+                            selectedSection = section
+
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                proxy.scrollTo(section, anchor: .top)
+                            }
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                isManualTabSelection = false
+                            }
+                        }
+                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                        .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
+
+                        // Resume prompt (if applicable)
+                        if shouldShowResumePrompt {
+                            resumePromptView(
+                                onResume: { resumeScroll(using: proxy) },
+                                onStartOver: { startOver(using: proxy) }
+                            )
+                            .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                            .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
+                        }
+
+                        // Content sections
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             pregameSection
                                 .id(GameSection.overview)
@@ -189,30 +219,6 @@ struct GameDetailView: View {
                         )
                     }
                 )
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    VStack(spacing: 0) {
-                        sectionNavigationBar { section in
-                            // Mark as manual selection to prevent scroll tracking from fighting
-                            isManualTabSelection = true
-                            selectedSection = section
-                            
-                            withAnimation(.easeInOut(duration: 0.35)) {
-                                proxy.scrollTo(section, anchor: .top)
-                            }
-                            
-                            // Re-enable scroll tracking after animation completes
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                isManualTabSelection = false
-                            }
-                        }
-                        if shouldShowResumePrompt {
-                            resumePromptView(
-                                onResume: { resumeScroll(using: proxy) },
-                                onStartOver: { startOver(using: proxy) }
-                            )
-                        }
-                    }
-                }
 
                 if let viewingText = viewingPillText {
                     viewingPillView(text: viewingText)

@@ -225,10 +225,7 @@ extension GameDetailView {
             switch viewModel.summaryState {
             case .unavailable:
                 // Static unavailable state - summaries are pre-generated, no retry
-                EmptySectionView(
-                    text: "Recap unavailable for this game.",
-                    icon: "doc.text"
-                )
+                EmptySectionView(text: "Recap unavailable for this game.")
             case .available(let summary):
                 Text(summary)
                     .font(.subheadline)
@@ -253,20 +250,20 @@ extension GameDetailView {
     func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
         ScrollViewReader { scrollProxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 24) {
+                HStack(spacing: 20) {
                     ForEach(GameSection.navigationSections, id: \.self) { section in
                         Button {
                             onSelect(section)
                         } label: {
-                            VStack(spacing: 6) {
+                            VStack(spacing: 4) {
                                 Text(section.title)
-                                    .font(.footnote.weight(selectedSection == section ? .semibold : .medium))
-                                    .foregroundColor(selectedSection == section ? .primary : Color(.secondaryLabel))
-                                
-                                // Underline indicator
+                                    .font(.subheadline.weight(selectedSection == section ? .semibold : .regular))
+                                    .foregroundColor(selectedSection == section ? .primary : Color(.tertiaryLabel))
+
+                                // Subtle underline indicator
                                 Rectangle()
-                                    .fill(selectedSection == section ? GameTheme.accentColor : Color.clear)
-                                    .frame(height: 2)
+                                    .fill(selectedSection == section ? Color(.label) : Color.clear)
+                                    .frame(height: 1.5)
                                     .animation(.easeInOut(duration: 0.2), value: selectedSection)
                             }
                         }
@@ -274,17 +271,8 @@ extension GameDetailView {
                         .accessibilityLabel("Jump to \(section.title)")
                     }
                 }
-                .padding(.horizontal, GameDetailLayout.horizontalPadding)
-                .padding(.top, 10)
-                .padding(.bottom, 2)
+                .padding(.vertical, 12)
             }
-            .background(Color(.systemBackground))
-            .overlay(
-                Rectangle()
-                    .fill(Color(.separator).opacity(0.3))
-                    .frame(height: 0.5),
-                alignment: .bottom
-            )
             .onChange(of: selectedSection) { newSection in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     scrollProxy.scrollTo(newSection, anchor: .center)

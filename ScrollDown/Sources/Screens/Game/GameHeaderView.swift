@@ -1,65 +1,82 @@
 import SwiftUI
 
-// MARK: - Matchup Header Card
-/// Premium, sports-native header card using typography and shape instead of logos.
-/// Design philosophy: Confident and finished even with zero images.
+// MARK: - Game Header View
+/// Editorial, story-first header anchoring context, not score.
+/// Design philosophy: Calm, intentional, identical across all leagues.
 
 struct GameHeaderView: View {
     let game: Game
     var scoreRevealed: Bool = false
-    
-    // Entrance animation state
+
     @State private var hasAppeared = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-        VStack(spacing: Layout.verticalSpacing) {
+        VStack(spacing: 0) {
             // MARK: Primary Row - Team Matchup
-            // Abbreviations are the hero element; largest and most prominent
             HStack(spacing: 0) {
-                // Away team (left side)
-                TeamBadgeView(
-                    teamName: game.awayTeam,
-                    isHome: false
-                )
-                
-                Spacer()
-                
-                // Center divider - reduced visual weight, not competing with teams
-                VStack(spacing: 2) {
-                    Text("@")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(Color(.tertiaryLabel))
+                // Away team block (left side) with color bar on outer edge
+                HStack(spacing: 0) {
+                    // Vertical color bar - outer left edge
+                    Rectangle()
+                        .fill(DesignSystem.TeamColors.teamABar)
+                        .frame(width: 3)
+
+                    // Team info
+                    TeamBlockView(
+                        teamName: game.awayTeam,
+                        isHome: false,
+                        alignment: .leading
+                    )
+                    .padding(.leading, 12)
                 }
-                .frame(width: 24)
-                
+
                 Spacer()
-                
-                // Home team (right side) - slightly heavier to indicate home
-                TeamBadgeView(
-                    teamName: game.homeTeam,
-                    isHome: true
-                )
-            }
-            
-            // MARK: Secondary Row - Status + Metadata
-            // Visually subordinate to the matchup
-            HStack(spacing: 8) {
-                // Status pill - secondary prominence
-                statusPill
-                
-                // Date/time metadata - tertiary prominence
-                if let date = game.parsedGameDate {
-                    Text(date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute())
-                        .font(.caption2)
-                        .foregroundColor(Color(.tertiaryLabel))
+
+                // Center separator - low contrast "@"
+                Text("@")
+                    .font(.subheadline.weight(.regular))
+                    .foregroundColor(Color(.tertiaryLabel))
+
+                Spacer()
+
+                // Home team block (right side) with color bar on outer edge
+                HStack(spacing: 0) {
+                    // Team info
+                    TeamBlockView(
+                        teamName: game.homeTeam,
+                        isHome: true,
+                        alignment: .trailing
+                    )
+                    .padding(.trailing, 12)
+
+                    // Vertical color bar - outer right edge
+                    Rectangle()
+                        .fill(DesignSystem.TeamColors.teamBBar)
+                        .frame(width: 3)
                 }
-                
+            }
+            .padding(.vertical, 16)
+
+            // Subtle divider
+            Rectangle()
+                .fill(Color(.separator).opacity(0.3))
+                .frame(height: 0.5)
+
+            // MARK: Metadata Row - Game State + Date
+            HStack(spacing: 0) {
+                Text(metadataText)
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundColor(Color(.secondaryLabel))
+
                 Spacer()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal, Layout.horizontalPadding)
-        .padding(.vertical, Layout.verticalPadding)
-        .background(cardBackground)
+        .background(DesignSystem.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.card))
         .shadow(
             color: DesignSystem.Shadow.color,
@@ -67,8 +84,7 @@ struct GameHeaderView: View {
             x: 0,
             y: DesignSystem.Shadow.y
         )
-        .padding(.horizontal, Layout.cardInset)
-        // Subtle entrance animation - fade + slight rise
+        // Subtle entrance animation
         .opacity(hasAppeared ? 1 : 0)
         .offset(y: hasAppeared ? 0 : 4)
         .onAppear {
@@ -80,20 +96,16 @@ struct GameHeaderView: View {
         .accessibilityLabel("Matchup: \(game.awayTeam) at \(game.homeTeam)")
         .accessibilityValue(statusAccessibilityLabel)
     }
-    
-    // MARK: - Status Pill
-    /// Small, secondary status indicator. Subtle tint, not loud.
-    private var statusPill: some View {
-        Text(statusText)
-            .font(.caption2.weight(.semibold))
-            .foregroundColor(statusForeground)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(statusBackground)
-            .clipShape(Capsule())
+
+    // MARK: - Metadata Text
+    /// Format: "FINAL · JAN 22" or "UPCOMING · JAN 22"
+    private var metadataText: String {
+        let statusText = gameStatusText
+        let dateText = formattedGameDate
+        return "\(statusText) · \(dateText)"
     }
-    
-    private var statusText: String {
+
+    private var gameStatusText: String {
         switch game.status {
         case .completed, .final:
             return "Final"
@@ -107,26 +119,16 @@ struct GameHeaderView: View {
             return "Canceled"
         }
     }
-    
-    // Status colors - muted, not attention-grabbing
-    private var statusForeground: Color {
-        switch game.status {
-        case .inProgress:
-            return Color(.systemGreen)
-        default:
-            return Color(.secondaryLabel)
+
+    private var formattedGameDate: String {
+        guard let date = game.parsedGameDate else {
+            return ""
         }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date).uppercased()
     }
-    
-    private var statusBackground: Color {
-        switch game.status {
-        case .inProgress:
-            return Color(.systemGreen).opacity(0.12)
-        default:
-            return Color(.systemGray5)
-        }
-    }
-    
+
     private var statusAccessibilityLabel: String {
         switch game.status {
         case .completed, .final:
@@ -141,54 +143,39 @@ struct GameHeaderView: View {
             return "Game canceled"
         }
     }
-    
-    // Card background with subtle material effect
-    private var cardBackground: some View {
-        DesignSystem.Colors.cardBackground
-    }
 }
 
-// MARK: - Team Badge View
-/// Displays team as abbreviation badge + city name
-/// DUAL-TEAM COLORS: Away = Team A (indigo), Home = Team B (teal)
+// MARK: - Team Block View
+/// Displays team as abbreviation (bold) + full name (secondary)
 
-private struct TeamBadgeView: View {
+private struct TeamBlockView: View {
     let teamName: String
     let isHome: Bool
-    
+    let alignment: HorizontalAlignment
+
     var body: some View {
-        VStack(alignment: isHome ? .trailing : .leading, spacing: 5) {
-            // Abbreviation badge — each team gets its own color
+        VStack(alignment: alignment, spacing: 4) {
+            // Team abbreviation - hero element
             Text(abbreviation)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.title2.weight(.bold))
                 .foregroundColor(teamColor)
-                .frame(width: 52, height: 34)
-                .background(badgeBackground)
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-            
-            // City/team name - neutral secondary text
+
+            // Team name - secondary
             Text(teamName)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundColor(DesignSystem.TextColor.secondary)
                 .lineLimit(1)
         }
     }
-    
-    // Team color — Away (A) = indigo, Home (B) = teal
+
     private var teamColor: Color {
         isHome ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA
     }
-    
-    // Badge background — each team gets its own tinted background
-    private var badgeBackground: Color {
-        isHome ? DesignSystem.Colors.homeBadge : DesignSystem.Colors.awayBadge
-    }
-    
+
     /// Generate 2-3 letter abbreviation from team name
-    /// Uses common sports abbreviation patterns
     private var abbreviation: String {
-        // Common NBA/NFL team abbreviations
         let abbreviations: [String: String] = [
+            // NBA
             "Atlanta Hawks": "ATL",
             "Boston Celtics": "BOS",
             "Brooklyn Nets": "BKN",
@@ -218,13 +205,78 @@ private struct TeamBadgeView: View {
             "San Antonio Spurs": "SAS",
             "Toronto Raptors": "TOR",
             "Utah Jazz": "UTA",
-            "Washington Wizards": "WAS"
+            "Washington Wizards": "WAS",
+            // NFL (common)
+            "Arizona Cardinals": "ARI",
+            "Atlanta Falcons": "ATL",
+            "Baltimore Ravens": "BAL",
+            "Buffalo Bills": "BUF",
+            "Carolina Panthers": "CAR",
+            "Chicago Bears": "CHI",
+            "Cincinnati Bengals": "CIN",
+            "Cleveland Browns": "CLE",
+            "Dallas Cowboys": "DAL",
+            "Denver Broncos": "DEN",
+            "Detroit Lions": "DET",
+            "Green Bay Packers": "GB",
+            "Houston Texans": "HOU",
+            "Indianapolis Colts": "IND",
+            "Jacksonville Jaguars": "JAX",
+            "Kansas City Chiefs": "KC",
+            "Las Vegas Raiders": "LV",
+            "Los Angeles Chargers": "LAC",
+            "Los Angeles Rams": "LAR",
+            "Miami Dolphins": "MIA",
+            "Minnesota Vikings": "MIN",
+            "New England Patriots": "NE",
+            "New Orleans Saints": "NO",
+            "New York Giants": "NYG",
+            "New York Jets": "NYJ",
+            "Philadelphia Eagles": "PHI",
+            "Pittsburgh Steelers": "PIT",
+            "San Francisco 49ers": "SF",
+            "Seattle Seahawks": "SEA",
+            "Tampa Bay Buccaneers": "TB",
+            "Tennessee Titans": "TEN",
+            "Washington Commanders": "WAS",
+            // NHL (common)
+            "Anaheim Ducks": "ANA",
+            "Boston Bruins": "BOS",
+            "Buffalo Sabres": "BUF",
+            "Calgary Flames": "CGY",
+            "Carolina Hurricanes": "CAR",
+            "Chicago Blackhawks": "CHI",
+            "Colorado Avalanche": "COL",
+            "Columbus Blue Jackets": "CBJ",
+            "Dallas Stars": "DAL",
+            "Detroit Red Wings": "DET",
+            "Edmonton Oilers": "EDM",
+            "Florida Panthers": "FLA",
+            "Los Angeles Kings": "LA",
+            "Minnesota Wild": "MIN",
+            "Montreal Canadiens": "MTL",
+            "Nashville Predators": "NSH",
+            "New Jersey Devils": "NJ",
+            "New York Islanders": "NYI",
+            "New York Rangers": "NYR",
+            "Ottawa Senators": "OTT",
+            "Philadelphia Flyers": "PHI",
+            "Pittsburgh Penguins": "PIT",
+            "San Jose Sharks": "SJ",
+            "Seattle Kraken": "SEA",
+            "St. Louis Blues": "STL",
+            "Tampa Bay Lightning": "TB",
+            "Toronto Maple Leafs": "TOR",
+            "Vancouver Canucks": "VAN",
+            "Vegas Golden Knights": "VGK",
+            "Washington Capitals": "WSH",
+            "Winnipeg Jets": "WPG"
         ]
-        
+
         if let known = abbreviations[teamName] {
             return known
         }
-        
+
         // Default: use first 3 letters of last word (team nickname)
         let words = teamName.split(separator: " ")
         if let lastWord = words.last {
@@ -234,30 +286,23 @@ private struct TeamBadgeView: View {
     }
 }
 
-// MARK: - Layout Constants
-/// Intentional spacing values for tight, premium feel
-
-private enum Layout {
-    // Vertical rhythm - tighter than before
-    static let verticalSpacing: CGFloat = 12
-    static let verticalPadding: CGFloat = 16
-    
-    // Horizontal balance
-    static let horizontalPadding: CGFloat = 16
-    static let cardInset: CGFloat = 20
-}
-
 // MARK: - Previews
 
 #Preview("Final Game") {
     GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game, scoreRevealed: false)
-        .padding(.vertical)
+        .padding()
         .background(Color(.systemGroupedBackground))
 }
 
 #Preview("Dark Mode") {
     GameHeaderView(game: PreviewFixtures.highlightsHeavyGame.game, scoreRevealed: false)
-        .padding(.vertical)
+        .padding()
         .background(Color(.systemGroupedBackground))
         .preferredColorScheme(.dark)
+}
+
+#Preview("Pregame") {
+    GameHeaderView(game: PreviewFixtures.preGameOnlyGame.game, scoreRevealed: false)
+        .padding()
+        .background(Color(.systemGroupedBackground))
 }
