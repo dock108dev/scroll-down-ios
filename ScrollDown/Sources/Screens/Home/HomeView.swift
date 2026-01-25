@@ -91,8 +91,6 @@ struct HomeView: View {
                 .padding(.vertical, Layout.filterVerticalPadding)
             }
             .background(HomeTheme.background)
-
-            dataFreshnessView
         }
     }
 
@@ -263,42 +261,39 @@ struct HomeView: View {
             .padding(.vertical, Layout.sectionStatePadding(horizontalSizeClass))
             .transition(.opacity)
         } else {
-            if horizontalSizeClass == .regular {
-                // iPad: 2-column grid for information density and editorial feel
-                let columns = [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ]
+            // iPad: 4 columns, iPhone: 2 columns
+            let columnCount = horizontalSizeClass == .regular ? 4 : 2
+            let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: columnCount)
 
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(section.games) { game in
-                        NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
-                            GameRowView(game: game)
-                        }
-                        .buttonStyle(CardPressButtonStyle())
-                        .simultaneousGesture(TapGesture().onEnded {
-                            GameRoutingLogger.logTap(gameId: game.id, league: game.league)
-                            triggerHapticIfNeeded(for: game)
-                        })
-                    }
-                }
-                .padding(.horizontal, horizontalPadding)
-                .transition(.opacity.animation(.easeIn(duration: 0.2)))
-            } else {
-                // iPhone: Single column list for comfortable vertical scrolling
+            LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(section.games) { game in
-                    NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
-                        GameRowView(game: game)
-                    }
-                    .buttonStyle(CardPressButtonStyle())
-                    .padding(.horizontal, horizontalPadding)
-                    .simultaneousGesture(TapGesture().onEnded {
-                        GameRoutingLogger.logTap(gameId: game.id, league: game.league)
-                        triggerHapticIfNeeded(for: game)
-                    })
+                    gameCard(for: game)
                 }
-                .transition(.opacity.animation(.easeIn(duration: 0.2)))
             }
+            .padding(.horizontal, horizontalPadding)
+            .transition(.opacity.animation(.easeIn(duration: 0.2)))
+        }
+    }
+
+    /// Game card with conditional navigation based on story availability
+    @ViewBuilder
+    private func gameCard(for game: GameSummary) -> some View {
+        let rowView = GameRowView(game: game)
+
+        if rowView.cardState.isTappable {
+            // Story available - enable navigation
+            NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
+                rowView
+            }
+            .buttonStyle(CardPressButtonStyle())
+            .simultaneousGesture(TapGesture().onEnded {
+                GameRoutingLogger.logTap(gameId: game.id, league: game.league)
+                triggerHapticIfNeeded(for: game)
+            })
+        } else {
+            // Story pending or locked - no navigation, static card
+            rowView
+                .allowsHitTesting(false)
         }
     }
 
@@ -552,10 +547,10 @@ private enum Strings {
     static let errorIconName = "exclamationmark.triangle"
     static let errorTitle = "Error"
     static let retryLabel = "Retry"
-    static let sectionEarlier = "Earlier"
-    static let sectionYesterday = "Yesterday"
+    static let sectionEarlier = "Earlier — Stories Available"
+    static let sectionYesterday = "Yesterday — Stories Available"
     static let sectionToday = "Today"
-    static let sectionUpcoming = "Coming Up"
+    static let sectionUpcoming = "Coming Up — After Games Complete"
     static let sectionLoading = "Loading section..."
     static let earlierEmpty = "No games from earlier."
     static let yesterdayEmpty = "No games from yesterday."
