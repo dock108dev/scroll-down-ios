@@ -45,13 +45,20 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Compact story: AI-generated narrative (show when available)
-            if let compactStory = viewModel.compactStory {
-                compactStorySection(compactStory)
+            // NEW: Game Story View for completed games with story data
+            if viewModel.shouldShowStoryView {
+                GameStoryView(
+                    viewModel: viewModel,
+                    collapsedSections: $collapsedSections,
+                    isCompactStoryExpanded: $isCompactStoryExpanded
+                )
             }
-
-            // Story sections: primary rendering when loaded
-            if viewModel.hasStoryData {
+            // Existing: Story sections (in-progress with partial story)
+            else if viewModel.hasStoryData {
+                // Compact story: AI-generated narrative (show when available)
+                if let compactStory = viewModel.compactStory {
+                    compactStorySection(compactStory)
+                }
                 storySectionsTimelineView
             }
             // Show unified timeline while story loads or if story fails

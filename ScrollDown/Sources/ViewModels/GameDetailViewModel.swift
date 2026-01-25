@@ -377,6 +377,38 @@ final class GameDetailViewModel: ObservableObject {
         return loaded && hasSections
     }
 
+    /// Whether to show the Story View (completed games with story data)
+    /// vs the Timeline View (in-progress or games without story)
+    var shouldShowStoryView: Bool {
+        guard let game = game else { return false }
+        let isCompleted = game.status == .completed || game.status == .final
+        return isCompleted && hasStoryData
+    }
+
+    // MARK: - Social Post Matching
+
+    /// Compute social post matching result
+    /// Note: Computed fresh each time since sections/events may change
+    private func computeMatchResult() -> SocialPostMatcher.MatchResult {
+        let tweetEvents = unifiedTimelineEvents.filter { $0.eventType == .tweet }
+        return SocialPostMatcher.match(
+            posts: tweetEvents,
+            sections: sections,
+            chapters: chapters,
+            allPlays: detail?.plays ?? []
+        )
+    }
+
+    /// Get social posts matched to a specific section
+    func socialPostsForSection(_ section: SectionEntry) -> [UnifiedTimelineEvent] {
+        computeMatchResult().placed[section.sectionIndex] ?? []
+    }
+
+    /// Social posts that couldn't be matched to any section
+    var deferredSocialPosts: [UnifiedTimelineEvent] {
+        computeMatchResult().deferred
+    }
+
     /// Load story from Chapters-First Story API
     func loadStory(gameId: Int, service: GameService) async {
         switch storyState {
