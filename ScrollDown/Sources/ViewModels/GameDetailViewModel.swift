@@ -703,6 +703,33 @@ final class GameDetailViewModel: ObservableObject {
         detail?.teamStats ?? []
     }
 
+    // MARK: - NHL-Specific Stats
+
+    /// Whether this is an NHL game
+    var isNHL: Bool {
+        game?.leagueCode == "NHL"
+    }
+
+    /// NHL skater stats (non-goalies)
+    var nhlSkaters: [NHLSkaterStat] {
+        detail?.nhlSkaters ?? []
+    }
+
+    /// NHL goalie stats
+    var nhlGoalies: [NHLGoalieStat] {
+        detail?.nhlGoalies ?? []
+    }
+
+    /// NHL data health status
+    var nhlDataHealth: NHLDataHealth? {
+        detail?.dataHealth
+    }
+
+    /// Whether NHL data is healthy
+    var isNHLDataHealthy: Bool {
+        detail?.dataHealth?.isHealthy ?? true
+    }
+
     // MARK: - Pre/Post Game Tweet Helpers
 
     /// Pre-game tweets (tweets before the first PBP event)

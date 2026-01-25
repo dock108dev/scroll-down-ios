@@ -217,7 +217,10 @@ enum MockDataGenerator {
             socialPosts: generateSocialPosts(home: summary.homeTeamName, away: summary.awayTeamName),
             plays: plays,
             derivedMetrics: [:],
-            rawPayloads: [:]
+            rawPayloads: [:],
+            nhlSkaters: nil,
+            nhlGoalies: nil,
+            dataHealth: nil
         )
     }
 

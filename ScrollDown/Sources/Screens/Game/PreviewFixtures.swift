@@ -16,7 +16,10 @@ enum PreviewFixtures {
             socialPosts: Array(base.socialPosts.prefix(1)),
             plays: base.plays,
             derivedMetrics: base.derivedMetrics,
-            rawPayloads: base.rawPayloads
+            rawPayloads: base.rawPayloads,
+            nhlSkaters: nil,
+            nhlGoalies: nil,
+            dataHealth: nil
         )
     }()
 
@@ -42,7 +45,10 @@ enum PreviewFixtures {
             socialPosts: base.socialPosts,
             plays: plays,
             derivedMetrics: base.derivedMetrics,
-            rawPayloads: base.rawPayloads
+            rawPayloads: base.rawPayloads,
+            nhlSkaters: nil,
+            nhlGoalies: nil,
+            dataHealth: nil
         )
     }()
 
@@ -56,7 +62,10 @@ enum PreviewFixtures {
             socialPosts: base.socialPosts,
             plays: [],
             derivedMetrics: base.derivedMetrics,
-            rawPayloads: base.rawPayloads
+            rawPayloads: base.rawPayloads,
+            nhlSkaters: nil,
+            nhlGoalies: nil,
+            dataHealth: nil
         )
     }()
 }

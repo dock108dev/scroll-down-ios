@@ -11,7 +11,9 @@
       "Bash(xcrun devicectl:*)",
       "Bash(python3:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(open:*)",
+      "Bash(plutil:*)"
     ]
   }
 }
