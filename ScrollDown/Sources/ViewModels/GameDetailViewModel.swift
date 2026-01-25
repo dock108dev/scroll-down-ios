@@ -75,6 +75,8 @@ final class GameDetailViewModel: ObservableObject {
         self.isLoading = detail == nil
     }
 
+    // MARK: - Loading Methods
+
     func load(gameId: Int, league: String?, service: GameService) async {
         guard detail == nil else {
             isLoading = false
@@ -148,6 +150,28 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
+    /// Load story from Chapters-First Story API
+    func loadStory(gameId: Int, service: GameService) async {
+        switch storyState {
+        case .loaded, .loading:
+            return
+        case .idle, .failed:
+            break
+        }
+
+        storyState = .loading
+
+        do {
+            let response = try await service.fetchStory(gameId: gameId)
+            gameStory = response
+            storyState = .loaded
+            logger.info("📖 Loaded story: \(response.sectionCount, privacy: .public) API sections, \(response.chapterCount, privacy: .public) chapters")
+        } catch {
+            logger.error("📖 Story API failed: \(error.localizedDescription, privacy: .public)")
+            storyState = .failed(error.localizedDescription)
+        }
+    }
+
     // MARK: - Story Computed Properties
 
     /// Sections from game story response (or derived from chapters if empty)
@@ -158,131 +182,6 @@ final class GameDetailViewModel: ObservableObject {
         }
         // Derive sections from chapters if API doesn't provide them
         return deriveSectionsFromChapters()
-    }
-
-    /// Derive sections from chapters when API doesn't provide them
-    private func deriveSectionsFromChapters() -> [SectionEntry] {
-        guard let story = gameStory, !story.chapters.isEmpty else { return [] }
-
-        let allPlays = detail?.plays ?? []
-        var sections: [SectionEntry] = []
-        let sortedChapters = story.chapters.sorted { $0.index < $1.index }
-
-        for (index, chapter) in sortedChapters.enumerated() {
-            let beatType = deriveBeatType(from: chapter.reasonCodes, chapterIndex: index, totalChapters: sortedChapters.count)
-            let header = deriveHeader(from: chapter, beatType: beatType)
-
-            // Get plays for this chapter from main plays array using indices
-            let chapterPlays = getPlaysForChapter(chapter, from: allPlays)
-            let startScore = deriveStartScore(from: chapterPlays)
-            let endScore = deriveEndScore(from: chapterPlays)
-
-            let section = SectionEntry(
-                sectionIndex: index,
-                beatType: beatType,
-                header: header,
-                chaptersIncluded: [chapter.chapterId],
-                startScore: startScore,
-                endScore: endScore,
-                notes: deriveNotes(from: chapter, playCount: chapterPlays.count)
-            )
-            sections.append(section)
-        }
-
-        return sections
-    }
-
-    /// Get plays for a chapter using play indices
-    private func getPlaysForChapter(_ chapter: ChapterEntry, from allPlays: [PlayEntry]) -> [PlayEntry] {
-        // First try chapter's embedded plays
-        if !chapter.plays.isEmpty {
-            return chapter.plays
-        }
-        // Fall back to using play indices
-        return allPlays.filter { $0.playIndex >= chapter.playStartIdx && $0.playIndex <= chapter.playEndIdx }
-    }
-
-    /// Map chapter reason codes to beat type
-    private func deriveBeatType(from reasonCodes: [String], chapterIndex: Int, totalChapters: Int) -> BeatType {
-        let codes = Set(reasonCodes.map { $0.uppercased() })
-
-        if codes.contains("OVERTIME_START") || codes.contains("OVERTIME") {
-            return .overtime
-        }
-        if codes.contains("GAME_END") || chapterIndex == totalChapters - 1 {
-            return .closingSequence
-        }
-        if codes.contains("RUN_BOUNDARY") || codes.contains("SCORING_RUN") {
-            return .run
-        }
-        if codes.contains("PERIOD_START") && chapterIndex < 2 {
-            return .fastStart
-        }
-        if codes.contains("TIMEOUT") {
-            return .stall
-        }
-
-        if chapterIndex < totalChapters / 4 {
-            return .earlyControl
-        } else if chapterIndex > totalChapters * 3 / 4 {
-            return .crunchSetup
-        }
-        return .backAndForth
-    }
-
-    /// Generate header text from chapter data
-    private func deriveHeader(from chapter: ChapterEntry, beatType: BeatType) -> String {
-        let periodText = chapter.period.map { "Q\($0)" } ?? ""
-        let timeText = chapter.timeRange?.displayString ?? ""
-
-        switch beatType {
-        case .fastStart:
-            return "Game gets underway"
-        case .overtime:
-            return "Overtime period"
-        case .closingSequence:
-            return "Final stretch"
-        case .run:
-            return "Scoring run"
-        case .crunchSetup:
-            return "Crunch time approaching"
-        case .stall:
-            return "Teams regroup"
-        default:
-            if !periodText.isEmpty && !timeText.isEmpty {
-                return "\(periodText) • \(timeText)"
-            }
-            return chapter.boundaryDescription.isEmpty ? "Game action" : chapter.boundaryDescription
-        }
-    }
-
-    /// Get start score from plays
-    private func deriveStartScore(from plays: [PlayEntry]) -> ScoreSnapshot {
-        if let firstPlay = plays.first {
-            return ScoreSnapshot(home: firstPlay.homeScore ?? 0, away: firstPlay.awayScore ?? 0)
-        }
-        return ScoreSnapshot(home: 0, away: 0)
-    }
-
-    /// Get end score from plays
-    private func deriveEndScore(from plays: [PlayEntry]) -> ScoreSnapshot {
-        if let lastPlay = plays.last {
-            return ScoreSnapshot(home: lastPlay.homeScore ?? 0, away: lastPlay.awayScore ?? 0)
-        }
-        return ScoreSnapshot(home: 0, away: 0)
-    }
-
-    /// Generate notes from chapter data
-    private func deriveNotes(from chapter: ChapterEntry, playCount: Int) -> [String] {
-        var notes: [String] = []
-        let count = playCount > 0 ? playCount : chapter.playCount
-        if count > 0 {
-            notes.append("\(count) plays")
-        }
-        if !chapter.reasonCodes.isEmpty {
-            notes.append(chapter.boundaryDescription)
-        }
-        return notes
     }
 
     /// Chapters from game story response (structural divisions)
@@ -318,27 +217,6 @@ final class GameDetailViewModel: ObservableObject {
             }
         }
         return result
-    }
-
-    /// Get plays for a section by looking up its chapters
-    func playsForSection(_ section: SectionEntry) -> [PlayEntry] {
-        let allPlays = detail?.plays ?? []
-        var plays: [PlayEntry] = []
-        for chapterId in section.chaptersIncluded {
-            if let chapter = chapters.first(where: { $0.chapterId == chapterId }) {
-                let chapterPlays = getPlaysForChapter(chapter, from: allPlays)
-                plays.append(contentsOf: chapterPlays)
-            }
-        }
-        return plays.sorted { $0.playIndex < $1.playIndex }
-    }
-
-    /// Get unified timeline events for a section
-    func unifiedEventsForSection(_ section: SectionEntry) -> [UnifiedTimelineEvent] {
-        let sectionPlays = playsForSection(section)
-        return sectionPlays.enumerated().map { index, play in
-            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
-        }
     }
 
     /// Whether story data is available
@@ -380,28 +258,6 @@ final class GameDetailViewModel: ObservableObject {
         computeMatchResult().deferred
     }
 
-    /// Load story from Chapters-First Story API
-    func loadStory(gameId: Int, service: GameService) async {
-        switch storyState {
-        case .loaded, .loading:
-            return
-        case .idle, .failed:
-            break
-        }
-
-        storyState = .loading
-
-        do {
-            let response = try await service.fetchStory(gameId: gameId)
-            gameStory = response
-            storyState = .loaded
-            logger.info("📖 Loaded story: \(response.sectionCount, privacy: .public) API sections, \(response.chapterCount, privacy: .public) chapters")
-        } catch {
-            logger.error("📖 Story API failed: \(error.localizedDescription, privacy: .public)")
-            storyState = .failed(error.localizedDescription)
-        }
-    }
-
     /// Get social posts filtered by reveal level
     var filteredSocialPosts: [SocialPostResponse] {
         socialPosts.filter { $0.isSafeToShow(outcomeRevealed: isOutcomeRevealed) }
@@ -422,6 +278,8 @@ final class GameDetailViewModel: ObservableObject {
     private func socialTabEnabledKey(for gameId: Int) -> String {
         "game.socialTabEnabled.\(gameId)"
     }
+
+    // MARK: - Game Properties
 
     var game: Game? {
         detail?.game
@@ -479,9 +337,9 @@ final class GameDetailViewModel: ObservableObject {
 
         let statusText = game.status.rawValue.capitalized
         return [
-            String(format: Constants.recapTeamsTemplate, game.awayTeam, game.homeTeam),
-            String(format: Constants.recapStatusTemplate, statusText),
-            Constants.recapHighlightsTemplate
+            String(format: ViewModelConstants.recapTeamsTemplate, game.awayTeam, game.homeTeam),
+            String(format: ViewModelConstants.recapStatusTemplate, statusText),
+            ViewModelConstants.recapHighlightsTemplate
         ]
     }
 
@@ -489,119 +347,7 @@ final class GameDetailViewModel: ObservableObject {
         detail?.socialPosts.filter { $0.hasVideo || $0.imageUrl != nil } ?? []
     }
 
-    // MARK: - Unified Timeline
-
-    /// Unified timeline events - merges plays (with scores) and social posts
-    var unifiedTimelineEvents: [UnifiedTimelineEvent] {
-        var events: [UnifiedTimelineEvent] = []
-
-        let plays = detail?.plays ?? []
-        let pbpEvents = plays.enumerated().map { index, play in
-            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
-        }
-        events.append(contentsOf: pbpEvents)
-
-        if let timelineValue = timelineArtifact?.timelineJson?.value {
-            let rawEvents = extractTimelineEvents(from: timelineValue)
-            let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
-                let eventType = dict["event_type"] as? String
-                guard eventType == "tweet" else { return nil }
-                return UnifiedTimelineEvent(from: dict, index: plays.count + index)
-            }
-            events.append(contentsOf: tweetEvents)
-        }
-
-        return events
-    }
-
-    /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
-    func playToDictionary(_ play: PlayEntry) -> [String: Any] {
-        var dict: [String: Any] = [
-            "event_type": "pbp",
-            "play_index": play.playIndex
-        ]
-        if let quarter = play.quarter { dict["period"] = quarter }
-        if let clock = play.gameClock { dict["game_clock"] = clock }
-        if let desc = play.description { dict["description"] = desc }
-        if let team = play.teamAbbreviation { dict["team"] = team }
-        if let player = play.playerName { dict["player_name"] = player }
-        if let home = play.homeScore { dict["home_score"] = home }
-        if let away = play.awayScore { dict["away_score"] = away }
-        if let playType = play.playType { dict["play_type"] = playType.rawValue }
-        return dict
-    }
-
-    /// Whether timeline data is available from timeline_json
-    var hasUnifiedTimeline: Bool {
-        !unifiedTimelineEvents.isEmpty
-    }
-
-    var timelineArtifactSummary: TimelineArtifactSummary? {
-        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
-            return nil
-        }
-
-        let events = extractTimelineEvents(from: timelineValue)
-        guard !events.isEmpty else {
-            return TimelineArtifactSummary(eventCount: 0, firstTimestamp: nil, lastTimestamp: nil)
-        }
-
-        let firstTimestamp = extractTimestamp(from: events.first)
-        let lastTimestamp = extractTimestamp(from: events.last)
-        return TimelineArtifactSummary(
-            eventCount: events.count,
-            firstTimestamp: firstTimestamp,
-            lastTimestamp: lastTimestamp
-        )
-    }
-
-    /// Summary state derived from timeline artifact
-    var summaryState: SummaryState {
-        if let summaryText = extractSummaryFromArtifact() {
-            return .available(summaryText)
-        }
-        return .unavailable
-    }
-
-    /// Extract narrative summary from timeline artifact's summary_json
-    private func extractSummaryFromArtifact() -> String? {
-        guard let summaryJson = timelineArtifact?.summaryJson,
-              let dict = summaryJson.value as? [String: Any] else {
-            return nil
-        }
-
-        if let overall = dict["overall"] as? String {
-            return sanitizeSummary(overall)
-        }
-
-        if let summary = dict["summary"] as? String {
-            return sanitizeSummary(summary)
-        }
-
-        if let directSummary = summaryJson.value as? String {
-            return sanitizeSummary(directSummary)
-        }
-
-        return nil
-    }
-
-    var highlightByPlayIndex: [Int: [SocialPostEntry]] {
-        let plays = detail?.plays ?? []
-        let highlights = highlights
-        guard !plays.isEmpty, !highlights.isEmpty else {
-            return [:]
-        }
-
-        let spacing = max(Constants.minimumHighlightSpacing, plays.count / max(Constants.minimumHighlightSpacing, highlights.count))
-        var mapping: [Int: [SocialPostEntry]] = [:]
-
-        for (index, highlight) in highlights.enumerated() {
-            let playIndex = highlightPlayIndex(for: index, spacing: spacing, plays: plays)
-            mapping[playIndex, default: []].append(highlight)
-        }
-
-        return mapping
-    }
+    // MARK: - Score Markers
 
     var liveScoreMarker: TimelineScoreMarker? {
         guard game?.status == .inProgress else {
@@ -613,8 +359,8 @@ final class GameDetailViewModel: ObservableObject {
         }
 
         return TimelineScoreMarker(
-            id: Constants.liveMarkerId,
-            label: Constants.liveScoreLabel,
+            id: ViewModelConstants.liveMarkerId,
+            label: ViewModelConstants.liveScoreLabel,
             score: score
         )
     }
@@ -628,9 +374,9 @@ final class GameDetailViewModel: ObservableObject {
             return nil
         }
 
-        let label = play.quarter == Constants.halftimeQuarter
-            ? Constants.halftimeLabel
-            : Constants.periodEndLabel
+        let label = play.quarter == ViewModelConstants.halftimeQuarter
+            ? ViewModelConstants.halftimeLabel
+            : ViewModelConstants.periodEndLabel
 
         return TimelineScoreMarker(
             id: "period-end-\(play.playIndex)",
@@ -639,21 +385,23 @@ final class GameDetailViewModel: ObservableObject {
         )
     }
 
+    // MARK: - Team Stats
+
     var teamComparisonStats: [TeamComparisonStat] {
         guard let home = detail?.teamStats.first(where: { $0.isHome }),
               let away = detail?.teamStats.first(where: { !$0.isHome }) else {
             return []
         }
 
-        return Constants.teamComparisonKeys.map { key in
+        return ViewModelConstants.teamComparisonKeys.map { key in
             let homeValue = statValue(for: key.key, in: home.stats)
             let awayValue = statValue(for: key.key, in: away.stats)
             return TeamComparisonStat(
                 name: key.label,
                 homeValue: homeValue,
                 awayValue: awayValue,
-                homeDisplay: formattedStat(homeValue, placeholder: Constants.statPlaceholder),
-                awayDisplay: formattedStat(awayValue, placeholder: Constants.statPlaceholder)
+                homeDisplay: formattedStat(homeValue, placeholder: ViewModelConstants.statPlaceholder),
+                awayDisplay: formattedStat(awayValue, placeholder: ViewModelConstants.statPlaceholder)
             )
         }
     }
@@ -693,28 +441,10 @@ final class GameDetailViewModel: ObservableObject {
         detail?.dataHealth?.isHealthy ?? true
     }
 
-    // MARK: - Pre/Post Game Tweet Helpers
+    // MARK: - Private Helpers
 
-    /// Pre-game tweets (tweets before the first PBP event)
-    var pregameTweets: [UnifiedTimelineEvent] {
-        guard let firstPbpIndex = unifiedTimelineEvents.firstIndex(where: { $0.eventType == .pbp }) else {
-            return unifiedTimelineEvents.filter { $0.eventType == .tweet && $0.period == nil }
-        }
-        return Array(unifiedTimelineEvents.prefix(upTo: firstPbpIndex)).filter { $0.eventType == .tweet }
-    }
-
-    /// Post-game tweets (tweets after the last PBP event)
-    var postGameTweets: [UnifiedTimelineEvent] {
-        guard let lastPbpIndex = unifiedTimelineEvents.lastIndex(where: { $0.eventType == .pbp }) else {
-            return []
-        }
-        let afterLastPbp = unifiedTimelineEvents.suffix(from: unifiedTimelineEvents.index(after: lastPbpIndex))
-        return Array(afterLastPbp).filter { $0.eventType == .tweet }
-    }
-
-    private func highlightPlayIndex(for index: Int, spacing: Int, plays: [PlayEntry]) -> Int {
-        let targetIndex = min(index * spacing, plays.count - 1)
-        return plays[targetIndex].playIndex
+    private func timelineGameId(for gameId: Int) -> Int {
+        gameId > 0 ? gameId : ViewModelConstants.defaultTimelineGameId
     }
 
     private func statValue(for key: String, in stats: [String: AnyCodable]) -> Double? {
@@ -733,87 +463,20 @@ final class GameDetailViewModel: ObservableObject {
         return nil
     }
 
-    private func timelineGameId(for gameId: Int) -> Int {
-        gameId > 0 ? gameId : Constants.defaultTimelineGameId
-    }
-
-    private func extractTimelineEvents(from value: Any) -> [[String: Any]] {
-        if let events = value as? [[String: Any]] {
-            return events
-        }
-
-        if let array = value as? [Any] {
-            return array.compactMap { $0 as? [String: Any] }
-        }
-
-        if let dict = value as? [String: Any] {
-            if let events = dict[Constants.timelineEventsKey] as? [[String: Any]] {
-                return events
-            }
-            if let eventsArray = dict[Constants.timelineEventsKey] as? [Any] {
-                return eventsArray.compactMap { $0 as? [String: Any] }
-            }
-        }
-
-        return []
-    }
-
-    private func extractTimestamp(from event: [String: Any]?) -> String? {
-        guard let event else {
-            return nil
-        }
-
-        let candidates = [
-            Constants.timelineTimestampKey,
-            Constants.timelineEventTimestampKey,
-            Constants.timelineTimeKey,
-            Constants.timelineClockKey
-        ]
-
-        for key in candidates {
-            if let value = event[key] {
-                if let stringValue = value as? String {
-                    return stringValue
-                }
-                if let numberValue = value as? NSNumber {
-                    return numberValue.stringValue
-                }
-            }
-        }
-
-        return nil
-    }
-
     private func formattedStat(_ value: Double?, placeholder: String) -> String {
         guard let value else {
             return placeholder
         }
 
-        if value >= Constants.percentageFloor && value <= Constants.percentageCeiling {
-            return String(format: Constants.percentageFormat, value)
+        if value >= ViewModelConstants.percentageFloor && value <= ViewModelConstants.percentageCeiling {
+            return String(format: ViewModelConstants.percentageFormat, value)
         }
 
         if value == floor(value) {
-            return String(format: Constants.integerFormat, value)
+            return String(format: ViewModelConstants.integerFormat, value)
         }
 
-        return String(format: Constants.decimalFormat, value)
-    }
-
-    private func sanitizeSummary(_ summary: String) -> String? {
-        let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return nil
-        }
-
-        if let regex = Constants.scoreRegex {
-            let range = NSRange(location: 0, length: trimmed.utf16.count)
-            if regex.firstMatch(in: trimmed, options: [], range: range) != nil {
-                return nil
-            }
-        }
-
-        return trimmed
+        return String(format: ViewModelConstants.decimalFormat, value)
     }
 
     private func latestScoreDisplay() -> String? {
@@ -834,7 +497,9 @@ final class GameDetailViewModel: ObservableObject {
     }
 }
 
-private enum Constants {
+// MARK: - Constants
+
+private enum ViewModelConstants {
     static let recapTeamsTemplate = "Matchup: %@ at %@."
     static let recapStatusTemplate = "Status: %@."
     static let recapHighlightsTemplate = "Key moments and highlights below."
@@ -843,15 +508,12 @@ private enum Constants {
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
-    static let minimumHighlightSpacing = 1
     static let percentageFloor = 0.0
     static let percentageCeiling = 1.0
     static let percentageFormat = "%.3f"
     static let integerFormat = "%.0f"
     static let decimalFormat = "%.1f"
     static let statPlaceholder = "--"
-    static let scorePattern = #"(\d+)\s*(?:-|–|to)\s*(\d+)"#
-    static let scoreRegex = try? NSRegularExpression(pattern: scorePattern, options: [])
     static let teamComparisonKeys: [(key: String, label: String)] = [
         ("fg_pct", "Field Goal %"),
         ("fg", "Field Goals Made"),
@@ -872,9 +534,4 @@ private enum Constants {
         ("pf", "Personal Fouls")
     ]
     static let defaultTimelineGameId = 401585601
-    static let timelineEventsKey = "events"
-    static let timelineTimestampKey = "timestamp"
-    static let timelineEventTimestampKey = "event_timestamp"
-    static let timelineTimeKey = "time"
-    static let timelineClockKey = "clock"
 }

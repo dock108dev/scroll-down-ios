@@ -14,7 +14,9 @@
       "Bash(ls:*)",
       "Bash(open:*)",
       "Bash(plutil:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ruby:*)",
+      "Bash(wc:*)"
     ]
   }
 }

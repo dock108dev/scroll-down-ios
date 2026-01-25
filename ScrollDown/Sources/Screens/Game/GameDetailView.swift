@@ -77,11 +77,7 @@ struct GameDetailView: View {
                 // Load timeline, story, and social posts in parallel
                 async let timelineTask: () = viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
                 async let storyTask: () = viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
-                async let socialTask: () = {
-                    if viewModel.isSocialTabEnabled {
-                        await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
-                    }
-                }()
+                async let socialTask: () = loadSocialIfEnabled()
 
                 // Await all in parallel
                 _ = await (timelineTask, storyTask, socialTask)
@@ -91,6 +87,12 @@ struct GameDetailView: View {
 
     private var isValidGameId: Bool {
         gameId > 0
+    }
+
+    private func loadSocialIfEnabled() async {
+        if viewModel.isSocialTabEnabled {
+            await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
+        }
     }
 
     // MARK: - Subviews
