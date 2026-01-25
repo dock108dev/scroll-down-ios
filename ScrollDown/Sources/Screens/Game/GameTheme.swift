@@ -90,17 +90,36 @@ enum DesignSystem {
     // MARK: - Dual-Team Color System
     // Two peer colors for left/right comparison — neither is "accent"
     // Think broadcast graphics, not marketing
-    
+    // Dark mode: brighter purple, softer teal for better visibility
+
     enum TeamColors {
-        // TEAM A (Left / Away) — Muted indigo/purple
-        static let teamA = Color(.systemIndigo)
-        static let teamABackground = Color(.systemIndigo).opacity(0.12)
-        static let teamABar = Color(.systemIndigo).opacity(0.7)
-        
-        // TEAM B (Right / Home) — Slightly brighter teal
-        static let teamB = Color(.systemTeal)
-        static let teamBBackground = Color(.systemTeal).opacity(0.12)
-        static let teamBBar = Color(.systemTeal).opacity(0.7)
+        // TEAM A (Left / Away) — Purple/violet
+        // Dark mode: brighter for visibility, Light mode: standard indigo
+        static let teamA = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 160/255, green: 130/255, blue: 255/255, alpha: 1) // Brighter lavender-purple
+                : UIColor.systemIndigo
+        })
+        static var teamABackground: Color {
+            teamA.opacity(0.15)
+        }
+        static var teamABar: Color {
+            teamA.opacity(0.8)
+        }
+
+        // TEAM B (Right / Home) — Teal/cyan
+        // Dark mode: softer/warmer teal, Light mode: standard teal
+        static let teamB = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 100/255, green: 200/255, blue: 180/255, alpha: 1) // Softer sage-teal
+                : UIColor.systemTeal
+        })
+        static var teamBBackground: Color {
+            teamB.opacity(0.15)
+        }
+        static var teamBBar: Color {
+            teamB.opacity(0.8)
+        }
     }
     
     // MARK: - Colors

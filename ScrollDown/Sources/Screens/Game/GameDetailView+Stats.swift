@@ -162,11 +162,11 @@ extension GameDetailView {
     private func frozenDataCell(_ stat: PlayerStat, isAlternate: Bool) -> some View {
         let isHomeTeam = stat.team == viewModel.game?.homeTeam
         let bgColor = isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground
-        
+
         return HStack(spacing: 4) {
             PlayerNameCell(fullName: stat.playerName)
                 .frame(width: 100, alignment: .leading)
-            
+
             Text(teamAbbreviation(stat.team))
                 .font(.caption2.weight(.medium))
                 .foregroundColor(isHomeTeam ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA)
@@ -176,7 +176,7 @@ extension GameDetailView {
                 .clipShape(Capsule())
                 .frame(width: 36)
         }
-        .padding(.vertical, 8)
+        .frame(height: 36)
         .padding(.leading, DesignSystem.Spacing.elementPadding)
         .padding(.trailing, 4)
         .background(bgColor)
@@ -256,7 +256,7 @@ extension GameDetailView {
         }
         .font(DesignSystem.Typography.statValue)
         .foregroundColor(DesignSystem.TextColor.secondary)
-        .padding(.vertical, 8)
+        .frame(height: 36)
         .padding(.horizontal, 8)
         .background(bgColor)
         .overlay(alignment: .bottom) {
@@ -268,7 +268,6 @@ extension GameDetailView {
         }
     }
 
-    
     private func plusMinusColor(_ value: String?) -> Color {
         guard let val = value else { return DesignSystem.TextColor.secondary }
         // Positive: accent-tinted green, Negative: muted red
@@ -388,48 +387,137 @@ extension GameDetailView {
 
     var wrapUpContent: some View {
         VStack(spacing: GameDetailLayout.sectionSpacing) {
-            // Final score with team names — dual-team colors
-            VStack(spacing: GameDetailLayout.textSpacing) {
-                if let game = viewModel.game {
-                    HStack(spacing: GameDetailLayout.textSpacing) {
-                        // Away team (left) — Team A color (indigo)
-                        VStack(spacing: GameDetailLayout.smallSpacing) {
-                            Text("\(game.awayScore ?? 0)")
-                                .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
-                                .foregroundColor(DesignSystem.TeamColors.teamA)
-                            Text(game.awayTeam)
-                                .font(.caption)
-                                .foregroundColor(DesignSystem.TeamColors.teamA.opacity(0.7))
-                                .lineLimit(1)
-                        }
-                        Text("-")
-                            .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                        // Home team (right) — Team B color (teal)
-                        VStack(spacing: GameDetailLayout.smallSpacing) {
-                            Text("\(game.homeScore ?? 0)")
-                                .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
-                                .foregroundColor(DesignSystem.TeamColors.teamB)
-                            Text(game.homeTeam)
-                                .font(.caption)
-                                .foregroundColor(DesignSystem.TeamColors.teamB.opacity(0.7))
-                                .lineLimit(1)
-                        }
-                    }
-                } else {
-                    Text(GameDetailConstants.scorePlaceholder)
-                        .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
-                }
-                Text("Final")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
+            // Mini boxscore
+            if let game = viewModel.game {
+                miniBoxscore(game: game)
+            } else {
+                Text(GameDetailConstants.scorePlaceholder)
+                    .font(.system(size: GameDetailLayout.finalScoreSize, weight: .bold))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, GameDetailLayout.listSpacing)
 
             // Post-game social posts
             postGameSocialContent
         }
+    }
+
+    private func miniBoxscore(game: Game) -> some View {
+        let awayWon = (game.awayScore ?? 0) > (game.homeScore ?? 0)
+        let homeWon = (game.homeScore ?? 0) > (game.awayScore ?? 0)
+        let stats = viewModel.playerStats
+
+        let awayHighScorer = stats
+            .filter { $0.team == game.awayTeam }
+            .max(by: { ($0.points ?? 0) < ($1.points ?? 0) })
+
+        let homeHighScorer = stats
+            .filter { $0.team == game.homeTeam }
+            .max(by: { ($0.points ?? 0) < ($1.points ?? 0) })
+
+        return VStack(spacing: 0) {
+            // Header row
+            HStack(spacing: 0) {
+                Text("")
+                    .frame(width: 60, alignment: .leading)
+                Spacer()
+                Text("FINAL")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .frame(width: 60)
+                Text("HIGH")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .frame(width: 100, alignment: .trailing)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(DesignSystem.Colors.elevatedBackground)
+
+            // Away team row
+            boxscoreTeamRow(
+                teamAbbrev: teamAbbreviation(game.awayTeam),
+                score: game.awayScore ?? 0,
+                isWinner: awayWon,
+                highScorer: awayHighScorer,
+                teamColor: DesignSystem.TeamColors.teamA,
+                isAlternate: false
+            )
+
+            // Home team row
+            boxscoreTeamRow(
+                teamAbbrev: teamAbbreviation(game.homeTeam),
+                score: game.homeScore ?? 0,
+                isWinner: homeWon,
+                highScorer: homeHighScorer,
+                teamColor: DesignSystem.TeamColors.teamB,
+                isAlternate: true
+            )
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
+                .stroke(DesignSystem.borderColor, lineWidth: DesignSystem.borderWidth)
+        )
+    }
+
+    private func boxscoreTeamRow(
+        teamAbbrev: String,
+        score: Int,
+        isWinner: Bool,
+        highScorer: PlayerStat?,
+        teamColor: Color,
+        isAlternate: Bool
+    ) -> some View {
+        HStack(spacing: 0) {
+            // Team abbreviation with winner indicator
+            HStack(spacing: 6) {
+                if isWinner {
+                    Image(systemName: "arrowtriangle.right.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(teamColor)
+                }
+                Text(teamAbbrev)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(teamColor)
+            }
+            .frame(width: 60, alignment: .leading)
+
+            Spacer()
+
+            // Final score
+            Text("\(score)")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundColor(isWinner ? teamColor : DesignSystem.TextColor.secondary)
+                .frame(width: 60)
+
+            // High scorer
+            if let scorer = highScorer {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(abbreviatedPlayerName(scorer.playerName))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(DesignSystem.TextColor.primary)
+                    Text("\(scorer.points ?? 0) PTS")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(DesignSystem.TextColor.secondary)
+                }
+                .frame(width: 100, alignment: .trailing)
+            } else {
+                Text("--")
+                    .font(.system(size: 13))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .frame(width: 100, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
+    }
+
+    private func abbreviatedPlayerName(_ fullName: String) -> String {
+        let parts = fullName.split(separator: " ")
+        guard parts.count >= 2 else { return fullName }
+        let firstInitial = parts[0].prefix(1)
+        let lastName = parts.dropFirst().joined(separator: " ")
+        return "\(firstInitial). \(lastName)"
     }
     
     @ViewBuilder
@@ -498,6 +586,7 @@ private struct PlayerNameCell: View {
         Text(abbreviatedName)
             .font(.subheadline.weight(.medium))
             .foregroundColor(.primary)
+            .lineLimit(1)
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.easeOut(duration: 0.15)) {
