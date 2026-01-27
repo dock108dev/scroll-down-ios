@@ -86,12 +86,12 @@ struct UnifiedTimelineRowView: View {
             Rectangle()
                 .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)
-            
+
             Text("\(awayTeam) \(away) – \(home) \(homeTeam)")
-                .font(.caption2.weight(.medium))
-                .foregroundColor(DesignSystem.TextColor.secondary)
+                .font(.caption2.weight(.semibold))
+                .foregroundColor(DesignSystem.TextColor.scoreHighlight)
                 .fixedSize()
-            
+
             Rectangle()
                 .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)

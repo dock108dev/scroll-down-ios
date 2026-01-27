@@ -67,14 +67,20 @@ enum DesignSystem {
     
     // MARK: - Text Contrast Tiers
     // Three distinct tiers for proper hierarchy
-    
+
     enum TextColor {
         /// Primary text: key numbers, player names, headlines (90-100% opacity)
         static let primary = Color.primary
-        /// Secondary text: labels, metadata (65-75% opacity)  
+        /// Secondary text: labels, metadata (65-75% opacity)
         static let secondary = Color(.label).opacity(0.7)
         /// Tertiary text: hints, placeholders, subdued info (50% opacity)
         static let tertiary = Color(.label).opacity(0.50)
+        /// Score highlight: blue in light mode, red in dark mode for emphasis
+        static let scoreHighlight = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 255/255, green: 85/255, blue: 85/255, alpha: 1) // Vibrant red for dark mode
+                : UIColor(red: 30/255, green: 100/255, blue: 200/255, alpha: 1) // Clear blue for light mode
+        })
     }
     
     // MARK: - Interaction Accent
