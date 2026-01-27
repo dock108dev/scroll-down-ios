@@ -44,62 +44,29 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Priority 1: Show story if available
-            if viewModel.shouldShowStoryView {
+            // Priority 1: Show story if available (story with moments)
+            if viewModel.hasStoryData {
                 GameStoryView(
                     viewModel: viewModel,
                     isCompactStoryExpanded: $isCompactStoryExpanded
                 )
             }
-            // Priority 2: Show PBP if available (story failed, loading, or unavailable)
-            else if viewModel.hasUnifiedTimeline {
-                if viewModel.storyState == .loading {
-                    storyLoadingBanner
-                } else if case .failed = viewModel.storyState {
-                    storyUnavailableBanner
-                }
+            // Priority 2: Show PBP grouped by period (from PBP API or detail.plays)
+            else if viewModel.hasPbpData {
                 unifiedTimelineView
             }
-            // Priority 3: Still loading with no PBP yet
-            else if viewModel.storyState == .loading || viewModel.isLoading {
+            // Priority 3: Still loading story or PBP
+            else if viewModel.isLoadingAnyData {
                 timelineLoadingView
             }
-            // Priority 4: No data at all
+            // Priority 4: No content available - show Coming Soon
             else {
-                EmptySectionView(text: "No play-by-play data available for this game.")
+                comingSoonView
             }
         }
         .onAppear {
             initializeCollapsedQuarters()
         }
-    }
-
-    private var storyLoadingBanner: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .scaleEffect(0.8)
-            Text("Loading enhanced timeline...")
-                .font(.caption)
-                .foregroundColor(DesignSystem.TextColor.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private var storyUnavailableBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "text.alignleft")
-                .font(.caption)
-            Text("Showing play-by-play")
-                .font(.caption)
-                .foregroundColor(DesignSystem.TextColor.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var timelineLoadingView: some View {
@@ -108,6 +75,22 @@ extension GameDetailView {
             Text("Loading timeline...")
                 .font(.subheadline)
                 .foregroundColor(DesignSystem.TextColor.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+
+    private var comingSoonView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "clock")
+                .font(.largeTitle)
+                .foregroundColor(Color(.tertiaryLabel))
+            Text("Coming Soon")
+                .font(.headline)
+                .foregroundColor(Color(.secondaryLabel))
+            Text("Play-by-play data is being processed")
+                .font(.caption)
+                .foregroundColor(Color(.tertiaryLabel))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)

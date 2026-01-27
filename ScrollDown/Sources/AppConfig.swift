@@ -29,6 +29,9 @@ enum FeatureFlags {
     /// Useful for local development sessions—change this instead of using Admin Settings each time
     /// NOTE: Requires local server running on port \(APIConfiguration.localhostPort)
     static let defaultToLocalhost: Bool = false  // Changed to false to use mock mode
+
+    /// Show play/moment counts on game cards (debug info)
+    static let showCardPlayCounts: Bool = true
 }
 
 // MARK: - Dev Clock

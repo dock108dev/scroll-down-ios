@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Display state for game cards on home screen
 enum GameCardState {
-    case available   // Completed game - tappable, prominent
+    case available   // Has PBP data - tappable, prominent
+    case comingSoon  // Completed but hasPbp == false - greyed, non-tappable
     case locked      // Upcoming/scheduled game - non-tappable, locked appearance
 
     var isTappable: Bool {
@@ -10,53 +11,26 @@ enum GameCardState {
     }
 }
 
-/// What content type is available for this game
-enum GameContentType {
-    case story       // Full story with moments
-    case playByPlay  // PBP only (no story)
-    case pending     // Not yet determined/loading
-}
 
 /// Row view for displaying a game summary in a list
 /// Supports three visual states: story available, story pending, and locked
 struct GameRowView: View {
     let game: GameSummary
 
-    /// Computed card state based on game status
+    /// Computed card state based on game status and data availability
     var cardState: GameCardState {
         guard let status = game.status else { return .locked }
 
         switch status {
         case .completed, .final:
+            // Use hasPbp from API to determine if content is available
+            if game.hasPbp != true {
+                return .comingSoon
+            }
             return .available
         case .scheduled, .inProgress, .postponed, .canceled:
             return .locked
         }
-    }
-
-    /// What content type is available for this game
-    /// Note: We can't reliably know if a story exists from GameSummary alone.
-    /// Stories are only available for NBA/NCAAB games with moments.
-    /// For now, show PBP indicator when hasPbp is true.
-    var contentType: GameContentType {
-        guard cardState == .available else { return .pending }
-
-        // Only NBA and NCAAB currently have story support
-        let storyLeagues = ["NBA", "NCAAB"]
-        let supportsStory = storyLeagues.contains(game.league)
-
-        // If league supports stories and has required data, indicate story
-        // But this is still a heuristic - actual story availability requires fetching
-        if supportsStory && game.hasRequiredData == true {
-            return .story
-        }
-
-        // For other leagues or when hasPbp is explicitly true, show PBP
-        if game.hasPbp == true {
-            return .playByPlay
-        }
-
-        return .pending
     }
 
     var body: some View {
@@ -77,22 +51,19 @@ struct GameRowView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            // Date + optional moment count
+            // Date + optional play/moment counts (debug)
             VStack(alignment: .leading, spacing: 2) {
                 Text(dateDisplay)
                     .font(.caption2)
                     .foregroundColor(Color(.secondaryLabel))
 
-                // Moment count - readable at a glance
-                if cardState == .available, let momentCount = game.playCount, momentCount > 0 {
-                    Text("\(momentCount) moments")
+                // Play count - debug info
+                if FeatureFlags.showCardPlayCounts,
+                   cardState == .available,
+                   let playCount = game.playCount, playCount > 0 {
+                    Text("\(playCount) plays")
                         .font(.caption2)
                         .foregroundColor(Color(.secondaryLabel).opacity(0.8))
-                }
-
-                // Content type indicator
-                if cardState == .available {
-                    contentTypeIndicator
                 }
             }
 
@@ -125,7 +96,7 @@ struct GameRowView: View {
     private var matchupTextColor: Color {
         switch cardState {
         case .available: return .primary
-        case .locked: return Color(.secondaryLabel)
+        case .comingSoon, .locked: return Color(.secondaryLabel)
         }
     }
 
@@ -134,7 +105,7 @@ struct GameRowView: View {
             switch cardState {
             case .available:
                 HomeTheme.cardBackground
-            case .locked:
+            case .comingSoon, .locked:
                 // Muted background - lighter in dark mode to avoid blending
                 Color(.systemGray5)
             }
@@ -144,14 +115,14 @@ struct GameRowView: View {
     private var shadowColor: Color {
         switch cardState {
         case .available: return HomeTheme.cardShadow
-        case .locked: return .clear
+        case .comingSoon, .locked: return .clear
         }
     }
 
     private var shadowRadius: CGFloat {
         switch cardState {
         case .available: return HomeTheme.cardShadowRadius
-        case .locked: return 0
+        case .comingSoon, .locked: return 0
         }
     }
 
@@ -163,6 +134,15 @@ struct GameRowView: View {
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.medium))
                 .foregroundColor(Color(.tertiaryLabel))
+        case .comingSoon:
+            // Coming soon state - game completed but no PBP yet
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.caption2)
+                Text("Coming Soon")
+                    .font(.caption2)
+            }
+            .foregroundColor(Color(.quaternaryLabel))
         case .locked:
             // Clear lock state without chevron
             HStack(spacing: 4) {
@@ -173,27 +153,6 @@ struct GameRowView: View {
             }
             .foregroundColor(Color(.quaternaryLabel))
         }
-    }
-
-    @ViewBuilder
-    private var contentTypeIndicator: some View {
-        HStack(spacing: 4) {
-            switch contentType {
-            case .story:
-                Image(systemName: "book.fill")
-                    .font(.caption2)
-                Text("Story")
-                    .font(.caption2)
-            case .playByPlay:
-                Image(systemName: "list.bullet")
-                    .font(.caption2)
-                Text("Play-by-Play")
-                    .font(.caption2)
-            case .pending:
-                EmptyView()
-            }
-        }
-        .foregroundColor(Color(.tertiaryLabel))
     }
 
     // MARK: - Helpers
@@ -237,6 +196,8 @@ struct GameRowView: View {
         switch cardState {
         case .available:
             stateDescription = "Tap to read story"
+        case .comingSoon:
+            stateDescription = "Coming soon, play-by-play data is being processed"
         case .locked:
             stateDescription = "Available after game completes"
         }

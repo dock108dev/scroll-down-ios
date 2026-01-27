@@ -71,15 +71,20 @@ struct GameDetailView: View {
                 // Load user preferences
                 viewModel.loadSocialTabPreference(for: gameId)
 
-                // Load timeline, story, and social posts in parallel
-                // Also load PBP separately if main game detail doesn't have plays
+                // Load timeline and social in parallel with story loading
                 async let timelineTask: () = viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
-                async let storyTask: () = viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
                 async let socialTask: () = loadSocialIfEnabled()
-                async let pbpTask: () = loadPbpIfNeeded()
 
-                // Await all in parallel
-                _ = await (timelineTask, storyTask, socialTask, pbpTask)
+                // 1. First try story
+                await viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
+
+                // 2. If no story, fetch PBP as fallback
+                if !viewModel.hasStoryData {
+                    await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
+                }
+
+                // Await remaining parallel tasks
+                _ = await (timelineTask, socialTask)
             }
         }
     }
@@ -91,14 +96,6 @@ struct GameDetailView: View {
     private func loadSocialIfEnabled() async {
         if viewModel.isSocialTabEnabled {
             await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
-        }
-    }
-
-    private func loadPbpIfNeeded() async {
-        // Only fetch PBP separately if main game detail doesn't have plays
-        let playsFromDetail = viewModel.detail?.plays ?? []
-        if playsFromDetail.isEmpty {
-            await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
         }
     }
 

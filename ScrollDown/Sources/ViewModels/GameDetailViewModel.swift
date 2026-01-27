@@ -196,8 +196,26 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Story Computed Properties
 
+    /// Story is available if we have loaded moments
     var hasStoryData: Bool {
         storyState == .loaded && !momentDisplayModels.isEmpty
+    }
+
+    /// PBP is available from either main detail or separate fetch
+    var hasPbpData: Bool {
+        let playsFromDetail = detail?.plays ?? []
+        return !playsFromDetail.isEmpty || !pbpEvents.isEmpty
+    }
+
+    /// Combined loading state for story and PBP
+    var isLoadingAnyData: Bool {
+        isLoading || storyState == .loading || pbpState == .loading
+    }
+
+    /// No content available after all loading attempts completed
+    var hasNoContent: Bool {
+        storyState != .loading && pbpState != .loading && !isLoading &&
+        !hasStoryData && !hasPbpData
     }
 
     /// Get plays for a specific moment
