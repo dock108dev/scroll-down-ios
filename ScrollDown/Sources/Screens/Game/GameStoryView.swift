@@ -1,10 +1,9 @@
 import SwiftUI
 
 /// Main story view container for completed games
-/// Displays the narrative story with sections, social posts, and optional full PBP access
+/// Displays the narrative story with moments and optional full PBP access
 struct GameStoryView: View {
     @ObservedObject var viewModel: GameDetailViewModel
-    @Binding var collapsedSections: Set<Int>
     @Binding var isCompactStoryExpanded: Bool
     @State private var showingFullPlayByPlay = false
     @State private var collapsedMoments: Set<Int> = []
@@ -16,34 +15,15 @@ struct GameStoryView: View {
                 compactStorySection(narrative)
             }
 
-            // V2: Moments-based rendering
-            if viewModel.hasV2Story {
-                ForEach(viewModel.momentDisplayModels) { moment in
-                    MomentCardView(
-                        moment: moment,
-                        plays: viewModel.unifiedEventsForMoment(moment),
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        isExpanded: momentExpandedBinding(for: moment)
-                    )
-                }
-            } else {
-                // V1: Sections with matched social posts
-                ForEach(viewModel.sections) { section in
-                    StorySectionBlockView(
-                        section: section,
-                        plays: viewModel.unifiedEventsForSection(section),
-                        socialPosts: viewModel.socialPostsForSection(section),
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        isExpanded: sectionExpandedBinding(for: section)
-                    )
-                }
-            }
-
-            // Deferred social posts (couldn't be matched to sections)
-            if !viewModel.deferredSocialPosts.isEmpty {
-                MoreReactionsView(posts: viewModel.deferredSocialPosts)
+            // Story moments
+            ForEach(viewModel.momentDisplayModels) { moment in
+                MomentCardView(
+                    moment: moment,
+                    plays: viewModel.unifiedEventsForMoment(moment),
+                    homeTeam: viewModel.game?.homeTeam ?? "Home",
+                    awayTeam: viewModel.game?.awayTeam ?? "Away",
+                    isExpanded: momentExpandedBinding(for: moment)
+                )
             }
 
             // Full Play-by-Play access button
@@ -58,14 +38,10 @@ struct GameStoryView: View {
 
     // MARK: - Combined Narrative
 
-    /// Combined narrative for display at top (V2 uses first 2 moment narratives, V1 uses compactStory)
     private var combinedNarrative: String? {
-        if viewModel.hasV2Story {
-            let moments = Array(viewModel.momentDisplayModels.prefix(2))
-            let narratives = moments.map { $0.narrative }
-            return narratives.isEmpty ? nil : narratives.joined(separator: " ")
-        }
-        return viewModel.compactStory
+        let moments = Array(viewModel.momentDisplayModels.prefix(2))
+        let narratives = moments.map { $0.narrative }
+        return narratives.isEmpty ? nil : narratives.joined(separator: " ")
     }
 
     // MARK: - Compact Story Section
@@ -77,17 +53,7 @@ struct GameStoryView: View {
                     .font(.caption)
                 Text("Game Story")
                     .font(.caption.weight(.semibold))
-
                 Spacer()
-
-                if let quality = viewModel.storyQuality {
-                    Text(quality.displayName)
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(DesignSystem.Colors.accent.opacity(0.15))
-                        .clipShape(Capsule())
-                }
             }
             .foregroundColor(DesignSystem.TextColor.secondary)
 
@@ -138,23 +104,6 @@ struct GameStoryView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Section Expansion Binding
-
-    private func sectionExpandedBinding(for section: SectionEntry) -> Binding<Bool> {
-        Binding(
-            get: { !collapsedSections.contains(section.id) },
-            set: { isExpanded in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    if isExpanded {
-                        collapsedSections.remove(section.id)
-                    } else {
-                        collapsedSections.insert(section.id)
-                    }
-                }
-            }
-        )
-    }
-
     // MARK: - Moment Expansion Binding
 
     private func momentExpandedBinding(for moment: MomentDisplayModel) -> Binding<Bool> {
@@ -180,7 +129,6 @@ struct GameStoryView: View {
     return ScrollView {
         GameStoryView(
             viewModel: viewModel,
-            collapsedSections: .constant([]),
             isCompactStoryExpanded: .constant(false)
         )
         .padding()

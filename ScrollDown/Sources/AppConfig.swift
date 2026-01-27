@@ -169,9 +169,6 @@ final class AppConfig: ObservableObject {
     /// - Exclude all live/in-progress games
     /// - This ensures deterministic replay without partial data
     func filterGamesForSnapshotMode(_ games: [GameSummary]) -> [GameSummary] {
-        // #region agent log
-        DebugLogger.log(hypothesisId: "D", location: "AppConfig.swift:137", message: "🔍 Filtering games", data: ["inputCount": games.count, "isSnapshot": isSnapshotModeActive])
-        // #endregion
         guard isSnapshotModeActive else {
             return games // Normal mode: show all games
         }
@@ -179,10 +176,6 @@ final class AppConfig: ObservableObject {
         // Snapshot mode: exclude live games
         let filtered = games.filter { game in
             guard let status = game.status else {
-                // Unknown status: exclude to be safe
-                // #region agent log
-                DebugLogger.log(hypothesisId: "D", location: "AppConfig.swift:145", message: "⚠️ Unknown status for game", data: ["id": game.id, "statusRaw": game.statusRaw ?? "nil"])
-                // #endregion
                 return false
             }
             
@@ -193,10 +186,6 @@ final class AppConfig: ObservableObject {
                 return false // Exclude live games
             }
         }
-        
-        // #region agent log
-        DebugLogger.log(hypothesisId: "D", location: "AppConfig.swift:158", message: "✅ Filtering complete", data: ["outputCount": filtered.count])
-        // #endregion
 
         // Log filtering if games were excluded
         if filtered.count < games.count {

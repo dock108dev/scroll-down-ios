@@ -21,14 +21,13 @@ extension GameDetailView {
     }
 
     private var timelineSubtitle: String {
-        // Use sections-based subtitle when story data is available
         if viewModel.hasStoryData {
-            let sectionCount = viewModel.sections.count
-            let highlightCount = viewModel.highlightSections.count
+            let momentCount = viewModel.momentDisplayModels.count
+            let highlightCount = viewModel.momentDisplayModels.filter { $0.isHighlight }.count
             if highlightCount > 0 {
-                return "\(sectionCount) sections • \(highlightCount) highlights"
+                return "\(momentCount) moments • \(highlightCount) highlights"
             }
-            return "\(sectionCount) sections"
+            return "\(momentCount) moments"
         }
 
         let events = viewModel.unifiedTimelineEvents
@@ -45,25 +44,15 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // NEW: Game Story View for completed games with story data
+            // Game Story View for completed games with story data
             if viewModel.shouldShowStoryView {
                 GameStoryView(
                     viewModel: viewModel,
-                    collapsedSections: $collapsedSections,
                     isCompactStoryExpanded: $isCompactStoryExpanded
                 )
             }
-            // Existing: Story sections (in-progress with partial story)
-            else if viewModel.hasStoryData {
-                // Compact story: AI-generated narrative (show when available)
-                if let compactStory = viewModel.compactStory {
-                    compactStorySection(compactStory)
-                }
-                storySectionsTimelineView
-            }
-            // Show unified timeline while story loads or if story fails
+            // Show unified timeline while story loads or if story not available
             else if viewModel.hasUnifiedTimeline {
-                // Show loading indicator above timeline while story fetches
                 if viewModel.storyState == .loading {
                     storyLoadingBanner
                 }
@@ -75,16 +64,7 @@ extension GameDetailView {
             }
         }
         .onAppear {
-            if viewModel.hasStoryData {
-                initializeCollapsedSections()
-            } else {
-                initializeCollapsedQuarters()
-            }
-        }
-        .onChange(of: viewModel.sections.count) { _ in
-            if viewModel.hasStoryData && !hasInitializedSections {
-                initializeCollapsedSections()
-            }
+            initializeCollapsedQuarters()
         }
     }
 
@@ -124,153 +104,8 @@ extension GameDetailView {
         }
     }
 
-    /// Sets all sections as collapsed by default
-    private func initializeCollapsedSections() {
-        guard !hasInitializedSections else { return }
-        hasInitializedSections = true
-
-        for section in viewModel.sections {
-            collapsedSections.insert(section.id)
-        }
-    }
-
-    // MARK: - Compact Story Section
-
-    /// AI-generated game narrative (shown above timeline)
-    private func compactStorySection(_ story: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "text.alignleft")
-                    .font(.caption)
-                Text("Game Story")
-                    .font(.caption.weight(.semibold))
-
-                Spacer()
-
-                if let quality = viewModel.storyQuality {
-                    Text(quality.displayName)
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(DesignSystem.Colors.accent.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-            }
-            .foregroundColor(DesignSystem.TextColor.secondary)
-
-            Text(story)
-                .font(.subheadline)
-                .foregroundColor(DesignSystem.TextColor.primary)
-                .lineLimit(isCompactStoryExpanded ? nil : 3)
-
-            if story.count > 200 {
-                Button(isCompactStoryExpanded ? "Show Less" : "Read More") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isCompactStoryExpanded.toggle()
-                    }
-                }
-                .font(.caption)
-                .foregroundColor(DesignSystem.Colors.accent)
-            }
-        }
-        .padding(DesignSystem.Spacing.cardPadding)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.7))
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
-                .stroke(DesignSystem.borderColor.opacity(0.2), lineWidth: 0.5)
-        )
-    }
-
-    // MARK: - Story Sections Timeline
-
-    /// Timeline view grouped by story sections
-    private var storySectionsTimelineView: some View {
-        VStack(spacing: DesignSystem.Spacing.list) {
-            ForEach(sortedSectionPeriods, id: \.self) { period in
-                sectionPeriodGroup(period: period)
-            }
-
-            if !ungroupedTweets.isEmpty {
-                ForEach(ungroupedTweets) { event in
-                    UnifiedTimelineRowView(
-                        event: event,
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away"
-                    )
-                }
-            }
-        }
-    }
-
-    /// Sorted list of periods that have sections
-    private var sortedSectionPeriods: [Int] {
-        Array(viewModel.sectionsByPeriod.keys).sorted()
-    }
-
-    /// Section for a single period containing its story sections
-    private func sectionPeriodGroup(period: Int) -> some View {
-        let periodSections = viewModel.sectionsByPeriod[period] ?? []
-        let highlightCount = periodSections.filter { $0.isHighlight }.count
-
-        return CollapsibleQuarterCard(
-            title: periodSectionTitle(period: period, sectionCount: periodSections.count, highlightCount: highlightCount),
-            isExpanded: Binding(
-                get: { !collapsedQuarters.contains(period) },
-                set: { isExpanded in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        if isExpanded {
-                            collapsedQuarters.remove(period)
-                        } else {
-                            collapsedQuarters.insert(period)
-                        }
-                    }
-                }
-            )
-        ) {
-            VStack(spacing: DesignSystem.Spacing.list) {
-                ForEach(periodSections) { section in
-                    StorySectionCardView(
-                        section: section,
-                        plays: viewModel.unifiedEventsForSection(section),
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        isExpanded: sectionExpandedBinding(for: section)
-                    )
-                }
-            }
-        }
-        .id("period-sections-\(period)")
-    }
-
-    /// Title for period section showing section and highlight counts
-    private func periodSectionTitle(period: Int, sectionCount: Int, highlightCount: Int) -> String {
-        let periodName = quarterTitle(period)
-        if highlightCount > 0 {
-            return "\(periodName) (\(sectionCount) sections, \(highlightCount) highlights)"
-        }
-        return "\(periodName) (\(sectionCount) sections)"
-    }
-
-    /// Binding for section expansion state
-    private func sectionExpandedBinding(for section: SectionEntry) -> Binding<Bool> {
-        Binding(
-            get: { !collapsedSections.contains(section.id) },
-            set: { isExpanded in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    if isExpanded {
-                        collapsedSections.remove(section.id)
-                    } else {
-                        collapsedSections.insert(section.id)
-                    }
-                }
-            }
-        )
-    }
-
     // MARK: - Unified Timeline (Grouped by Quarter)
 
-    /// Groups events by quarter with all collapsed by default
     private var unifiedTimelineView: some View {
         VStack(spacing: DesignSystem.Spacing.list) {
             ForEach(groupedQuarters, id: \.quarter) { group in

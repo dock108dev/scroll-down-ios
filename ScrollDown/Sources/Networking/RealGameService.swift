@@ -97,11 +97,11 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        throw GameServiceError.notImplemented
+        try await request(path: "api/admin/sports/games/\(gameId)/pbp", queryItems: [])
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        throw GameServiceError.notImplemented
+        try await request(path: "api/admin/sports/games/\(gameId)/social", queryItems: [])
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
@@ -110,22 +110,7 @@ final class RealGameService: GameService {
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        try await request(path: "api/games/\(gameId)/story", queryItems: [])
-    }
-
-    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2? {
-        // Uses admin endpoint - new format detected by response structure
-        do {
-            let response: GameStoryResponseV2 = try await request(
-                path: "api/admin/sports/games/\(gameId)/story",
-                queryItems: []
-            )
-            return response
-        } catch {
-            // V2 not available - return nil to allow fallback to V1
-            logger.info("📖 V2 story not available for game \(gameId, privacy: .public), falling back to V1")
-            return nil
-        }
+        try await request(path: "api/admin/sports/games/\(gameId)/story", queryItems: [])
     }
 
     // MARK: - Networking
@@ -140,10 +125,6 @@ final class RealGameService: GameService {
         guard let url = components.url else {
             throw GameServiceError.notFound
         }
-
-        // #region agent log
-        DebugLogger.log(hypothesisId: "A", location: "RealGameService.swift:80", message: "📡 Request URL", data: ["url": url.absoluteString])
-        // #endregion
 
         do {
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")

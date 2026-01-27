@@ -292,7 +292,7 @@ extension GameDetailView {
                 }
                 .padding(.vertical, 12)
             }
-            .onChange(of: selectedSection) { newSection in
+            .onChange(of: selectedSection) { _, newSection in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     scrollProxy.scrollTo(newSection, anchor: .center)
                 }

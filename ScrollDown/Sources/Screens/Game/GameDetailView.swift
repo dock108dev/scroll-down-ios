@@ -12,9 +12,6 @@ struct GameDetailView: View {
     @State var selectedSection: GameSection = .overview
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
-    // Story sections state
-    @State var collapsedSections: Set<Int> = []
-    @State var hasInitializedSections = false
     @State var isCompactStoryExpanded = false
     // Default expansion states per spec
     @State var isOverviewExpanded = true
@@ -254,11 +251,11 @@ struct GameDetailView: View {
             .onAppear {
                 loadResumeMarkerIfNeeded()
             }
-            .onChange(of: viewModel.detail?.plays.count ?? 0) { _ in
+            .onChange(of: viewModel.detail?.plays.count ?? 0) {
                 loadResumeMarkerIfNeeded()
             }
-            .onChange(of: scrollToSection) { target in
-                guard let target = target else { return }
+            .onChange(of: scrollToSection) { _, target in
+                guard let target else { return }
                 withAnimation(.easeInOut(duration: 0.3)) {
                     proxy.scrollTo(target, anchor: .top)
                 }

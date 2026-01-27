@@ -219,9 +219,6 @@ extension GameSummary {
             case "canceled", "cancelled":
                 result = .canceled
             default:
-                // #region agent log
-                DebugLogger.log(hypothesisId: "B", location: "GameSummary.swift:214", message: "⚠️ Unknown status mapping", data: ["gameId": id, "raw": raw])
-                // #endregion
                 result = nil
             }
             if result != nil { return result }
@@ -237,10 +234,7 @@ extension GameSummary {
         if let date = parsedGameDate, date > Date() {
             return .scheduled
         }
-        
-        // #region agent log
-        DebugLogger.log(hypothesisId: "B", location: "GameSummary.swift:232", message: "⚠️ Could not infer status", data: ["gameId": id, "hasRequiredData": hasRequiredData as Any, "hasScores": (homeScore != nil && awayScore != nil)])
-        // #endregion
+
         return nil
     }
     

@@ -328,7 +328,7 @@ enum MockDataGenerator {
                 videoUrl: nil,
                 imageUrl: nil,
                 sourceHandle: "FanHub",
-                mediaType: .none
+                mediaType: MediaType.none
             ),
             SocialPostEntry(
                 id: Int.random(in: 1000...9999),
@@ -340,7 +340,7 @@ enum MockDataGenerator {
                 videoUrl: nil,
                 imageUrl: nil,
                 sourceHandle: "FanHub",
-                mediaType: .none
+                mediaType: MediaType.none
             ),
             SocialPostEntry(
                 id: Int.random(in: 1000...9999),
@@ -352,7 +352,7 @@ enum MockDataGenerator {
                 videoUrl: nil,
                 imageUrl: nil,
                 sourceHandle: "FanHub",
-                mediaType: .none
+                mediaType: MediaType.none
             )
         ]
     }

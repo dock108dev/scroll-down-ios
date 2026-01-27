@@ -11,42 +11,34 @@ final class MockGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        // Simulate network delay for realistic feel
         try await Task.sleep(nanoseconds: 200_000_000) // 200ms
 
-        // Check cache first
         if let cached = gameCache[id] {
             return cached
         }
 
-        // Ensure games are generated
         if generatedGames == nil {
             generatedGames = MockDataGenerator.generateGames()
         }
 
-        // Find the game summary for this ID
         guard let gameSummary = generatedGames?.first(where: { $0.id == id }) else {
             throw GameServiceError.notFound
         }
 
-        // Generate a detail response for this specific game
         let response = MockDataGenerator.generateGameDetail(from: gameSummary)
         gameCache[id] = response
         return response
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
-        // Simulate network delay
         try await Task.sleep(nanoseconds: 300_000_000) // 300ms
 
-        // Generate games if not cached
         if generatedGames == nil {
             generatedGames = MockDataGenerator.generateGames()
         }
 
         var games = generatedGames ?? []
 
-        // Apply league filter if specified
         if let league = league {
             games = games.filter { $0.league == league.rawValue }
         }
@@ -76,14 +68,12 @@ final class MockGameService: GameService {
 
         switch range {
         case .earlier:
-            // 2+ days ago
             let historyStart = AppDate.historyWindowStart
             return games.filter { game in
                 guard let date = game.parsedGameDate else { return false }
                 return date >= historyStart && date < earlierEnd
             }
         case .yesterday:
-            // 1 day ago
             return games.filter { game in
                 guard let date = game.parsedGameDate else { return false }
                 return date >= yesterdayStart && date < todayStart
@@ -104,15 +94,12 @@ final class MockGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
 
-        // Use cached detail if available to ensure consistency
         if let detail = gameCache[gameId] {
             return PbpResponse(events: mapPlaysToEvents(detail.plays, gameId: gameId))
         }
 
-        // Try to generate detail if not in cache
         if let gameSummary = findGameSummary(for: gameId) {
             let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
             gameCache[gameId] = detail
@@ -123,10 +110,8 @@ final class MockGameService: GameService {
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
 
-        // Use cached detail if available
         if let detail = gameCache[gameId] {
             let posts = detail.socialPosts.map { entry in
                 SocialPostResponse(
@@ -144,13 +129,9 @@ final class MockGameService: GameService {
                     revealLevel: .pre
                 )
             }
-            return SocialPostListResponse(
-                posts: posts,
-                total: posts.count
-            )
+            return SocialPostListResponse(posts: posts, total: posts.count)
         }
 
-        // Try to generate detail if not in cache
         if let gameSummary = findGameSummary(for: gameId) {
             let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
             gameCache[gameId] = detail
@@ -161,10 +142,8 @@ final class MockGameService: GameService {
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
 
-        // Generate timeline and summary from game data if available
         let summaryJson: AnyCodable?
         let timelineJson: AnyCodable
 
@@ -172,8 +151,6 @@ final class MockGameService: GameService {
            let detail = gameCache[gameId] {
             let summaryText = "\(gameSummary.awayTeamName) and \(gameSummary.homeTeamName) squared off in a competitive matchup. The game featured momentum swings on both sides with key plays defining the outcome."
             summaryJson = AnyCodable(["overall": summaryText])
-
-            // Generate unified timeline events from plays and social posts
             timelineJson = AnyCodable(generateUnifiedTimeline(from: detail))
         } else {
             summaryJson = nil
@@ -191,43 +168,26 @@ final class MockGameService: GameService {
         )
     }
 
-    /// Generate unified timeline events in chronological order
-    /// Interleaves PBP plays with tweets — server-provided order
     private func generateUnifiedTimeline(from detail: GameDetailResponse) -> [[String: Any]] {
         var events: [[String: Any]] = []
 
-        // Add PBP events
         for (index, play) in detail.plays.enumerated() {
             var event: [String: Any] = [
                 "event_type": "pbp",
                 "synthetic_timestamp": "2026-01-13T19:\(String(format: "%02d", index)):00Z"
             ]
 
-            if let quarter = play.quarter {
-                event["period"] = quarter
-            }
-            if let clock = play.gameClock {
-                event["game_clock"] = clock
-            }
-            if let desc = play.description {
-                event["description"] = desc
-            }
-            if let team = play.teamAbbreviation {
-                event["team"] = team
-            }
-            if let player = play.playerName {
-                event["player_name"] = player
-            }
-            if let home = play.homeScore {
-                event["home_score"] = home
-            }
-            if let away = play.awayScore {
-                event["away_score"] = away
-            }
+            if let quarter = play.quarter { event["period"] = quarter }
+            if let clock = play.gameClock { event["game_clock"] = clock }
+            if let desc = play.description { event["description"] = desc }
+            if let team = play.teamAbbreviation { event["team"] = team }
+            if let player = play.playerName { event["player_name"] = player }
+            if let home = play.homeScore { event["home_score"] = home }
+            if let away = play.awayScore { event["away_score"] = away }
 
             events.append(event)
 
-            // Interleave tweets at key moments (every 20 plays)
+            // Interleave tweets at key moments
             if index > 0 && index % 20 == 0 && index / 20 <= detail.socialPosts.count {
                 let postIndex = (index / 20) - 1
                 if postIndex < detail.socialPosts.count {
@@ -251,55 +211,14 @@ final class MockGameService: GameService {
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        // Simulate network delay
         try await Task.sleep(nanoseconds: 150_000_000) // 150ms
 
-        // Generate story from game detail if available
-        if let detail = gameCache[gameId] {
-            return generateStory(from: detail, gameId: gameId)
-        }
-
-        // Try to generate detail if not in cache
-        if let gameSummary = findGameSummary(for: gameId) {
-            let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
-            gameCache[gameId] = detail
-            return generateStory(from: detail, gameId: gameId)
-        }
-
-        // Return minimal response if no game data
-        return GameStoryResponse(
-            gameId: gameId,
-            sport: "NBA",
-            storyVersion: "2.0.0",
-            chapters: [],
-            chapterCount: 0,
-            totalPlays: 0,
-            sections: [],
-            sectionCount: 0,
-            compactStory: nil,
-            wordCount: nil,
-            targetWordCount: nil,
-            quality: nil,
-            readingTimeEstimateMinutes: nil,
-            generatedAt: ISO8601DateFormatter().string(from: AppDate.now()),
-            hasStory: false,
-            hasCompactStory: false,
-            metadata: nil
-        )
-    }
-
-    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2? {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-
-        // Generate V2 story from game detail if available
         guard let detail = gameCache[gameId] ?? findAndCacheGame(gameId) else {
-            return nil
+            throw GameServiceError.notFound
         }
-        return generateStoryV2(from: detail, gameId: gameId)
+        return generateStory(from: detail, gameId: gameId)
     }
 
-    /// Find game and cache it
     private func findAndCacheGame(_ gameId: Int) -> GameDetailResponse? {
         guard let gameSummary = findGameSummary(for: gameId) else {
             return nil

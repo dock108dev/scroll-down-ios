@@ -19,7 +19,7 @@ ScrollDown/Sources/
 │   └── Game/         # Game detail view (split into extensions)
 ├── Components/       # Reusable UI
 ├── Networking/       # GameService protocol + implementations
-├── Services/         # TimeService (snapshot mode), SocialPostMatcher
+├── Services/         # TimeService (snapshot mode)
 ├── Logging/          # Structured logging
 └── Mock/games/       # Static mock JSON for development
 ```
@@ -35,23 +35,28 @@ ScrollDown/Sources/
 | Model | Purpose |
 |-------|---------|
 | `GameSummary` | List view representation |
-| `GameDetailResponse` | Full game detail |
-| `GameStoryResponse` | Story with chapters, sections, narrative |
-| `SectionEntry` | Narrative segment of a game (beat type, score range) |
-| `ChapterEntry` | Grouping of plays within a section |
+| `GameDetailResponse` | Full game detail with plays, stats |
+| `GameStoryResponse` | Story with moments and plays |
+| `StoryMoment` | Narrative segment with play IDs, scores, narrative text |
+| `StoryPlay` | Individual play within a story |
+| `MomentDisplayModel` | UI-ready moment with derived beat type |
 | `UnifiedTimelineEvent` | Single timeline entry (PBP or tweet) |
 | `PlayEntry` | Individual play-by-play event |
 
-## Timeline Architecture
+## Story Architecture
 
-The app renders game progression in two modes:
+The app renders completed games using a **moments-based** story system:
 
-1. **Story-based** (primary) — When `GameStoryResponse` is available:
-   - Sections grouped by period with narrative headers
-   - Expandable play-by-play within sections
-   - Social posts matched to relevant sections
+1. **Moments** — Primary narrative units grouping related plays
+   - Each moment has: narrative text, play IDs, score range, period/clock
+   - `explicitlyNarratedPlayIds` marks key scoring plays
+   - Beat types (run, closing sequence, etc.) derived from score deltas
 
-2. **PBP-based** (fallback) — When no story data:
+2. **StoryAdapter** — Converts `GameStoryResponse` to `[MomentDisplayModel]`
+   - Derives beat types from scoring patterns
+   - Maps plays to moments for UI display
+
+3. **Fallback** — When no story data available:
    - `UnifiedTimelineEvent` entries grouped by quarter/period
    - Chronological play-by-play with interleaved tweets
 

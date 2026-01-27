@@ -188,6 +188,23 @@ extension GameDetailViewModel {
 
         return trimmed
     }
+
+    /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
+    func playToDictionary(_ play: PlayEntry) -> [String: Any] {
+        var dict: [String: Any] = [
+            "event_type": "pbp",
+            "play_index": play.playIndex
+        ]
+        if let quarter = play.quarter { dict["period"] = quarter }
+        if let clock = play.gameClock { dict["game_clock"] = clock }
+        if let desc = play.description { dict["description"] = desc }
+        if let team = play.teamAbbreviation { dict["team"] = team }
+        if let player = play.playerName { dict["player_name"] = player }
+        if let home = play.homeScore { dict["home_score"] = home }
+        if let away = play.awayScore { dict["away_score"] = away }
+        if let playType = play.playType { dict["play_type"] = playType.rawValue }
+        return dict
+    }
 }
 
 // MARK: - Timeline Constants

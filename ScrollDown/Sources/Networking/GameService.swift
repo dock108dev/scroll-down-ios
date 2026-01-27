@@ -30,15 +30,10 @@ protocol GameService {
     /// - Returns: Timeline artifact response
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse
 
-    /// Fetch game story (chapters, sections, narrative)
+    /// Fetch game story (moments-based)
     /// - Parameter gameId: The game ID
-    /// - Returns: Game story response with chapters, sections, and compact narrative
+    /// - Returns: Story response with moments and plays
     func fetchStory(gameId: Int) async throws -> GameStoryResponse
-
-    /// Fetch game story V2 (moments-based API)
-    /// - Parameter gameId: The game ID
-    /// - Returns: V2 story response with moments and plays, or nil if unavailable
-    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2?
 }
 
 // MARK: - Reveal Level
@@ -54,7 +49,6 @@ enum GameServiceError: LocalizedError {
     case notFound
     case networkError(Error)
     case decodingError(Error)
-    case notImplemented
 
     var errorDescription: String? {
         switch self {
@@ -64,8 +58,6 @@ enum GameServiceError: LocalizedError {
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):
             return "Data error: \(error.localizedDescription)"
-        case .notImplemented:
-            return "This feature is not yet implemented"
         }
     }
 }

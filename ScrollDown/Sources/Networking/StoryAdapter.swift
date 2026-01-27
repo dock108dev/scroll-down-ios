@@ -2,10 +2,10 @@ import Foundation
 
 // MARK: - Story Adapter
 
-/// Adapter for converting V2 story responses to display models
+/// Adapter for converting story response to display models
 enum StoryAdapter {
-    /// Convert V2 response to display models
-    static func convertToDisplayModels(from response: GameStoryResponseV2) -> [MomentDisplayModel] {
+    /// Convert response to display models
+    static func convertToDisplayModels(from response: GameStoryResponse) -> [MomentDisplayModel] {
         let total = response.story.moments.count
         return response.story.moments.enumerated().map { index, moment in
             MomentDisplayModel(
@@ -25,7 +25,6 @@ enum StoryAdapter {
 
     /// Derive beat type from moment data (score deltas, position in game)
     static func deriveBeatType(from moment: StoryMoment, index: Int, total: Int) -> BeatType {
-        // Extract scores
         let homeScoreAfter = moment.scoreAfter.count > 1 ? moment.scoreAfter[1] : 0
         let homeScoreBefore = moment.scoreBefore.count > 1 ? moment.scoreBefore[1] : 0
         let awayScoreAfter = moment.scoreAfter.first ?? 0
