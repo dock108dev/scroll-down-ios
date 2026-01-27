@@ -44,23 +44,29 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Game Story View for completed games with story data
+            // Priority 1: Show story if available
             if viewModel.shouldShowStoryView {
                 GameStoryView(
                     viewModel: viewModel,
                     isCompactStoryExpanded: $isCompactStoryExpanded
                 )
             }
-            // Show unified timeline while story loads or if story not available
+            // Priority 2: Show PBP if available (story failed, loading, or unavailable)
             else if viewModel.hasUnifiedTimeline {
                 if viewModel.storyState == .loading {
                     storyLoadingBanner
+                } else if case .failed = viewModel.storyState {
+                    storyUnavailableBanner
                 }
                 unifiedTimelineView
-            } else if viewModel.storyState == .loading {
+            }
+            // Priority 3: Still loading with no PBP yet
+            else if viewModel.storyState == .loading || viewModel.isLoading {
                 timelineLoadingView
-            } else {
-                EmptySectionView(text: "No timeline data available.")
+            }
+            // Priority 4: No data at all
+            else {
+                EmptySectionView(text: "No play-by-play data available for this game.")
             }
         }
         .onAppear {
@@ -73,6 +79,20 @@ extension GameDetailView {
             ProgressView()
                 .scaleEffect(0.8)
             Text("Loading enhanced timeline...")
+                .font(.caption)
+                .foregroundColor(DesignSystem.TextColor.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var storyUnavailableBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "text.alignleft")
+                .font(.caption)
+            Text("Showing play-by-play")
                 .font(.caption)
                 .foregroundColor(DesignSystem.TextColor.secondary)
         }

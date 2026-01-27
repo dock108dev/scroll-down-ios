@@ -10,6 +10,13 @@ enum GameCardState {
     }
 }
 
+/// What content type is available for this game
+enum GameContentType {
+    case story       // Full story with moments
+    case playByPlay  // PBP only (no story)
+    case pending     // Not yet determined/loading
+}
+
 /// Row view for displaying a game summary in a list
 /// Supports three visual states: story available, story pending, and locked
 struct GameRowView: View {
@@ -25,6 +32,31 @@ struct GameRowView: View {
         case .scheduled, .inProgress, .postponed, .canceled:
             return .locked
         }
+    }
+
+    /// What content type is available for this game
+    /// Note: We can't reliably know if a story exists from GameSummary alone.
+    /// Stories are only available for NBA/NCAAB games with moments.
+    /// For now, show PBP indicator when hasPbp is true.
+    var contentType: GameContentType {
+        guard cardState == .available else { return .pending }
+
+        // Only NBA and NCAAB currently have story support
+        let storyLeagues = ["NBA", "NCAAB"]
+        let supportsStory = storyLeagues.contains(game.league)
+
+        // If league supports stories and has required data, indicate story
+        // But this is still a heuristic - actual story availability requires fetching
+        if supportsStory && game.hasRequiredData == true {
+            return .story
+        }
+
+        // For other leagues or when hasPbp is explicitly true, show PBP
+        if game.hasPbp == true {
+            return .playByPlay
+        }
+
+        return .pending
     }
 
     var body: some View {
@@ -56,6 +88,11 @@ struct GameRowView: View {
                     Text("\(momentCount) moments")
                         .font(.caption2)
                         .foregroundColor(Color(.secondaryLabel).opacity(0.8))
+                }
+
+                // Content type indicator
+                if cardState == .available {
+                    contentTypeIndicator
                 }
             }
 
@@ -136,6 +173,27 @@ struct GameRowView: View {
             }
             .foregroundColor(Color(.quaternaryLabel))
         }
+    }
+
+    @ViewBuilder
+    private var contentTypeIndicator: some View {
+        HStack(spacing: 4) {
+            switch contentType {
+            case .story:
+                Image(systemName: "book.fill")
+                    .font(.caption2)
+                Text("Story")
+                    .font(.caption2)
+            case .playByPlay:
+                Image(systemName: "list.bullet")
+                    .font(.caption2)
+                Text("Play-by-Play")
+                    .font(.caption2)
+            case .pending:
+                EmptyView()
+            }
+        }
+        .foregroundColor(Color(.tertiaryLabel))
     }
 
     // MARK: - Helpers

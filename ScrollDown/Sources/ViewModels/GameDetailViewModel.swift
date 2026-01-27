@@ -54,6 +54,17 @@ final class GameDetailViewModel: ObservableObject {
         case failed(String)
     }
 
+    enum PbpState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
+    // PBP data (fetched separately when not included in main detail)
+    @Published private(set) var pbpEvents: [PbpEvent] = []
+    @Published private(set) var pbpState: PbpState = .idle
+
     struct TimelineArtifactSummary: Equatable {
         let eventCount: Int
         let firstTimestamp: String?
@@ -158,6 +169,28 @@ final class GameDetailViewModel: ObservableObject {
         } catch {
             logger.error("📖 Story fetch failed: \(error.localizedDescription, privacy: .public)")
             storyState = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Load PBP data separately when not included in main game detail
+    func loadPbp(gameId: Int, service: GameService) async {
+        switch pbpState {
+        case .loaded, .loading:
+            return
+        case .idle, .failed:
+            break
+        }
+
+        pbpState = .loading
+
+        do {
+            let response = try await service.fetchPbp(gameId: gameId)
+            pbpEvents = response.events
+            pbpState = .loaded
+            logger.info("📋 Loaded PBP: \(response.events.count, privacy: .public) events")
+        } catch {
+            logger.error("📋 PBP fetch failed: \(error.localizedDescription, privacy: .public)")
+            pbpState = .failed(error.localizedDescription)
         }
     }
 

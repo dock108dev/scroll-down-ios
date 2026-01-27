@@ -40,8 +40,47 @@ struct PbpEvent: Codable, Identifiable, Equatable {
     }
 }
 
-/// PBP response as defined in the OpenAPI spec (PbpResponse schema)
+/// PBP response - handles both flat events and period-grouped formats
 struct PbpResponse: Codable {
+    let events: [PbpEvent]
+
+    enum CodingKeys: String, CodingKey {
+        case events
+        case periods
+    }
+
+    init(events: [PbpEvent]) {
+        self.events = events
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Try flat events array first
+        if let flatEvents = try? container.decode([PbpEvent].self, forKey: .events) {
+            self.events = flatEvents
+            return
+        }
+
+        // Try periods format: {"periods": [{"period": 1, "events": [...]}]}
+        if let periods = try? container.decode([PbpPeriod].self, forKey: .periods) {
+            self.events = periods.flatMap { $0.events }
+            return
+        }
+
+        // Default to empty if neither format works
+        self.events = []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(events, forKey: .events)
+    }
+}
+
+/// Period wrapper for grouped PBP format
+private struct PbpPeriod: Codable {
+    let period: Int
     let events: [PbpEvent]
 }
 

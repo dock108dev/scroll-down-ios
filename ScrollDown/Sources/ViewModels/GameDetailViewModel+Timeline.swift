@@ -9,18 +9,29 @@ extension GameDetailViewModel {
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
         var events: [UnifiedTimelineEvent] = []
 
+        // First try plays from main game detail, then fall back to separately fetched PBP
         let plays = detail?.plays ?? []
-        let pbpEvents = plays.enumerated().map { index, play in
-            UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+        if !plays.isEmpty {
+            let playEvents = plays.enumerated().map { index, play in
+                UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+            }
+            events.append(contentsOf: playEvents)
+        } else if !pbpEvents.isEmpty {
+            // Use separately fetched PBP events
+            let playEvents = pbpEvents.enumerated().map { index, event in
+                UnifiedTimelineEvent(from: pbpEventToDictionary(event), index: index)
+            }
+            events.append(contentsOf: playEvents)
         }
-        events.append(contentsOf: pbpEvents)
+
+        let totalPlays = plays.isEmpty ? pbpEvents.count : plays.count
 
         if let timelineValue = timelineArtifact?.timelineJson?.value {
             let rawEvents = extractTimelineEvents(from: timelineValue)
             let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
                 let eventType = dict["event_type"] as? String
                 guard eventType == "tweet" else { return nil }
-                return UnifiedTimelineEvent(from: dict, index: plays.count + index)
+                return UnifiedTimelineEvent(from: dict, index: totalPlays + index)
             }
             events.append(contentsOf: tweetEvents)
         }
@@ -203,6 +214,22 @@ extension GameDetailViewModel {
         if let home = play.homeScore { dict["home_score"] = home }
         if let away = play.awayScore { dict["away_score"] = away }
         if let playType = play.playType { dict["play_type"] = playType.rawValue }
+        return dict
+    }
+
+    /// Convert PbpEvent to dictionary for UnifiedTimelineEvent parsing
+    func pbpEventToDictionary(_ event: PbpEvent) -> [String: Any] {
+        var dict: [String: Any] = [
+            "event_type": "pbp"
+        ]
+        if let period = event.period { dict["period"] = period }
+        if let clock = event.gameClock { dict["game_clock"] = clock }
+        if let desc = event.description { dict["description"] = desc }
+        if let team = event.team { dict["team"] = team }
+        if let player = event.playerName { dict["player_name"] = player }
+        if let home = event.homeScore { dict["home_score"] = home }
+        if let away = event.awayScore { dict["away_score"] = away }
+        if let eventType = event.eventType { dict["play_type"] = eventType }
         return dict
     }
 }
