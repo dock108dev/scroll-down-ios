@@ -165,4 +165,24 @@ extension GameDetailViewModel {
         if let playType = play.playType { dict["play_type"] = playType.rawValue }
         return dict
     }
+
+    // MARK: - V2 Moment Helpers
+
+    /// Get unified timeline events for a V2 moment
+    func unifiedEventsForMoment(_ moment: MomentDisplayModel) -> [UnifiedTimelineEvent] {
+        playsForMoment(moment).map { play in
+            var dict: [String: Any] = [
+                "event_type": "pbp",
+                "play_index": play.playIndex,
+                "period": play.period
+            ]
+            if let clock = play.clock { dict["game_clock"] = clock }
+            if let desc = play.description { dict["description"] = desc }
+            if let home = play.homeScore { dict["home_score"] = home }
+            if let away = play.awayScore { dict["away_score"] = away }
+            if let playType = play.playType { dict["play_type"] = playType }
+            dict["is_highlighted"] = moment.highlightedPlayIds.contains(play.playId)
+            return UnifiedTimelineEvent(from: dict, index: play.playIndex)
+        }
+    }
 }

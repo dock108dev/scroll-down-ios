@@ -41,6 +41,11 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var storyState: StoryState = .idle
     @Published private(set) var gameStory: GameStoryResponse?
 
+    // V2 Story API (moments-based)
+    @Published private(set) var storyV2Response: GameStoryResponseV2?
+    @Published private(set) var momentDisplayModels: [MomentDisplayModel] = []
+    @Published private(set) var storyPlays: [StoryPlay] = []
+
     enum StoryState: Equatable {
         case idle
         case loading
@@ -150,7 +155,7 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Load story from Chapters-First Story API
+    /// Load story from Story API (tries V2 first, falls back to V1)
     func loadStory(gameId: Int, service: GameService) async {
         switch storyState {
         case .loaded, .loading:
@@ -162,10 +167,20 @@ final class GameDetailViewModel: ObservableObject {
         storyState = .loading
 
         do {
-            let response = try await service.fetchStory(gameId: gameId)
-            gameStory = response
-            storyState = .loaded
-            logger.info("📖 Loaded story: \(response.sectionCount, privacy: .public) API sections, \(response.chapterCount, privacy: .public) chapters")
+            // Try V2 first
+            if let v2Response = try await service.fetchStoryV2(gameId: gameId) {
+                storyV2Response = v2Response
+                storyPlays = v2Response.plays
+                momentDisplayModels = StoryAdapter.convertToDisplayModels(from: v2Response)
+                storyState = .loaded
+                logger.info("📖 Loaded V2 story: \(v2Response.story.moments.count, privacy: .public) moments, \(v2Response.plays.count, privacy: .public) plays")
+            } else {
+                // Fallback to V1
+                let response = try await service.fetchStory(gameId: gameId)
+                gameStory = response
+                storyState = .loaded
+                logger.info("📖 Loaded V1 story: \(response.sectionCount, privacy: .public) API sections, \(response.chapterCount, privacy: .public) chapters")
+            }
         } catch {
             logger.error("📖 Story API failed: \(error.localizedDescription, privacy: .public)")
             storyState = .failed(error.localizedDescription)
@@ -222,8 +237,24 @@ final class GameDetailViewModel: ObservableObject {
     /// Whether story data is available
     var hasStoryData: Bool {
         let loaded = storyState == .loaded
-        let hasSections = !sections.isEmpty
+        let hasSections = !sections.isEmpty || !momentDisplayModels.isEmpty
         return loaded && hasSections
+    }
+
+    /// Whether V2 story data is available
+    var hasV2Story: Bool {
+        !momentDisplayModels.isEmpty
+    }
+
+    /// Get plays for a specific moment
+    func playsForMoment(_ moment: MomentDisplayModel) -> [StoryPlay] {
+        let ids = Set(moment.playIds)
+        return storyPlays.filter { ids.contains($0.playId) }
+    }
+
+    /// Check if a play is highlighted within a moment
+    func isPlayHighlighted(_ playId: Int, in moment: MomentDisplayModel) -> Bool {
+        moment.highlightedPlayIds.contains(playId)
     }
 
     /// Whether to show the Story View (completed games with story data)

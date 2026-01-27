@@ -288,6 +288,27 @@ final class MockGameService: GameService {
         )
     }
 
+    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2? {
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
+
+        // Generate V2 story from game detail if available
+        guard let detail = gameCache[gameId] ?? findAndCacheGame(gameId) else {
+            return nil
+        }
+        return generateStoryV2(from: detail, gameId: gameId)
+    }
+
+    /// Find game and cache it
+    private func findAndCacheGame(_ gameId: Int) -> GameDetailResponse? {
+        guard let gameSummary = findGameSummary(for: gameId) else {
+            return nil
+        }
+        let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
+        gameCache[gameId] = detail
+        return detail
+    }
+
     // MARK: - Helpers
 
     func findGameSummary(for gameId: Int) -> GameSummary? {

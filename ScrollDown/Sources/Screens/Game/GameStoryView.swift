@@ -7,24 +7,38 @@ struct GameStoryView: View {
     @Binding var collapsedSections: Set<Int>
     @Binding var isCompactStoryExpanded: Bool
     @State private var showingFullPlayByPlay = false
+    @State private var collapsedMoments: Set<Int> = []
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.list) {
-            // Compact story (AI narrative) at the top
-            if let story = viewModel.compactStory {
-                compactStorySection(story)
+            // Narrative summary at the top
+            if let narrative = combinedNarrative {
+                compactStorySection(narrative)
             }
 
-            // Story sections with matched social posts
-            ForEach(viewModel.sections) { section in
-                StorySectionBlockView(
-                    section: section,
-                    plays: viewModel.unifiedEventsForSection(section),
-                    socialPosts: viewModel.socialPostsForSection(section),
-                    homeTeam: viewModel.game?.homeTeam ?? "Home",
-                    awayTeam: viewModel.game?.awayTeam ?? "Away",
-                    isExpanded: sectionExpandedBinding(for: section)
-                )
+            // V2: Moments-based rendering
+            if viewModel.hasV2Story {
+                ForEach(viewModel.momentDisplayModels) { moment in
+                    MomentCardView(
+                        moment: moment,
+                        plays: viewModel.unifiedEventsForMoment(moment),
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        isExpanded: momentExpandedBinding(for: moment)
+                    )
+                }
+            } else {
+                // V1: Sections with matched social posts
+                ForEach(viewModel.sections) { section in
+                    StorySectionBlockView(
+                        section: section,
+                        plays: viewModel.unifiedEventsForSection(section),
+                        socialPosts: viewModel.socialPostsForSection(section),
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        isExpanded: sectionExpandedBinding(for: section)
+                    )
+                }
             }
 
             // Deferred social posts (couldn't be matched to sections)
@@ -40,6 +54,18 @@ struct GameStoryView: View {
         .sheet(isPresented: $showingFullPlayByPlay) {
             FullPlayByPlayView(viewModel: viewModel)
         }
+    }
+
+    // MARK: - Combined Narrative
+
+    /// Combined narrative for display at top (V2 uses first 2 moment narratives, V1 uses compactStory)
+    private var combinedNarrative: String? {
+        if viewModel.hasV2Story {
+            let moments = Array(viewModel.momentDisplayModels.prefix(2))
+            let narratives = moments.map { $0.narrative }
+            return narratives.isEmpty ? nil : narratives.joined(separator: " ")
+        }
+        return viewModel.compactStory
     }
 
     // MARK: - Compact Story Section
@@ -123,6 +149,23 @@ struct GameStoryView: View {
                         collapsedSections.remove(section.id)
                     } else {
                         collapsedSections.insert(section.id)
+                    }
+                }
+            }
+        )
+    }
+
+    // MARK: - Moment Expansion Binding
+
+    private func momentExpandedBinding(for moment: MomentDisplayModel) -> Binding<Bool> {
+        Binding(
+            get: { !collapsedMoments.contains(moment.id) },
+            set: { isExpanded in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    if isExpanded {
+                        collapsedMoments.remove(moment.id)
+                    } else {
+                        collapsedMoments.insert(moment.id)
                     }
                 }
             }

@@ -34,6 +34,11 @@ protocol GameService {
     /// - Parameter gameId: The game ID
     /// - Returns: Game story response with chapters, sections, and compact narrative
     func fetchStory(gameId: Int) async throws -> GameStoryResponse
+
+    /// Fetch game story V2 (moments-based API)
+    /// - Parameter gameId: The game ID
+    /// - Returns: V2 story response with moments and plays, or nil if unavailable
+    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2?
 }
 
 // MARK: - Reveal Level

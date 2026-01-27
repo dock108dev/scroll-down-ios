@@ -113,6 +113,21 @@ final class RealGameService: GameService {
         try await request(path: "api/games/\(gameId)/story", queryItems: [])
     }
 
+    func fetchStoryV2(gameId: Int) async throws -> GameStoryResponseV2? {
+        // Uses admin endpoint - new format detected by response structure
+        do {
+            let response: GameStoryResponseV2 = try await request(
+                path: "api/admin/sports/games/\(gameId)/story",
+                queryItems: []
+            )
+            return response
+        } catch {
+            // V2 not available - return nil to allow fallback to V1
+            logger.info("📖 V2 story not available for game \(gameId, privacy: .public), falling back to V1")
+            return nil
+        }
+    }
+
     // MARK: - Networking
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {
