@@ -83,6 +83,8 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     let clock: String?
     let playType: String?
     let description: String?
+    let team: String?           // Team abbreviation (if available)
+    let playerName: String?     // Player name (if available, often embedded in description)
     let homeScore: Int?
     let awayScore: Int?
 
@@ -95,6 +97,9 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         case clock
         case playType = "play_type"
         case description
+        case team
+        case teamAbbreviation = "team_abbreviation"
+        case playerName = "player_name"
         case homeScore = "home_score"
         case awayScore = "away_score"
     }
@@ -107,6 +112,10 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         clock = try container.decodeIfPresent(String.self, forKey: .clock)
         playType = try container.decodeIfPresent(String.self, forKey: .playType)
         description = try container.decodeIfPresent(String.self, forKey: .description)
+        // Handle both "team" and "team_abbreviation" keys
+        team = try container.decodeIfPresent(String.self, forKey: .team)
+            ?? container.decodeIfPresent(String.self, forKey: .teamAbbreviation)
+        playerName = try container.decodeIfPresent(String.self, forKey: .playerName)
         homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
         awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
     }
@@ -118,6 +127,8 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         clock: String?,
         playType: String?,
         description: String?,
+        team: String? = nil,
+        playerName: String? = nil,
         homeScore: Int?,
         awayScore: Int?
     ) {
@@ -127,8 +138,24 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         self.clock = clock
         self.playType = playType
         self.description = description
+        self.team = team
+        self.playerName = playerName
         self.homeScore = homeScore
         self.awayScore = awayScore
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(playId, forKey: .playId)
+        try container.encode(playIndex, forKey: .playIndex)
+        try container.encode(period, forKey: .period)
+        try container.encodeIfPresent(clock, forKey: .clock)
+        try container.encodeIfPresent(playType, forKey: .playType)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(team, forKey: .team)
+        try container.encodeIfPresent(playerName, forKey: .playerName)
+        try container.encodeIfPresent(homeScore, forKey: .homeScore)
+        try container.encodeIfPresent(awayScore, forKey: .awayScore)
     }
 }
 

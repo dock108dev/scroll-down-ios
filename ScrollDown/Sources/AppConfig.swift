@@ -112,8 +112,11 @@ final class AppConfig: ObservableObject {
         if FeatureFlags.defaultToLocalhost {
             return .localhost
         }
-        #endif
+        // Default to mock mode for development to ensure story flow works
+        return .mock
+        #else
         return .live
+        #endif
     }() {
         didSet {
             // Clear cached services when environment changes

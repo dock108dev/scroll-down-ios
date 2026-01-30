@@ -9,17 +9,26 @@ extension GameDetailViewModel {
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
         var events: [UnifiedTimelineEvent] = []
 
-        // First try plays from main game detail, then fall back to separately fetched PBP
+        // Get sport for period labeling (NBA, NHL, NCAAB, etc.)
+        let sport = detail?.game.leagueCode
+
+        // Priority: detail.plays > storyPlays > pbpEvents
         let plays = detail?.plays ?? []
         if !plays.isEmpty {
             let playEvents = plays.enumerated().map { index, play in
-                UnifiedTimelineEvent(from: playToDictionary(play), index: index)
+                UnifiedTimelineEvent(from: playToDictionary(play), index: index, sport: sport)
+            }
+            events.append(contentsOf: playEvents)
+        } else if !storyPlays.isEmpty {
+            // Use story plays if available (when story loaded but detail.plays is empty)
+            let playEvents = storyPlays.enumerated().map { index, play in
+                UnifiedTimelineEvent(from: storyPlayToDictionary(play), index: index, sport: sport)
             }
             events.append(contentsOf: playEvents)
         } else if !pbpEvents.isEmpty {
             // Use separately fetched PBP events
             let playEvents = pbpEvents.enumerated().map { index, event in
-                UnifiedTimelineEvent(from: pbpEventToDictionary(event), index: index)
+                UnifiedTimelineEvent(from: pbpEventToDictionary(event), index: index, sport: sport)
             }
             events.append(contentsOf: playEvents)
         }
@@ -31,7 +40,7 @@ extension GameDetailViewModel {
             let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
                 let eventType = dict["event_type"] as? String
                 guard eventType == "tweet" else { return nil }
-                return UnifiedTimelineEvent(from: dict, index: totalPlays + index)
+                return UnifiedTimelineEvent(from: dict, index: totalPlays + index, sport: sport)
             }
             events.append(contentsOf: tweetEvents)
         }
@@ -39,9 +48,15 @@ extension GameDetailViewModel {
         return events
     }
 
-    /// Whether timeline data is available from timeline_json
+    /// Whether timeline/PBP data is available for "View All Plays"
+    /// True if we have: story plays, detail plays, or separately fetched PBP events
     var hasUnifiedTimeline: Bool {
-        !unifiedTimelineEvents.isEmpty
+        // Story plays are available
+        if !storyPlays.isEmpty {
+            return true
+        }
+        // Regular timeline events are available
+        return !unifiedTimelineEvents.isEmpty
     }
 
     var timelineArtifactSummary: TimelineArtifactSummary? {
@@ -230,6 +245,23 @@ extension GameDetailViewModel {
         if let home = event.homeScore { dict["home_score"] = home }
         if let away = event.awayScore { dict["away_score"] = away }
         if let eventType = event.eventType { dict["play_type"] = eventType }
+        return dict
+    }
+
+    /// Convert StoryPlay to dictionary for UnifiedTimelineEvent parsing
+    func storyPlayToDictionary(_ play: StoryPlay) -> [String: Any] {
+        var dict: [String: Any] = [
+            "event_type": "pbp",
+            "play_index": play.playIndex,
+            "period": play.period
+        ]
+        if let clock = play.clock { dict["game_clock"] = clock }
+        if let desc = play.description { dict["description"] = desc }
+        if let team = play.team { dict["team"] = team }
+        if let player = play.playerName { dict["player_name"] = player }
+        if let home = play.homeScore { dict["home_score"] = home }
+        if let away = play.awayScore { dict["away_score"] = away }
+        if let playType = play.playType { dict["play_type"] = playType }
         return dict
     }
 }

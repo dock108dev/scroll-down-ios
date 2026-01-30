@@ -17,6 +17,11 @@ struct HomeSectionState: Identifiable {
         self.title = title
         self.isExpanded = isExpanded
     }
+
+    /// Only completed/final games (excludes scheduled and in-progress)
+    var completedGames: [GameSummary] {
+        games.filter { $0.status?.isCompleted == true }
+    }
 }
 
 /// Result from loading a single section
@@ -86,10 +91,10 @@ enum HomeStrings {
     static let errorIconName = "exclamationmark.triangle"
     static let errorTitle = "Error"
     static let retryLabel = "Retry"
-    static let sectionEarlier = "Earlier — Stories Available"
-    static let sectionYesterday = "Yesterday — Stories Available"
+    static let sectionEarlier = "Earlier"
+    static let sectionYesterday = "Yesterday"
     static let sectionToday = "Today"
-    static let sectionUpcoming = "Coming Up — After Games Complete"
+    static let sectionUpcoming = "Coming Up"
     static let sectionLoading = "Loading section..."
     static let earlierEmpty = "No games from earlier."
     static let yesterdayEmpty = "No games from yesterday."

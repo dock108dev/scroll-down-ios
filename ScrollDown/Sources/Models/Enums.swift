@@ -68,6 +68,12 @@ enum PlayType: RawRepresentable, Codable, Equatable {
     case giveaway
     case takeaway
     case blockedShot
+    case miss           // Missed shot (NHL)
+    case stoppage       // Play stoppage (NHL)
+
+    // Basketball additional types
+    case tip            // Tip-off / jump ball
+    case threePointer   // 3-point shot (3pt)
 
     // General (all sports)
     case assist
@@ -101,6 +107,10 @@ enum PlayType: RawRepresentable, Codable, Equatable {
         case .giveaway: return "giveaway"
         case .takeaway: return "takeaway"
         case .blockedShot: return "blocked_shot"
+        case .miss: return "miss"
+        case .stoppage: return "stoppage"
+        case .tip: return "tip"
+        case .threePointer: return "3pt"
         case .assist: return "assist"
         case .timeout: return "timeout"
         case .substitution: return "substitution"
@@ -133,6 +143,11 @@ enum PlayType: RawRepresentable, Codable, Equatable {
         case "giveaway": self = .giveaway
         case "takeaway": self = .takeaway
         case "blocked_shot": self = .blockedShot
+        case "miss": self = .miss
+        case "stoppage": self = .stoppage
+        case "tip": self = .tip
+        case "3pt": self = .threePointer
+        case "three_pointer": self = .threePointer
         case "assist": self = .assist
         case "timeout": self = .timeout
         case "substitution": self = .substitution

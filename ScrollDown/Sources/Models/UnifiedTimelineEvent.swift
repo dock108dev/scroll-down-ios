@@ -9,7 +9,8 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     let syntheticTimestamp: String?
     let period: Int?
     let gameClock: String?
-    
+    let sport: String?  // For sport-aware period labeling (NBA, NHL, NCAAB, etc.)
+
     // PBP-specific fields
     let description: String?
     let team: String?
@@ -17,7 +18,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     let homeScore: Int?
     let awayScore: Int?
     let playType: String?
-    
+
     // Tweet-specific fields
     let tweetText: String?
     let tweetUrl: String?
@@ -25,7 +26,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     let imageUrl: String?
     let videoUrl: String?
     let postedAt: String?
-    
+
     enum EventType: String, Equatable {
         case pbp
         case tweet
@@ -33,7 +34,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     }
     
     /// Parse from raw dictionary in timeline_json
-    init(from dict: [String: Any], index: Int) {
+    init(from dict: [String: Any], index: Int, sport: String? = nil) {
         // ID: use event_id if present, otherwise generate from index
         if let eventId = dict["event_id"] as? String {
             self.id = eventId
@@ -42,11 +43,14 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
         } else {
             self.id = "event-\(index)"
         }
-        
+
         // Event type
         let rawType = dict["event_type"] as? String ?? ""
         self.eventType = EventType(rawValue: rawType) ?? .unknown
-        
+
+        // Sport (from parameter or dictionary)
+        self.sport = sport ?? dict["sport"] as? String ?? dict["league"] as? String
+
         // Common fields
         self.syntheticTimestamp = dict["synthetic_timestamp"] as? String
             ?? dict["timestamp"] as? String
@@ -56,13 +60,22 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             ?? dict["clock"] as? String
         
         // PBP fields
-        self.description = dict["description"] as? String
+        let rawDescription = dict["description"] as? String
             ?? dict["play_description"] as? String
+        self.description = rawDescription
         self.team = dict["team"] as? String
             ?? dict["team_abbreviation"] as? String
-        self.playerName = dict["player_name"] as? String
-            ?? dict["player"] as? String
         self.playType = dict["play_type"] as? String
+
+        // Player name: use explicit field if available, otherwise extract from description
+        if let explicitName = dict["player_name"] as? String ?? dict["player"] as? String,
+           !explicitName.isEmpty {
+            self.playerName = explicitName
+        } else if let desc = rawDescription {
+            self.playerName = PbpEvent.extractPlayerName(from: desc)
+        } else {
+            self.playerName = nil
+        }
         
         // Score parsing - handle multiple formats
         // Format 1: separate home_score/away_score fields
@@ -115,14 +128,47 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
         }
     }
     
-    /// Time label for display
+    /// Time label for display (sport-aware period labeling)
     var timeLabel: String? {
-        if let clock = gameClock, let period = period {
-            return "Q\(period) \(clock)"
+        guard let clock = gameClock else { return nil }
+        guard let period = period else { return clock }
+
+        let periodLabel = Self.periodLabel(for: period, sport: sport)
+        return "\(periodLabel) \(clock)"
+    }
+
+    /// Returns the period label based on sport
+    /// - NBA: Q1, Q2, Q3, Q4, OT, 2OT, etc.
+    /// - NHL: P1, P2, P3, OT, SO
+    /// - NCAAB: H1, H2, OT, 2OT, etc.
+    static func periodLabel(for period: Int, sport: String?) -> String {
+        let sportUpper = sport?.uppercased()
+
+        switch sportUpper {
+        case "NHL":
+            switch period {
+            case 1...3: return "P\(period)"
+            case 4: return "OT"
+            case 5: return "SO"  // Shootout
+            default: return "\(period - 4)OT"
+            }
+        case "NCAAB":
+            switch period {
+            case 1: return "H1"
+            case 2: return "H2"
+            case 3: return "OT"
+            default: return "\(period - 2)OT"
+            }
+        case "NBA", .none:
+            // Default to NBA-style quarters
+            switch period {
+            case 1...4: return "Q\(period)"
+            case 5: return "OT"
+            default: return "\(period - 4)OT"
+            }
+        default:
+            // Generic fallback
+            return "Q\(period)"
         }
-        if let clock = gameClock {
-            return clock
-        }
-        return nil
     }
 }

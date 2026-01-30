@@ -160,6 +160,12 @@ enum MockDataGenerator {
             ("NFL", "Miami Dolphins", "New England Patriots"),
             ("NCAAB", "Duke Blue Devils", "North Carolina Tar Heels"),
             ("NCAAB", "Kentucky Wildcats", "Kansas Jayhawks"),
+            ("NCAAB", "UConn Huskies", "Villanova Wildcats"),
+            ("NCAAB", "Gonzaga Bulldogs", "UCLA Bruins"),
+            ("NHL", "Boston Bruins", "Toronto Maple Leafs"),
+            ("NHL", "New York Rangers", "Pittsburgh Penguins"),
+            ("NHL", "Colorado Avalanche", "Vegas Golden Knights"),
+            ("NHL", "Edmonton Oilers", "Calgary Flames"),
             ("MLB", "New York Yankees", "Boston Red Sox"),
             ("MLB", "Los Angeles Dodgers", "San Francisco Giants")
         ]
@@ -207,20 +213,31 @@ enum MockDataGenerator {
             awayTeamXHandle: nil
         )
 
-        let plays = hasData ? generatePlays(home: summary.homeTeamName, away: summary.awayTeamName, isComplete: isCompleted) : []
+        let isNHL = summary.league == "NHL"
+        let plays = hasData ? generatePlays(home: summary.homeTeamName, away: summary.awayTeamName, isComplete: isCompleted, isNHL: isNHL) : []
+
+        // Generate NHL-specific stats if this is an NHL game
+        let nhlSkaters: [NHLSkaterStat]? = isNHL && hasData ? generateNHLSkaters(home: summary.homeTeamName, away: summary.awayTeamName) : nil
+        let nhlGoalies: [NHLGoalieStat]? = isNHL && hasData ? generateNHLGoalies(home: summary.homeTeamName, away: summary.awayTeamName) : nil
+        let dataHealth: NHLDataHealth? = isNHL && hasData ? NHLDataHealth(
+            skaterCount: nhlSkaters?.count,
+            goalieCount: nhlGoalies?.count,
+            isHealthy: true,
+            issues: []
+        ) : nil
 
         return GameDetailResponse(
             game: game,
             teamStats: hasData ? generateTeamStats(home: summary.homeTeamName, away: summary.awayTeamName) : [],
-            playerStats: hasData ? generatePlayerStats(home: summary.homeTeamName, away: summary.awayTeamName) : [],
+            playerStats: hasData && !isNHL ? generatePlayerStats(home: summary.homeTeamName, away: summary.awayTeamName) : [],
             odds: generateOdds(),
             socialPosts: generateSocialPosts(home: summary.homeTeamName, away: summary.awayTeamName),
             plays: plays,
             derivedMetrics: [:],
             rawPayloads: [:],
-            nhlSkaters: nil,
-            nhlGoalies: nil,
-            dataHealth: nil
+            nhlSkaters: nhlSkaters,
+            nhlGoalies: nhlGoalies,
+            dataHealth: dataHealth
         )
     }
 
@@ -357,36 +374,99 @@ enum MockDataGenerator {
         ]
     }
 
-    private static func generatePlays(home: String, away: String, isComplete: Bool) -> [PlayEntry] {
+    private static func generatePlays(home: String, away: String, isComplete: Bool, isNHL: Bool = false) -> [PlayEntry] {
         let playCount = isComplete ? Int.random(in: 200...300) : Int.random(in: 30...80)
         var plays: [PlayEntry] = []
 
         var homeScore = 0
         var awayScore = 0
 
+        // NHL player names
+        let nhlHomePlayers = ["C. McDavid", "L. Draisaitl", "Z. Hyman", "R. Nugent-Hopkins", "E. Bouchard"]
+        let nhlAwayPlayers = ["A. Matthews", "M. Marner", "W. Nylander", "J. Tavares", "M. Rielly"]
+
+        // Basketball player names
+        let nbaHomePlayers = ["J. Smith", "M. Johnson", "A. Williams", "R. Brown", "D. Davis"]
+        let nbaAwayPlayers = ["C. Miller", "K. Wilson", "T. Moore", "L. Taylor", "P. Anderson"]
+
         for index in 1...playCount {
             let isHomePlay = Bool.random()
             let team = isHomePlay ? home : away
+            let playerName: String
 
-            let points = [0, 2, 3].randomElement() ?? 0
-            if isHomePlay {
-                homeScore += points
+            if isNHL {
+                playerName = isHomePlay ? nhlHomePlayers.randomElement()! : nhlAwayPlayers.randomElement()!
             } else {
-                awayScore += points
+                playerName = isHomePlay ? nbaHomePlayers.randomElement()! : nbaAwayPlayers.randomElement()!
             }
 
-            let quarter = Int.random(in: 1...4)
-            let minute = Int.random(in: 0...11)
+            let playType: PlayType
+            let description: String
+            let periodCount = isNHL ? 3 : 4
+            let period = Int.random(in: 1...periodCount)
+            let minute = Int.random(in: 0...(isNHL ? 19 : 11))
             let second = Int.random(in: 0...59)
+
+            if isNHL {
+                // NHL play types and scoring
+                let nhlPlayTypes: [(PlayType, String, Int)] = [
+                    (.goal, "\(playerName) scores", 1),
+                    (.shot, "\(playerName) shot on goal", 0),
+                    (.miss, "\(playerName) shot wide", 0),
+                    (.save, "Save by goaltender", 0),
+                    (.hit, "\(playerName) hits opponent", 0),
+                    (.faceoff, "\(playerName) wins faceoff", 0),
+                    (.penalty, "\(playerName) penalty - 2 min", 0),
+                    (.blockedShot, "\(playerName) blocks shot", 0),
+                    (.giveaway, "\(playerName) giveaway", 0),
+                    (.takeaway, "\(playerName) takeaway", 0),
+                ]
+                let selected = nhlPlayTypes.randomElement()!
+                playType = selected.0
+                description = selected.1
+                let points = selected.2
+                if isHomePlay {
+                    homeScore += points
+                } else {
+                    awayScore += points
+                }
+            } else {
+                // Basketball play types and scoring
+                let points = [0, 2, 3].randomElement() ?? 0
+                if isHomePlay {
+                    homeScore += points
+                } else {
+                    awayScore += points
+                }
+
+                switch points {
+                case 3:
+                    playType = .threePointer
+                    description = "\(playerName) makes 3-pt shot"
+                case 2:
+                    playType = .madeShot
+                    description = "\(playerName) makes 2-pt shot"
+                default:
+                    let missTypes: [(PlayType, String)] = [
+                        (.missedShot, "\(playerName) misses shot"),
+                        (.rebound, "\(playerName) rebound"),
+                        (.turnover, "\(playerName) turnover"),
+                        (.foul, "Foul on \(playerName)"),
+                    ]
+                    let selected = missTypes.randomElement()!
+                    playType = selected.0
+                    description = selected.1
+                }
+            }
 
             let play = PlayEntry(
                 playIndex: index,
-                quarter: quarter,
+                quarter: period,
                 gameClock: String(format: "%d:%02d", minute, second),
-                playType: .shot,
+                playType: playType,
                 teamAbbreviation: team,
-                playerName: "Player \(index % 10 + 1)",
-                description: "\(team) makes a shot.",
+                playerName: playerName,
+                description: description,
                 homeScore: homeScore,
                 awayScore: awayScore
             )
@@ -394,5 +474,76 @@ enum MockDataGenerator {
         }
 
         return plays
+    }
+
+    // MARK: - NHL Stats Generation
+
+    private static func generateNHLSkaters(home: String, away: String) -> [NHLSkaterStat] {
+        var stats: [NHLSkaterStat] = []
+
+        let homeNames = ["C. McDavid", "L. Draisaitl", "Z. Hyman", "R. Nugent-Hopkins", "E. Bouchard",
+                         "M. Ekholm", "D. Nurse", "C. Brown", "R. McLeod", "D. Holloway"]
+        let awayNames = ["A. Matthews", "M. Marner", "W. Nylander", "J. Tavares", "M. Rielly",
+                         "T. Bertuzzi", "C. Knies", "D. Kampf", "M. Domi", "J. McCabe"]
+
+        for name in homeNames {
+            stats.append(generateSkaterStat(team: home, playerName: name))
+        }
+
+        for name in awayNames {
+            stats.append(generateSkaterStat(team: away, playerName: name))
+        }
+
+        return stats
+    }
+
+    private static func generateSkaterStat(team: String, playerName: String) -> NHLSkaterStat {
+        let minutes = Int.random(in: 8...25)
+        let seconds = Int.random(in: 0...59)
+        let toi = String(format: "%d:%02d", minutes, seconds)
+
+        return NHLSkaterStat(
+            team: team,
+            playerName: playerName,
+            toi: toi,
+            goals: Int.random(in: 0...2),
+            assists: Int.random(in: 0...3),
+            points: nil,  // Will be computed from goals + assists
+            shotsOnGoal: Int.random(in: 0...8),
+            plusMinus: Int.random(in: -3...3),
+            penaltyMinutes: Int.random(in: 0...4),
+            hits: Int.random(in: 0...6),
+            blockedShots: Int.random(in: 0...4),
+            rawStats: [:],
+            source: "mock",
+            updatedAt: formatDate(Date())
+        )
+    }
+
+    private static func generateNHLGoalies(home: String, away: String) -> [NHLGoalieStat] {
+        [
+            generateGoalieStat(team: home, playerName: "S. Skinner"),
+            generateGoalieStat(team: away, playerName: "J. Woll")
+        ]
+    }
+
+    private static func generateGoalieStat(team: String, playerName: String) -> NHLGoalieStat {
+        let shotsAgainst = Int.random(in: 20...45)
+        let goalsAgainst = Int.random(in: 1...5)
+        let saves = shotsAgainst - goalsAgainst
+        let savePercentage = Double(saves) / Double(shotsAgainst)
+
+        return NHLGoalieStat(
+            team: team,
+            playerName: playerName,
+            toi: "60:00",
+            shotsAgainst: shotsAgainst,
+            saves: saves,
+            goalsAgainst: goalsAgainst,
+            savePercentage: savePercentage,
+            rawStats: [:],
+            source: "mock",
+            updatedAt: formatDate(Date())
+        )
     }
 }

@@ -9,7 +9,6 @@ struct HomeView: View {
     @State private var earlierSection = HomeSectionState(range: .earlier, title: HomeStrings.sectionEarlier, isExpanded: false)
     @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: true)
     @State private var todaySection = HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: true)
-    @State private var upcomingSection = HomeSectionState(range: .next24, title: HomeStrings.sectionUpcoming, isExpanded: false)
     @State private var errorMessage: String?
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
@@ -174,18 +173,13 @@ struct HomeView: View {
                         sectionContent(for: yesterdaySection)
                     }
 
-                    // Today section
-                    sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
-                        .id(todaySection.title)
-                    if todaySection.isExpanded {
-                        sectionContent(for: todaySection)
-                    }
-
-                    // Upcoming section
-                    sectionHeader(for: upcomingSection, isExpanded: $upcomingSection.isExpanded)
-                        .id(upcomingSection.title)
-                    if upcomingSection.isExpanded {
-                        sectionContent(for: upcomingSection)
+                    // Today section (only completed games)
+                    if !todaySection.completedGames.isEmpty || todaySection.isLoading {
+                        sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
+                            .id(todaySection.title)
+                        if todaySection.isExpanded {
+                            sectionContent(for: todaySection, completedOnly: true)
+                        }
                     }
                 }
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
@@ -234,7 +228,9 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func sectionContent(for section: HomeSectionState) -> some View {
+    private func sectionContent(for section: HomeSectionState, completedOnly: Bool = false) -> some View {
+        let gamesToShow = completedOnly ? section.completedGames : section.games
+
         if section.isLoading {
             // Minimal loading indicator - just a subtle spinner
             HStack {
@@ -249,7 +245,7 @@ struct HomeView: View {
                 .padding(.horizontal, HomeLayout.horizontalPadding)
                 .padding(.vertical, HomeLayout.sectionStatePadding(horizontalSizeClass))
                 .transition(.opacity)
-        } else if section.games.isEmpty {
+        } else if gamesToShow.isEmpty {
             EmptySectionView(text: sectionEmptyMessage(for: section))
                 .padding(.horizontal, HomeLayout.horizontalPadding)
                 .padding(.vertical, HomeLayout.sectionStatePadding(horizontalSizeClass))
@@ -260,7 +256,7 @@ struct HomeView: View {
             let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: columnCount)
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(section.games) { game in
+                ForEach(gamesToShow) { game in
                     gameCard(for: game)
                 }
             }
@@ -300,20 +296,17 @@ struct HomeView: View {
         earlierSection.isLoading = true
         yesterdaySection.isLoading = true
         todaySection.isLoading = true
-        upcomingSection.isLoading = true
         earlierSection.errorMessage = nil
         yesterdaySection.errorMessage = nil
         todaySection.errorMessage = nil
-        upcomingSection.errorMessage = nil
 
         let service = appConfig.gameService
 
         async let earlierResult = loadSection(range: .earlier, service: service)
         async let yesterdayResult = loadSection(range: .yesterday, service: service)
         async let todayResult = loadSection(range: .current, service: service)
-        async let upcomingResult = loadSection(range: .next24, service: service)
 
-        let results = await [earlierResult, yesterdayResult, todayResult, upcomingResult]
+        let results = await [earlierResult, yesterdayResult, todayResult]
 
         applyHomeSectionResults(results)
         updateLastUpdatedAt(from: results)
@@ -353,7 +346,7 @@ struct HomeView: View {
                 }
                 return lhsDate < rhsDate
             }
-            
+
             switch result.range {
             case .earlier:
                 earlierSection.games = sortedGames
@@ -368,9 +361,7 @@ struct HomeView: View {
                 todaySection.errorMessage = result.errorMessage
                 todaySection.isLoading = false
             case .next24:
-                upcomingSection.games = sortedGames
-                upcomingSection.errorMessage = result.errorMessage
-                upcomingSection.isLoading = false
+                break // Not used - we don't show upcoming games
             }
         }
     }
@@ -399,7 +390,7 @@ struct HomeView: View {
     }
 
     private var sectionsInOrder: [HomeSectionState] {
-        [earlierSection, yesterdaySection, todaySection, upcomingSection]
+        [earlierSection, yesterdaySection, todaySection]
     }
 
     private func sectionEmptyMessage(for section: HomeSectionState) -> String {
