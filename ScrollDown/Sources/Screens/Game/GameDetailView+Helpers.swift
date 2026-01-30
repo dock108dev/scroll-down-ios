@@ -302,8 +302,19 @@ extension GameDetailView {
         }
     }
     
+    // MARK: - Section Anchors
+
+    /// Creates an invisible anchor view for scroll-to-section functionality
+    /// The anchor is positioned at the top of each section for reliable scrollTo targeting
+    func sectionAnchor(for section: GameSection) -> some View {
+        Color.clear
+            .frame(height: 1)
+            .id(section)
+            .accessibilityHidden(true)
+    }
+
     // MARK: - Section Frame Tracking
-    
+
     func sectionFrameTracker(for section: GameSection) -> some View {
         GeometryReader { geo in
             Color.clear.preference(

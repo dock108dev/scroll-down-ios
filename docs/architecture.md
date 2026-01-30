@@ -10,10 +10,11 @@ ScrollDown/Sources/
 ├── ViewModels/       # Business logic and state management
 ├── Screens/
 │   ├── Home/         # Game list and feed
-│   └── Game/         # Game detail (split into extensions)
+│   ├── Game/         # Game detail (split into extensions)
+│   └── Team/         # Team page
 ├── Components/       # Reusable UI components
 ├── Networking/       # GameService protocol + implementations
-├── Services/         # TimeService, SocialPostMatcher
+├── Services/         # TimeService (snapshot mode)
 ├── Logging/          # Structured logging utilities
 └── Mock/games/       # Static mock JSON for development
 ```
@@ -23,9 +24,9 @@ ScrollDown/Sources/
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         SwiftUI View                            │
-│   (HomeView, GameDetailView, StorySectionCardView, etc.)        │
+│   (HomeView, GameDetailView, MomentCardView, etc.)              │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │ observes
+                          │ observes @Published
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       ViewModel                                 │
@@ -35,7 +36,7 @@ ScrollDown/Sources/
 │   • Orchestrates service calls                                  │
 │   • Computes derived timeline/stats data                        │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │ calls
+                          │ calls async
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      GameService                                │
@@ -66,11 +67,13 @@ Nothing is auto-revealed. Users move through timeline at their own pace.
 |-------|-------------|
 | `GameSummary` | List view representation from `/games` endpoint |
 | `GameDetailResponse` | Full game detail from `/games/{id}` |
-| `GameStoryResponse` | Story with chapters, sections, and compact narrative |
-| `SectionEntry` | Narrative segment (beat type, score range, header) |
-| `ChapterEntry` | Grouping of plays within a section |
+| `GameStoryResponse` | Story with moments and plays from `/games/{id}/story` |
+| `StoryMoment` | Narrative segment with play IDs, scores, period/clock |
+| `StoryPlay` | Individual play within a story |
+| `MomentDisplayModel` | UI-ready moment with derived beat type |
 | `UnifiedTimelineEvent` | Single timeline entry (PBP play or tweet) |
 | `PlayEntry` | Individual play-by-play event |
+| `BeatType` | Narrative moment classification |
 
 ### NHL-Specific Models
 
@@ -85,16 +88,17 @@ The timeline uses a two-tier system:
 
 ### 1. Story-Based (Primary)
 When `GameStoryResponse` is available from `/games/{id}/story`:
-- Sections grouped by period with narrative headers
-- Each section has a beat type (FAST_START, RUN, BACK_AND_FORTH, etc.)
-- Expanding a section reveals its play-by-play events
-- Social posts matched to relevant sections via `SocialPostMatcher`
+- Moments grouped with narrative text
+- Each moment has a beat type (FAST_START, RUN, BACK_AND_FORTH, etc.)
+- Beat types derived via `StoryAdapter` from scoring patterns
+- Expanding a moment reveals its play-by-play events
+- `MomentCardView` renders individual moments
 
 ### 2. PBP-Based (Fallback)
 When story data isn't available:
 - `UnifiedTimelineEvent` entries grouped by quarter/period
 - Chronological play-by-play with interleaved tweets
-- Collapsible period sections
+- Collapsible period sections via `CollapsibleQuarterCard`
 
 ## Configuration
 
@@ -126,9 +130,36 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 
 | File | Responsibility |
 |------|---------------|
-| `GameDetailView.swift` | Main view, navigation, state |
+| `GameDetailView.swift` | Main view, navigation, state, scroll handling |
 | `GameDetailView+Overview.swift` | Pregame section |
-| `GameDetailView+Timeline.swift` | Timeline/story section |
+| `GameDetailView+Timeline.swift` | Timeline/story section with moment grouping |
 | `GameDetailView+Stats.swift` | Player and team stats |
-| `GameDetailView+Helpers.swift` | Utility functions |
-| `GameDetailView+Layout.swift` | Layout constants |
+| `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
+| `GameDetailView+WrapUp.swift` | Post-game wrap-up section |
+| `GameDetailView+Helpers.swift` | Utility functions, quarter titles |
+| `GameDetailView+Layout.swift` | Layout constants, preference keys |
+
+## Interaction Patterns
+
+All interactive elements use consistent patterns:
+
+| Pattern | Implementation |
+|---------|----------------|
+| Tap feedback | `InteractiveRowButtonStyle` (opacity 0.6 + scale 0.98) |
+| Chevron rotation | `chevron.right` with 0°→90° on expand |
+| Expand animation | `spring(response: 0.3, dampingFraction: 0.8)` |
+| Transitions | Asymmetric (opacity + move from top) |
+
+## Navigation
+
+Routes defined in `ContentView.swift`:
+
+```swift
+enum AppRoute: Hashable {
+    case game(id: Int, league: String)
+    case team(name: String, abbreviation: String, league: String)
+    case deepLinkPlaceholder(String)
+}
+```
+
+Navigation via `NavigationStack` with `navigationDestination(for: AppRoute.self)`.

@@ -5,7 +5,8 @@ extension GameDetailView {
         CollapsibleSectionCard(
             title: "Timeline",
             subtitle: timelineSubtitle,
-            isExpanded: $isTimelineExpanded
+            isExpanded: $isTimelineExpanded,
+            onHeaderTap: { toggleAllBoundaries() }
         ) {
             timelineContent(using: proxy)
         }
@@ -18,6 +19,22 @@ extension GameDetailView {
             }
         )
         .accessibilityElement(children: .contain)
+    }
+
+    /// Toggles all boundary headers (expand all or collapse all)
+    /// When expanding Timeline: expand all boundaries
+    /// When collapsing Timeline: collapse all boundaries
+    private func toggleAllBoundaries() {
+        let quarters = groupedQuarters.map { $0.quarter }
+        if isTimelineExpanded {
+            // Timeline is now expanded, so expand all boundaries
+            collapsedQuarters.removeAll()
+        } else {
+            // Timeline is now collapsed, so collapse all boundaries
+            for quarter in quarters {
+                collapsedQuarters.insert(quarter)
+            }
+        }
     }
 
     private var timelineSubtitle: String {

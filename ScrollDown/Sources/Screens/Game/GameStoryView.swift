@@ -64,12 +64,13 @@ struct GameStoryView: View {
 
             if story.count > 200 {
                 Button(isCompactStoryExpanded ? "Show Less" : "Read More") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         isCompactStoryExpanded.toggle()
                     }
                 }
                 .font(.caption)
                 .foregroundColor(DesignSystem.Colors.accent)
+                .buttonStyle(SubtleInteractiveButtonStyle())
             }
         }
         .padding(DesignSystem.Spacing.cardPadding)
@@ -100,8 +101,9 @@ struct GameStoryView: View {
             .padding(DesignSystem.Spacing.elementPadding)
             .background(DesignSystem.Colors.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InteractiveRowButtonStyle())
     }
 
     // MARK: - Moment Expansion Binding

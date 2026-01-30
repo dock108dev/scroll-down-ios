@@ -167,8 +167,12 @@ struct GameDetailView: View {
                         sectionNavigationBar { section in
                             isManualTabSelection = true
                             selectedSection = section
+                            // Reset first to ensure onChange fires even for same section (re-tap)
+                            scrollToSection = nil
                             // Trigger scroll via state change (handled by .onChange below)
-                            scrollToSection = section
+                            DispatchQueue.main.async {
+                                scrollToSection = section
+                            }
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                         .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
@@ -186,31 +190,31 @@ struct GameDetailView: View {
                         // Content sections - each has an anchor view for reliable scrollTo
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             VStack(spacing: 0) {
-                                Color.clear.frame(height: 1).id(GameSection.overview)
+                                sectionAnchor(for: .overview)
                                 pregameSection
                             }
                             .background(sectionFrameTracker(for: .overview))
 
                             VStack(spacing: 0) {
-                                Color.clear.frame(height: 1).id(GameSection.timeline)
+                                sectionAnchor(for: .timeline)
                                 timelineSection(using: proxy)
                             }
                             .background(sectionFrameTracker(for: .timeline))
 
                             VStack(spacing: 0) {
-                                Color.clear.frame(height: 1).id(GameSection.playerStats)
+                                sectionAnchor(for: .playerStats)
                                 playerStatsSection(viewModel.playerStats)
                             }
                             .background(sectionFrameTracker(for: .playerStats))
 
                             VStack(spacing: 0) {
-                                Color.clear.frame(height: 1).id(GameSection.teamStats)
+                                sectionAnchor(for: .teamStats)
                                 teamStatsSection(viewModel.teamStats)
                             }
                             .background(sectionFrameTracker(for: .teamStats))
 
                             VStack(spacing: 0) {
-                                Color.clear.frame(height: 1).id(GameSection.final)
+                                sectionAnchor(for: .final)
                                 wrapUpSection
                             }
                             .background(sectionFrameTracker(for: .final))
@@ -263,10 +267,12 @@ struct GameDetailView: View {
             }
             .onChange(of: scrollToSection) { _, target in
                 guard let target else { return }
-                withAnimation(.easeInOut(duration: 0.3)) {
+                // Position section at top of visible area (anchor .top)
+                // The section anchor view has the .id, so scrollTo targets it directly
+                withAnimation(.easeInOut(duration: 0.35)) {
                     proxy.scrollTo(target, anchor: .top)
                 }
-                // Reset after scroll
+                // Reset after scroll completes
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     scrollToSection = nil
                     isManualTabSelection = false

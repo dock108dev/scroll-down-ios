@@ -10,6 +10,8 @@ struct CollapsibleSectionCard<Content: View>: View {
     let subtitle: String?
     let collapsedTitle: String?
     @Binding var isExpanded: Bool
+    /// Optional callback triggered when header is tapped (for global expand/collapse scenarios)
+    var onHeaderTap: (() -> Void)?
     let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -18,12 +20,14 @@ struct CollapsibleSectionCard<Content: View>: View {
         subtitle: String? = nil,
         collapsedTitle: String? = nil,
         isExpanded: Binding<Bool>,
+        onHeaderTap: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
         self.collapsedTitle = collapsedTitle
         self._isExpanded = isExpanded
+        self.onHeaderTap = onHeaderTap
         self.content = content()
     }
 
@@ -53,8 +57,9 @@ struct CollapsibleSectionCard<Content: View>: View {
                         .foregroundColor(DesignSystem.TextColor.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
+                .contentShape(Rectangle()) // Full row tap target
             }
-            .buttonStyle(.plain)
+            .buttonStyle(InteractiveRowButtonStyle())
 
             if isExpanded {
                 content
@@ -71,6 +76,7 @@ struct CollapsibleSectionCard<Content: View>: View {
     private func toggle() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded.toggle()
+            onHeaderTap?()
         }
     }
 }
@@ -97,6 +103,7 @@ struct CollapsibleQuarterCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: horizontalSizeClass == .regular ? 8 : 12) { // iPad: tighter spacing
+            // Boundary header - full row tappable
             Button(action: toggle) {
                 HStack(spacing: 8) {
                     Text(title)
@@ -108,8 +115,12 @@ struct CollapsibleQuarterCard<Content: View>: View {
                         .foregroundColor(Color(.secondaryLabel))
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
+                .padding(.vertical, 4) // Increase tap target height
+                .contentShape(Rectangle()) // Full row tap target
             }
-            .buttonStyle(.plain)
+            .buttonStyle(InteractiveRowButtonStyle())
+            .accessibilityLabel("\(title), \(isExpanded ? "expanded" : "collapsed")")
+            .accessibilityHint("Double tap to \(isExpanded ? "collapse" : "expand")")
 
             if isExpanded {
                 content
@@ -136,6 +147,30 @@ struct CollapsibleQuarterCard<Content: View>: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded.toggle()
         }
+    }
+}
+
+// MARK: - Unified Interactive Button Styles
+/// Consistent tap feedback across all interactive elements
+
+/// Standard interactive row style - used for collapsible headers, tappable cards
+/// Provides: opacity 0.6 + scale 0.98 on press with 0.15s animation
+struct InteractiveRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.6 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+/// Subtle interactive style - for less prominent interactive elements
+/// Provides: opacity 0.7 only (no scale) with 0.1s animation
+struct SubtleInteractiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 

@@ -15,21 +15,12 @@ struct GameHeaderView: View {
         VStack(spacing: 0) {
             // MARK: Primary Row - Team Matchup
             HStack(spacing: 0) {
-                // Away team block (left side) with color bar on outer edge
-                HStack(spacing: 0) {
-                    // Vertical color bar - outer left edge
-                    Rectangle()
-                        .fill(DesignSystem.TeamColors.teamABar)
-                        .frame(width: 3)
-
-                    // Team info
-                    TeamBlockView(
-                        teamName: game.awayTeam,
-                        isHome: false,
-                        alignment: .leading
-                    )
-                    .padding(.leading, 12)
-                }
+                // Away team block (left side) - tappable with color bar
+                TappableTeamBlock(
+                    teamName: game.awayTeam,
+                    leagueCode: game.leagueCode,
+                    isHome: false
+                )
 
                 Spacer()
 
@@ -40,21 +31,12 @@ struct GameHeaderView: View {
 
                 Spacer()
 
-                // Home team block (right side) with color bar on outer edge
-                HStack(spacing: 0) {
-                    // Team info
-                    TeamBlockView(
-                        teamName: game.homeTeam,
-                        isHome: true,
-                        alignment: .trailing
-                    )
-                    .padding(.trailing, 12)
-
-                    // Vertical color bar - outer right edge
-                    Rectangle()
-                        .fill(DesignSystem.TeamColors.teamBBar)
-                        .frame(width: 3)
-                }
+                // Home team block (right side) - tappable with color bar
+                TappableTeamBlock(
+                    teamName: game.homeTeam,
+                    leagueCode: game.leagueCode,
+                    isHome: true
+                )
             }
             .padding(.vertical, 16)
 
@@ -145,6 +127,173 @@ struct GameHeaderView: View {
     }
 }
 
+// MARK: - Tappable Team Block
+/// Wraps team info with navigation and press feedback
+
+private struct TappableTeamBlock: View {
+    let teamName: String
+    let leagueCode: String
+    let isHome: Bool
+
+    private var abbreviation: String {
+        TeamAbbreviations.abbreviation(for: teamName)
+    }
+
+    var body: some View {
+        NavigationLink(value: AppRoute.team(name: teamName, abbreviation: abbreviation, league: leagueCode)) {
+            HStack(spacing: 0) {
+                if !isHome {
+                    // Away team: color bar on left
+                    Rectangle()
+                        .fill(DesignSystem.TeamColors.teamABar)
+                        .frame(width: 3)
+
+                    TeamBlockView(
+                        teamName: teamName,
+                        isHome: false,
+                        alignment: .leading
+                    )
+                    .padding(.leading, 12)
+                } else {
+                    // Home team: color bar on right
+                    TeamBlockView(
+                        teamName: teamName,
+                        isHome: true,
+                        alignment: .trailing
+                    )
+                    .padding(.trailing, 12)
+
+                    Rectangle()
+                        .fill(DesignSystem.TeamColors.teamBBar)
+                        .frame(width: 3)
+                }
+            }
+            .contentShape(Rectangle()) // Large hit target
+        }
+        .buttonStyle(InteractiveRowButtonStyle())
+        .accessibilityLabel("View \(teamName) team page")
+        .accessibilityHint("Double tap to see team details")
+    }
+}
+
+// Note: Uses InteractiveRowButtonStyle from CollapsibleCards.swift for consistent tap feedback
+
+// MARK: - Team Abbreviations
+/// Shared utility for generating team abbreviations
+
+enum TeamAbbreviations {
+    private static let abbreviations: [String: String] = [
+        // NBA
+        "Atlanta Hawks": "ATL",
+        "Boston Celtics": "BOS",
+        "Brooklyn Nets": "BKN",
+        "Charlotte Hornets": "CHA",
+        "Chicago Bulls": "CHI",
+        "Cleveland Cavaliers": "CLE",
+        "Dallas Mavericks": "DAL",
+        "Denver Nuggets": "DEN",
+        "Detroit Pistons": "DET",
+        "Golden State Warriors": "GSW",
+        "Houston Rockets": "HOU",
+        "Indiana Pacers": "IND",
+        "Los Angeles Clippers": "LAC",
+        "Los Angeles Lakers": "LAL",
+        "Memphis Grizzlies": "MEM",
+        "Miami Heat": "MIA",
+        "Milwaukee Bucks": "MIL",
+        "Minnesota Timberwolves": "MIN",
+        "New Orleans Pelicans": "NOP",
+        "New York Knicks": "NYK",
+        "Oklahoma City Thunder": "OKC",
+        "Orlando Magic": "ORL",
+        "Philadelphia 76ers": "PHI",
+        "Phoenix Suns": "PHX",
+        "Portland Trail Blazers": "POR",
+        "Sacramento Kings": "SAC",
+        "San Antonio Spurs": "SAS",
+        "Toronto Raptors": "TOR",
+        "Utah Jazz": "UTA",
+        "Washington Wizards": "WAS",
+        // NFL (common)
+        "Arizona Cardinals": "ARI",
+        "Atlanta Falcons": "ATL",
+        "Baltimore Ravens": "BAL",
+        "Buffalo Bills": "BUF",
+        "Carolina Panthers": "CAR",
+        "Chicago Bears": "CHI",
+        "Cincinnati Bengals": "CIN",
+        "Cleveland Browns": "CLE",
+        "Dallas Cowboys": "DAL",
+        "Denver Broncos": "DEN",
+        "Detroit Lions": "DET",
+        "Green Bay Packers": "GB",
+        "Houston Texans": "HOU",
+        "Indianapolis Colts": "IND",
+        "Jacksonville Jaguars": "JAX",
+        "Kansas City Chiefs": "KC",
+        "Las Vegas Raiders": "LV",
+        "Los Angeles Chargers": "LAC",
+        "Los Angeles Rams": "LAR",
+        "Miami Dolphins": "MIA",
+        "Minnesota Vikings": "MIN",
+        "New England Patriots": "NE",
+        "New Orleans Saints": "NO",
+        "New York Giants": "NYG",
+        "New York Jets": "NYJ",
+        "Philadelphia Eagles": "PHI",
+        "Pittsburgh Steelers": "PIT",
+        "San Francisco 49ers": "SF",
+        "Seattle Seahawks": "SEA",
+        "Tampa Bay Buccaneers": "TB",
+        "Tennessee Titans": "TEN",
+        "Washington Commanders": "WAS",
+        // NHL (common)
+        "Anaheim Ducks": "ANA",
+        "Boston Bruins": "BOS",
+        "Buffalo Sabres": "BUF",
+        "Calgary Flames": "CGY",
+        "Carolina Hurricanes": "CAR",
+        "Chicago Blackhawks": "CHI",
+        "Colorado Avalanche": "COL",
+        "Columbus Blue Jackets": "CBJ",
+        "Dallas Stars": "DAL",
+        "Detroit Red Wings": "DET",
+        "Edmonton Oilers": "EDM",
+        "Florida Panthers": "FLA",
+        "Los Angeles Kings": "LA",
+        "Minnesota Wild": "MIN",
+        "Montreal Canadiens": "MTL",
+        "Nashville Predators": "NSH",
+        "New Jersey Devils": "NJ",
+        "New York Islanders": "NYI",
+        "New York Rangers": "NYR",
+        "Ottawa Senators": "OTT",
+        "Philadelphia Flyers": "PHI",
+        "Pittsburgh Penguins": "PIT",
+        "San Jose Sharks": "SJ",
+        "Seattle Kraken": "SEA",
+        "St. Louis Blues": "STL",
+        "Tampa Bay Lightning": "TB",
+        "Toronto Maple Leafs": "TOR",
+        "Vancouver Canucks": "VAN",
+        "Vegas Golden Knights": "VGK",
+        "Washington Capitals": "WSH",
+        "Winnipeg Jets": "WPG"
+    ]
+
+    static func abbreviation(for teamName: String) -> String {
+        if let known = abbreviations[teamName] {
+            return known
+        }
+        // Default: use first 3 letters of last word (team nickname)
+        let words = teamName.split(separator: " ")
+        if let lastWord = words.last {
+            return String(lastWord.prefix(3)).uppercased()
+        }
+        return String(teamName.prefix(3)).uppercased()
+    }
+}
+
 // MARK: - Team Block View
 /// Displays team as abbreviation (bold) + full name (secondary)
 
@@ -156,7 +305,7 @@ private struct TeamBlockView: View {
     var body: some View {
         VStack(alignment: alignment, spacing: 4) {
             // Team abbreviation - hero element
-            Text(abbreviation)
+            Text(TeamAbbreviations.abbreviation(for: teamName))
                 .font(.title2.weight(.bold))
                 .foregroundColor(teamColor)
 
@@ -170,119 +319,6 @@ private struct TeamBlockView: View {
 
     private var teamColor: Color {
         isHome ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA
-    }
-
-    /// Generate 2-3 letter abbreviation from team name
-    private var abbreviation: String {
-        let abbreviations: [String: String] = [
-            // NBA
-            "Atlanta Hawks": "ATL",
-            "Boston Celtics": "BOS",
-            "Brooklyn Nets": "BKN",
-            "Charlotte Hornets": "CHA",
-            "Chicago Bulls": "CHI",
-            "Cleveland Cavaliers": "CLE",
-            "Dallas Mavericks": "DAL",
-            "Denver Nuggets": "DEN",
-            "Detroit Pistons": "DET",
-            "Golden State Warriors": "GSW",
-            "Houston Rockets": "HOU",
-            "Indiana Pacers": "IND",
-            "Los Angeles Clippers": "LAC",
-            "Los Angeles Lakers": "LAL",
-            "Memphis Grizzlies": "MEM",
-            "Miami Heat": "MIA",
-            "Milwaukee Bucks": "MIL",
-            "Minnesota Timberwolves": "MIN",
-            "New Orleans Pelicans": "NOP",
-            "New York Knicks": "NYK",
-            "Oklahoma City Thunder": "OKC",
-            "Orlando Magic": "ORL",
-            "Philadelphia 76ers": "PHI",
-            "Phoenix Suns": "PHX",
-            "Portland Trail Blazers": "POR",
-            "Sacramento Kings": "SAC",
-            "San Antonio Spurs": "SAS",
-            "Toronto Raptors": "TOR",
-            "Utah Jazz": "UTA",
-            "Washington Wizards": "WAS",
-            // NFL (common)
-            "Arizona Cardinals": "ARI",
-            "Atlanta Falcons": "ATL",
-            "Baltimore Ravens": "BAL",
-            "Buffalo Bills": "BUF",
-            "Carolina Panthers": "CAR",
-            "Chicago Bears": "CHI",
-            "Cincinnati Bengals": "CIN",
-            "Cleveland Browns": "CLE",
-            "Dallas Cowboys": "DAL",
-            "Denver Broncos": "DEN",
-            "Detroit Lions": "DET",
-            "Green Bay Packers": "GB",
-            "Houston Texans": "HOU",
-            "Indianapolis Colts": "IND",
-            "Jacksonville Jaguars": "JAX",
-            "Kansas City Chiefs": "KC",
-            "Las Vegas Raiders": "LV",
-            "Los Angeles Chargers": "LAC",
-            "Los Angeles Rams": "LAR",
-            "Miami Dolphins": "MIA",
-            "Minnesota Vikings": "MIN",
-            "New England Patriots": "NE",
-            "New Orleans Saints": "NO",
-            "New York Giants": "NYG",
-            "New York Jets": "NYJ",
-            "Philadelphia Eagles": "PHI",
-            "Pittsburgh Steelers": "PIT",
-            "San Francisco 49ers": "SF",
-            "Seattle Seahawks": "SEA",
-            "Tampa Bay Buccaneers": "TB",
-            "Tennessee Titans": "TEN",
-            "Washington Commanders": "WAS",
-            // NHL (common)
-            "Anaheim Ducks": "ANA",
-            "Boston Bruins": "BOS",
-            "Buffalo Sabres": "BUF",
-            "Calgary Flames": "CGY",
-            "Carolina Hurricanes": "CAR",
-            "Chicago Blackhawks": "CHI",
-            "Colorado Avalanche": "COL",
-            "Columbus Blue Jackets": "CBJ",
-            "Dallas Stars": "DAL",
-            "Detroit Red Wings": "DET",
-            "Edmonton Oilers": "EDM",
-            "Florida Panthers": "FLA",
-            "Los Angeles Kings": "LA",
-            "Minnesota Wild": "MIN",
-            "Montreal Canadiens": "MTL",
-            "Nashville Predators": "NSH",
-            "New Jersey Devils": "NJ",
-            "New York Islanders": "NYI",
-            "New York Rangers": "NYR",
-            "Ottawa Senators": "OTT",
-            "Philadelphia Flyers": "PHI",
-            "Pittsburgh Penguins": "PIT",
-            "San Jose Sharks": "SJ",
-            "Seattle Kraken": "SEA",
-            "St. Louis Blues": "STL",
-            "Tampa Bay Lightning": "TB",
-            "Toronto Maple Leafs": "TOR",
-            "Vancouver Canucks": "VAN",
-            "Vegas Golden Knights": "VGK",
-            "Washington Capitals": "WSH",
-            "Winnipeg Jets": "WPG"
-        ]
-
-        if let known = abbreviations[teamName] {
-            return known
-        }
-
-        // Default: use first 3 letters of last word (team nickname)
-        let words = teamName.split(separator: " ")
-        if let lastWord = words.last {
-            return String(lastWord.prefix(3)).uppercased()
-        }
-        return String(teamName.prefix(3)).uppercased()
     }
 }
 

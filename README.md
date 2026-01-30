@@ -17,9 +17,10 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 |---------|--------|
 | Home feed (Earlier/Yesterday/Today/Upcoming) | Live |
 | Game detail with collapsible sections | Live |
-| Story-based timeline with narrative sections | Live |
+| Story-based timeline with narrative moments | Live |
 | Play-by-play grouped by quarter/period | Live |
 | NHL skater/goalie stats | Live |
+| Team page navigation | Live |
 | Dark mode | Live |
 | iPad adaptive layout | Live |
 | Snapshot mode (beta time override) | Live |
@@ -30,7 +31,8 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 
 ```bash
 open ScrollDown.xcodeproj
-xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
+# Build and run in Xcode, or:
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
 ## Environments

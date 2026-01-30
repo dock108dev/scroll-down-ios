@@ -14,6 +14,8 @@ struct ContentView: View {
                             .onAppear {
                                 GameRoutingLogger.logNavigation(tappedId: id, destinationId: id, league: league)
                             }
+                    case .team(let name, let abbreviation, let league):
+                        TeamView(teamName: name, abbreviation: abbreviation, leagueCode: league)
                     case .deepLinkPlaceholder(let value):
                         DeepLinkPlaceholderView(value: value)
                     }
@@ -24,6 +26,7 @@ struct ContentView: View {
 
 enum AppRoute: Hashable {
     case game(id: Int, league: String)
+    case team(name: String, abbreviation: String, league: String)
     case deepLinkPlaceholder(String)
 }
 

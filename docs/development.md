@@ -42,10 +42,10 @@ Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 
 ### 1. Story-Based (Primary)
 When story data is available from `/games/{id}/story`:
-- Timeline grouped by period
-- Each section has a narrative header and beat type
-- Expanding a section reveals play-by-play
-- Social posts matched to sections
+- Moments grouped with narrative text
+- Each moment has a beat type derived from scoring patterns
+- Expanding a moment reveals play-by-play
+- `MomentCardView` renders individual moments
 
 ### 2. PBP-Based (Fallback)
 When story data isn't available:
@@ -57,10 +57,13 @@ When story data isn't available:
 
 ```bash
 # Build for simulator
-xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 16' build
+xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 
 # Build for specific iOS version
 xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro' build
+
+# Run tests
+xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 # Clean build
 xcodebuild -scheme ScrollDown clean build
@@ -84,17 +87,24 @@ See [BETA_TIME_OVERRIDE.md](BETA_TIME_OVERRIDE.md) for full documentation.
 - [ ] Dark and light mode
 - [ ] Long team names truncate gracefully
 - [ ] VoiceOver labels present
-- [ ] iPad adaptive layout
+- [ ] iPad adaptive layout (4-column grid, constrained width)
 
 ### Data
 - [ ] Empty states show contextual messages
 - [ ] Loading skeletons appear
 - [ ] Outcomes stay hidden until revealed
-- [ ] Reveal states persist
+- [ ] Section collapse states persist within session
 
 ### Navigation
 - [ ] Scrolling stable when expanding sections
 - [ ] Back navigation preserves state
+- [ ] Tab bar scrolls to section reliably
+- [ ] Team headers are tappable
+
+### Interactions
+- [ ] Tap feedback on all interactive elements
+- [ ] Chevrons rotate consistently on expand
+- [ ] Animations feel smooth (spring timing)
 
 ## Debugging
 
@@ -114,5 +124,19 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 | Category | Content |
 |----------|---------|
 | `time` | Snapshot mode events |
-| `timeline` | Timeline loading |
-| `networking` | API calls |
+| `routing` | Navigation and game routing |
+| `networking` | API calls and responses |
+
+### Common Issues
+
+**Sections not scrolling to position:**
+- Verify `scrollToSection` state is being set
+- Check anchor offset in `UnitPoint(x: 0.5, y: -0.08)`
+
+**Timeline not loading:**
+- Check `viewModel.hasStoryData` and `viewModel.hasPbpData`
+- Verify API responses in network logs
+
+**Mock data not appearing:**
+- Confirm `environment = .mock`
+- Check `AppDate.now()` returns expected date
