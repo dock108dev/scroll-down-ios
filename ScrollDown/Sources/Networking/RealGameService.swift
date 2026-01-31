@@ -135,11 +135,13 @@ final class RealGameService: GameService {
         }
 
         do {
+            print("📡 [DEBUG] Requesting: \(url.absoluteString)")
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")
             let (data, response) = try await session.data(from: url)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLError(.badServerResponse)
             }
+            print("📡 [DEBUG] Response status: \(httpResponse.statusCode), bytes: \(data.count)")
             logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
             guard (200..<300).contains(httpResponse.statusCode) else {
                 logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
@@ -147,20 +149,25 @@ final class RealGameService: GameService {
             }
             do {
                 let result = try decoder.decode(T.self, from: data)
+                print("📡 [DEBUG] Decode success for \(path)")
                 logger.info("📡 Decode success for \(path, privacy: .public)")
                 return result
             } catch {
                 // Log the raw response for debugging
                 if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📡 [DEBUG] Decode failed. Raw: \(jsonString.prefix(1000))")
                     logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")
                 }
+                print("📡 [DEBUG] Decode error: \(error)")
                 logger.error("📡 Decode error: \(error.localizedDescription, privacy: .public)")
                 throw error
             }
         } catch let error as DecodingError {
+            print("📡 [DEBUG] DecodingError: \(error)")
             logger.error("📡 DecodingError: \(String(describing: error), privacy: .public)")
             throw GameServiceError.decodingError(error)
         } catch {
+            print("📡 [DEBUG] NetworkError: \(error)")
             logger.error("📡 NetworkError: \(error.localizedDescription, privacy: .public)")
             throw GameServiceError.networkError(error)
         }

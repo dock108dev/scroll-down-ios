@@ -49,6 +49,7 @@ struct GameListResponse: Decodable {
         withOddsCount: Int? = nil,
         withSocialCount: Int? = nil,
         withPbpCount: Int? = nil,
+        withStoryCount: Int? = nil,
         lastUpdatedAt: String? = nil
     ) {
         self.games = games
@@ -62,6 +63,7 @@ struct GameListResponse: Decodable {
         self.withOddsCount = withOddsCount
         self.withSocialCount = withSocialCount
         self.withPbpCount = withPbpCount
+        self.withStoryCount = withStoryCount
         self.lastUpdatedAt = lastUpdatedAt
     }
 }
