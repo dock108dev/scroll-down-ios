@@ -46,44 +46,11 @@ struct MomentCardView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                // Primary: Narrative text
+                // Narrative text only
                 Text(moment.narrative)
                     .font(.subheadline.weight(moment.isHighlight ? .semibold : .regular))
                     .foregroundColor(DesignSystem.TextColor.primary)
                     .lineLimit(2)
-
-                // Secondary: Beat type badge + time range + score
-                HStack(spacing: 6) {
-                    beatTypeBadge
-
-                    if let timeRange = moment.timeRangeDisplay {
-                        Text("·")
-                            .font(.caption)
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-
-                        Text(timeRange)
-                            .font(.caption)
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                    }
-
-                    Text("·")
-                        .font(.caption)
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-
-                    scoreLabel
-                }
-
-                // Tertiary: Highlight count (collapsed only)
-                if moment.highlightedPlayCount > 0 && !isExpanded {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 9))
-                            .foregroundColor(DesignSystem.Colors.accent)
-                        Text("\(moment.highlightedPlayCount) key play\(moment.highlightedPlayCount == 1 ? "" : "s")")
-                            .font(.caption2)
-                            .foregroundColor(DesignSystem.TextColor.secondary)
-                    }
-                }
             }
 
             Spacer()
@@ -106,28 +73,15 @@ struct MomentCardView: View {
             Divider()
                 .padding(.horizontal, 12)
 
-            // Plays list with highlight indicators
+            // Plays list
             if !plays.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(plays) { event in
-                        HStack(spacing: 8) {
-                            // Star indicator for highlighted plays
-                            if moment.isPlayHighlighted(event.playIndex) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(DesignSystem.Colors.accent)
-                            } else {
-                                // Placeholder to maintain alignment
-                                Color.clear
-                                    .frame(width: 10, height: 10)
-                            }
-
-                            UnifiedTimelineRowView(
-                                event: event,
-                                homeTeam: homeTeam,
-                                awayTeam: awayTeam
-                            )
-                        }
+                        UnifiedTimelineRowView(
+                            event: event,
+                            homeTeam: homeTeam,
+                            awayTeam: awayTeam
+                        )
                     }
                 }
                 .padding(.horizontal, 12)
@@ -190,53 +144,12 @@ struct MomentCardView: View {
         )
     }
 
-    // MARK: - Helper Views
-
-    private var beatTypeBadge: some View {
-        HStack(spacing: 3) {
-            Image(systemName: moment.derivedBeatType.iconName)
-                .font(.system(size: 9))
-            Text(moment.derivedBeatType.displayName)
-                .font(.caption)
-        }
-        .foregroundColor(moment.isHighlight ? DesignSystem.Colors.accent : DesignSystem.TextColor.tertiary)
-    }
-
-    private var scoreLabel: some View {
-        HStack(spacing: 4) {
-            Text("\(moment.startScore.away)-\(moment.startScore.home)")
-                .font(.caption.monospacedDigit())
-                .foregroundColor(DesignSystem.TextColor.tertiary)
-
-            Image(systemName: "arrow.right")
-                .font(.system(size: 8))
-                .foregroundColor(DesignSystem.TextColor.tertiary)
-
-            Text("\(moment.endScore.away)-\(moment.endScore.home)")
-                .font(.caption.weight(.medium).monospacedDigit())
-                .foregroundColor(DesignSystem.TextColor.secondary)
-        }
-    }
-
     // MARK: - Actions
 
     private func toggleExpansion() {
         withAnimation(.easeInOut(duration: 0.2)) {
             isExpanded.toggle()
         }
-    }
-}
-
-// MARK: - Play Index Extension
-
-private extension UnifiedTimelineEvent {
-    var playIndex: Int {
-        // Extract play index from id or use hash
-        if let idStr = id.split(separator: "-").last,
-           let idx = Int(idStr) {
-            return idx
-        }
-        return id.hashValue
     }
 }
 
