@@ -54,4 +54,4 @@ Default is live mode. Set via `AppConfig.shared.environment`.
 | [Snapshot Mode](docs/BETA_TIME_OVERRIDE.md) | Time override for historical testing |
 | [Changelog](docs/CHANGELOG.md) | Feature history |
 
-For AI agent context, see [AGENTS.md](AGENTS.md).
+For AI agent context, see [AGENTS.md](docs/AGENTS.md).
