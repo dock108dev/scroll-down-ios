@@ -43,42 +43,43 @@ final class RealGameService: GameService {
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
-        // Convert range to date parameters (API uses Eastern Time)
+        // Use admin endpoint which properly returns all games
+        // The app endpoint /api/games has issues with date filtering
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
         var queryItems: [URLQueryItem] = []
 
         // Calculate date range based on requested range
+        // Admin endpoint uses startDate/endDate (camelCase)
         switch range {
         case .current:
             // Today's games
             let dateStr = dateFormatter.string(from: today)
-            queryItems.append(URLQueryItem(name: "start_date", value: dateStr))
-            queryItems.append(URLQueryItem(name: "end_date", value: dateStr))
-            queryItems.append(URLQueryItem(name: "include_live", value: "true"))
+            queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
+            queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .yesterday:
             // Yesterday's games
             let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today)!
             let dateStr = dateFormatter.string(from: yesterday)
-            queryItems.append(URLQueryItem(name: "start_date", value: dateStr))
-            queryItems.append(URLQueryItem(name: "end_date", value: dateStr))
+            queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
+            queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .earlier:
             // Games from 2+ days ago (last 7 days excluding yesterday)
             let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today)!
             let weekAgo = estCalendar.date(byAdding: .day, value: -7, to: today)!
-            queryItems.append(URLQueryItem(name: "start_date", value: dateFormatter.string(from: weekAgo)))
-            queryItems.append(URLQueryItem(name: "end_date", value: dateFormatter.string(from: twoDaysAgo)))
+            queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: weekAgo)))
+            queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
 
         case .next24:
             // Tomorrow's games
             let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
             let todayStr = dateFormatter.string(from: today)
             let tomorrowStr = dateFormatter.string(from: tomorrow)
-            queryItems.append(URLQueryItem(name: "start_date", value: todayStr))
-            queryItems.append(URLQueryItem(name: "end_date", value: tomorrowStr))
+            queryItems.append(URLQueryItem(name: "startDate", value: todayStr))
+            queryItems.append(URLQueryItem(name: "endDate", value: tomorrowStr))
         }
 
         // Add league filter if specified
@@ -86,18 +87,12 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
         }
 
-        // Beta: Pass assume_now when snapshot mode is active
-        #if DEBUG
-        if let snapshotDate = TimeService.shared.snapshotDate {
-            let isoString = ISO8601DateFormatter().string(from: snapshotDate)
-            queryItems.append(URLQueryItem(name: "assume_now", value: isoString))
-            logger.debug("🕐 Passing assume_now=\(isoString) to backend")
-        }
-        #endif
+        // Add reasonable limit
+        queryItems.append(URLQueryItem(name: "limit", value: "100"))
 
-        let response: GameListResponse = try await request(path: "api/games", queryItems: queryItems)
+        let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
 
-        // No client-side filtering needed - API handles Eastern Time dates
+        // Map admin response to expected format
         return GameListResponse(
             games: response.games,
             startDate: response.startDate,
