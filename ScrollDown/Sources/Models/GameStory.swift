@@ -93,6 +93,30 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     let awayScore: Int?
 
     var id: Int { playId }
+
+    init(
+        playId: Int,
+        playIndex: Int,
+        period: Int,
+        clock: String? = nil,
+        playType: String? = nil,
+        description: String? = nil,
+        team: String? = nil,
+        playerName: String? = nil,
+        homeScore: Int? = nil,
+        awayScore: Int? = nil
+    ) {
+        self.playId = playId
+        self.playIndex = playIndex
+        self.period = period
+        self.clock = clock
+        self.playType = playType
+        self.description = description
+        self.team = team
+        self.playerName = playerName
+        self.homeScore = homeScore
+        self.awayScore = awayScore
+    }
 }
 
 // MARK: - Game Story Response
