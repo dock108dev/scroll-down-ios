@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Expandable card view for a V2 story moment - shows narrative, beat type, and plays
+/// Expandable card view for a story moment
 struct MomentCardView: View {
     let moment: MomentDisplayModel
     let plays: [UnifiedTimelineEvent]

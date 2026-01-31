@@ -28,7 +28,7 @@ extension MockGameService {
         return GameStoryResponse(
             gameId: gameId,
             sport: game.leagueCode,
-            storyVersion: "v2-moments",
+            storyVersion: "moments",
             moments: moments,
             momentCount: moments.count,
             generatedAt: ISO8601DateFormatter().string(from: Date()),

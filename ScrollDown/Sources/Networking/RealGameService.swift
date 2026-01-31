@@ -1,34 +1,7 @@
 import Foundation
 import OSLog
 
-/// Real API implementation of GameService.
-///
-/// ## Why We Use Admin Endpoints (January 2026)
-///
-/// The app currently uses `/api/admin/sports/*` endpoints instead of the app-facing
-/// `/api/*` endpoints for the following reasons:
-///
-/// 1. **App endpoints have bugs/issues:**
-///    - `/api/games` returns empty results for date filtering
-///    - `/api/games/{id}/story` returns HTTP 500 errors
-///    - `/api/games/{id}/timeline` returns HTTP 404 for most games
-///
-/// 2. **Admin endpoints are more reliable:**
-///    - `/api/admin/sports/games` properly returns all games with date filtering
-///    - `/api/admin/sports/games/{id}` returns complete game detail with plays, stats, etc.
-///    - `/api/admin/sports/games/{id}/story` returns story data correctly
-///
-/// 3. **Response format differences:**
-///    - Admin uses camelCase (startDate, gameId, scoreBefore)
-///    - App uses snake_case (start_date, game_id, score_before)
-///    - Our models handle both formats via custom decoders
-///
-/// ## TODO: Switch back to app endpoints when fixed
-/// Once the backend app endpoints are fixed, we should:
-/// 1. Switch back to `/api/*` endpoints
-/// 2. Remove admin endpoint usage
-/// 3. Simplify model decoders to expect only snake_case
-///
+/// Real API implementation of GameService using admin endpoints.
 final class RealGameService: GameService {
 
     // MARK: - Configuration
@@ -63,14 +36,10 @@ final class RealGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        // Admin endpoint: includes plays, stats, social posts, odds
-        // App endpoint /api/games/{id} only returns basic game info
         try await request(path: "api/admin/sports/games/\(id)", queryItems: [])
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
-        // Admin endpoint: properly returns all games with date filtering
-        // App endpoint /api/games has issues returning empty results
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
@@ -78,31 +47,25 @@ final class RealGameService: GameService {
 
         var queryItems: [URLQueryItem] = []
 
-        // Calculate date range based on requested range
-        // Admin endpoint uses camelCase: startDate/endDate
         switch range {
         case .current:
-            // Today's games
             let dateStr = dateFormatter.string(from: today)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .yesterday:
-            // Yesterday's games
             let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today)!
             let dateStr = dateFormatter.string(from: yesterday)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .earlier:
-            // Games from 25-72 hours ago (2-3 days back, excluding yesterday)
             let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today)!
             let threeDaysAgo = estCalendar.date(byAdding: .day, value: -3, to: today)!
             queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: threeDaysAgo)))
             queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
 
         case .next24:
-            // Tomorrow's games
             let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
             let todayStr = dateFormatter.string(from: today)
             let tomorrowStr = dateFormatter.string(from: tomorrow)
@@ -110,12 +73,10 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "endDate", value: tomorrowStr))
         }
 
-        // Add league filter if specified
         if let league {
             queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
         }
 
-        // Add reasonable limit
         queryItems.append(URLQueryItem(name: "limit", value: "100"))
 
         NSLog("📡 Fetching games: range=%@ league=%@", range.rawValue, league?.rawValue ?? "all")
@@ -124,7 +85,6 @@ final class RealGameService: GameService {
         NSLog("📡 Got %d games for range=%@", response.games.count, range.rawValue)
         logger.info("📡 Got \(response.games.count, privacy: .public) games")
 
-        // Map admin response to expected format
         return GameListResponse(
             games: response.games,
             startDate: response.startDate,
@@ -135,27 +95,18 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        // App endpoint for PBP - no admin equivalent for this specific endpoint
-        // The admin /games/{id} endpoint includes plays, but this is called separately
-        // for fallback or direct PBP-only fetches
         try await request(path: "api/games/\(gameId)/pbp", queryItems: [])
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        // App endpoint for social - the admin /games/{id} includes social posts
-        // but this is called separately for fallback or direct social-only fetches
         try await request(path: "api/games/\(gameId)/social", queryItems: [])
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        // App endpoint for timeline - returns 404 for most games currently
-        // Timeline artifacts are generated via admin pipeline and stored
         try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        // Admin endpoint: returns story correctly
-        // App endpoint /api/games/{id}/story returns HTTP 500
         try await request(path: "api/admin/sports/games/\(gameId)/story", queryItems: [])
     }
 
@@ -191,7 +142,6 @@ final class RealGameService: GameService {
                 logger.info("📡 Decode success for \(path, privacy: .public)")
                 return result
             } catch {
-                // Log the raw response for debugging
                 if let jsonString = String(data: data, encoding: .utf8) {
                     NSLog("📡 [DEBUG] Decode failed. Raw: %@", String(jsonString.prefix(1000)))
                     logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")

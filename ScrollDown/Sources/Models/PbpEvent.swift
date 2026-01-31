@@ -1,13 +1,6 @@
 import Foundation
 
-/// Detailed play-by-play event supporting both admin and app API formats
-///
-/// Admin endpoint format (more detailed):
-/// - id, game_id, period, game_clock, event_type, description
-/// - team, team_id, player_name, player_id, home_score, away_score
-///
-/// App endpoint format (simpler):
-/// - index, clock, description, play_type
+/// Detailed play-by-play event
 ///
 /// REVEAL PHILOSOPHY:
 /// - homeScore and awayScore are present in the model but NOT displayed by default
@@ -131,7 +124,7 @@ struct PbpEvent: Codable, Identifiable, Equatable {
     }
 }
 
-/// PBP response - handles both flat events and period-grouped formats
+/// PBP response
 struct PbpResponse: Codable {
     let events: [PbpEvent]
 

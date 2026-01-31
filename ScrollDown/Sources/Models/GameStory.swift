@@ -3,19 +3,13 @@ import Foundation
 // MARK: - Story Moment
 
 /// A narrative moment grouping related plays in the story
-/// Handles both app endpoint (snake_case, score objects) and admin endpoint (camelCase, score arrays)
 struct StoryMoment: Identifiable, Equatable, Decodable {
     let period: Int
     let startClock: String?
     let endClock: String?
     let narrative: String
-    let playCount: Int?
-
-    // For admin endpoint compatibility
     let playIds: [Int]
     let explicitlyNarratedPlayIds: [Int]
-
-    // Scores stored as ScoreSnapshot
     let startScore: ScoreSnapshot
     let endScore: ScoreSnapshot
 
@@ -23,19 +17,13 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case period
-        case startClockSnake = "start_clock"
-        case endClockSnake = "end_clock"
-        case startClockCamel = "startClock"
-        case endClockCamel = "endClock"
+        case startClock
+        case endClock
         case narrative
-        case playCount = "play_count"
         case playIds
         case explicitlyNarratedPlayIds
-        case scoreBefore = "score_before"
-        case scoreAfter = "score_after"
-        // Admin endpoint uses camelCase arrays
-        case scoreBeforeArray = "scoreBefore"
-        case scoreAfterArray = "scoreAfter"
+        case scoreBefore
+        case scoreAfter
     }
 
     init(from decoder: Decoder) throws {
@@ -43,23 +31,13 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
 
         period = try container.decode(Int.self, forKey: .period)
         narrative = try container.decode(String.self, forKey: .narrative)
-        playCount = try container.decodeIfPresent(Int.self, forKey: .playCount)
-
-        // Handle both snake_case (app) and camelCase (admin) for clock fields
-        startClock = (try? container.decode(String.self, forKey: .startClockSnake))
-            ?? (try? container.decode(String.self, forKey: .startClockCamel))
-        endClock = (try? container.decode(String.self, forKey: .endClockSnake))
-            ?? (try? container.decode(String.self, forKey: .endClockCamel))
-
-        // Admin-only fields (optional)
+        startClock = try container.decodeIfPresent(String.self, forKey: .startClock)
+        endClock = try container.decodeIfPresent(String.self, forKey: .endClock)
         playIds = try container.decodeIfPresent([Int].self, forKey: .playIds) ?? []
         explicitlyNarratedPlayIds = try container.decodeIfPresent([Int].self, forKey: .explicitlyNarratedPlayIds) ?? []
 
-        // Handle scores - try object format first (app endpoint), then array format (admin endpoint)
-        if let scoreBefore = try? container.decode(ScoreSnapshot.self, forKey: .scoreBefore) {
-            startScore = scoreBefore
-        } else if let scoreArray = try? container.decode([Int].self, forKey: .scoreBeforeArray) {
-            // Admin format: [away, home]
+        // Scores are [away, home] arrays
+        if let scoreArray = try container.decodeIfPresent([Int].self, forKey: .scoreBefore) {
             startScore = ScoreSnapshot(
                 home: scoreArray.count > 1 ? scoreArray[1] : 0,
                 away: scoreArray.first ?? 0
@@ -68,10 +46,7 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
             startScore = ScoreSnapshot(home: 0, away: 0)
         }
 
-        if let scoreAfter = try? container.decode(ScoreSnapshot.self, forKey: .scoreAfter) {
-            endScore = scoreAfter
-        } else if let scoreArray = try? container.decode([Int].self, forKey: .scoreAfterArray) {
-            // Admin format: [away, home]
+        if let scoreArray = try container.decodeIfPresent([Int].self, forKey: .scoreAfter) {
             endScore = ScoreSnapshot(
                 home: scoreArray.count > 1 ? scoreArray[1] : 0,
                 away: scoreArray.first ?? 0
@@ -86,7 +61,6 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         startClock: String?,
         endClock: String?,
         narrative: String,
-        playCount: Int? = nil,
         playIds: [Int] = [],
         explicitlyNarratedPlayIds: [Int] = [],
         startScore: ScoreSnapshot,
@@ -96,21 +70,16 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         self.startClock = startClock
         self.endClock = endClock
         self.narrative = narrative
-        self.playCount = playCount
         self.playIds = playIds
         self.explicitlyNarratedPlayIds = explicitlyNarratedPlayIds
         self.startScore = startScore
         self.endScore = endScore
     }
-
-    // Legacy accessors for compatibility
-    var scoreBefore: [Int] { [startScore.away, startScore.home] }
-    var scoreAfter: [Int] { [endScore.away, endScore.home] }
 }
 
 // MARK: - Story Play
 
-/// Individual play details within the story (admin endpoint only)
+/// Individual play details within the story
 struct StoryPlay: Codable, Identifiable, Equatable {
     let playId: Int
     let playIndex: Int
@@ -124,63 +93,11 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     let awayScore: Int?
 
     var id: Int { playId }
-
-    enum CodingKeys: String, CodingKey {
-        case playId
-        case playIndex
-        case period
-        case clock
-        case playType
-        case description
-        case team
-        case playerName
-        case homeScore
-        case awayScore
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        playId = try container.decode(Int.self, forKey: .playId)
-        playIndex = try container.decode(Int.self, forKey: .playIndex)
-        period = try container.decode(Int.self, forKey: .period)
-        clock = try container.decodeIfPresent(String.self, forKey: .clock)
-        playType = try container.decodeIfPresent(String.self, forKey: .playType)
-        description = try container.decodeIfPresent(String.self, forKey: .description)
-        team = try container.decodeIfPresent(String.self, forKey: .team)
-        playerName = try container.decodeIfPresent(String.self, forKey: .playerName)
-        homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
-        awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
-    }
-
-    init(
-        playId: Int,
-        playIndex: Int,
-        period: Int,
-        clock: String?,
-        playType: String?,
-        description: String?,
-        team: String? = nil,
-        playerName: String? = nil,
-        homeScore: Int?,
-        awayScore: Int?
-    ) {
-        self.playId = playId
-        self.playIndex = playIndex
-        self.period = period
-        self.clock = clock
-        self.playType = playType
-        self.description = description
-        self.team = team
-        self.playerName = playerName
-        self.homeScore = homeScore
-        self.awayScore = awayScore
-    }
 }
 
 // MARK: - Game Story Response
 
 /// Response from the story endpoint
-/// Handles both app endpoint (/api/games/{id}/story) and admin endpoint formats
 struct GameStoryResponse: Decodable {
     let gameId: Int
     let sport: String?
@@ -189,60 +106,47 @@ struct GameStoryResponse: Decodable {
     let momentCount: Int?
     let generatedAt: String?
     let hasStory: Bool
-
-    // Admin endpoint fields
     let plays: [StoryPlay]
     let validationPassed: Bool
     let validationErrors: [String]
 
-    // Computed property for StoryContent compatibility
     var story: StoryContent {
         StoryContent(moments: moments)
     }
 
     enum CodingKeys: String, CodingKey {
-        case gameIdSnake = "game_id"
-        case gameIdCamel = "gameId"
+        case gameId
         case sport
-        case storyVersion = "story_version"
+        case storyVersion
         case moments
-        case momentCount = "moment_count"
-        case generatedAt = "generated_at"
-        case hasStory = "has_story"
+        case momentCount
+        case generatedAt
+        case hasStory
         case plays
-        case validationPassed = "validation_passed"
-        case validationErrors = "validation_errors"
-        // Admin endpoint nesting
+        case validationPassed
+        case validationErrors
         case story
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Handle both snake_case (app) and camelCase (admin) for gameId
-        if let id = try? container.decode(Int.self, forKey: .gameIdSnake) {
-            gameId = id
-        } else {
-            gameId = try container.decode(Int.self, forKey: .gameIdCamel)
-        }
+        gameId = try container.decode(Int.self, forKey: .gameId)
         sport = try container.decodeIfPresent(String.self, forKey: .sport)
         storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion)
         momentCount = try container.decodeIfPresent(Int.self, forKey: .momentCount)
         generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
         hasStory = try container.decodeIfPresent(Bool.self, forKey: .hasStory) ?? true
 
-        // Try direct moments array (app endpoint) first
+        // Moments can be at top level or nested in story object
         if let directMoments = try? container.decode([StoryMoment].self, forKey: .moments) {
             moments = directMoments
-        }
-        // Fall back to nested story.moments (admin endpoint)
-        else if let storyContent = try? container.decode(StoryContent.self, forKey: .story) {
+        } else if let storyContent = try? container.decode(StoryContent.self, forKey: .story) {
             moments = storyContent.moments
         } else {
             moments = []
         }
 
-        // Admin-only fields
         plays = try container.decodeIfPresent([StoryPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
@@ -273,7 +177,7 @@ struct GameStoryResponse: Decodable {
     }
 }
 
-// MARK: - Story Content (for admin endpoint compatibility)
+// MARK: - Story Content
 
 struct StoryContent: Decodable, Equatable {
     let moments: [StoryMoment]

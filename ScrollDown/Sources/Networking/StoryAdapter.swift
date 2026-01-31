@@ -25,13 +25,8 @@ enum StoryAdapter {
 
     /// Derive beat type from moment data (score deltas, position in game)
     static func deriveBeatType(from moment: StoryMoment, index: Int, total: Int) -> BeatType {
-        let homeScoreAfter = moment.scoreAfter.count > 1 ? moment.scoreAfter[1] : 0
-        let homeScoreBefore = moment.scoreBefore.count > 1 ? moment.scoreBefore[1] : 0
-        let awayScoreAfter = moment.scoreAfter.first ?? 0
-        let awayScoreBefore = moment.scoreBefore.first ?? 0
-
-        let homeScored = homeScoreAfter - homeScoreBefore
-        let awayScored = awayScoreAfter - awayScoreBefore
+        let homeScored = moment.endScore.home - moment.startScore.home
+        let awayScored = moment.endScore.away - moment.startScore.away
         let totalScored = homeScored + awayScored
         let diff = abs(homeScored - awayScored)
 
