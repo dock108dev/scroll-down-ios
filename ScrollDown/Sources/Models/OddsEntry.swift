@@ -34,9 +34,13 @@ struct OddsEntry: Codable, Identifiable {
 
         book = try container.decode(String.self, forKey: .book)
 
-        marketType = (try? container.decode(MarketType.self, forKey: .marketTypeSnake))
-            ?? (try? container.decode(MarketType.self, forKey: .marketTypeCamel))
-            ?? .unknown
+        if let mt = try? container.decode(MarketType.self, forKey: .marketTypeSnake) {
+            marketType = mt
+        } else if let mt = try? container.decode(MarketType.self, forKey: .marketTypeCamel) {
+            marketType = mt
+        } else {
+            marketType = try container.decode(MarketType.self, forKey: .marketTypeSnake)
+        }
 
         side = try container.decodeIfPresent(String.self, forKey: .side)
         line = try container.decodeIfPresent(Double.self, forKey: .line)
