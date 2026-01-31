@@ -22,7 +22,7 @@ final class RealGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        try await request(path: "api/games/\(id)", queryItems: [])
+        try await request(path: "api/admin/sports/games/\(id)", queryItems: [])
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
@@ -40,7 +40,9 @@ final class RealGameService: GameService {
         }
         #endif
         
-        let response: GameListResponse = try await request(path: "api/games", queryItems: queryItems)
+        // Note: App-facing /api/games only supports range=current
+        // Using admin endpoint which supports all ranges (earlier, yesterday, current, next24)
+        let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
         
         // Client-side range filtering until backend supports it
         let filteredGames = filterGames(response.games, for: range)
