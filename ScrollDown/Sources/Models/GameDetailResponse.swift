@@ -1,6 +1,7 @@
 import Foundation
 
 /// Full game detail response as defined in the OpenAPI spec (GameDetailResponse schema)
+/// Handles both snake_case (app endpoint) and camelCase (admin endpoint) JSON formats
 struct GameDetailResponse: Codable {
     let game: Game
     let teamStats: [TeamStat]
@@ -18,16 +19,108 @@ struct GameDetailResponse: Codable {
 
     enum CodingKeys: String, CodingKey {
         case game
-        case teamStats = "team_stats"
-        case playerStats = "player_stats"
+        // snake_case keys (app endpoint)
+        case teamStatsSnake = "team_stats"
+        case playerStatsSnake = "player_stats"
+        case socialPostsSnake = "social_posts"
+        case derivedMetricsSnake = "derived_metrics"
+        case rawPayloadsSnake = "raw_payloads"
+        case nhlSkatersSnake = "nhl_skaters"
+        case nhlGoaliesSnake = "nhl_goalies"
+        case dataHealthSnake = "data_health"
+        // camelCase keys (admin endpoint)
+        case teamStatsCamel = "teamStats"
+        case playerStatsCamel = "playerStats"
+        case socialPostsCamel = "socialPosts"
+        case derivedMetricsCamel = "derivedMetrics"
+        case rawPayloadsCamel = "rawPayloads"
+        case nhlSkatersCamel = "nhlSkaters"
+        case nhlGoaliesCamel = "nhlGoalies"
+        case dataHealthCamel = "dataHealth"
+        // Common keys
         case odds
-        case socialPosts = "social_posts"
         case plays
-        case derivedMetrics = "derived_metrics"
-        case rawPayloads = "raw_payloads"
-        case nhlSkaters = "nhl_skaters"
-        case nhlGoalies = "nhl_goalies"
-        case dataHealth = "data_health"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        game = try container.decode(Game.self, forKey: .game)
+
+        // Handle both snake_case and camelCase for each field
+        teamStats = (try? container.decode([TeamStat].self, forKey: .teamStatsSnake))
+            ?? (try? container.decode([TeamStat].self, forKey: .teamStatsCamel))
+            ?? []
+
+        playerStats = (try? container.decode([PlayerStat].self, forKey: .playerStatsSnake))
+            ?? (try? container.decode([PlayerStat].self, forKey: .playerStatsCamel))
+            ?? []
+
+        odds = (try? container.decode([OddsEntry].self, forKey: .odds)) ?? []
+        plays = (try? container.decode([PlayEntry].self, forKey: .plays)) ?? []
+
+        socialPosts = (try? container.decode([SocialPostEntry].self, forKey: .socialPostsSnake))
+            ?? (try? container.decode([SocialPostEntry].self, forKey: .socialPostsCamel))
+            ?? []
+
+        derivedMetrics = (try? container.decode([String: AnyCodable].self, forKey: .derivedMetricsSnake))
+            ?? (try? container.decode([String: AnyCodable].self, forKey: .derivedMetricsCamel))
+            ?? [:]
+
+        rawPayloads = (try? container.decode([String: AnyCodable].self, forKey: .rawPayloadsSnake))
+            ?? (try? container.decode([String: AnyCodable].self, forKey: .rawPayloadsCamel))
+            ?? [:]
+
+        nhlSkaters = (try? container.decode([NHLSkaterStat].self, forKey: .nhlSkatersSnake))
+            ?? (try? container.decode([NHLSkaterStat].self, forKey: .nhlSkatersCamel))
+
+        nhlGoalies = (try? container.decode([NHLGoalieStat].self, forKey: .nhlGoaliesSnake))
+            ?? (try? container.decode([NHLGoalieStat].self, forKey: .nhlGoaliesCamel))
+
+        dataHealth = (try? container.decode(NHLDataHealth.self, forKey: .dataHealthSnake))
+            ?? (try? container.decode(NHLDataHealth.self, forKey: .dataHealthCamel))
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(game, forKey: .game)
+        try container.encode(teamStats, forKey: .teamStatsSnake)
+        try container.encode(playerStats, forKey: .playerStatsSnake)
+        try container.encode(odds, forKey: .odds)
+        try container.encode(socialPosts, forKey: .socialPostsSnake)
+        try container.encode(plays, forKey: .plays)
+        try container.encode(derivedMetrics, forKey: .derivedMetricsSnake)
+        try container.encode(rawPayloads, forKey: .rawPayloadsSnake)
+        try container.encodeIfPresent(nhlSkaters, forKey: .nhlSkatersSnake)
+        try container.encodeIfPresent(nhlGoalies, forKey: .nhlGoaliesSnake)
+        try container.encodeIfPresent(dataHealth, forKey: .dataHealthSnake)
+    }
+
+    // Memberwise initializer for mock data and testing
+    init(
+        game: Game,
+        teamStats: [TeamStat] = [],
+        playerStats: [PlayerStat] = [],
+        odds: [OddsEntry] = [],
+        socialPosts: [SocialPostEntry] = [],
+        plays: [PlayEntry] = [],
+        derivedMetrics: [String: AnyCodable] = [:],
+        rawPayloads: [String: AnyCodable] = [:],
+        nhlSkaters: [NHLSkaterStat]? = nil,
+        nhlGoalies: [NHLGoalieStat]? = nil,
+        dataHealth: NHLDataHealth? = nil
+    ) {
+        self.game = game
+        self.teamStats = teamStats
+        self.playerStats = playerStats
+        self.odds = odds
+        self.socialPosts = socialPosts
+        self.plays = plays
+        self.derivedMetrics = derivedMetrics
+        self.rawPayloads = rawPayloads
+        self.nhlSkaters = nhlSkaters
+        self.nhlGoalies = nhlGoalies
+        self.dataHealth = dataHealth
     }
 }
 

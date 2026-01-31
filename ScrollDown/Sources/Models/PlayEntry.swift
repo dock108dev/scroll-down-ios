@@ -1,7 +1,7 @@
 import Foundation
 
 /// Play-by-play event as defined in the OpenAPI spec (PlayEntry schema)
-/// Handles both game detail format and story API format
+/// Handles snake_case (app endpoint), camelCase (admin endpoint), and story API formats
 struct PlayEntry: Codable, Identifiable, Equatable {
     let playIndex: Int
     let quarter: Int?
@@ -17,38 +17,64 @@ struct PlayEntry: Codable, Identifiable, Equatable {
     var id: Int { playIndex }
 
     enum CodingKeys: String, CodingKey {
-        case playIndex = "play_index"
+        // snake_case keys
+        case playIndexSnake = "play_index"
+        case gameClockSnake = "game_clock"
+        case playTypeSnake = "play_type"
+        case teamAbbreviationSnake = "team_abbreviation"
+        case playerNameSnake = "player_name"
+        case homeScoreSnake = "home_score"
+        case awayScoreSnake = "away_score"
+        // camelCase keys (admin endpoint)
+        case playIndexCamel = "playIndex"
+        case gameClockCamel = "gameClock"
+        case playTypeCamel = "playType"
+        case teamAbbreviationCamel = "teamAbbreviation"
+        case playerNameCamel = "playerName"
+        case homeScoreCamel = "homeScore"
+        case awayScoreCamel = "awayScore"
+        // Common keys
         case quarter
-        case gameClock = "game_clock"
-        case playType = "play_type"
-        case teamAbbreviation = "team_abbreviation"
-        case team  // Story API uses "team" instead of "team_abbreviation"
-        case playerName = "player_name"
         case description
-        case homeScore = "home_score"
-        case awayScore = "away_score"
+        case team  // Story API uses "team" instead of "team_abbreviation"
         case scoreHome = "score_home"  // Story API uses "score_home"
         case scoreAway = "score_away"  // Story API uses "score_away"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        playIndex = try container.decode(Int.self, forKey: .playIndex)
+
+        // Handle both snake_case and camelCase for playIndex
+        playIndex = (try? container.decode(Int.self, forKey: .playIndexSnake))
+            ?? (try? container.decode(Int.self, forKey: .playIndexCamel))
+            ?? 0
+
         quarter = try container.decodeIfPresent(Int.self, forKey: .quarter)
-        gameClock = try container.decodeIfPresent(String.self, forKey: .gameClock)
-        playType = try container.decodeIfPresent(PlayType.self, forKey: .playType)
-        playerName = try container.decodeIfPresent(String.self, forKey: .playerName)
+
+        gameClock = (try? container.decode(String.self, forKey: .gameClockSnake))
+            ?? (try? container.decode(String.self, forKey: .gameClockCamel))
+
+        playType = (try? container.decode(PlayType.self, forKey: .playTypeSnake))
+            ?? (try? container.decode(PlayType.self, forKey: .playTypeCamel))
+
+        playerName = (try? container.decode(String.self, forKey: .playerNameSnake))
+            ?? (try? container.decode(String.self, forKey: .playerNameCamel))
+
         description = try container.decodeIfPresent(String.self, forKey: .description)
 
-        // Handle both team_abbreviation and team keys
-        teamAbbreviation = try container.decodeIfPresent(String.self, forKey: .teamAbbreviation)
-            ?? container.decodeIfPresent(String.self, forKey: .team)
+        // Handle team_abbreviation, teamAbbreviation, and team keys
+        teamAbbreviation = (try? container.decode(String.self, forKey: .teamAbbreviationSnake))
+            ?? (try? container.decode(String.self, forKey: .teamAbbreviationCamel))
+            ?? (try? container.decode(String.self, forKey: .team))
 
-        // Handle both home_score/away_score and score_home/score_away keys
-        homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
-            ?? container.decodeIfPresent(Int.self, forKey: .scoreHome)
-        awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
-            ?? container.decodeIfPresent(Int.self, forKey: .scoreAway)
+        // Handle home_score, homeScore, and score_home keys
+        homeScore = (try? container.decode(Int.self, forKey: .homeScoreSnake))
+            ?? (try? container.decode(Int.self, forKey: .homeScoreCamel))
+            ?? (try? container.decode(Int.self, forKey: .scoreHome))
+
+        awayScore = (try? container.decode(Int.self, forKey: .awayScoreSnake))
+            ?? (try? container.decode(Int.self, forKey: .awayScoreCamel))
+            ?? (try? container.decode(Int.self, forKey: .scoreAway))
     }
 
     init(
@@ -75,15 +101,15 @@ struct PlayEntry: Codable, Identifiable, Equatable {
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(playIndex, forKey: .playIndex)
+        try container.encode(playIndex, forKey: .playIndexSnake)
         try container.encodeIfPresent(quarter, forKey: .quarter)
-        try container.encodeIfPresent(gameClock, forKey: .gameClock)
-        try container.encodeIfPresent(playType, forKey: .playType)
-        try container.encodeIfPresent(teamAbbreviation, forKey: .teamAbbreviation)
-        try container.encodeIfPresent(playerName, forKey: .playerName)
+        try container.encodeIfPresent(gameClock, forKey: .gameClockSnake)
+        try container.encodeIfPresent(playType, forKey: .playTypeSnake)
+        try container.encodeIfPresent(teamAbbreviation, forKey: .teamAbbreviationSnake)
+        try container.encodeIfPresent(playerName, forKey: .playerNameSnake)
         try container.encodeIfPresent(description, forKey: .description)
-        try container.encodeIfPresent(homeScore, forKey: .homeScore)
-        try container.encodeIfPresent(awayScore, forKey: .awayScore)
+        try container.encodeIfPresent(homeScore, forKey: .homeScoreSnake)
+        try container.encodeIfPresent(awayScore, forKey: .awayScoreSnake)
     }
 }
 
