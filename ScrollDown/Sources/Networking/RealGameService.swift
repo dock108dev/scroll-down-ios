@@ -2,7 +2,33 @@ import Foundation
 import OSLog
 
 /// Real API implementation of GameService.
-/// Uses the new date-based API that handles Eastern Time server-side.
+///
+/// ## Why We Use Admin Endpoints (January 2026)
+///
+/// The app currently uses `/api/admin/sports/*` endpoints instead of the app-facing
+/// `/api/*` endpoints for the following reasons:
+///
+/// 1. **App endpoints have bugs/issues:**
+///    - `/api/games` returns empty results for date filtering
+///    - `/api/games/{id}/story` returns HTTP 500 errors
+///    - `/api/games/{id}/timeline` returns HTTP 404 for most games
+///
+/// 2. **Admin endpoints are more reliable:**
+///    - `/api/admin/sports/games` properly returns all games with date filtering
+///    - `/api/admin/sports/games/{id}` returns complete game detail with plays, stats, etc.
+///    - `/api/admin/sports/games/{id}/story` returns story data correctly
+///
+/// 3. **Response format differences:**
+///    - Admin uses camelCase (startDate, gameId, scoreBefore)
+///    - App uses snake_case (start_date, game_id, score_before)
+///    - Our models handle both formats via custom decoders
+///
+/// ## TODO: Switch back to app endpoints when fixed
+/// Once the backend app endpoints are fixed, we should:
+/// 1. Switch back to `/api/*` endpoints
+/// 2. Remove admin endpoint usage
+/// 3. Simplify model decoders to expect only snake_case
+///
 final class RealGameService: GameService {
 
     // MARK: - Configuration
@@ -37,14 +63,14 @@ final class RealGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        // Use admin endpoint for full game detail (includes plays, stats, etc.)
-        // App-facing /api/games/{id} only returns basic game info
+        // Admin endpoint: includes plays, stats, social posts, odds
+        // App endpoint /api/games/{id} only returns basic game info
         try await request(path: "api/admin/sports/games/\(id)", queryItems: [])
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
-        // Use admin endpoint which properly returns all games
-        // The app endpoint /api/games has issues with date filtering
+        // Admin endpoint: properly returns all games with date filtering
+        // App endpoint /api/games has issues returning empty results
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
@@ -53,7 +79,7 @@ final class RealGameService: GameService {
         var queryItems: [URLQueryItem] = []
 
         // Calculate date range based on requested range
-        // Admin endpoint uses startDate/endDate (camelCase)
+        // Admin endpoint uses camelCase: startDate/endDate
         switch range {
         case .current:
             // Today's games
@@ -109,19 +135,27 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
+        // App endpoint for PBP - no admin equivalent for this specific endpoint
+        // The admin /games/{id} endpoint includes plays, but this is called separately
+        // for fallback or direct PBP-only fetches
         try await request(path: "api/games/\(gameId)/pbp", queryItems: [])
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
+        // App endpoint for social - the admin /games/{id} includes social posts
+        // but this is called separately for fallback or direct social-only fetches
         try await request(path: "api/games/\(gameId)/social", queryItems: [])
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
+        // App endpoint for timeline - returns 404 for most games currently
+        // Timeline artifacts are generated via admin pipeline and stored
         try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        // Use admin endpoint for story (app endpoint returns 500)
+        // Admin endpoint: returns story correctly
+        // App endpoint /api/games/{id}/story returns HTTP 500
         try await request(path: "api/admin/sports/games/\(gameId)/story", queryItems: [])
     }
 
@@ -167,11 +201,11 @@ final class RealGameService: GameService {
                 throw error
             }
         } catch let error as DecodingError {
-            print("📡 [DEBUG] DecodingError: \(error)")
+            NSLog("📡 [DEBUG] DecodingError: %@", "\(error)")
             logger.error("📡 DecodingError: \(String(describing: error), privacy: .public)")
             throw GameServiceError.decodingError(error)
         } catch {
-            print("📡 [DEBUG] NetworkError: \(error)")
+            NSLog("📡 [DEBUG] NetworkError: %@", "\(error)")
             logger.error("📡 NetworkError: \(error.localizedDescription, privacy: .public)")
             throw GameServiceError.networkError(error)
         }

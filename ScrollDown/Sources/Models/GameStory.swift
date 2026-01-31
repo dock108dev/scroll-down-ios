@@ -23,8 +23,10 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case period
-        case startClock = "start_clock"
-        case endClock = "end_clock"
+        case startClockSnake = "start_clock"
+        case endClockSnake = "end_clock"
+        case startClockCamel = "startClock"
+        case endClockCamel = "endClock"
         case narrative
         case playCount = "play_count"
         case playIds
@@ -43,9 +45,11 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         narrative = try container.decode(String.self, forKey: .narrative)
         playCount = try container.decodeIfPresent(Int.self, forKey: .playCount)
 
-        // Handle both snake_case and camelCase for clock fields
-        startClock = try container.decodeIfPresent(String.self, forKey: .startClock)
-        endClock = try container.decodeIfPresent(String.self, forKey: .endClock)
+        // Handle both snake_case (app) and camelCase (admin) for clock fields
+        startClock = (try? container.decode(String.self, forKey: .startClockSnake))
+            ?? (try? container.decode(String.self, forKey: .startClockCamel))
+        endClock = (try? container.decode(String.self, forKey: .endClockSnake))
+            ?? (try? container.decode(String.self, forKey: .endClockCamel))
 
         // Admin-only fields (optional)
         playIds = try container.decodeIfPresent([Int].self, forKey: .playIds) ?? []
