@@ -39,12 +39,7 @@ extension GameDetailView {
 
     private var timelineSubtitle: String {
         if viewModel.hasStoryData {
-            let momentCount = viewModel.momentDisplayModels.count
-            let highlightCount = viewModel.momentDisplayModels.filter { $0.isHighlight }.count
-            if highlightCount > 0 {
-                return "\(momentCount) moments • \(highlightCount) highlights"
-            }
-            return "\(momentCount) moments"
+            return "Game Story"
         }
 
         let events = viewModel.unifiedTimelineEvents
@@ -52,10 +47,6 @@ extension GameDetailView {
             return "Play-by-play"
         }
         let pbpCount = events.filter { $0.eventType == .pbp }.count
-        let tweetCount = events.filter { $0.eventType == .tweet }.count
-        if tweetCount > 0 {
-            return "\(pbpCount) plays • \(tweetCount) posts"
-        }
         return "\(pbpCount) plays"
     }
 

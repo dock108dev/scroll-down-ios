@@ -349,7 +349,8 @@ struct HomeView: View {
 
             switch result.range {
             case .earlier:
-                earlierSection.games = sortedGames
+                // Reverse chronological - most recent at bottom, scroll up to go back in time
+                earlierSection.games = sortedGames.reversed()
                 earlierSection.errorMessage = result.errorMessage
                 earlierSection.isLoading = false
             case .yesterday:

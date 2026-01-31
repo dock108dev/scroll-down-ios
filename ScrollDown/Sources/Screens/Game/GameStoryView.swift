@@ -7,6 +7,7 @@ struct GameStoryView: View {
     @Binding var isCompactStoryExpanded: Bool
     @State private var showingFullPlayByPlay = false
     @State private var collapsedMoments: Set<Int> = []
+    @State private var hasInitializedCollapsed = false
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.list) {
@@ -33,6 +34,14 @@ struct GameStoryView: View {
         }
         .sheet(isPresented: $showingFullPlayByPlay) {
             FullPlayByPlayView(viewModel: viewModel)
+        }
+        .onAppear {
+            // Start with all moments collapsed
+            guard !hasInitializedCollapsed else { return }
+            hasInitializedCollapsed = true
+            for moment in viewModel.momentDisplayModels {
+                collapsedMoments.insert(moment.id)
+            }
         }
     }
 
@@ -64,7 +73,7 @@ struct GameStoryView: View {
 
             if story.count > 200 {
                 Button(isCompactStoryExpanded ? "Show Less" : "Read More") {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         isCompactStoryExpanded.toggle()
                     }
                 }

@@ -31,7 +31,7 @@ struct MomentCardView: View {
             RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
                 .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: 0.5)
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
     // MARK: - Header Content
@@ -131,9 +131,63 @@ struct MomentCardView: View {
                     }
                 }
                 .padding(.horizontal, 12)
-                .padding(.bottom, 12)
             }
+
+            // Score summary at end of moment
+            scoreBoxView
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
         }
+    }
+
+    // MARK: - Score Box View
+
+    private var scoreBoxView: some View {
+        HStack(spacing: 0) {
+            // Away team score
+            VStack(spacing: 2) {
+                Text(awayTeam)
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .lineLimit(1)
+                Text("\(moment.endScore.away)")
+                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+            }
+            .frame(maxWidth: .infinity)
+
+            // Score change indicator
+            VStack(spacing: 2) {
+                Text("Score")
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                let awayDiff = moment.endScore.away - moment.startScore.away
+                let homeDiff = moment.endScore.home - moment.startScore.home
+                Text("+\(awayDiff) / +\(homeDiff)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            // Home team score
+            VStack(spacing: 2) {
+                Text(homeTeam)
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .lineLimit(1)
+                Text("\(moment.endScore.home)")
+                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 10)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(DesignSystem.borderColor.opacity(0.2), lineWidth: 0.5)
+        )
     }
 
     // MARK: - Helper Views
@@ -167,7 +221,7 @@ struct MomentCardView: View {
     // MARK: - Actions
 
     private func toggleExpansion() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(.easeInOut(duration: 0.2)) {
             isExpanded.toggle()
         }
     }

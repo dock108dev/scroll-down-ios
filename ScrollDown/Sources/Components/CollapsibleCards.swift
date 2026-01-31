@@ -63,18 +63,15 @@ struct CollapsibleSectionCard<Content: View>: View {
 
             if isExpanded {
                 content
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity
-                    ))
+                    .transition(.opacity)
             }
         }
         .sectionCard()
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
     private func toggle() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(.easeInOut(duration: 0.2)) {
             isExpanded.toggle()
             onHeaderTap?()
         }
@@ -124,10 +121,7 @@ struct CollapsibleQuarterCard<Content: View>: View {
 
             if isExpanded {
                 content
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity
-                    ))
+                    .transition(.opacity)
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.elementPadding)
@@ -140,11 +134,11 @@ struct CollapsibleQuarterCard<Content: View>: View {
             x: 0,
             y: DesignSystem.Shadow.subtleY
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
     private func toggle() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(.easeInOut(duration: 0.2)) {
             isExpanded.toggle()
         }
     }
