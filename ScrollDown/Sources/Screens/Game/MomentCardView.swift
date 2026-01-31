@@ -37,33 +37,70 @@ struct MomentCardView: View {
     // MARK: - Header Content
 
     private var headerContent: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // Left edge accent (only for highlight beat types)
-            if moment.isHighlight {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(DesignSystem.Colors.accent)
-                    .frame(width: 3)
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
+                // Left edge accent (only for highlight beat types)
+                if moment.isHighlight {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(DesignSystem.Colors.accent)
+                        .frame(width: 3)
+                }
 
-            VStack(alignment: .leading, spacing: 4) {
-                // Narrative text only
+                // Narrative text
                 Text(moment.narrative)
                     .font(.subheadline.weight(moment.isHighlight ? .semibold : .regular))
                     .foregroundColor(DesignSystem.TextColor.primary)
                     .lineLimit(2)
+
+                Spacer()
+
+                // Right: Expansion indicator
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
             }
 
-            Spacer()
-
-            // Right: Expansion indicator
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.medium))
-                .foregroundColor(DesignSystem.TextColor.tertiary)
-                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+            // Compact two-column score box (always visible)
+            compactScoreBox
         }
         .padding(.vertical, 12)
         .padding(.horizontal, moment.isHighlight ? 8 : 12)
         .contentShape(Rectangle())
+    }
+
+    // MARK: - Compact Score Box (Two Column)
+
+    private var compactScoreBox: some View {
+        HStack(spacing: 0) {
+            // Away team score
+            HStack(spacing: 6) {
+                Text(awayTeam)
+                    .font(.caption)
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .lineLimit(1)
+                Text("\(moment.endScore.away)")
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Home team score
+            HStack(spacing: 6) {
+                Text("\(moment.endScore.home)")
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                Text(homeTeam)
+                    .font(.caption)
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Expanded Content
@@ -85,63 +122,9 @@ struct MomentCardView: View {
                     }
                 }
                 .padding(.horizontal, 12)
-            }
-
-            // Score summary at end of moment
-            scoreBoxView
-                .padding(.horizontal, 12)
                 .padding(.bottom, 12)
+            }
         }
-    }
-
-    // MARK: - Score Box View
-
-    private var scoreBoxView: some View {
-        HStack(spacing: 0) {
-            // Away team score
-            VStack(spacing: 2) {
-                Text(awayTeam)
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                    .lineLimit(1)
-                Text("\(moment.endScore.away)")
-                    .font(.title3.weight(.semibold).monospacedDigit())
-                    .foregroundColor(DesignSystem.TextColor.primary)
-            }
-            .frame(maxWidth: .infinity)
-
-            // Score change indicator
-            VStack(spacing: 2) {
-                Text("Score")
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                let awayDiff = moment.endScore.away - moment.startScore.away
-                let homeDiff = moment.endScore.home - moment.startScore.home
-                Text("+\(awayDiff) / +\(homeDiff)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundColor(DesignSystem.TextColor.secondary)
-            }
-            .frame(maxWidth: .infinity)
-
-            // Home team score
-            VStack(spacing: 2) {
-                Text(homeTeam)
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                    .lineLimit(1)
-                Text("\(moment.endScore.home)")
-                    .font(.title3.weight(.semibold).monospacedDigit())
-                    .foregroundColor(DesignSystem.TextColor.primary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.vertical, 10)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(DesignSystem.borderColor.opacity(0.2), lineWidth: 0.5)
-        )
     }
 
     // MARK: - Actions
