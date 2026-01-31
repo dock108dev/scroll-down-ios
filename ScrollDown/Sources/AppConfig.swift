@@ -80,24 +80,31 @@ enum AppDate {
         return Date()
     }
     
-    /// Start of today based on AppDate.now()
+    /// EST calendar for game date calculations (US sports assumption)
+    private static var estCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        return calendar
+    }
+
+    /// Start of today based on AppDate.now() in EST
     static var startOfToday: Date {
-        Calendar.current.startOfDay(for: now())
+        estCalendar.startOfDay(for: now())
     }
-    
-    /// End of today (23:59:59) based on AppDate.now()
+
+    /// End of today (23:59:59) based on AppDate.now() in EST
     static var endOfToday: Date {
-        Calendar.current.date(byAdding: .day, value: 1, to: startOfToday)!.addingTimeInterval(-1)
+        estCalendar.date(byAdding: .day, value: 1, to: startOfToday)!.addingTimeInterval(-1)
     }
-    
-    /// Start of the history window (2 days ago)
+
+    /// Start of the history window (2 days ago) in EST
     static var historyWindowStart: Date {
-        Calendar.current.date(byAdding: .day, value: -2, to: startOfToday)!
+        estCalendar.date(byAdding: .day, value: -2, to: startOfToday)!
     }
-    
-    /// Start of tomorrow
+
+    /// Start of tomorrow in EST
     static var startOfTomorrow: Date {
-        Calendar.current.date(byAdding: .day, value: 1, to: startOfToday)!
+        estCalendar.date(byAdding: .day, value: 1, to: startOfToday)!
     }
 }
 

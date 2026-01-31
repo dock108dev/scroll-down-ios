@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 
 /// Real API implementation of GameService.
+/// Uses the new date-based API that handles Eastern Time server-side.
 final class RealGameService: GameService {
 
     // MARK: - Configuration
@@ -9,6 +10,20 @@ final class RealGameService: GameService {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let logger = Logger(subsystem: "com.scrolldown.app", category: "networking")
+
+    /// EST calendar for date formatting (API expects dates in Eastern Time)
+    private var estCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        return calendar
+    }
+
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "America/New_York")!
+        return formatter
+    }
 
     init(
         baseURL: URL,
@@ -22,15 +37,55 @@ final class RealGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        try await request(path: "api/games/\(id)", queryItems: [])
+        // Use admin endpoint for full game detail (includes plays, stats, etc.)
+        // App-facing /api/games/{id} only returns basic game info
+        try await request(path: "api/admin/sports/games/\(id)", queryItems: [])
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
-        var queryItems = [URLQueryItem(name: "range", value: range.rawValue)]
+        // Convert range to date parameters (API uses Eastern Time)
+        let now = TimeService.shared.now
+        let today = estCalendar.startOfDay(for: now)
+
+        var queryItems: [URLQueryItem] = []
+
+        // Calculate date range based on requested range
+        switch range {
+        case .current:
+            // Today's games
+            let dateStr = dateFormatter.string(from: today)
+            queryItems.append(URLQueryItem(name: "start_date", value: dateStr))
+            queryItems.append(URLQueryItem(name: "end_date", value: dateStr))
+            queryItems.append(URLQueryItem(name: "include_live", value: "true"))
+
+        case .yesterday:
+            // Yesterday's games
+            let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today)!
+            let dateStr = dateFormatter.string(from: yesterday)
+            queryItems.append(URLQueryItem(name: "start_date", value: dateStr))
+            queryItems.append(URLQueryItem(name: "end_date", value: dateStr))
+
+        case .earlier:
+            // Games from 2+ days ago (last 7 days excluding yesterday)
+            let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today)!
+            let weekAgo = estCalendar.date(byAdding: .day, value: -7, to: today)!
+            queryItems.append(URLQueryItem(name: "start_date", value: dateFormatter.string(from: weekAgo)))
+            queryItems.append(URLQueryItem(name: "end_date", value: dateFormatter.string(from: twoDaysAgo)))
+
+        case .next24:
+            // Tomorrow's games
+            let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
+            let todayStr = dateFormatter.string(from: today)
+            let tomorrowStr = dateFormatter.string(from: tomorrow)
+            queryItems.append(URLQueryItem(name: "start_date", value: todayStr))
+            queryItems.append(URLQueryItem(name: "end_date", value: tomorrowStr))
+        }
+
+        // Add league filter if specified
         if let league {
             queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
         }
-        
+
         // Beta: Pass assume_now when snapshot mode is active
         #if DEBUG
         if let snapshotDate = TimeService.shared.snapshotDate {
@@ -39,62 +94,17 @@ final class RealGameService: GameService {
             logger.debug("🕐 Passing assume_now=\(isoString) to backend")
         }
         #endif
-        
-        // App-facing endpoint now supports all ranges: current, yesterday, earlier, last2, next24
+
         let response: GameListResponse = try await request(path: "api/games", queryItems: queryItems)
-        
-        // Client-side range filtering until backend supports it
-        let filteredGames = filterGames(response.games, for: range)
-        
+
+        // No client-side filtering needed - API handles Eastern Time dates
         return GameListResponse(
+            games: response.games,
+            startDate: response.startDate,
+            endDate: response.endDate,
             range: range.rawValue,
-            games: filteredGames,
-            total: filteredGames.count,
-            nextOffset: nil,
-            withBoxscoreCount: response.withBoxscoreCount,
-            withPlayerStatsCount: response.withPlayerStatsCount,
-            withOddsCount: response.withOddsCount,
-            withSocialCount: response.withSocialCount,
-            withPbpCount: response.withPbpCount,
             lastUpdatedAt: response.lastUpdatedAt
         )
-    }
-    
-    /// Client-side range filtering
-    private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
-        let now = TimeService.shared.now
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: now)
-        let todayEnd = calendar.date(byAdding: .day, value: 1, to: todayStart)!.addingTimeInterval(-1)
-        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
-        let earlierEnd = yesterdayStart
-        
-        switch range {
-        case .earlier:
-            // 2+ days ago
-            let historyStart = calendar.date(byAdding: .day, value: -2, to: todayStart)!
-            return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= historyStart && date < earlierEnd
-            }
-        case .yesterday:
-            // 1 day ago
-            return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= yesterdayStart && date < todayStart
-            }
-        case .current:
-            return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= todayStart && date <= todayEnd
-            }
-        case .next24:
-            let windowEnd = now.addingTimeInterval(24 * 60 * 60)
-            return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date > now && date <= windowEnd
-            }
-        }
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
@@ -106,11 +116,11 @@ final class RealGameService: GameService {
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        // Timeline endpoint is at /api/games/{id}/timeline (app-facing endpoint)
         try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
+        // Use app endpoint for story (now returns snake_case format)
         try await request(path: "api/games/\(gameId)/story", queryItems: [])
     }
 

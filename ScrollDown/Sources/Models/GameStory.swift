@@ -3,79 +3,110 @@ import Foundation
 // MARK: - Story Moment
 
 /// A narrative moment grouping related plays in the story
-struct StoryMoment: Codable, Identifiable, Equatable {
-    let playIds: [Int]
-    let explicitlyNarratedPlayIds: [Int]
+/// Handles both app endpoint (snake_case, score objects) and admin endpoint (camelCase, score arrays)
+struct StoryMoment: Identifiable, Equatable, Decodable {
     let period: Int
     let startClock: String?
     let endClock: String?
-    let scoreBefore: [Int]  // [away, home]
-    let scoreAfter: [Int]   // [away, home]
     let narrative: String
+    let playCount: Int?
+
+    // For admin endpoint compatibility
+    let playIds: [Int]
+    let explicitlyNarratedPlayIds: [Int]
+
+    // Scores stored as ScoreSnapshot
+    let startScore: ScoreSnapshot
+    let endScore: ScoreSnapshot
 
     var id: String { "\(period)-\(startClock ?? "0")" }
 
-    var startScore: ScoreSnapshot {
-        ScoreSnapshot(
-            home: scoreBefore.count > 1 ? scoreBefore[1] : 0,
-            away: scoreBefore.first ?? 0
-        )
-    }
-
-    var endScore: ScoreSnapshot {
-        ScoreSnapshot(
-            home: scoreAfter.count > 1 ? scoreAfter[1] : 0,
-            away: scoreAfter.first ?? 0
-        )
-    }
-
     enum CodingKeys: String, CodingKey {
-        case playIds = "play_ids"
-        case explicitlyNarratedPlayIds = "explicitly_narrated_play_ids"
         case period
         case startClock = "start_clock"
         case endClock = "end_clock"
+        case narrative
+        case playCount = "play_count"
+        case playIds
+        case explicitlyNarratedPlayIds
         case scoreBefore = "score_before"
         case scoreAfter = "score_after"
-        case narrative
+        // Admin endpoint uses camelCase arrays
+        case scoreBeforeArray = "scoreBefore"
+        case scoreAfterArray = "scoreAfter"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        playIds = try container.decodeIfPresent([Int].self, forKey: .playIds) ?? []
-        explicitlyNarratedPlayIds = try container.decodeIfPresent([Int].self, forKey: .explicitlyNarratedPlayIds) ?? []
+
         period = try container.decode(Int.self, forKey: .period)
+        narrative = try container.decode(String.self, forKey: .narrative)
+        playCount = try container.decodeIfPresent(Int.self, forKey: .playCount)
+
+        // Handle both snake_case and camelCase for clock fields
         startClock = try container.decodeIfPresent(String.self, forKey: .startClock)
         endClock = try container.decodeIfPresent(String.self, forKey: .endClock)
-        scoreBefore = try container.decodeIfPresent([Int].self, forKey: .scoreBefore) ?? [0, 0]
-        scoreAfter = try container.decodeIfPresent([Int].self, forKey: .scoreAfter) ?? [0, 0]
-        narrative = try container.decode(String.self, forKey: .narrative)
+
+        // Admin-only fields (optional)
+        playIds = try container.decodeIfPresent([Int].self, forKey: .playIds) ?? []
+        explicitlyNarratedPlayIds = try container.decodeIfPresent([Int].self, forKey: .explicitlyNarratedPlayIds) ?? []
+
+        // Handle scores - try object format first (app endpoint), then array format (admin endpoint)
+        if let scoreBefore = try? container.decode(ScoreSnapshot.self, forKey: .scoreBefore) {
+            startScore = scoreBefore
+        } else if let scoreArray = try? container.decode([Int].self, forKey: .scoreBeforeArray) {
+            // Admin format: [away, home]
+            startScore = ScoreSnapshot(
+                home: scoreArray.count > 1 ? scoreArray[1] : 0,
+                away: scoreArray.first ?? 0
+            )
+        } else {
+            startScore = ScoreSnapshot(home: 0, away: 0)
+        }
+
+        if let scoreAfter = try? container.decode(ScoreSnapshot.self, forKey: .scoreAfter) {
+            endScore = scoreAfter
+        } else if let scoreArray = try? container.decode([Int].self, forKey: .scoreAfterArray) {
+            // Admin format: [away, home]
+            endScore = ScoreSnapshot(
+                home: scoreArray.count > 1 ? scoreArray[1] : 0,
+                away: scoreArray.first ?? 0
+            )
+        } else {
+            endScore = ScoreSnapshot(home: 0, away: 0)
+        }
     }
 
     init(
-        playIds: [Int],
-        explicitlyNarratedPlayIds: [Int],
         period: Int,
         startClock: String?,
         endClock: String?,
-        scoreBefore: [Int],
-        scoreAfter: [Int],
-        narrative: String
+        narrative: String,
+        playCount: Int? = nil,
+        playIds: [Int] = [],
+        explicitlyNarratedPlayIds: [Int] = [],
+        startScore: ScoreSnapshot,
+        endScore: ScoreSnapshot
     ) {
-        self.playIds = playIds
-        self.explicitlyNarratedPlayIds = explicitlyNarratedPlayIds
         self.period = period
         self.startClock = startClock
         self.endClock = endClock
-        self.scoreBefore = scoreBefore
-        self.scoreAfter = scoreAfter
         self.narrative = narrative
+        self.playCount = playCount
+        self.playIds = playIds
+        self.explicitlyNarratedPlayIds = explicitlyNarratedPlayIds
+        self.startScore = startScore
+        self.endScore = endScore
     }
+
+    // Legacy accessors for compatibility
+    var scoreBefore: [Int] { [startScore.away, startScore.home] }
+    var scoreAfter: [Int] { [endScore.away, endScore.home] }
 }
 
 // MARK: - Story Play
 
-/// Individual play details within the story
+/// Individual play details within the story (admin endpoint only)
 struct StoryPlay: Codable, Identifiable, Equatable {
     let playId: Int
     let playIndex: Int
@@ -83,25 +114,24 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     let clock: String?
     let playType: String?
     let description: String?
-    let team: String?           // Team abbreviation (if available)
-    let playerName: String?     // Player name (if available, often embedded in description)
+    let team: String?
+    let playerName: String?
     let homeScore: Int?
     let awayScore: Int?
 
     var id: Int { playId }
 
     enum CodingKeys: String, CodingKey {
-        case playId = "play_id"
-        case playIndex = "play_index"
+        case playId
+        case playIndex
         case period
         case clock
-        case playType = "play_type"
+        case playType
         case description
         case team
-        case teamAbbreviation = "team_abbreviation"
-        case playerName = "player_name"
-        case homeScore = "home_score"
-        case awayScore = "away_score"
+        case playerName
+        case homeScore
+        case awayScore
     }
 
     init(from decoder: Decoder) throws {
@@ -112,9 +142,7 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         clock = try container.decodeIfPresent(String.self, forKey: .clock)
         playType = try container.decodeIfPresent(String.self, forKey: .playType)
         description = try container.decodeIfPresent(String.self, forKey: .description)
-        // Handle both "team" and "team_abbreviation" keys
         team = try container.decodeIfPresent(String.self, forKey: .team)
-            ?? container.decodeIfPresent(String.self, forKey: .teamAbbreviation)
         playerName = try container.decodeIfPresent(String.self, forKey: .playerName)
         homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
         awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
@@ -143,55 +171,68 @@ struct StoryPlay: Codable, Identifiable, Equatable {
         self.homeScore = homeScore
         self.awayScore = awayScore
     }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(playId, forKey: .playId)
-        try container.encode(playIndex, forKey: .playIndex)
-        try container.encode(period, forKey: .period)
-        try container.encodeIfPresent(clock, forKey: .clock)
-        try container.encodeIfPresent(playType, forKey: .playType)
-        try container.encodeIfPresent(description, forKey: .description)
-        try container.encodeIfPresent(team, forKey: .team)
-        try container.encodeIfPresent(playerName, forKey: .playerName)
-        try container.encodeIfPresent(homeScore, forKey: .homeScore)
-        try container.encodeIfPresent(awayScore, forKey: .awayScore)
-    }
-}
-
-// MARK: - Story Content
-
-/// Wrapper for story moments
-struct StoryContent: Codable, Equatable {
-    let moments: [StoryMoment]
-
-    init(moments: [StoryMoment]) {
-        self.moments = moments
-    }
 }
 
 // MARK: - Game Story Response
 
-/// Response from the story endpoint with moments and plays
-struct GameStoryResponse: Codable {
+/// Response from the story endpoint
+/// Handles both app endpoint (/api/games/{id}/story) and admin endpoint formats
+struct GameStoryResponse: Decodable {
     let gameId: Int
-    let story: StoryContent
+    let sport: String?
+    let storyVersion: String?
+    let moments: [StoryMoment]
+    let momentCount: Int?
+    let generatedAt: String?
+    let hasStory: Bool
+
+    // Admin endpoint fields
     let plays: [StoryPlay]
     let validationPassed: Bool
     let validationErrors: [String]
 
+    // Computed property for StoryContent compatibility
+    var story: StoryContent {
+        StoryContent(moments: moments)
+    }
+
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
-        case story
+        case sport
+        case storyVersion = "story_version"
+        case moments
+        case momentCount = "moment_count"
+        case generatedAt = "generated_at"
+        case hasStory = "has_story"
         case plays
         case validationPassed = "validation_passed"
         case validationErrors = "validation_errors"
+        // Admin endpoint nesting
+        case story
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
         gameId = try container.decode(Int.self, forKey: .gameId)
-        story = try container.decode(StoryContent.self, forKey: .story)
+        sport = try container.decodeIfPresent(String.self, forKey: .sport)
+        storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion)
+        momentCount = try container.decodeIfPresent(Int.self, forKey: .momentCount)
+        generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
+        hasStory = try container.decodeIfPresent(Bool.self, forKey: .hasStory) ?? true
+
+        // Try direct moments array (app endpoint) first
+        if let directMoments = try? container.decode([StoryMoment].self, forKey: .moments) {
+            moments = directMoments
+        }
+        // Fall back to nested story.moments (admin endpoint)
+        else if let storyContent = try? container.decode(StoryContent.self, forKey: .story) {
+            moments = storyContent.moments
+        } else {
+            moments = []
+        }
+
+        // Admin-only fields
         plays = try container.decodeIfPresent([StoryPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
@@ -199,16 +240,36 @@ struct GameStoryResponse: Codable {
 
     init(
         gameId: Int,
-        story: StoryContent,
-        plays: [StoryPlay],
+        sport: String? = nil,
+        storyVersion: String? = nil,
+        moments: [StoryMoment],
+        momentCount: Int? = nil,
+        generatedAt: String? = nil,
+        hasStory: Bool = true,
+        plays: [StoryPlay] = [],
         validationPassed: Bool = true,
         validationErrors: [String] = []
     ) {
         self.gameId = gameId
-        self.story = story
+        self.sport = sport
+        self.storyVersion = storyVersion
+        self.moments = moments
+        self.momentCount = momentCount
+        self.generatedAt = generatedAt
+        self.hasStory = hasStory
         self.plays = plays
         self.validationPassed = validationPassed
         self.validationErrors = validationErrors
+    }
+}
+
+// MARK: - Story Content (for admin endpoint compatibility)
+
+struct StoryContent: Decodable, Equatable {
+    let moments: [StoryMoment]
+
+    init(moments: [StoryMoment]) {
+        self.moments = moments
     }
 }
 

@@ -24,11 +24,15 @@ extension MockGameService {
 
         // Group plays into moments (3-8 per game)
         let moments = generateMoments(from: plays, game: game)
-        let storyContent = StoryContent(moments: moments)
 
         return GameStoryResponse(
             gameId: gameId,
-            story: storyContent,
+            sport: game.leagueCode,
+            storyVersion: "v2-moments",
+            moments: moments,
+            momentCount: moments.count,
+            generatedAt: ISO8601DateFormatter().string(from: Date()),
+            hasStory: true,
             plays: storyPlays,
             validationPassed: true,
             validationErrors: []
@@ -71,9 +75,15 @@ extension MockGameService {
                 return nil
             }
 
-            // Extract scores [away, home]
-            let scoreBefore = [firstPlay.awayScore ?? 0, firstPlay.homeScore ?? 0]
-            let scoreAfter = [lastPlay.awayScore ?? 0, lastPlay.homeScore ?? 0]
+            // Extract scores as ScoreSnapshot
+            let startScore = ScoreSnapshot(
+                home: firstPlay.homeScore ?? 0,
+                away: firstPlay.awayScore ?? 0
+            )
+            let endScore = ScoreSnapshot(
+                home: lastPlay.homeScore ?? 0,
+                away: lastPlay.awayScore ?? 0
+            )
 
             // Generate narrative
             let narrative = generateMomentNarrative(
@@ -81,19 +91,20 @@ extension MockGameService {
                 totalMoments: targetMomentCount,
                 homeTeam: homeTeam,
                 awayTeam: awayTeam,
-                scoreBefore: scoreBefore,
-                scoreAfter: scoreAfter
+                startScore: startScore,
+                endScore: endScore
             )
 
             let moment = StoryMoment(
-                playIds: playIds,
-                explicitlyNarratedPlayIds: scoringPlayIds,
                 period: firstPlay.quarter ?? 1,
                 startClock: firstPlay.gameClock,
                 endClock: lastPlay.gameClock,
-                scoreBefore: scoreBefore,
-                scoreAfter: scoreAfter,
-                narrative: narrative
+                narrative: narrative,
+                playCount: momentPlays.count,
+                playIds: playIds,
+                explicitlyNarratedPlayIds: scoringPlayIds,
+                startScore: startScore,
+                endScore: endScore
             )
             moments.append(moment)
         }
@@ -107,12 +118,12 @@ extension MockGameService {
         totalMoments: Int,
         homeTeam: String,
         awayTeam: String,
-        scoreBefore: [Int],
-        scoreAfter: [Int]
+        startScore: ScoreSnapshot,
+        endScore: ScoreSnapshot
     ) -> String {
-        let homeScored = scoreAfter[1] - scoreBefore[1]
-        let awayScored = scoreAfter[0] - scoreBefore[0]
-        let leadingTeam = scoreAfter[1] > scoreAfter[0] ? homeTeam : awayTeam
+        let homeScored = endScore.home - startScore.home
+        let awayScored = endScore.away - startScore.away
+        let leadingTeam = endScore.home > endScore.away ? homeTeam : awayTeam
         let scoringTeam = homeScored > awayScored ? homeTeam : awayTeam
 
         // Last moment
@@ -135,7 +146,7 @@ extension MockGameService {
         }
 
         // Tied or close
-        if scoreAfter[0] == scoreAfter[1] {
+        if endScore.home == endScore.away {
             return "Teams trade baskets as the score remains knotted."
         }
 

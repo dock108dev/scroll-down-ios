@@ -1,9 +1,15 @@
 import Foundation
 
-/// Game list response matching the /games snapshot endpoint
+/// Game list response matching the /api/games endpoint
 struct GameListResponse: Decodable {
-    let range: String?
     let games: [GameSummary]
+
+    // New API format
+    let startDate: String?
+    let endDate: String?
+
+    // Legacy format (for compatibility)
+    let range: String?
     let total: Int?
     let nextOffset: Int?
     let withBoxscoreCount: Int?
@@ -12,10 +18,12 @@ struct GameListResponse: Decodable {
     let withSocialCount: Int?
     let withPbpCount: Int?
     let lastUpdatedAt: String?
-    
+
     enum CodingKeys: String, CodingKey {
-        case range
         case games
+        case startDate = "start_date"
+        case endDate = "end_date"
+        case range
         case total
         case nextOffset = "next_offset"
         case withBoxscoreCount = "with_boxscore_count"
@@ -25,22 +33,26 @@ struct GameListResponse: Decodable {
         case withPbpCount = "with_pbp_count"
         case lastUpdatedAt = "last_updated_at"
     }
-    
+
     /// Memberwise initializer for creating filtered responses
     init(
-        range: String?,
         games: [GameSummary],
-        total: Int?,
-        nextOffset: Int?,
-        withBoxscoreCount: Int?,
-        withPlayerStatsCount: Int?,
-        withOddsCount: Int?,
-        withSocialCount: Int?,
-        withPbpCount: Int?,
-        lastUpdatedAt: String?
+        startDate: String? = nil,
+        endDate: String? = nil,
+        range: String? = nil,
+        total: Int? = nil,
+        nextOffset: Int? = nil,
+        withBoxscoreCount: Int? = nil,
+        withPlayerStatsCount: Int? = nil,
+        withOddsCount: Int? = nil,
+        withSocialCount: Int? = nil,
+        withPbpCount: Int? = nil,
+        lastUpdatedAt: String? = nil
     ) {
-        self.range = range
         self.games = games
+        self.startDate = startDate
+        self.endDate = endDate
+        self.range = range
         self.total = total
         self.nextOffset = nextOffset
         self.withBoxscoreCount = withBoxscoreCount
@@ -51,5 +63,3 @@ struct GameListResponse: Decodable {
         self.lastUpdatedAt = lastUpdatedAt
     }
 }
-
-

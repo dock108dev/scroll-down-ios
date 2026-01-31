@@ -46,51 +46,59 @@ final class MockGameService: GameService {
         games = filterGames(games, for: range)
 
         return GameListResponse(
-            range: range.rawValue,
             games: games,
-            total: games.count,
-            nextOffset: nil,
-            withBoxscoreCount: games.filter { $0.hasBoxscore == true }.count,
-            withPlayerStatsCount: games.filter { $0.hasPlayerStats == true }.count,
-            withOddsCount: games.filter { $0.hasOdds == true }.count,
-            withSocialCount: games.filter { $0.hasSocial == true }.count,
-            withPbpCount: games.filter { $0.hasPbp == true }.count,
+            range: range.rawValue,
             lastUpdatedAt: ISO8601DateFormatter().string(from: AppDate.now())
         )
     }
 
+    /// Client-side range filtering
+    /// Uses EST timezone for game date categorization (consistent with RealGameService)
     private func filterGames(_ games: [GameSummary], for range: GameRange) -> [GameSummary] {
-        let calendar = Calendar.current
-        let todayStart = AppDate.startOfToday
-        let todayEnd = AppDate.endOfToday
-        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+        let now = AppDate.now()
+
+        // Use EST for categorization - game dates represent US game calendar dates
+        var estCalendar = Calendar(identifier: .gregorian)
+        estCalendar.timeZone = TimeZone(identifier: "America/New_York")!
+
+        let todayStart = estCalendar.startOfDay(for: now)
+        let todayEnd = estCalendar.date(byAdding: .day, value: 1, to: todayStart)!.addingTimeInterval(-1)
+        let yesterdayStart = estCalendar.date(byAdding: .day, value: -1, to: todayStart)!
         let earlierEnd = yesterdayStart
 
         switch range {
         case .earlier:
-            let historyStart = AppDate.historyWindowStart
+            let historyStart = estCalendar.date(byAdding: .day, value: -2, to: todayStart)!
             return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= historyStart && date < earlierEnd
+                guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
+                return gameDate >= historyStart && gameDate < earlierEnd
             }
         case .yesterday:
             return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= yesterdayStart && date < todayStart
+                guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
+                return gameDate >= yesterdayStart && gameDate < todayStart
             }
         case .current:
             return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date >= todayStart && date <= todayEnd
+                guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
+                return gameDate >= todayStart && gameDate <= todayEnd
             }
         case .next24:
-            let now = AppDate.now()
             let windowEnd = now.addingTimeInterval(24 * 60 * 60)
             return games.filter { game in
-                guard let date = game.parsedGameDate else { return false }
-                return date > now && date <= windowEnd
+                guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
+                return gameDate > now && gameDate <= windowEnd
             }
         }
+    }
+
+    /// Extract the game's calendar date, treating the timestamp as the game's local date (EST)
+    private func gameCalendarDate(_ game: GameSummary, calendar: Calendar) -> Date? {
+        let dateString = game.startTime.prefix(10)  // Extract YYYY-MM-DD
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = calendar.timeZone
+        return formatter.date(from: String(dateString))
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {

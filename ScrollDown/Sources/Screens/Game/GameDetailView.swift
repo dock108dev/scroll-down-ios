@@ -78,8 +78,11 @@ struct GameDetailView: View {
                 // 1. First try story
                 await viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
 
-                // 2. If no story, fetch PBP as fallback
-                if !viewModel.hasStoryData {
+                // 2. If story found, collapse timeline (users can expand to see full PBP)
+                //    If no story, fetch PBP as fallback and keep timeline expanded
+                if viewModel.hasStoryData {
+                    isTimelineExpanded = false
+                } else {
                     await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
                 }
 
