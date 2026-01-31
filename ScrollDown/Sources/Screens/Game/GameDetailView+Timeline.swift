@@ -104,14 +104,17 @@ extension GameDetailView {
         .padding(.vertical, 32)
     }
 
-    /// Sets all quarters as collapsed by default
+    /// Sets Q2+ as collapsed by default, Q1 expanded
     private func initializeCollapsedQuarters() {
         guard !hasInitializedQuarters else { return }
         hasInitializedQuarters = true
 
         let quarters = groupedQuarters.map { $0.quarter }
         for quarter in quarters {
-            collapsedQuarters.insert(quarter)
+            // Only collapse Q2 and later - keep Q1 expanded
+            if quarter > 1 {
+                collapsedQuarters.insert(quarter)
+            }
         }
     }
 
@@ -164,7 +167,7 @@ extension GameDetailView {
             isExpanded: Binding(
                 get: { !collapsedQuarters.contains(group.quarter) },
                 set: { isExpanded in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         if isExpanded {
                             collapsedQuarters.remove(group.quarter)
                         } else {

@@ -36,62 +36,32 @@ extension GameDetailView {
                     teamFilterPicker(teams: teams)
                 }
 
-                // Stats table with frozen columns + adaptive layout
-                // iPad: wider table without horizontal scroll, iPhone: horizontal scroll for space efficiency
-                Group {
-                    if horizontalSizeClass == .regular {
-                        // iPad: Wider fixed-width table for better readability
-                        HStack(alignment: .top, spacing: 0) {
-                            // FROZEN COLUMNS (Player + Team) - stays fixed
-                            VStack(spacing: 0) {
-                                frozenHeaderCell
-                                ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                    frozenDataCell(stat, isAlternate: index.isMultiple(of: 2))
-                                }
-                            }
-
-                            // Divider
-                            Rectangle()
-                                .fill(DesignSystem.borderColor)
-                                .frame(width: 1)
-
-                            // FIXED COLUMNS - no horizontal scrolling on iPad
-                            VStack(spacing: 0) {
-                                scrollableHeaderCell
-                                ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                    scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2))
-                                }
-                            }
+                // Stats table with frozen columns + horizontal scroll
+                HStack(alignment: .top, spacing: 0) {
+                    // FROZEN COLUMNS (Player + Team) - stays fixed
+                    VStack(spacing: 0) {
+                        frozenHeaderCell
+                        ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
+                            frozenDataCell(stat, isAlternate: index.isMultiple(of: 2))
                         }
-                        .frame(maxWidth: GameDetailLayout.statsTableMaxWidth)
-                    } else {
-                        // iPhone: Horizontal scroll for space efficiency
-                        HStack(alignment: .top, spacing: 0) {
-                            // FROZEN COLUMNS (Player + Team) - stays fixed
-                            VStack(spacing: 0) {
-                                frozenHeaderCell
-                                ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                    frozenDataCell(stat, isAlternate: index.isMultiple(of: 2))
-                                }
-                            }
+                    }
 
-                            // Divider
-                            Rectangle()
-                                .fill(DesignSystem.borderColor)
-                                .frame(width: 1)
+                    // Divider
+                    Rectangle()
+                        .fill(DesignSystem.borderColor)
+                        .frame(width: 1)
 
-                            // SCROLLABLE COLUMNS - all rows scroll together
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                VStack(spacing: 0) {
-                                    scrollableHeaderCell
-                                    ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                        scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2))
-                                    }
-                                }
+                    // SCROLLABLE COLUMNS - all rows scroll together
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            scrollableHeaderCell
+                            ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
+                                scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2))
                             }
                         }
                     }
                 }
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
             }
         }
     }

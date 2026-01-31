@@ -69,7 +69,7 @@ struct MomentCardView: View {
         .contentShape(Rectangle())
     }
 
-    // MARK: - Compact Score Box (Two Column)
+    // MARK: - Compact Score Box (Two Column with Time)
 
     private var compactScoreBox: some View {
         HStack(spacing: 0) {
@@ -84,6 +84,13 @@ struct MomentCardView: View {
                     .foregroundColor(DesignSystem.TextColor.primary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Time range in center
+            if let timeRange = momentTimeRange {
+                Text(timeRange)
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+            }
 
             // Home team score
             HStack(spacing: 6) {
@@ -101,6 +108,16 @@ struct MomentCardView: View {
         .padding(.vertical, 6)
         .background(DesignSystem.Colors.cardBackground.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    /// Time range display (e.g., "Q1 12:00 - 11:03")
+    private var momentTimeRange: String? {
+        guard let start = moment.startClock else { return nil }
+        let periodLabel = "Q\(moment.period)"
+        if let end = moment.endClock {
+            return "\(periodLabel) \(start) - \(end)"
+        }
+        return "\(periodLabel) \(start)"
     }
 
     // MARK: - Expanded Content
