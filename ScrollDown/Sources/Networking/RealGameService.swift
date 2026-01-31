@@ -95,10 +95,10 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .earlier:
-            // Games from 2+ days ago (last 7 days excluding yesterday)
+            // Games from 25-72 hours ago (2-3 days back, excluding yesterday)
             let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today)!
-            let weekAgo = estCalendar.date(byAdding: .day, value: -7, to: today)!
-            queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: weekAgo)))
+            let threeDaysAgo = estCalendar.date(byAdding: .day, value: -3, to: today)!
+            queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: threeDaysAgo)))
             queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
 
         case .next24:
