@@ -48,6 +48,8 @@ final class RealGameService: GameService {
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
+        print("📡 [fetchGames] range=\(range.rawValue) league=\(league?.rawValue ?? "nil") now=\(now) today=\(today)")
+
         var queryItems: [URLQueryItem] = []
 
         // Calculate date range based on requested range
