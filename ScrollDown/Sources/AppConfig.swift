@@ -112,19 +112,9 @@ enum AppDate {
 final class AppConfig: ObservableObject {
     static let shared = AppConfig()
     
-    /// Current data mode - defaults based on build configuration
-    /// Set `FeatureFlags.defaultToLocalhost = true` to auto-use localhost on launch
-    @Published var environment: AppEnvironment = {
-        #if DEBUG
-        if FeatureFlags.defaultToLocalhost {
-            return .localhost
-        }
-        // Default to mock mode for development to ensure story flow works
-        return .mock
-        #else
-        return .live
-        #endif
-    }() {
+    /// Current data mode - always use live API
+    /// Production database is active with non-proprietary sports data
+    @Published var environment: AppEnvironment = .live {
         didSet {
             // Clear cached services when environment changes
             if oldValue != environment {

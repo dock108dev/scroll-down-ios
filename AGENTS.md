@@ -81,23 +81,26 @@ The app renders completed games using a **moments-based** story system:
 
 ## Environments
 
+**Default: `.live`** — The app always uses the live production API.
+
 | Mode | Base URL | Use Case |
 |------|----------|----------|
-| `.live` | `sports-data-admin.dock108.ai` | Production |
-| `.localhost` | `localhost:8000` | Local backend |
-| `.mock` | N/A | Offline development |
+| `.live` | `sports-data-admin.dock108.ai` | Production (default) |
+| `.localhost` | `localhost:8000` | Local backend development |
 
-Toggle via `AppConfig.shared.environment`.
+**Testing:** All testing should use the live API with non-proprietary sports data. The production database is active and ready.
 
 ## API Endpoints
 
+App uses the public app endpoints (see `sports-data-admin/docs/API.md` for full spec):
+
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/admin/sports/games` | List games (with range, league filters) |
-| `GET /api/admin/sports/games/{id}` | Game detail |
-| `GET /api/admin/sports/games/{id}/pbp` | Play-by-play |
-| `GET /api/admin/sports/games/{id}/social` | Social posts |
-| `GET /api/admin/sports/games/{id}/story` | Story with moments |
+| `GET /api/games` | List games (with start_date, end_date, league filters) |
+| `GET /api/admin/sports/games/{id}` | Game detail (full stats, plays) |
+| `GET /api/games/{id}/pbp` | Play-by-play |
+| `GET /api/games/{id}/social` | Social posts |
+| `GET /api/games/{id}/story` | Story with moments |
 | `GET /api/games/{id}/timeline` | Timeline artifact |
 
 ## Testing
