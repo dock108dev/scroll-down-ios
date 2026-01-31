@@ -100,7 +100,6 @@ extension MockGameService {
                 startClock: firstPlay.gameClock,
                 endClock: lastPlay.gameClock,
                 narrative: narrative,
-                playCount: momentPlays.count,
                 playIds: playIds,
                 explicitlyNarratedPlayIds: scoringPlayIds,
                 startScore: startScore,
