@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Main story view container for completed games
-/// Displays the narrative story with moments and optional full PBP access
+/// Displays the narrative story with moments grouped by quarter
 struct GameStoryView: View {
     @ObservedObject var viewModel: GameDetailViewModel
     @Binding var isCompactStoryExpanded: Bool
     @State private var showingFullPlayByPlay = false
-    @State private var collapsedMoments: Set<Int> = []
+    @State private var collapsedQuarters: Set<Int> = []
     @State private var hasInitializedCollapsed = false
 
     var body: some View {
@@ -16,15 +16,9 @@ struct GameStoryView: View {
                 compactStorySection(narrative)
             }
 
-            // Story moments
-            ForEach(viewModel.momentDisplayModels) { moment in
-                MomentCardView(
-                    moment: moment,
-                    plays: viewModel.unifiedEventsForMoment(moment),
-                    homeTeam: viewModel.game?.homeTeam ?? "Home",
-                    awayTeam: viewModel.game?.awayTeam ?? "Away",
-                    isExpanded: momentExpandedBinding(for: moment)
-                )
+            // Story moments grouped by quarter
+            ForEach(groupedMomentsByQuarter, id: \.quarter) { group in
+                quarterSection(group)
             }
 
             // Full Play-by-Play access button
@@ -36,12 +30,77 @@ struct GameStoryView: View {
             FullPlayByPlayView(viewModel: viewModel)
         }
         .onAppear {
-            // Start with all moments collapsed
-            guard !hasInitializedCollapsed else { return }
-            hasInitializedCollapsed = true
-            for moment in viewModel.momentDisplayModels {
-                collapsedMoments.insert(moment.id)
+            initializeCollapsedQuarters()
+        }
+    }
+
+    // MARK: - Quarter Grouping
+
+    private var groupedMomentsByQuarter: [QuarterMomentGroup] {
+        let moments = viewModel.momentDisplayModels
+        var groups: [Int: [MomentDisplayModel]] = [:]
+
+        for moment in moments {
+            let period = moment.period
+            groups[period, default: []].append(moment)
+        }
+
+        return groups.keys.sorted().map { quarter in
+            QuarterMomentGroup(quarter: quarter, moments: groups[quarter] ?? [])
+        }
+    }
+
+    /// Initialize Q1 expanded, Q2+ collapsed
+    private func initializeCollapsedQuarters() {
+        guard !hasInitializedCollapsed else { return }
+        hasInitializedCollapsed = true
+
+        let quarters = groupedMomentsByQuarter.map { $0.quarter }
+        for quarter in quarters {
+            // Only collapse Q2 and later - keep Q1 expanded
+            if quarter > 1 {
+                collapsedQuarters.insert(quarter)
             }
+        }
+    }
+
+    // MARK: - Quarter Section
+
+    private func quarterSection(_ group: QuarterMomentGroup) -> some View {
+        CollapsibleQuarterCard(
+            title: quarterTitle(group.quarter),
+            isExpanded: Binding(
+                get: { !collapsedQuarters.contains(group.quarter) },
+                set: { isExpanded in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if isExpanded {
+                            collapsedQuarters.remove(group.quarter)
+                        } else {
+                            collapsedQuarters.insert(group.quarter)
+                        }
+                    }
+                }
+            )
+        ) {
+            VStack(spacing: DesignSystem.Spacing.list) {
+                ForEach(group.moments) { moment in
+                    MomentCardView(
+                        moment: moment,
+                        plays: viewModel.unifiedEventsForMoment(moment),
+                        homeTeam: viewModel.game?.homeTeam ?? "Home",
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        isExpanded: .constant(false) // Moments start collapsed within quarter
+                    )
+                }
+            }
+        }
+    }
+
+    private func quarterTitle(_ quarter: Int) -> String {
+        if quarter <= 4 {
+            return "Quarter \(quarter)"
+        } else {
+            return "OT\(quarter - 4)"
         }
     }
 
@@ -114,23 +173,13 @@ struct GameStoryView: View {
         }
         .buttonStyle(InteractiveRowButtonStyle())
     }
+}
 
-    // MARK: - Moment Expansion Binding
+// MARK: - Quarter Moment Group
 
-    private func momentExpandedBinding(for moment: MomentDisplayModel) -> Binding<Bool> {
-        Binding(
-            get: { !collapsedMoments.contains(moment.id) },
-            set: { isExpanded in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    if isExpanded {
-                        collapsedMoments.remove(moment.id)
-                    } else {
-                        collapsedMoments.insert(moment.id)
-                    }
-                }
-            }
-        )
-    }
+private struct QuarterMomentGroup {
+    let quarter: Int
+    let moments: [MomentDisplayModel]
 }
 
 // MARK: - Previews
