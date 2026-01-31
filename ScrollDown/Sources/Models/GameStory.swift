@@ -197,7 +197,8 @@ struct GameStoryResponse: Decodable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case gameId = "game_id"
+        case gameIdSnake = "game_id"
+        case gameIdCamel = "gameId"
         case sport
         case storyVersion = "story_version"
         case moments
@@ -214,7 +215,12 @@ struct GameStoryResponse: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        gameId = try container.decode(Int.self, forKey: .gameId)
+        // Handle both snake_case (app) and camelCase (admin) for gameId
+        if let id = try? container.decode(Int.self, forKey: .gameIdSnake) {
+            gameId = id
+        } else {
+            gameId = try container.decode(Int.self, forKey: .gameIdCamel)
+        }
         sport = try container.decodeIfPresent(String.self, forKey: .sport)
         storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion)
         momentCount = try container.decodeIfPresent(Int.self, forKey: .momentCount)

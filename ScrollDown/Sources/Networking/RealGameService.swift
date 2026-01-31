@@ -48,7 +48,7 @@ final class RealGameService: GameService {
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
-        print("📡 [fetchGames] range=\(range.rawValue) league=\(league?.rawValue ?? "nil") now=\(now) today=\(today)")
+        NSLog("📡 [fetchGames] range=%@ league=%@ now=%@ today=%@", range.rawValue, league?.rawValue ?? "nil", "\(now)", "\(today)")
 
         var queryItems: [URLQueryItem] = []
 
@@ -92,8 +92,10 @@ final class RealGameService: GameService {
         // Add reasonable limit
         queryItems.append(URLQueryItem(name: "limit", value: "100"))
 
+        NSLog("📡 Fetching games: range=%@ league=%@", range.rawValue, league?.rawValue ?? "all")
         logger.info("📡 Fetching games: range=\(range.rawValue, privacy: .public) league=\(league?.rawValue ?? "all", privacy: .public)")
         let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
+        NSLog("📡 Got %d games for range=%@", response.games.count, range.rawValue)
         logger.info("📡 Got \(response.games.count, privacy: .public) games")
 
         // Map admin response to expected format
@@ -119,8 +121,8 @@ final class RealGameService: GameService {
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        // Use app endpoint for story (now returns snake_case format)
-        try await request(path: "api/games/\(gameId)/story", queryItems: [])
+        // Use admin endpoint for story (app endpoint returns 500)
+        try await request(path: "api/admin/sports/games/\(gameId)/story", queryItems: [])
     }
 
     // MARK: - Networking
@@ -137,13 +139,13 @@ final class RealGameService: GameService {
         }
 
         do {
-            print("📡 [DEBUG] Requesting: \(url.absoluteString)")
+            NSLog("📡 [DEBUG] Requesting: %@", url.absoluteString)
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")
             let (data, response) = try await session.data(from: url)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLError(.badServerResponse)
             }
-            print("📡 [DEBUG] Response status: \(httpResponse.statusCode), bytes: \(data.count)")
+            NSLog("📡 [DEBUG] Response status: %d, bytes: %d", httpResponse.statusCode, data.count)
             logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
             guard (200..<300).contains(httpResponse.statusCode) else {
                 logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
@@ -151,16 +153,16 @@ final class RealGameService: GameService {
             }
             do {
                 let result = try decoder.decode(T.self, from: data)
-                print("📡 [DEBUG] Decode success for \(path)")
+                NSLog("📡 [DEBUG] Decode success for %@", path)
                 logger.info("📡 Decode success for \(path, privacy: .public)")
                 return result
             } catch {
                 // Log the raw response for debugging
                 if let jsonString = String(data: data, encoding: .utf8) {
-                    print("📡 [DEBUG] Decode failed. Raw: \(jsonString.prefix(1000))")
+                    NSLog("📡 [DEBUG] Decode failed. Raw: %@", String(jsonString.prefix(1000)))
                     logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")
                 }
-                print("📡 [DEBUG] Decode error: \(error)")
+                NSLog("📡 [DEBUG] Decode error: %@", "\(error)")
                 logger.error("📡 Decode error: \(error.localizedDescription, privacy: .public)")
                 throw error
             }
