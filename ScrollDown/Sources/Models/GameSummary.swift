@@ -17,6 +17,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
     let awayTeamInfo: TeamInfo
     let hasPbp: Bool?
     let hasSocial: Bool?
+    let hasStory: Bool?
     let lastUpdatedAt: String?
     
     // Mock data uses different keys (league_code, game_date)
@@ -46,6 +47,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         case awayTeamMock = "away_team_name"
         case hasPbp = "has_pbp"
         case hasSocial = "has_social"
+        case hasStory = "has_story"
         case lastUpdatedAt = "last_updated_at"
         // Mock data keys
         case leagueCode = "league_code"
@@ -122,6 +124,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         
         hasPbp = try container.decodeIfPresent(Bool.self, forKey: .hasPbp)
         hasSocial = try container.decodeIfPresent(Bool.self, forKey: .hasSocial)
+        hasStory = try container.decodeIfPresent(Bool.self, forKey: .hasStory)
         lastUpdatedAt = try container.decodeIfPresent(String.self, forKey: .lastUpdatedAt)
         homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
         awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
@@ -150,6 +153,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         hasOdds: Bool?,
         hasSocial: Bool?,
         hasPbp: Bool?,
+        hasStory: Bool? = nil,
         playCount: Int?,
         socialPostCount: Int?,
         hasRequiredData: Bool?,
@@ -173,6 +177,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         self.hasOdds = hasOdds
         self.hasSocial = hasSocial
         self.hasPbp = hasPbp
+        self.hasStory = hasStory
         self.playCount = playCount
         self.socialPostCount = socialPostCount
         self.hasRequiredData = hasRequiredData

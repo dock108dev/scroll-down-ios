@@ -22,7 +22,7 @@ final class RealGameService: GameService {
     // MARK: - GameService Implementation
 
     func fetchGame(id: Int) async throws -> GameDetailResponse {
-        try await request(path: "api/admin/sports/games/\(id)", queryItems: [])
+        try await request(path: "api/games/\(id)", queryItems: [])
     }
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
@@ -40,7 +40,7 @@ final class RealGameService: GameService {
         }
         #endif
         
-        let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
+        let response: GameListResponse = try await request(path: "api/games", queryItems: queryItems)
         
         // Client-side range filtering until backend supports it
         let filteredGames = filterGames(response.games, for: range)
@@ -97,11 +97,11 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        try await request(path: "api/admin/sports/games/\(gameId)/pbp", queryItems: [])
+        try await request(path: "api/games/\(gameId)/pbp", queryItems: [])
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        try await request(path: "api/admin/sports/games/\(gameId)/social", queryItems: [])
+        try await request(path: "api/games/\(gameId)/social", queryItems: [])
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
@@ -110,7 +110,7 @@ final class RealGameService: GameService {
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        try await request(path: "api/admin/sports/games/\(gameId)/story", queryItems: [])
+        try await request(path: "api/games/\(gameId)/story", queryItems: [])
     }
 
     // MARK: - Networking
