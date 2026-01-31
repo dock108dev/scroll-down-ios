@@ -90,7 +90,9 @@ final class RealGameService: GameService {
         // Add reasonable limit
         queryItems.append(URLQueryItem(name: "limit", value: "100"))
 
+        logger.info("📡 Fetching games: range=\(range.rawValue, privacy: .public) league=\(league?.rawValue ?? "all", privacy: .public)")
         let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
+        logger.info("📡 Got \(response.games.count, privacy: .public) games")
 
         // Map admin response to expected format
         return GameListResponse(

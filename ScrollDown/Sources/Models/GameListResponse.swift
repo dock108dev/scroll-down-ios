@@ -17,6 +17,7 @@ struct GameListResponse: Decodable {
     let withOddsCount: Int?
     let withSocialCount: Int?
     let withPbpCount: Int?
+    let withStoryCount: Int?
     let lastUpdatedAt: String?
 
     enum CodingKeys: String, CodingKey {
@@ -31,6 +32,7 @@ struct GameListResponse: Decodable {
         case withOddsCount = "with_odds_count"
         case withSocialCount = "with_social_count"
         case withPbpCount = "with_pbp_count"
+        case withStoryCount = "with_story_count"
         case lastUpdatedAt = "last_updated_at"
     }
 
