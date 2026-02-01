@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Expandable card view for a story moment
+/// Card view for a story moment (non-expandable)
 struct MomentCardView: View {
     let moment: MomentDisplayModel
     let plays: [UnifiedTimelineEvent]
     let homeTeam: String
     let awayTeam: String
-    @Binding var isExpanded: Bool
+    @Binding var isExpanded: Bool  // Kept for API compatibility but unused
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header (always visible, tappable)
-            Button(action: toggleExpansion) {
-                headerContent
-            }
-            .buttonStyle(InteractiveRowButtonStyle())
-
-            // Expanded content
-            if isExpanded {
-                expandedContent
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity
-                    ))
-            }
+            headerContent
         }
         .background(DesignSystem.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
@@ -31,7 +18,6 @@ struct MomentCardView: View {
             RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
                 .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: 0.5)
         )
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
     // MARK: - Header Content
@@ -50,15 +36,7 @@ struct MomentCardView: View {
                 Text(moment.narrative)
                     .font(.subheadline.weight(moment.isHighlight ? .semibold : .regular))
                     .foregroundColor(DesignSystem.TextColor.primary)
-                    .lineLimit(2)
-
-                Spacer()
-
-                // Right: Expansion indicator
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .multilineTextAlignment(.leading)
             }
 
             // Compact two-column score box (always visible)
@@ -66,7 +44,6 @@ struct MomentCardView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, moment.isHighlight ? 8 : 12)
-        .contentShape(Rectangle())
     }
 
     // MARK: - Compact Score Box (Two Column with Time)
@@ -120,37 +97,6 @@ struct MomentCardView: View {
         return "\(periodLabel) \(start)"
     }
 
-    // MARK: - Expanded Content
-
-    private var expandedContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-                .padding(.horizontal, 12)
-
-            // Plays list
-            if !plays.isEmpty {
-                VStack(spacing: 8) {
-                    ForEach(plays) { event in
-                        UnifiedTimelineRowView(
-                            event: event,
-                            homeTeam: homeTeam,
-                            awayTeam: awayTeam
-                        )
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-            }
-        }
-    }
-
-    // MARK: - Actions
-
-    private func toggleExpansion() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            isExpanded.toggle()
-        }
-    }
 }
 
 // MARK: - Previews

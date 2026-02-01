@@ -11,12 +11,7 @@ struct GameStoryView: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.list) {
-            // Narrative summary at the top
-            if let narrative = combinedNarrative {
-                compactStorySection(narrative)
-            }
-
-            // Story moments grouped by quarter
+            // Story moments grouped by quarter (no summary block)
             ForEach(groupedMomentsByQuarter, id: \.quarter) { group in
                 quarterSection(group)
             }
