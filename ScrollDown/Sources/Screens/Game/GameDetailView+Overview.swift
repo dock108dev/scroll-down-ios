@@ -1,12 +1,11 @@
 import SwiftUI
 
 extension GameDetailView {
-    // MARK: - Pregame Buzz Section
-    
+    // MARK: - Pregame Buzz Section (Tier 4: Reference)
+
     var pregameSection: some View {
-        CollapsibleSectionCard(
+        Tier4Container(
             title: "Pregame Buzz",
-            subtitle: "Posts from gameday",
             isExpanded: $isOverviewExpanded
         ) {
             pregameBuzzContent

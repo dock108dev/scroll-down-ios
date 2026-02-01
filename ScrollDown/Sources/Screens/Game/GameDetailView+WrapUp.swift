@@ -3,10 +3,11 @@ import SwiftUI
 // MARK: - Wrap-up Section Extension
 
 extension GameDetailView {
+    // MARK: - Wrap-up Section (Tier 4: Reference)
+
     var wrapUpSection: some View {
-        CollapsibleSectionCard(
+        Tier4Container(
             title: "Wrap-up",
-            subtitle: "Final score and reactions",
             isExpanded: $isWrapUpExpanded
         ) {
             wrapUpContent

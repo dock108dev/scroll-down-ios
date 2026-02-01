@@ -13,13 +13,17 @@ struct GameDetailView: View {
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
     @State var isCompactStoryExpanded = false
-    // Default expansion states per spec
-    @State var isOverviewExpanded = true
-    @State var isTimelineExpanded = true
-    @State var isPlayerStatsExpanded = false
-    @State var playerStatsTeamFilter: String? = nil  // nil = all teams
-    @State var isTeamStatsExpanded = false
-    @State var isWrapUpExpanded = false
+    // Content Hierarchy Default States:
+    // Tier 1 (Game Story): Always expanded - handled by GameStoryView
+    // Tier 2 (Timeline): Collapsed by default unless no story
+    // Tier 3 (Stats): Collapsed by default
+    // Tier 4 (Reference): Collapsed by default
+    @State var isOverviewExpanded = false  // Tier 4: Reference
+    @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no story)
+    @State var isPlayerStatsExpanded = false  // Tier 3: Supporting
+    @State var playerStatsTeamFilter: String? = nil
+    @State var isTeamStatsExpanded = false  // Tier 3: Supporting
+    @State var isWrapUpExpanded = false  // Tier 4: Reference
     @State var playRowFrames: [Int: CGRect] = [:]
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
@@ -190,32 +194,50 @@ struct GameDetailView: View {
                             .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                         }
 
-                        // Content sections - each has an anchor view for reliable scrollTo
-                        VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .overview)
-                                pregameSection
-                            }
-                            .background(sectionFrameTracker(for: .overview))
-
+                        // Content sections with visual rhythm
+                        // Tier 1 (Story) → Tier 2 (Timeline) → Tier 3 (Stats) → Tier 4 (Reference)
+                        VStack(spacing: 0) {
+                            // TIER 1: Game Story (Primary - No card, largest presence)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .timeline)
                                 timelineSection(using: proxy)
                             }
                             .background(sectionFrameTracker(for: .timeline))
 
+                            // Transition: Tier 1 → Tier 3
+                            TierTransition(from: .primary, to: .supporting)
+
+                            // TIER 3: Player Stats (Supporting - Compact)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .playerStats)
                                 playerStatsSection(viewModel.playerStats)
                             }
                             .background(sectionFrameTracker(for: .playerStats))
 
+                            // Small break between stats sections
+                            Spacer().frame(height: VisualRhythm.supportingSpacing)
+
+                            // TIER 3: Team Stats (Supporting - Compact)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .teamStats)
                                 teamStatsSection(viewModel.teamStats)
                             }
                             .background(sectionFrameTracker(for: .teamStats))
 
+                            // Transition: Tier 3 → Tier 4
+                            TierTransition(from: .supporting, to: .reference)
+
+                            // TIER 4: Pregame Buzz (Reference - Minimal)
+                            VStack(spacing: 0) {
+                                sectionAnchor(for: .overview)
+                                pregameSection
+                            }
+                            .background(sectionFrameTracker(for: .overview))
+
+                            // Small break
+                            Spacer().frame(height: VisualRhythm.referenceSpacing)
+
+                            // TIER 4: Wrap-up (Reference - Minimal)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .final)
                                 wrapUpSection

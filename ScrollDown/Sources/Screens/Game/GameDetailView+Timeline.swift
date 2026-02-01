@@ -1,14 +1,31 @@
 import SwiftUI
 
 extension GameDetailView {
+    /// Timeline section implements content hierarchy:
+    /// - Tier 1 (Game Story): No card, largest typography, always expanded
+    /// - Tier 2 (PBP Timeline): Card container, collapsed by default
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
-        CollapsibleSectionCard(
-            title: "Timeline",
-            subtitle: timelineSubtitle,
-            isExpanded: $isTimelineExpanded,
-            onHeaderTap: { toggleAllBoundaries() }
-        ) {
-            timelineContent(using: proxy)
+        VStack(spacing: TierLayout.Primary.momentSpacing) {
+            // TIER 1: Game Story (Primary Content - No Card)
+            // This should feel like the page itself, not content inside a card
+            if viewModel.hasStoryData {
+                GameStoryView(
+                    viewModel: viewModel,
+                    isCompactStoryExpanded: $isCompactStoryExpanded
+                )
+            }
+            // TIER 2: PBP Timeline (Secondary - Card Container)
+            else if viewModel.hasPbpData {
+                Tier2Container(title: "Play-by-Play", isExpanded: $isTimelineExpanded) {
+                    unifiedTimelineView
+                }
+            }
+            // Loading/Empty states
+            else if viewModel.isLoadingAnyData {
+                timelineLoadingView
+            } else {
+                comingSoonView
+            }
         }
         .background(
             GeometryReader { proxy in
@@ -19,18 +36,17 @@ extension GameDetailView {
             }
         )
         .accessibilityElement(children: .contain)
+        .onAppear {
+            initializeCollapsedQuarters()
+        }
     }
 
     /// Toggles all boundary headers (expand all or collapse all)
-    /// When expanding Timeline: expand all boundaries
-    /// When collapsing Timeline: collapse all boundaries
     private func toggleAllBoundaries() {
         let quarters = groupedQuarters.map { $0.quarter }
         if isTimelineExpanded {
-            // Timeline is now expanded, so expand all boundaries
             collapsedQuarters.removeAll()
         } else {
-            // Timeline is now collapsed, so collapse all boundaries
             for quarter in quarters {
                 collapsedQuarters.insert(quarter)
             }
@@ -71,9 +87,6 @@ extension GameDetailView {
             else {
                 comingSoonView
             }
-        }
-        .onAppear {
-            initializeCollapsedQuarters()
         }
     }
 
