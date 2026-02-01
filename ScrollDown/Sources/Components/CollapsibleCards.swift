@@ -84,16 +84,19 @@ struct CollapsibleSectionCard<Content: View>: View {
 /// iPad: Tighter spacing for density.
 struct CollapsibleQuarterCard<Content: View>: View {
     let title: String
+    let subtitle: String?
     @Binding var isExpanded: Bool
     let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(
         title: String,
+        subtitle: String? = nil,
         isExpanded: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
+        self.subtitle = subtitle
         self._isExpanded = isExpanded
         self.content = content()
     }
@@ -103,9 +106,16 @@ struct CollapsibleQuarterCard<Content: View>: View {
             // Boundary header - full row tappable
             Button(action: toggle) {
                 HStack(spacing: 8) {
-                    Text(title)
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.primary)
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                        }
+                    }
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))

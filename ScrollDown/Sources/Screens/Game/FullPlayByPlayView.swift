@@ -1,12 +1,14 @@
 import SwiftUI
 
-/// Full chronological play-by-play view
-/// Accessible via "View All Plays" button from GameStoryView
-/// Shows all plays organized by quarter/period with expandable sections
+/// Full chronological play-by-play view with tiered visual hierarchy
+/// Tier 1: High-impact (scoring, lead changes) - Always visible, bold
+/// Tier 2: Contextual (fouls, turnovers) - Visible, de-emphasized
+/// Tier 3: Low-signal (misses, rebounds) - Collapsed by default
 struct FullPlayByPlayView: View {
     @ObservedObject var viewModel: GameDetailViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var collapsedPeriods: Set<Int> = []
+    @State private var expandedTier3Groups: Set<String> = []
 
     var body: some View {
         NavigationStack {
@@ -43,6 +45,7 @@ struct FullPlayByPlayView: View {
             .onAppear {
                 // Initialize all periods as expanded (none collapsed)
                 collapsedPeriods = []
+                expandedTier3Groups = []
             }
         }
     }
@@ -69,11 +72,22 @@ struct FullPlayByPlayView: View {
         viewModel.unifiedTimelineEvents.filter { $0.period == nil || $0.period == 0 }
     }
 
-    // MARK: - Period Card
+    // MARK: - Period Card with Tiered Display
 
     private func periodCard(_ group: PeriodGroup) -> some View {
-        CollapsibleQuarterCard(
-            title: "\(periodTitle(group.period)) (\(group.events.count) plays)",
+        let tieredGroups = TieredPlayGrouper.group(
+            events: group.events,
+            sport: viewModel.game?.leagueCode
+        )
+
+        // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
+        let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
+        let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
+        let tier3GroupCount = tieredGroups.filter { $0.tier == .tertiary }.count
+
+        return CollapsibleQuarterCard(
+            title: periodTitle(group.period),
+            subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
             isExpanded: Binding(
                 get: { !collapsedPeriods.contains(group.period) },
                 set: { isExpanded in
@@ -87,12 +101,13 @@ struct FullPlayByPlayView: View {
                 }
             )
         ) {
-            VStack(spacing: DesignSystem.Spacing.list) {
-                ForEach(group.events) { event in
-                    UnifiedTimelineRowView(
-                        event: event,
+            LazyVStack(spacing: 6) {
+                ForEach(tieredGroups) { tieredGroup in
+                    TieredPlayGroupView(
+                        group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away"
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        expandedGroups: $expandedTier3Groups
                     )
                 }
             }
