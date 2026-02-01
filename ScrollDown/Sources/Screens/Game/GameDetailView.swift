@@ -194,50 +194,53 @@ struct GameDetailView: View {
                             .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                         }
 
-                        // Content sections with visual rhythm
-                        // Tier 1 (Story) → Tier 2 (Timeline) → Tier 3 (Stats) → Tier 4 (Reference)
+                        // Content sections with card discipline
+                        // EMBEDDED: Tier 1 (Story) - No card, IS the page
+                        // CARDED: Tier 3 (Stats), Tier 4 (Reference) - Optional/interactive
                         VStack(spacing: 0) {
-                            // TIER 1: Game Story (Primary - No card, largest presence)
+                            // EMBEDDED: Game Story (Primary - No card)
+                            // This content IS the page, not wrapped in UI chrome
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .timeline)
                                 timelineSection(using: proxy)
                             }
                             .background(sectionFrameTracker(for: .timeline))
 
-                            // Transition: Tier 1 → Tier 3
-                            TierTransition(from: .primary, to: .supporting)
+                            // TRANSITION ZONE: Embedded → Carded content
+                            // Visual pause before cards begin
+                            TransitionZone(showDivider: true)
 
-                            // TIER 3: Player Stats (Supporting - Compact)
+                            // CARDED: Player Stats (Interactive data exploration)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .playerStats)
                                 playerStatsSection(viewModel.playerStats)
                             }
                             .background(sectionFrameTracker(for: .playerStats))
 
-                            // Small break between stats sections
-                            Spacer().frame(height: VisualRhythm.supportingSpacing)
+                            // Section spacer between related cards
+                            SectionSpacer(.medium)
 
-                            // TIER 3: Team Stats (Supporting - Compact)
+                            // CARDED: Team Stats (Interactive data exploration)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .teamStats)
                                 teamStatsSection(viewModel.teamStats)
                             }
                             .background(sectionFrameTracker(for: .teamStats))
 
-                            // Transition: Tier 3 → Tier 4
-                            TierTransition(from: .supporting, to: .reference)
+                            // Section spacer before reference cards
+                            SectionSpacer(.large)
 
-                            // TIER 4: Pregame Buzz (Reference - Minimal)
+                            // CARDED: Pregame Buzz (Reference - receipts)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .overview)
                                 pregameSection
                             }
                             .background(sectionFrameTracker(for: .overview))
 
-                            // Small break
-                            Spacer().frame(height: VisualRhythm.referenceSpacing)
+                            // Small break between reference cards
+                            SectionSpacer(.small)
 
-                            // TIER 4: Wrap-up (Reference - Minimal)
+                            // CARDED: Wrap-up (Reference - receipts)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .final)
                                 wrapUpSection

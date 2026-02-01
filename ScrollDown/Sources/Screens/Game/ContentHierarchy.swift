@@ -3,11 +3,17 @@ import SwiftUI
 /// Content hierarchy tiers for game detail view
 /// Higher tiers = lower density, more visual weight
 /// Lower tiers = higher density, reference-only content
+///
+/// CARD DISCIPLINE:
+/// - Primary (Tier 1): NEVER a card - this IS the page
+/// - Secondary (Tier 2): Card ONLY if optional/collapsible
+/// - Supporting (Tier 3): Card for interactive/explorable content
+/// - Reference (Tier 4): Card for deep-dive data
 enum ContentTier: Int {
-    case primary = 1      // Game Story - the main content
-    case secondary = 2    // Momentum/Swings - why it unfolded
-    case supporting = 3   // Player Impact - who mattered
-    case reference = 4    // Raw Data - verification/detail
+    case primary = 1      // Game Story - the main content (EMBEDDED)
+    case secondary = 2    // Momentum/Swings - optional exploration (CARD)
+    case supporting = 3   // Player Impact - interactive (CARD)
+    case reference = 4    // Raw Data - reference (CARD)
 
     /// Typography scale for each tier
     var bodyFont: Font {
@@ -22,17 +28,17 @@ enum ContentTier: Int {
     /// Spacing multiplier for each tier
     var spacingMultiplier: CGFloat {
         switch self {
-        case .primary: return 1.5    // Generous
+        case .primary: return 1.5    // Generous - reading rhythm
         case .secondary: return 1.0  // Moderate
-        case .supporting: return 0.8 // Tight
-        case .reference: return 0.6  // Tightest
+        case .supporting: return 0.8 // Tight - dense data
+        case .reference: return 0.6  // Tightest - reference only
         }
     }
 
     /// Whether content should default to expanded
     var defaultExpanded: Bool {
         switch self {
-        case .primary: return true
+        case .primary: return true   // Always visible - main content
         case .secondary: return false
         case .supporting: return false
         case .reference: return false
@@ -40,12 +46,23 @@ enum ContentTier: Int {
     }
 
     /// Whether to use card container
+    /// CARD DISCIPLINE: Cards mean choice (optional, interactive, collapsible, deep-dive)
     var useCard: Bool {
         switch self {
-        case .primary: return false   // No card - IS the page
-        case .secondary: return true  // Lightweight card
-        case .supporting: return true // Standard card
-        case .reference: return true  // Standard card
+        case .primary: return false   // NEVER - this IS the page
+        case .secondary: return true  // Optional exploration
+        case .supporting: return true // Interactive data
+        case .reference: return true  // Reference receipts
+        }
+    }
+
+    /// Card intent for this tier
+    var cardIntent: CardIntent {
+        switch self {
+        case .primary: return .embedded
+        case .secondary: return .optionalExploration
+        case .supporting: return .interactive
+        case .reference: return .reference
         }
     }
 }
@@ -114,9 +131,11 @@ struct Tier1Container<Content: View>: View {
     }
 }
 
-// MARK: - Tier 2 Container (Lightweight Card)
+// MARK: - Tier 2 Container (Optional Exploration)
 
-/// Secondary content container - lightweight card, not heavy chrome
+/// Secondary content container - optional exploration
+/// CARD DISCIPLINE: This is a card because it's optional/collapsible
+/// Uses lighter chrome than supporting tiers to signal "less critical"
 struct Tier2Container<Content: View>: View {
     let title: String?
     @Binding var isExpanded: Bool
@@ -158,15 +177,18 @@ struct Tier2Container<Content: View>: View {
         }
         .padding(.horizontal, TierLayout.Secondary.horizontalPadding)
         .padding(.vertical, TierLayout.Secondary.verticalSpacing)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+        // Lighter card chrome than supporting tiers - subtle background, no shadow
+        .background(DesignSystem.Colors.cardBackground.opacity(CardDisciplineLayout.cardBackgroundOpacity))
+        .clipShape(RoundedRectangle(cornerRadius: CardDisciplineLayout.cardCornerRadius))
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
 
-// MARK: - Tier 3 Container (Compact Card)
+// MARK: - Tier 3 Container (Interactive Data)
 
-/// Supporting content container - compact, high density
+/// Supporting content container - interactive data exploration
+/// CARD DISCIPLINE: This is a card because it's interactive/expandable
+/// Uses subtle shadow to signal interactivity
 struct Tier3Container<Content: View>: View {
     let title: String
     let subtitle: String?
@@ -192,7 +214,7 @@ struct Tier3Container<Content: View>: View {
                         Text(title)
                             .font(TierLayout.Supporting.headerFont)
                             .foregroundColor(DesignSystem.TextColor.primary)
-                        if let subtitle {
+                        if let subtitle, !isExpanded {
                             Text(subtitle)
                                 .font(.caption2)
                                 .foregroundColor(DesignSystem.TextColor.tertiary)
@@ -204,7 +226,7 @@ struct Tier3Container<Content: View>: View {
                         .foregroundColor(DesignSystem.TextColor.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
-                .padding(.horizontal, TierLayout.Supporting.horizontalPadding)
+                .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
                 .padding(.vertical, TierLayout.Supporting.verticalSpacing)
                 .contentShape(Rectangle())
             }
@@ -216,20 +238,23 @@ struct Tier3Container<Content: View>: View {
             }
         }
         .background(DesignSystem.Colors.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+        .clipShape(RoundedRectangle(cornerRadius: CardDisciplineLayout.cardCornerRadius))
+        // Subtle shadow only - signals interactivity without dominating
         .shadow(
-            color: DesignSystem.Shadow.color.opacity(0.5),
-            radius: DesignSystem.Shadow.subtleRadius,
+            color: DesignSystem.Shadow.color.opacity(0.4),
+            radius: 3,
             x: 0,
-            y: DesignSystem.Shadow.subtleY
+            y: 1
         )
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
 
-// MARK: - Tier 4 Container (Reference/Dense Card)
+// MARK: - Tier 4 Container (Reference Data)
 
 /// Reference content container - highest density, minimal decoration
+/// CARD DISCIPLINE: This is a card because it's reference/deep-dive data
+/// Signals: "This is here if you want receipts"
 struct Tier4Container<Content: View>: View {
     let title: String
     @Binding var isExpanded: Bool
@@ -269,8 +294,10 @@ struct Tier4Container<Content: View>: View {
                     .transition(.opacity)
             }
         }
+        // Minimal card chrome - just enough to indicate it's a container
         .background(DesignSystem.Colors.rowBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        // No shadow - reference content shouldn't demand attention
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
