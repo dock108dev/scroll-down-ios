@@ -1,143 +1,40 @@
 import Foundation
 
-/// Team info as returned by the /games snapshot endpoint
-struct TeamInfo: Codable, Hashable {
-    let id: Int
-    let name: String
-    let abbreviation: String?  // Can be null per API spec
-}
-
-/// Game summary for list views matching the /games snapshot endpoint
+/// Game summary for list views matching the admin API /games endpoint
+/// All fields use camelCase per API specification
 struct GameSummary: Decodable, Identifiable, Hashable {
     let id: Int
-    let league: String
-    let startTime: String
-    let statusRaw: String?
-    let homeTeamInfo: TeamInfo
-    let awayTeamInfo: TeamInfo
-    let hasPbp: Bool?
-    let hasSocial: Bool?
-    let hasStory: Bool?
-    let lastUpdatedAt: String?
-    
-    // Mock data uses different keys (league_code, game_date)
-    let leagueCode: String?
-    let gameDate: String?
-    let homeTeam: String?
-    let awayTeam: String?
+    let leagueCode: String
+    let gameDate: String
+    private let statusRaw: String?
+    let homeTeam: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, leagueCode, gameDate, homeTeam, awayTeam
+        case statusRaw = "status"
+        case homeScore, awayScore
+        case hasBoxscore, hasPlayerStats, hasOdds, hasSocial, hasPbp, hasStory
+        case playCount, socialPostCount, hasRequiredData, scrapeVersion
+        case lastScrapedAt, lastIngestedAt, lastPbpAt, lastSocialAt
+    }
+    let awayTeam: String
     let homeScore: Int?
     let awayScore: Int?
     let hasBoxscore: Bool?
     let hasPlayerStats: Bool?
     let hasOdds: Bool?
+    let hasSocial: Bool?
+    let hasPbp: Bool?
+    let hasStory: Bool?
     let playCount: Int?
     let socialPostCount: Int?
     let hasRequiredData: Bool?
     let scrapeVersion: Int?
     let lastScrapedAt: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case id
-        case league
-        case startTime = "start_time"
-        case statusRaw = "status"
-        case homeTeamKey = "home_team"
-        case awayTeamKey = "away_team"
-        case homeTeamMock = "home_team_name"
-        case awayTeamMock = "away_team_name"
-        case hasPbp = "has_pbp"
-        case hasSocial = "has_social"
-        case hasStory = "has_story"
-        case lastUpdatedAt = "last_updated_at"
-        // Mock data keys
-        case leagueCode = "league_code"
-        case gameDate = "game_date"
-        case homeScore = "home_score"
-        case awayScore = "away_score"
-        case hasBoxscore = "has_boxscore"
-        case hasPlayerStats = "has_player_stats"
-        case hasOdds = "has_odds"
-        case playCount = "play_count"
-        case socialPostCount = "social_post_count"
-        case hasRequiredData = "has_required_data"
-        case scrapeVersion = "scrape_version"
-        case lastScrapedAt = "last_scraped_at"
-    }
-    
-    // Custom decoder to handle both API and mock formats
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        id = try container.decode(Int.self, forKey: .id)
-        
-        // League: API uses "league", mock uses "league_code"
-        if let l = try container.decodeIfPresent(String.self, forKey: .league) {
-            league = l
-            leagueCode = l
-        } else if let lc = try container.decodeIfPresent(String.self, forKey: .leagueCode) {
-            league = lc
-            leagueCode = lc
-        } else {
-            league = "Unknown"
-            leagueCode = nil
-        }
-        
-        // Time: API uses "start_time", mock uses "game_date"
-        if let st = try container.decodeIfPresent(String.self, forKey: .startTime) {
-            startTime = st
-            gameDate = st
-        } else if let gd = try container.decodeIfPresent(String.self, forKey: .gameDate) {
-            startTime = gd
-            gameDate = gd
-        } else {
-            startTime = ""
-            gameDate = nil
-        }
-        
-        statusRaw = try container.decodeIfPresent(String.self, forKey: .statusRaw)
-        
-        // Teams: Handle both Object (API) and String (Hetzner/Mock) formats
-        // Try to decode as object first
-        if let home = try? container.decode(TeamInfo.self, forKey: .homeTeamKey) {
-            homeTeamInfo = home
-            homeTeam = home.name
-        } else {
-            // Try to decode as string (Hetzner uses "home_team", Mock uses "home_team_name")
-            let homeName = (try? container.decode(String.self, forKey: .homeTeamKey)) 
-                        ?? (try? container.decode(String.self, forKey: .homeTeamMock)) 
-                        ?? "Home"
-            homeTeamInfo = TeamInfo(id: 0, name: homeName, abbreviation: String(homeName.prefix(3)).uppercased())
-            homeTeam = homeName
-        }
-        
-        if let away = try? container.decode(TeamInfo.self, forKey: .awayTeamKey) {
-            awayTeamInfo = away
-            awayTeam = away.name
-        } else {
-            // Try to decode as string (Hetzner uses "away_team", Mock uses "away_team_name")
-            let awayName = (try? container.decode(String.self, forKey: .awayTeamKey))
-                        ?? (try? container.decode(String.self, forKey: .awayTeamMock))
-                        ?? "Away"
-            awayTeamInfo = TeamInfo(id: 0, name: awayName, abbreviation: String(awayName.prefix(3)).uppercased())
-            awayTeam = awayName
-        }
-        
-        hasPbp = try container.decodeIfPresent(Bool.self, forKey: .hasPbp)
-        hasSocial = try container.decodeIfPresent(Bool.self, forKey: .hasSocial)
-        hasStory = try container.decodeIfPresent(Bool.self, forKey: .hasStory)
-        lastUpdatedAt = try container.decodeIfPresent(String.self, forKey: .lastUpdatedAt)
-        homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
-        awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
-        hasBoxscore = try container.decodeIfPresent(Bool.self, forKey: .hasBoxscore)
-        hasPlayerStats = try container.decodeIfPresent(Bool.self, forKey: .hasPlayerStats)
-        hasOdds = try container.decodeIfPresent(Bool.self, forKey: .hasOdds)
-        playCount = try container.decodeIfPresent(Int.self, forKey: .playCount)
-        socialPostCount = try container.decodeIfPresent(Int.self, forKey: .socialPostCount)
-        hasRequiredData = try container.decodeIfPresent(Bool.self, forKey: .hasRequiredData)
-        scrapeVersion = try container.decodeIfPresent(Int.self, forKey: .scrapeVersion)
-        lastScrapedAt = try container.decodeIfPresent(String.self, forKey: .lastScrapedAt)
-    }
-    
+    let lastIngestedAt: String?
+    let lastPbpAt: String?
+    let lastSocialAt: String?
+
     // Convenience init for mock data generation
     init(
         id: Int,
@@ -161,13 +58,9 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         lastScrapedAt: String?
     ) {
         self.id = id
-        self.league = leagueCode
         self.leagueCode = leagueCode
-        self.startTime = gameDate
         self.gameDate = gameDate
         self.statusRaw = status?.rawValue
-        self.homeTeamInfo = TeamInfo(id: 0, name: homeTeam, abbreviation: String(homeTeam.prefix(3)).uppercased())
-        self.awayTeamInfo = TeamInfo(id: 0, name: awayTeam, abbreviation: String(awayTeam.prefix(3)).uppercased())
         self.homeTeam = homeTeam
         self.awayTeam = awayTeam
         self.homeScore = homeScore
@@ -183,13 +76,15 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         self.hasRequiredData = hasRequiredData
         self.scrapeVersion = scrapeVersion
         self.lastScrapedAt = lastScrapedAt
-        self.lastUpdatedAt = lastScrapedAt
+        self.lastIngestedAt = nil
+        self.lastPbpAt = nil
+        self.lastSocialAt = nil
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     static func == (lhs: GameSummary, rhs: GameSummary) -> Bool {
         lhs.id == rhs.id
     }
@@ -205,51 +100,47 @@ extension GameSummary {
         static let canceledText = "Canceled"
         static let statusUnavailableText = "Status unavailable"
     }
-    
+
     /// Normalized status from API string to GameStatus enum
-    /// Falls back to inferring status from data if statusRaw is not provided
     var status: GameStatus? {
-        // First, try to use explicit status from API
-        if let raw = statusRaw?.lowercased() {
-            let result: GameStatus?
-            switch raw {
-            case "final", "completed":
-                result = .completed
-            case "live", "in_progress", "inprogress":
-                result = .inProgress
-            case "scheduled", "upcoming":
-                result = .scheduled
-            case "postponed":
-                result = .postponed
-            case "canceled", "cancelled":
-                result = .canceled
-            default:
-                result = nil
+        guard let raw = statusRaw?.lowercased() else {
+            // Infer status from available data
+            if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
+                return .completed
             }
-            if result != nil { return result }
-        }
-        
-        // Infer status from available data when statusRaw is nil (Hetzner API)
-        // If we have scores and required data, the game is completed
-        if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
-            return .completed
-        }
-        
-        // If game date is in the future, it's scheduled
-        if let date = parsedGameDate, date > Date() {
-            return .scheduled
+            if let date = parsedGameDate, date > Date() {
+                return .scheduled
+            }
+            return nil
         }
 
-        return nil
+        switch raw {
+        case "final", "completed":
+            return .completed
+        case "live", "in_progress", "inprogress":
+            return .inProgress
+        case "scheduled", "upcoming":
+            return .scheduled
+        case "postponed":
+            return .postponed
+        case "canceled", "cancelled":
+            return .canceled
+        default:
+            return nil
+        }
     }
-    
+
     /// Convenience accessors for team names
-    var homeTeamName: String { homeTeamInfo.name }
-    var awayTeamName: String { awayTeamInfo.name }
-    var homeTeamAbbreviation: String { homeTeamInfo.abbreviation ?? String(homeTeamInfo.name.prefix(3)).uppercased() }
-    var awayTeamAbbreviation: String { awayTeamInfo.abbreviation ?? String(awayTeamInfo.name.prefix(3)).uppercased() }
-    
-    var leagueCodeValue: String { league }
+    var homeTeamName: String { homeTeam }
+    var awayTeamName: String { awayTeam }
+    var homeTeamAbbreviation: String { String(homeTeam.prefix(3)).uppercased() }
+    var awayTeamAbbreviation: String { String(awayTeam.prefix(3)).uppercased() }
+
+    /// League code accessor (for compatibility)
+    var league: String { leagueCode }
+
+    /// Start time accessor (for compatibility)
+    var startTime: String { gameDate }
 
     /// Formatted score string (e.g., "112 - 108")
     var scoreDisplay: String {
@@ -258,30 +149,30 @@ extension GameSummary {
         }
         return "\(home) - \(away)"
     }
-    
+
     /// Parsed game date
     var parsedGameDate: Date? {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: startTime) {
+        if let date = formatter.date(from: gameDate) {
             return date
         }
         formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: startTime)
+        return formatter.date(from: gameDate)
     }
-    
+
     /// Formatted date for display
     var formattedDate: String {
-        guard let date = parsedGameDate else { return startTime }
+        guard let date = parsedGameDate else { return gameDate }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-    
+
     /// Short formatted date (e.g., "Jan 1 • 7:30 PM")
     var shortFormattedDate: String {
-        guard let date = parsedGameDate else { return startTime }
+        guard let date = parsedGameDate else { return gameDate }
         let dateFormatter = DateFormatter()
         dateFormatter.setLocalizedDateFormatFromTemplate("MMM d")
         let timeFormatter = DateFormatter()
@@ -290,9 +181,8 @@ extension GameSummary {
     }
 
     var statusLine: String {
-        // The backend status is the source of truth; do not infer from scores or timestamps.
         guard let status else {
-            GameStatusLogger.logMissingStatus(gameId: id, league: league)
+            GameStatusLogger.logMissingStatus(gameId: id, league: leagueCode)
             return Formatting.statusUnavailableText
         }
 
@@ -310,12 +200,10 @@ extension GameSummary {
             return Formatting.canceledText
         }
     }
-    
+
     private func formattedTime(date: Date) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-
 }
-

@@ -52,20 +52,9 @@ struct GameRowView: View {
                 .minimumScaleFactor(0.9)
 
             // Date + optional play/moment counts (debug)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(dateDisplay)
-                    .font(.caption2)
-                    .foregroundColor(Color(.secondaryLabel))
-
-                // Play count - debug info
-                if FeatureFlags.showCardPlayCounts,
-                   cardState == .available,
-                   let playCount = game.playCount, playCount > 0 {
-                    Text("\(playCount) plays")
-                        .font(.caption2)
-                        .foregroundColor(Color(.secondaryLabel).opacity(0.8))
-                }
-            }
+            Text(dateDisplay)
+                .font(.caption2)
+                .foregroundColor(Color(.secondaryLabel))
 
             Spacer(minLength: 4)
 

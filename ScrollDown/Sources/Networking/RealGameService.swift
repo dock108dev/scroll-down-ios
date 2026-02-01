@@ -95,15 +95,18 @@ final class RealGameService: GameService {
     }
 
     func fetchPbp(gameId: Int) async throws -> PbpResponse {
-        try await request(path: "api/games/\(gameId)/pbp", queryItems: [])
+        try await request(path: "api/admin/sports/pbp/game/\(gameId)", queryItems: [])
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
-        try await request(path: "api/games/\(gameId)/social", queryItems: [])
+        try await request(path: "api/social/posts/game/\(gameId)", queryItems: [])
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        try await request(path: "api/games/\(gameId)/timeline", queryItems: [])
+        // Note: No GET endpoint exists for timelines per API docs.
+        // Timelines are generated via POST /timelines/generate/{gameId}.
+        // This will fail until a GET endpoint is added or we use POST.
+        try await request(path: "api/admin/sports/timelines/game/\(gameId)", queryItems: [])
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {

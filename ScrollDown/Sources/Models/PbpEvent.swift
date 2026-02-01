@@ -9,61 +9,60 @@ import Foundation
 /// - Timeline rendering must remain spoiler-safe by default
 struct PbpEvent: Codable, Identifiable, Equatable {
     let id: StringOrInt
-    let gameId: StringOrInt?        // Optional - not in app endpoint
+    let gameId: StringOrInt?
     let period: Int?
     let gameClock: String?
     let elapsedSeconds: Double?
-    let eventType: String?          // "event_type" or "play_type"
+    let eventType: String?
     let description: String?
     let team: String?
     let teamId: String?
-    let playerName: String?         // Often embedded in description instead
+    let playerName: String?
     let playerId: StringOrInt?
-    let homeScore: Int?             // Present but not displayed by default (reveal-aware)
-    let awayScore: Int?             // Present but not displayed by default (reveal-aware)
+    let homeScore: Int?
+    let awayScore: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
-        case index                  // App endpoint uses "index" instead of "id"
-        case gameId = "game_id"
+        case index
+        case gameId
         case period
-        case gameClock = "game_clock"
-        case clock                  // App endpoint uses "clock" instead of "game_clock"
-        case elapsedSeconds = "elapsed_seconds"
-        case eventType = "event_type"
-        case playType = "play_type" // App endpoint uses "play_type" instead of "event_type"
+        case gameClock
+        case clock
+        case elapsedSeconds
+        case eventType
+        case playType
         case description
         case team
-        case teamId = "team_id"
-        case playerName = "player_name"
-        case playerId = "player_id"
-        case homeScore = "home_score"
-        case awayScore = "away_score"
+        case teamId
+        case playerName
+        case playerId
+        case homeScore
+        case awayScore
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Handle id: can be "id" (string/int) or "index" (int)
+        // Handle id: can be "id" or "index"
         if let idValue = try? container.decode(StringOrInt.self, forKey: .id) {
             self.id = idValue
         } else if let indexValue = try? container.decode(Int.self, forKey: .index) {
             self.id = .int(indexValue)
         } else {
-            // Generate an ID if neither is present
             self.id = .int(0)
         }
 
         self.gameId = try container.decodeIfPresent(StringOrInt.self, forKey: .gameId)
         self.period = try container.decodeIfPresent(Int.self, forKey: .period)
 
-        // Handle clock: can be "game_clock" or "clock"
+        // Handle clock: can be "gameClock" or "clock"
         self.gameClock = try container.decodeIfPresent(String.self, forKey: .gameClock)
             ?? container.decodeIfPresent(String.self, forKey: .clock)
 
         self.elapsedSeconds = try container.decodeIfPresent(Double.self, forKey: .elapsedSeconds)
 
-        // Handle event type: can be "event_type" or "play_type"
+        // Handle event type: can be "eventType" or "playType"
         self.eventType = try container.decodeIfPresent(String.self, forKey: .eventType)
             ?? container.decodeIfPresent(String.self, forKey: .playType)
 
@@ -173,7 +172,7 @@ private struct PbpPeriod: Codable {
 enum StringOrInt: Codable, Hashable {
     case string(String)
     case int(Int)
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let intValue = try? container.decode(Int.self) {
@@ -190,7 +189,7 @@ enum StringOrInt: Codable, Hashable {
             )
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -200,7 +199,7 @@ enum StringOrInt: Codable, Hashable {
             try container.encode(value)
         }
     }
-    
+
     /// Get value as String regardless of underlying type
     var stringValue: String {
         switch self {
@@ -210,7 +209,7 @@ enum StringOrInt: Codable, Hashable {
             return String(value)
         }
     }
-    
+
     /// Get value as Int if possible
     var intValue: Int? {
         switch self {
@@ -228,25 +227,16 @@ extension PbpEvent {
     /// Extracts player name from the event
     /// Returns explicit playerName if available, otherwise attempts to parse from description
     var effectivePlayerName: String? {
-        // Return explicit playerName if available
         if let name = playerName, !name.isEmpty {
             return name
         }
-
-        // Try to extract from description
-        // Common formats: "J. Smith makes...", "K. Durant scores...", "Player (team)..."
         guard let desc = description else { return nil }
         return PbpEvent.extractPlayerName(from: desc)
     }
 
     /// Attempts to extract a player name from a play description
-    /// Handles formats like:
-    /// - "K. Durant makes 3-pt shot from 24 ft"
-    /// - "J. Tatum rebound"
-    /// - "Turnover by L. James"
     static func extractPlayerName(from description: String) -> String? {
         // Pattern 1: Name at start (most common): "J. Smith makes..."
-        // Look for: Initial. LastName or First LastName at the beginning
         let startPattern = #"^([A-Z]\.\s*[A-Za-z'-]+|[A-Z][a-z]+\s+[A-Za-z'-]+)"#
         if let match = description.range(of: startPattern, options: .regularExpression) {
             return String(description[match]).trimmingCharacters(in: .whitespaces)
@@ -266,14 +256,10 @@ extension PbpEvent {
 
 extension PlayEntry {
     /// Extracts player name from the entry
-    /// Returns explicit playerName if available, otherwise attempts to parse from description
     var effectivePlayerName: String? {
-        // Return explicit playerName if available
         if let name = playerName, !name.isEmpty {
             return name
         }
-
-        // Try to extract from description
         guard let desc = description else { return nil }
         return PbpEvent.extractPlayerName(from: desc)
     }
@@ -281,18 +267,11 @@ extension PlayEntry {
 
 extension StoryPlay {
     /// Extracts player name from the play
-    /// Returns explicit playerName if available, otherwise attempts to parse from description
     var effectivePlayerName: String? {
-        // Return explicit playerName if available
         if let name = playerName, !name.isEmpty {
             return name
         }
-
-        // Try to extract from description
         guard let desc = description else { return nil }
         return PbpEvent.extractPlayerName(from: desc)
     }
 }
-
-
-
