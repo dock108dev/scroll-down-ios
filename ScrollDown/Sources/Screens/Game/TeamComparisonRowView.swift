@@ -40,7 +40,8 @@ struct TeamStatsContainer: View {
                         title: "Shooting",
                         stats: shootingStats,
                         homeAbbrev: homeAbbrev,
-                        awayAbbrev: awayAbbrev
+                        awayAbbrev: awayAbbrev,
+                        allStats: stats
                     )
                     .frame(maxWidth: .infinity)
                 }
@@ -50,7 +51,8 @@ struct TeamStatsContainer: View {
                         title: "Volume",
                         stats: volumeStats,
                         homeAbbrev: homeAbbrev,
-                        awayAbbrev: awayAbbrev
+                        awayAbbrev: awayAbbrev,
+                        allStats: stats
                     )
                     .frame(maxWidth: .infinity)
                 }
@@ -62,7 +64,8 @@ struct TeamStatsContainer: View {
                     title: "Discipline",
                     stats: disciplineStats,
                     homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev
+                    awayAbbrev: awayAbbrev,
+                    allStats: stats
                 )
                 .frame(maxWidth: .infinity)
             }
@@ -77,7 +80,8 @@ struct TeamStatsContainer: View {
                     title: "Shooting",
                     stats: shootingStats,
                     homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev
+                    awayAbbrev: awayAbbrev,
+                    allStats: stats
                 )
             }
 
@@ -86,7 +90,8 @@ struct TeamStatsContainer: View {
                     title: "Volume",
                     stats: volumeStats,
                     homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev
+                    awayAbbrev: awayAbbrev,
+                    allStats: stats
                 )
             }
 
@@ -95,7 +100,8 @@ struct TeamStatsContainer: View {
                     title: "Discipline",
                     stats: disciplineStats,
                     homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev
+                    awayAbbrev: awayAbbrev,
+                    allStats: stats
                 )
             }
         }
@@ -181,9 +187,18 @@ struct TeamStatsContainer: View {
 private struct StatGroupView: View {
     let title: String
     let stats: [TeamComparisonStat]
+    let allStats: [TeamComparisonStat]  // All stats for cross-referencing annotations
     let homeAbbrev: String
     let awayAbbrev: String
-    
+
+    init(title: String, stats: [TeamComparisonStat], homeAbbrev: String, awayAbbrev: String, allStats: [TeamComparisonStat]? = nil) {
+        self.title = title
+        self.stats = stats
+        self.homeAbbrev = homeAbbrev
+        self.awayAbbrev = awayAbbrev
+        self.allStats = allStats ?? stats
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Section header — TERTIARY contrast, tighter spacing
@@ -193,12 +208,20 @@ private struct StatGroupView: View {
                 .tracking(0.5)
                 .padding(.horizontal, 10)
                 .padding(.bottom, 6) // Tightened from 8
-            
+
             // Stats container
             VStack(spacing: 0) {
                 ForEach(Array(stats.enumerated()), id: \.element.id) { index, stat in
-                    SimplifiedStatRow(stat: stat)
-                    
+                    SimplifiedStatRow(
+                        stat: stat,
+                        annotation: StatAnnotationGenerator.annotation(
+                            for: stat,
+                            allStats: allStats,
+                            homeAbbrev: homeAbbrev,
+                            awayAbbrev: awayAbbrev
+                        )
+                    )
+
                     // Divider between rows — subtle
                     if index < stats.count - 1 {
                         Rectangle()
@@ -220,7 +243,13 @@ private struct StatGroupView: View {
 
 private struct SimplifiedStatRow: View {
     let stat: TeamComparisonStat
-    
+    let annotation: String?
+
+    init(stat: TeamComparisonStat, annotation: String? = nil) {
+        self.stat = stat
+        self.annotation = annotation
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             // Values and bars row
@@ -230,27 +259,35 @@ private struct SimplifiedStatRow: View {
                     .font(.subheadline.weight(awayIsHigher ? .semibold : .regular))
                     .foregroundColor(awayValueColor)
                     .frame(width: 50, alignment: .trailing)
-                
+
                 // Visual comparison bar — both teams get their own color
                 comparisonBar
-                
+
                 // Home value (right) — Team B color
                 Text(stat.homeDisplay)
                     .font(.subheadline.weight(homeIsHigher ? .semibold : .regular))
                     .foregroundColor(homeValueColor)
                     .frame(width: 50, alignment: .leading)
             }
-            
+
             // Stat label — below bars, centered, readable
             Text(shortLabel)
                 .font(.caption)
                 .foregroundColor(DesignSystem.TextColor.secondary)
+
+            // Contextual annotation (if available)
+            if let annotation {
+                Text(annotation)
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.vertical, annotation != nil ? 10 : 8)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(stat.name)
-        .accessibilityValue("Away \(stat.awayDisplay), Home \(stat.homeDisplay)")
+        .accessibilityValue("Away \(stat.awayDisplay), Home \(stat.homeDisplay)\(annotation.map { ". \($0)" } ?? "")")
     }
     
     // MARK: - Value Colors
