@@ -18,7 +18,8 @@ enum StoryAdapter {
                 endScore: moment.endScore,
                 playIds: moment.playIds,
                 highlightedPlayIds: Set(moment.explicitlyNarratedPlayIds),
-                derivedBeatType: deriveBeatType(from: moment, index: index, total: total)
+                derivedBeatType: deriveBeatType(from: moment, index: index, total: total),
+                cumulativeBoxScore: moment.cumulativeBoxScore
             )
         }
     }

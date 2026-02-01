@@ -1,5 +1,83 @@
 import Foundation
 
+// MARK: - Cumulative Box Score Models
+
+/// Player stats within a moment's box score
+struct MomentPlayerStat: Codable, Equatable {
+    let name: String
+    // Basketball stats
+    let pts: Int?
+    let reb: Int?
+    let ast: Int?
+    let threePm: Int?
+    let fgm: Int?
+    let ftm: Int?
+    // Hockey stats
+    let goals: Int?
+    let assists: Int?
+    let sog: Int?
+    let plusMinus: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case name, pts, reb, ast, fgm, ftm
+        case threePm = "3pm"
+        case goals, assists, sog, plusMinus
+    }
+
+    /// Formatted stat line for display (basketball)
+    var basketballStatLine: String {
+        var parts: [String] = []
+        if let p = pts { parts.append("\(p) PTS") }
+        if let r = reb { parts.append("\(r) REB") }
+        if let a = ast { parts.append("\(a) AST") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Formatted stat line for display (hockey)
+    var hockeyStatLine: String {
+        var parts: [String] = []
+        if let g = goals { parts.append("\(g) G") }
+        if let a = assists { parts.append("\(a) A") }
+        if let s = sog { parts.append("\(s) SOG") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+/// Goalie stats for NHL games
+struct MomentGoalieStat: Codable, Equatable {
+    let name: String
+    let saves: Int?
+    let goalsAgainst: Int?
+    let savePercentage: Double?
+
+    var statLine: String {
+        var parts: [String] = []
+        if let s = saves { parts.append("\(s) SV") }
+        if let ga = goalsAgainst { parts.append("\(ga) GA") }
+        if let pct = savePercentage { parts.append(String(format: "%.1f%%", pct * 100)) }
+        return parts.joined(separator: " · ")
+    }
+}
+
+/// Team box score within a moment
+struct MomentTeamBoxScore: Codable, Equatable {
+    let team: String
+    let score: Int
+    let players: [MomentPlayerStat]
+    let goalie: MomentGoalieStat?
+
+    /// Top player by points (for display)
+    var topPlayer: MomentPlayerStat? {
+        players.first
+    }
+}
+
+/// Cumulative box score at a moment in time
+struct MomentBoxScore: Codable, Equatable {
+    let home: MomentTeamBoxScore
+    let away: MomentTeamBoxScore
+}
+
 // MARK: - Story Moment
 
 /// A narrative moment grouping related plays in the story
@@ -12,6 +90,7 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
     let explicitlyNarratedPlayIds: [Int]
     let startScore: ScoreSnapshot
     let endScore: ScoreSnapshot
+    let cumulativeBoxScore: MomentBoxScore?
 
     var id: String { "\(period)-\(startClock ?? "0")" }
 
@@ -24,6 +103,7 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         case explicitlyNarratedPlayIds
         case scoreBefore
         case scoreAfter
+        case cumulativeBoxScore
     }
 
     init(from decoder: Decoder) throws {
@@ -35,6 +115,7 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         endClock = try container.decodeIfPresent(String.self, forKey: .endClock)
         playIds = try container.decodeIfPresent([Int].self, forKey: .playIds) ?? []
         explicitlyNarratedPlayIds = try container.decodeIfPresent([Int].self, forKey: .explicitlyNarratedPlayIds) ?? []
+        cumulativeBoxScore = try container.decodeIfPresent(MomentBoxScore.self, forKey: .cumulativeBoxScore)
 
         // Scores are [away, home] arrays
         if let scoreArray = try container.decodeIfPresent([Int].self, forKey: .scoreBefore) {
@@ -64,7 +145,8 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         playIds: [Int] = [],
         explicitlyNarratedPlayIds: [Int] = [],
         startScore: ScoreSnapshot,
-        endScore: ScoreSnapshot
+        endScore: ScoreSnapshot,
+        cumulativeBoxScore: MomentBoxScore? = nil
     ) {
         self.period = period
         self.startClock = startClock
@@ -74,6 +156,7 @@ struct StoryMoment: Identifiable, Equatable, Decodable {
         self.explicitlyNarratedPlayIds = explicitlyNarratedPlayIds
         self.startScore = startScore
         self.endScore = endScore
+        self.cumulativeBoxScore = cumulativeBoxScore
     }
 }
 

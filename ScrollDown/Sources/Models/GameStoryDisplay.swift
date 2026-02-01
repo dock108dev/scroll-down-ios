@@ -14,6 +14,7 @@ struct MomentDisplayModel: Identifiable, Equatable {
     let playIds: [Int]
     let highlightedPlayIds: Set<Int>
     let derivedBeatType: BeatType
+    let cumulativeBoxScore: MomentBoxScore?
 
     var id: Int { momentIndex }
     var isHighlight: Bool { derivedBeatType.isHighlight }

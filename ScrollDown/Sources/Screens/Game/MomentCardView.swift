@@ -41,6 +41,11 @@ struct MomentCardView: View {
 
             // Compact two-column score box (always visible)
             compactScoreBox
+
+            // Mini box score with top performers (if available)
+            if let boxScore = moment.cumulativeBoxScore {
+                miniBoxScoreView(boxScore)
+            }
         }
         .padding(.vertical, 12)
         .padding(.horizontal, moment.isHighlight ? 8 : 12)
@@ -97,6 +102,46 @@ struct MomentCardView: View {
         return "\(periodLabel) \(start)"
     }
 
+    // MARK: - Mini Box Score
+
+    private func miniBoxScoreView(_ boxScore: MomentBoxScore) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Away team top performer
+            if let topAway = boxScore.away.topPlayer {
+                playerStatRow(player: topAway, teamName: awayTeam)
+            }
+
+            // Home team top performer
+            if let topHome = boxScore.home.topPlayer {
+                playerStatRow(player: topHome, teamName: homeTeam)
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    private func playerStatRow(player: MomentPlayerStat, teamName: String) -> some View {
+        HStack(spacing: 6) {
+            // Team abbreviation
+            Text(teamName)
+                .font(.caption2)
+                .foregroundColor(DesignSystem.TextColor.tertiary)
+                .frame(width: 40, alignment: .leading)
+
+            // Player name
+            Text(player.name)
+                .font(.caption.weight(.medium))
+                .foregroundColor(DesignSystem.TextColor.secondary)
+                .lineLimit(1)
+
+            Spacer()
+
+            // Stats (basketball or hockey based on what's available)
+            Text(player.pts != nil ? player.basketballStatLine : player.hockeyStatLine)
+                .font(.caption2)
+                .foregroundColor(DesignSystem.TextColor.tertiary)
+        }
+    }
+
 }
 
 // MARK: - Previews
@@ -113,7 +158,21 @@ struct MomentCardView: View {
             endScore: ScoreSnapshot(home: 57, away: 42),
             playIds: [100, 101, 102, 103, 104],
             highlightedPlayIds: [101, 103],
-            derivedBeatType: .run
+            derivedBeatType: .run,
+            cumulativeBoxScore: MomentBoxScore(
+                home: MomentTeamBoxScore(
+                    team: "Thunder",
+                    score: 57,
+                    players: [MomentPlayerStat(name: "S. Gilgeous-Alexander", pts: 18, reb: 3, ast: 4, threePm: 2, fgm: nil, ftm: nil, goals: nil, assists: nil, sog: nil, plusMinus: nil)],
+                    goalie: nil
+                ),
+                away: MomentTeamBoxScore(
+                    team: "Spurs",
+                    score: 42,
+                    players: [MomentPlayerStat(name: "V. Wembanyama", pts: 12, reb: 8, ast: 2, threePm: 1, fgm: nil, ftm: nil, goals: nil, assists: nil, sog: nil, plusMinus: nil)],
+                    goalie: nil
+                )
+            )
         ),
         plays: [],
         homeTeam: "Thunder",
@@ -135,7 +194,8 @@ struct MomentCardView: View {
             endScore: ScoreSnapshot(home: 65, away: 58),
             playIds: [200, 201, 202],
             highlightedPlayIds: [],
-            derivedBeatType: .backAndForth
+            derivedBeatType: .backAndForth,
+            cumulativeBoxScore: nil
         ),
         plays: [],
         homeTeam: "Thunder",
@@ -157,7 +217,8 @@ struct MomentCardView: View {
             endScore: ScoreSnapshot(home: 112, away: 105),
             playIds: [300, 301, 302],
             highlightedPlayIds: [301],
-            derivedBeatType: .closingSequence
+            derivedBeatType: .closingSequence,
+            cumulativeBoxScore: nil
         ),
         plays: [
             UnifiedTimelineEvent(
