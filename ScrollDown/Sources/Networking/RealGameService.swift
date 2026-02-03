@@ -6,9 +6,13 @@ final class RealGameService: GameService {
 
     // MARK: - Configuration
     private let baseURL: URL
+    private let apiKey: String?
     private let session: URLSession
     private let decoder: JSONDecoder
     private let logger = Logger(subsystem: "com.scrolldown.app", category: "networking")
+
+    /// HTTP header name for API key authentication
+    private static let apiKeyHeader = "X-API-Key"
 
     /// EST calendar for date formatting (API expects dates in Eastern Time)
     private var estCalendar: Calendar {
@@ -26,9 +30,11 @@ final class RealGameService: GameService {
 
     init(
         baseURL: URL,
+        apiKey: String? = nil,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
+        self.apiKey = apiKey
         self.session = session
         self.decoder = JSONDecoder()
     }
@@ -126,15 +132,30 @@ final class RealGameService: GameService {
             throw GameServiceError.notFound
         }
 
+        // Build URLRequest with authentication header
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        if let apiKey = apiKey {
+            urlRequest.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
+        }
+
         do {
             NSLog("📡 [DEBUG] Requesting: %@", url.absoluteString)
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")
-            let (data, response) = try await session.data(from: url)
+            let (data, response) = try await session.data(for: urlRequest)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLError(.badServerResponse)
             }
             NSLog("📡 [DEBUG] Response status: %d, bytes: %d", httpResponse.statusCode, data.count)
             logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
+
+            // Handle authentication errors specifically
+            if httpResponse.statusCode == 401 {
+                logger.error("📡 Authentication failed - missing or invalid API key")
+                throw GameServiceError.unauthorized
+            }
+
             guard (200..<300).contains(httpResponse.statusCode) else {
                 logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
                 throw URLError(.badServerResponse)

@@ -145,12 +145,18 @@ final class AppConfig: ObservableObject {
             return _mockService!
         case .localhost:
             if _localhostService == nil {
-                _localhostService = RealGameService(baseURL: apiBaseURL)
+                _localhostService = RealGameService(
+                    baseURL: apiBaseURL,
+                    apiKey: APIConfiguration.apiKey(for: environment)
+                )
             }
             return _localhostService!
         case .live:
             if _realService == nil {
-                _realService = RealGameService(baseURL: apiBaseURL)
+                _realService = RealGameService(
+                    baseURL: apiBaseURL,
+                    apiKey: APIConfiguration.apiKey(for: environment)
+                )
             }
             return _realService!
         }
