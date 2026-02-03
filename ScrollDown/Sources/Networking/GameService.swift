@@ -47,6 +47,7 @@ enum RevealLevel: String, Codable {
 // MARK: - Service Errors
 enum GameServiceError: LocalizedError {
     case notFound
+    case unauthorized
     case networkError(Error)
     case decodingError(Error)
 
@@ -54,6 +55,8 @@ enum GameServiceError: LocalizedError {
         switch self {
         case .notFound:
             return "Game not found"
+        case .unauthorized:
+            return "API authentication failed - check your API key configuration"
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):
