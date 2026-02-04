@@ -4,6 +4,28 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed - Blocks-Based Story System (Feb 2025)
+Migrated from moments-based to blocks-based story architecture:
+
+**Models:**
+- `StoryBlock` replaces `StoryMoment` as primary narrative unit
+- `BlockDisplayModel` replaces `MomentDisplayModel`
+- `BlockMiniBox` with `blockStars` replaces `MomentBoxScore`
+- `BlockPlayerStat` includes delta stats (cumulative + per-block changes)
+- Server-provided `BlockRole` replaces client-derived `BeatType`
+
+**Views:**
+- `StoryContainerView` renders block list with spine
+- `StoryBlockCardView` shows narrative + mini box score at bottom
+- `MiniBoxScoreView` displays top 2 players per team with blockStar highlighting
+
+**Removed:**
+- `StoryMoment`, `MomentDisplayModel`, `BeatType` models
+- `MomentCardView`, `NarrativeBlockView`, `NarrativeContainerView` views
+- `MockGameService+StoryGeneration.swift` (stories from API only)
+- `GameDetailViewModel+StoryDerivation.swift`
+- Legacy moments fallback paths
+
 ### Added - Interaction Polish (Jan 2025)
 - Unified `InteractiveRowButtonStyle` for consistent tap feedback
 - `SubtleInteractiveButtonStyle` for less prominent elements
@@ -25,20 +47,18 @@ Notable changes to the Scroll Down iOS app.
 - Removed `GameDetailView+Social.swift` (unused)
 - Deleted `related-posts.json` mock file
 - Removed legacy `.social` case from `GameSection` enum
-- Deleted `StorySectionBlockView` (replaced by MomentCardView)
+- Deleted `StorySectionBlockView` (replaced by blocks-based views)
 - Deleted `SocialPostMatcher` (social posts now displayed separately)
-- Deleted `SectionEntry` and `ChapterEntry` models (replaced by moments-based structure)
+- Deleted `SectionEntry` and `ChapterEntry` models (replaced by blocks-based structure)
 
 ### Added - NHL Support
 - `NHLSkaterStat` and `NHLGoalieStat` models
 - Dedicated NHL stats tables (Skaters/Goalies)
 - Sport-aware period labels (Period 1/2/3 vs Q1/Q2/Q3/Q4)
 
-### Added - Moments-Based Story System
+### Added - Story System (Superseded by Blocks in Feb 2025)
 - `GameStoryView` for completed games with story data
-- `MomentCardView` with expandable play lists
 - `StoryAdapter` for converting API response to display models
-- `BeatType` enum for narrative moment classification
 - `FullPlayByPlayView` with period grouping
 
 ---

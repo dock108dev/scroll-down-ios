@@ -38,20 +38,23 @@ Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 
 `MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
 
-## Timeline Architecture
+**Note:** Mock service does not generate stories. Story data comes from the real API only.
 
-### 1. Story-Based (Primary)
-When story data is available from `/games/{id}/story`:
-- Moments grouped with narrative text
-- Each moment has a beat type derived from scoring patterns
-- Expanding a moment reveals play-by-play
-- `MomentCardView` renders individual moments
+## Story Architecture
 
-### 2. PBP-Based (Fallback)
-When story data isn't available:
-- `UnifiedTimelineEvent` entries grouped by quarter/period
-- Chronological play-by-play
-- Collapsible period sections
+Stories are rendered using a **blocks-based** system from the `/games/{id}/story` endpoint:
+
+1. **Blocks** — Primary narrative units (4-7 per game)
+   - Each block has: narrative text, mini box score, period range, scores
+   - `blockStars` array highlights top performers
+   - Server provides semantic `role` (not displayed to users)
+
+2. **Views:**
+   - `StoryContainerView` — Block list with visual spine
+   - `StoryBlockCardView` — Single block with mini box at bottom
+   - `MiniBoxScoreView` — Compact player stats per block
+
+3. **Fallback:** When story data isn't available, PBP events render chronologically grouped by period.
 
 ## Building & Testing
 
@@ -133,9 +136,10 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 - Verify `scrollToSection` state is being set
 - Check anchor offset in `UnitPoint(x: 0.5, y: -0.08)`
 
-**Timeline not loading:**
-- Check `viewModel.hasStoryData` and `viewModel.hasPbpData`
+**Story not loading:**
+- Check `viewModel.hasStoryData` returns true
 - Verify API responses in network logs
+- Confirm game has story generated (not all games have stories)
 
 **Mock data not appearing:**
 - Confirm `environment = .mock`

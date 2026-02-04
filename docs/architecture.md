@@ -24,7 +24,7 @@ ScrollDown/Sources/
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         SwiftUI View                            │
-│   (HomeView, GameDetailView, MomentCardView, etc.)              │
+│   (HomeView, GameDetailView, StoryBlockCardView, etc.)          │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ observes @Published
                           ▼
@@ -41,7 +41,7 @@ ScrollDown/Sources/
 ┌─────────────────────────────────────────────────────────────────┐
 │                      GameService                                │
 │   protocol GameService { ... }                                  │
-│   • MockGameService — generates local data                      │
+│   • MockGameService — returns errors (stories from real API)    │
 │   • RealGameService — calls backend APIs                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -67,13 +67,25 @@ Nothing is auto-revealed. Users move through timeline at their own pace.
 |-------|-------------|
 | `GameSummary` | List view representation from `/games` endpoint |
 | `GameDetailResponse` | Full game detail from `/games/{id}` |
-| `GameStoryResponse` | Story with moments and plays from `/games/{id}/story` |
-| `StoryMoment` | Narrative segment with play IDs, scores, period/clock |
+| `GameStoryResponse` | Story with blocks and plays from `/games/{id}/story` |
+| `StoryBlock` | Narrative segment with role, mini box score, period range |
 | `StoryPlay` | Individual play within a story |
-| `MomentDisplayModel` | UI-ready moment with derived beat type |
+| `BlockDisplayModel` | UI-ready block for rendering |
+| `BlockMiniBox` | Per-block player stats with blockStars |
 | `UnifiedTimelineEvent` | Single timeline entry (PBP play or tweet) |
 | `PlayEntry` | Individual play-by-play event |
-| `BeatType` | Narrative moment classification |
+
+### Block Structure
+
+Each `StoryBlock` contains:
+- `blockIndex` — Position in the story (0 to N-1)
+- `role` — Server-provided semantic role (SETUP, MOMENTUM_SHIFT, etc.) — not displayed
+- `narrative` — 1-2 sentence description (~35 words)
+- `miniBox` — Player stats for this segment with `blockStars` array
+- `periodStart`/`periodEnd` — Period range covered
+- `scoreBefore`/`scoreAfter` — Score progression as `[away, home]`
+- `keyPlayIds` — Plays explicitly mentioned in narrative
+- `embeddedTweet` — Optional social content (structure ready, no live data yet)
 
 ### NHL-Specific Models
 
@@ -82,23 +94,24 @@ Nothing is auto-revealed. Users move through timeline at their own pace.
 | `NHLSkaterStat` | Skater stats (TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM) |
 | `NHLGoalieStat` | Goalie stats (TOI, SA, SV, GA, SV%) |
 
-## Timeline Rendering
+## Story Rendering
 
-The timeline uses a two-tier system:
+The story system uses **blocks** as the primary display unit:
 
-### 1. Story-Based (Primary)
-When `GameStoryResponse` is available from `/games/{id}/story`:
-- Moments grouped with narrative text
-- Each moment has a beat type (FAST_START, RUN, BACK_AND_FORTH, etc.)
-- Beat types derived via `StoryAdapter` from scoring patterns
-- Expanding a moment reveals its play-by-play events
-- `MomentCardView` renders individual moments
+1. **Blocks** — Consumer-facing narrative segments
+   - Server provides 4-7 blocks per game
+   - Each block has narrative text + mini box score at bottom
+   - Designed for ~2.5 blocks visible on screen at once
+   - `blockStars` highlights top performers per block
 
-### 2. PBP-Based (Fallback)
-When story data isn't available:
-- `UnifiedTimelineEvent` entries grouped by quarter/period
-- Chronological play-by-play with interleaved tweets
-- Collapsible period sections via `CollapsibleQuarterCard`
+2. **StoryAdapter** — Converts `GameStoryResponse` to `[BlockDisplayModel]`
+   - Simple mapping, no client-side derivation
+   - Server provides all semantic information
+
+3. **Views:**
+   - `StoryContainerView` — Renders block list with spine
+   - `StoryBlockCardView` — Single block with narrative + mini box
+   - `MiniBoxScoreView` — Per-block player stats
 
 ## Configuration
 
@@ -115,7 +128,7 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 |-------------|----------|----------|
 | `.live` | `sports-data-admin.dock108.ai` | Production |
 | `.localhost` | `localhost:8000` | Local backend dev |
-| `.mock` | N/A | Offline UI development |
+| `.mock` | N/A | Offline UI development (no story data) |
 
 ### Dev Clock
 
@@ -132,7 +145,7 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 |------|---------------|
 | `GameDetailView.swift` | Main view, navigation, state, scroll handling |
 | `GameDetailView+Overview.swift` | Pregame section |
-| `GameDetailView+Timeline.swift` | Timeline/story section with moment grouping |
+| `GameDetailView+Timeline.swift` | Timeline/story section |
 | `GameDetailView+Stats.swift` | Player and team stats |
 | `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
 | `GameDetailView+WrapUp.swift` | Post-game wrap-up section |

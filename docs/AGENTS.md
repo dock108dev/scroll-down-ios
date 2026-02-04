@@ -39,30 +39,32 @@ ScrollDown/Sources/
 |-------|---------|
 | `GameSummary` | List view representation (home feed) |
 | `GameDetailResponse` | Full game detail with plays, stats, odds |
-| `GameStoryResponse` | Story with moments and plays |
-| `StoryMoment` | Narrative segment with play IDs, scores, period/clock |
+| `GameStoryResponse` | Story with blocks and plays |
+| `StoryBlock` | Narrative segment with role, mini box, period range |
 | `StoryPlay` | Individual play within a story |
-| `MomentDisplayModel` | UI-ready moment with derived beat type |
+| `BlockDisplayModel` | UI-ready block for rendering |
+| `BlockMiniBox` | Per-block player stats with `blockStars` |
 | `UnifiedTimelineEvent` | Single timeline entry (PBP or tweet) |
 | `PlayEntry` | Individual play-by-play event |
-| `BeatType` | Narrative moment classification (run, crunch time, etc.) |
 
 ## Story Architecture
 
-The app renders completed games using a **moments-based** story system:
+The app renders completed games using a **blocks-based** story system:
 
-1. **Moments** — Primary narrative units grouping related plays
-   - Each moment has: narrative text, play IDs, score range, period/clock
-   - `explicitlyNarratedPlayIds` marks key scoring plays
-   - Beat types derived from score deltas via `StoryAdapter`
+1. **Blocks** — Primary narrative units (4-7 per game)
+   - Each block has: narrative text, mini box score, period range, scores
+   - `blockStars` array highlights top performers in that segment
+   - Server provides `role` (SETUP, MOMENTUM_SHIFT, etc.) — not displayed
+   - `keyPlayIds` marks explicitly narrated plays
+   - `embeddedTweet` structure ready (no live data yet)
 
-2. **StoryAdapter** — Converts `GameStoryResponse` to `[MomentDisplayModel]`
-   - Derives beat types from scoring patterns and game position
-   - Maps plays to moments for UI display
+2. **StoryAdapter** — Converts `GameStoryResponse` to `[BlockDisplayModel]`
+   - Simple mapping, server provides all semantic info
 
-3. **Fallback** — When no story data available:
-   - `UnifiedTimelineEvent` entries grouped by quarter/period
-   - Chronological play-by-play with interleaved tweets
+3. **Views:**
+   - `StoryContainerView` — Block list with visual spine
+   - `StoryBlockCardView` — Single block with mini box at bottom
+   - `MiniBoxScoreView` — Compact player stats per block
 
 ## View Architecture
 
@@ -92,16 +94,15 @@ The app renders completed games using a **moments-based** story system:
 
 ## API Endpoints
 
-App uses the public app endpoints (see `sports-data-admin/docs/API.md` for full spec):
+App uses authenticated endpoints (X-API-Key header):
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/games` | List games (with start_date, end_date, league filters) |
+| `GET /api/admin/sports/games` | List games (with startDate, endDate, league filters) |
 | `GET /api/admin/sports/games/{id}` | Game detail (full stats, plays) |
-| `GET /api/games/{id}/pbp` | Play-by-play |
-| `GET /api/games/{id}/social` | Social posts |
-| `GET /api/games/{id}/story` | Story with moments |
-| `GET /api/games/{id}/timeline` | Timeline artifact |
+| `GET /api/admin/sports/pbp/game/{id}` | Play-by-play |
+| `GET /api/social/posts/game/{id}` | Social posts |
+| `GET /api/admin/sports/games/{id}/story` | Story with blocks |
 
 ## Testing
 

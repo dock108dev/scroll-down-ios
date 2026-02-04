@@ -17,7 +17,7 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 |---------|--------|
 | Home feed (Earlier/Yesterday/Today/Upcoming) | Live |
 | Game detail with collapsible sections | Live |
-| Story-based timeline with narrative moments | Live |
+| Story-based timeline with narrative blocks | Live |
 | Play-by-play grouped by quarter/period | Live |
 | NHL skater/goalie stats | Live |
 | Team page navigation | Live |
