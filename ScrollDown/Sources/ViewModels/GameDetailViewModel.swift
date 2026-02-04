@@ -30,7 +30,7 @@ final class GameDetailViewModel: ObservableObject {
     // Story state
     @Published private(set) var storyState: StoryState = .idle
     @Published private(set) var storyResponse: GameStoryResponse?
-    @Published private(set) var momentDisplayModels: [MomentDisplayModel] = []
+    @Published private(set) var blockDisplayModels: [BlockDisplayModel] = []
     @Published private(set) var storyPlays: [StoryPlay] = []
 
     enum StoryState: Equatable {
@@ -163,9 +163,9 @@ final class GameDetailViewModel: ObservableObject {
             let response = try await service.fetchStory(gameId: gameId)
             storyResponse = response
             storyPlays = response.plays
-            momentDisplayModels = StoryAdapter.convertToDisplayModels(from: response)
+            blockDisplayModels = StoryAdapter.convertToDisplayModels(from: response)
             storyState = .loaded
-            logger.info("📖 Loaded story: \(response.story.moments.count, privacy: .public) moments, \(response.plays.count, privacy: .public) plays")
+            logger.info("📖 Loaded story: \(response.blocks.count, privacy: .public) blocks, \(response.plays.count, privacy: .public) plays")
         } catch {
             logger.error("📖 Story fetch failed: \(error.localizedDescription, privacy: .public)")
             storyState = .failed(error.localizedDescription)
@@ -196,9 +196,9 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Story Computed Properties
 
-    /// Story is available if we have loaded moments
+    /// Story is available if we have loaded blocks
     var hasStoryData: Bool {
-        storyState == .loaded && !momentDisplayModels.isEmpty
+        storyState == .loaded && !blockDisplayModels.isEmpty
     }
 
     /// PBP is available from either main detail or separate fetch
@@ -218,15 +218,15 @@ final class GameDetailViewModel: ObservableObject {
         !hasStoryData && !hasPbpData
     }
 
-    /// Get plays for a specific moment
-    func playsForMoment(_ moment: MomentDisplayModel) -> [StoryPlay] {
-        let ids = Set(moment.playIds)
+    /// Get plays for a specific block
+    func playsForBlock(_ block: BlockDisplayModel) -> [StoryPlay] {
+        let ids = Set(block.playIds)
         return storyPlays.filter { ids.contains($0.playId) }
     }
 
-    /// Check if a play is highlighted within a moment
-    func isPlayHighlighted(_ playId: Int, in moment: MomentDisplayModel) -> Bool {
-        moment.highlightedPlayIds.contains(playId)
+    /// Check if a play is a key play within a block
+    func isKeyPlay(_ playId: Int, in block: BlockDisplayModel) -> Bool {
+        block.keyPlayIds.contains(playId)
     }
 
     /// Whether to show the Story View (completed games with story data)

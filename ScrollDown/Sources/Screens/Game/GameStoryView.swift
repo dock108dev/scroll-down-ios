@@ -1,24 +1,15 @@
 import SwiftUI
 
-/// Main story view container for completed games - NARRATIVE FIRST LAYOUT
-/// Reads as a continuous story with expandable footnotes for play details
-/// No cards breaking the narrative - this IS the page
+/// Main story view container for completed games
 struct GameStoryView: View {
     @ObservedObject var viewModel: GameDetailViewModel
     @Binding var isCompactStoryExpanded: Bool
     @State private var showingFullPlayByPlay = false
-    @State private var expandedMoments: Set<Int> = []
 
     var body: some View {
-        // Narrative-first layout: continuous story with inline footnotes
         VStack(alignment: .leading, spacing: 0) {
-            // The story - continuous, uninterrupted narrative
-            NarrativeContainerView(
-                viewModel: viewModel,
-                expandedMoments: $expandedMoments
-            )
+            StoryContainerView(viewModel: viewModel)
 
-            // Transition to secondary content (full play-by-play)
             if viewModel.hasUnifiedTimeline {
                 ContentBreak()
                 viewAllPlaysButton
@@ -28,8 +19,6 @@ struct GameStoryView: View {
             FullPlayByPlayView(viewModel: viewModel)
         }
     }
-
-    // MARK: - View All Plays Button
 
     private var viewAllPlaysButton: some View {
         Button {
@@ -52,18 +41,5 @@ struct GameStoryView: View {
         }
         .buttonStyle(InteractiveRowButtonStyle())
         .padding(.horizontal, NarrativeLayoutConfig.contentLeadingPadding)
-    }
-}
-
-// MARK: - Previews
-
-#Preview("Game Story View - Narrative First") {
-    let viewModel = GameDetailViewModel()
-    return ScrollView {
-        GameStoryView(
-            viewModel: viewModel,
-            isCompactStoryExpanded: .constant(false)
-        )
-        .padding()
     }
 }

@@ -1,41 +1,39 @@
 import Foundation
 
-// MARK: - Moment Display Model
+// MARK: - Block Display Model
 
-/// Display model for story moments - adapter between API response and UI
-struct MomentDisplayModel: Identifiable, Equatable {
-    let momentIndex: Int
+/// Display model for story blocks
+struct BlockDisplayModel: Identifiable, Equatable {
+    let blockIndex: Int
+    let role: BlockRole
     let narrative: String
-    let period: Int
-    let startClock: String?
-    let endClock: String?
+    let periodStart: Int
+    let periodEnd: Int
     let startScore: ScoreSnapshot
     let endScore: ScoreSnapshot
     let playIds: [Int]
-    let highlightedPlayIds: Set<Int>
-    let derivedBeatType: BeatType
-    let cumulativeBoxScore: MomentBoxScore?
+    let keyPlayIds: Set<Int>
+    let miniBox: BlockMiniBox?
+    let embeddedTweet: EmbeddedTweet?
 
-    var id: Int { momentIndex }
-    var isHighlight: Bool { derivedBeatType.isHighlight }
+    var id: Int { blockIndex }
 
-    /// Time range display string (e.g., "Q1 12:00-10:00")
-    var timeRangeDisplay: String? {
-        guard let start = startClock else { return nil }
-        let periodLabel = "Q\(period)"
-        if let end = endClock {
-            return "\(periodLabel) \(start)-\(end)"
+    var periodDisplay: String {
+        if periodStart == periodEnd {
+            return "Q\(periodStart)"
         }
-        return "\(periodLabel) \(start)"
+        return "Q\(periodStart)-Q\(periodEnd)"
     }
 
-    /// Number of highlighted plays in this moment
-    var highlightedPlayCount: Int {
-        highlightedPlayIds.count
+    func isKeyPlay(_ playId: Int) -> Bool {
+        keyPlayIds.contains(playId)
     }
 
-    /// Whether a specific play is highlighted (in explicitlyNarratedPlayIds)
-    func isPlayHighlighted(_ playId: Int) -> Bool {
-        highlightedPlayIds.contains(playId)
+    var blockStars: [String] {
+        miniBox?.blockStars ?? []
+    }
+
+    func isBlockStar(_ name: String) -> Bool {
+        miniBox?.isBlockStar(name) ?? false
     }
 }

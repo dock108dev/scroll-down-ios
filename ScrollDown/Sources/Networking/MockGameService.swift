@@ -219,12 +219,8 @@ final class MockGameService: GameService {
     }
 
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
-
-        guard let detail = gameCache[gameId] ?? findAndCacheGame(gameId) else {
-            throw GameServiceError.notFound
-        }
-        return generateStory(from: detail, gameId: gameId)
+        // Mock service doesn't generate stories - use real API
+        throw GameServiceError.notFound
     }
 
     private func findAndCacheGame(_ gameId: Int) -> GameDetailResponse? {
