@@ -120,6 +120,11 @@ struct BlockMiniBox: Codable, Equatable {
     let away: BlockTeamMiniBox
     let blockStars: [String]
 
+    enum CodingKeys: String, CodingKey {
+        case home, away
+        case blockStars = "block_stars"
+    }
+
     func isBlockStar(_ name: String) -> Bool {
         blockStars.contains(name)
     }
@@ -185,13 +190,6 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     var id: Int { playId }
 }
 
-// MARK: - Story Content
-
-/// Story content containing blocks
-struct StoryContent: Decodable, Equatable {
-    let blocks: [StoryBlock]
-}
-
 // MARK: - Game Story Response
 
 /// Response from the story endpoint
@@ -199,16 +197,14 @@ struct GameStoryResponse: Decodable {
     let gameId: Int
     let sport: String?
     let storyVersion: String?
-    let story: StoryContent
     let generatedAt: String?
     let plays: [StoryPlay]
+    let blocks: [StoryBlock]
     let validationPassed: Bool
     let validationErrors: [String]
 
-    var blocks: [StoryBlock] { story.blocks }
-
     enum CodingKeys: String, CodingKey {
-        case gameId, sport, storyVersion, story, generatedAt, plays, validationPassed, validationErrors
+        case gameId, sport, storyVersion, generatedAt, plays, blocks, validationPassed, validationErrors
     }
 
     init(from decoder: Decoder) throws {
@@ -218,7 +214,8 @@ struct GameStoryResponse: Decodable {
         sport = try container.decodeIfPresent(String.self, forKey: .sport)
         storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion)
         generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
-        story = try container.decode(StoryContent.self, forKey: .story)
+        // Blocks are at top level in API response
+        blocks = try container.decodeIfPresent([StoryBlock].self, forKey: .blocks) ?? []
         plays = try container.decodeIfPresent([StoryPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []

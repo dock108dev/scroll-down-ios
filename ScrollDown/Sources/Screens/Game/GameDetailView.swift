@@ -194,58 +194,58 @@ struct GameDetailView: View {
                             .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                         }
 
-                        // Content sections with card discipline
-                        // EMBEDDED: Tier 1 (Story) - No card, IS the page
-                        // CARDED: Tier 3 (Stats), Tier 4 (Reference) - Optional/interactive
+                        // Content sections matching navigation order
                         VStack(spacing: 0) {
-                            // EMBEDDED: Game Story (Primary - No card)
-                            // This content IS the page, not wrapped in UI chrome
+                            // Pregame section - only if content exists
+                            if !viewModel.pregameTweets.isEmpty {
+                                VStack(spacing: 0) {
+                                    sectionAnchor(for: .overview)
+                                    pregameSection
+                                }
+                                .background(sectionFrameTracker(for: .overview))
+
+                                SectionSpacer(.medium)
+                            }
+
+                            // Flow section (story blocks or PBP)
                             VStack(spacing: 0) {
                                 sectionAnchor(for: .timeline)
                                 timelineSection(using: proxy)
                             }
                             .background(sectionFrameTracker(for: .timeline))
 
-                            // TRANSITION ZONE: Embedded → Carded content
-                            // Visual pause before cards begin
-                            TransitionZone(showDivider: true)
+                            // Player Stats - only if data exists
+                            if !viewModel.playerStats.isEmpty {
+                                SectionSpacer(.medium)
 
-                            // CARDED: Player Stats (Interactive data exploration)
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .playerStats)
-                                playerStatsSection(viewModel.playerStats)
+                                VStack(spacing: 0) {
+                                    sectionAnchor(for: .playerStats)
+                                    playerStatsSection(viewModel.playerStats)
+                                }
+                                .background(sectionFrameTracker(for: .playerStats))
                             }
-                            .background(sectionFrameTracker(for: .playerStats))
 
-                            // Section spacer between related cards
-                            SectionSpacer(.medium)
+                            // Team Stats - only if data exists
+                            if !viewModel.teamStats.isEmpty {
+                                SectionSpacer(.medium)
 
-                            // CARDED: Team Stats (Interactive data exploration)
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .teamStats)
-                                teamStatsSection(viewModel.teamStats)
+                                VStack(spacing: 0) {
+                                    sectionAnchor(for: .teamStats)
+                                    teamStatsSection(viewModel.teamStats)
+                                }
+                                .background(sectionFrameTracker(for: .teamStats))
                             }
-                            .background(sectionFrameTracker(for: .teamStats))
 
-                            // Section spacer before reference cards
-                            SectionSpacer(.large)
+                            // Wrap-up - for completed games
+                            if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+                                SectionSpacer(.medium)
 
-                            // CARDED: Pregame Buzz (Reference - receipts)
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .overview)
-                                pregameSection
+                                VStack(spacing: 0) {
+                                    sectionAnchor(for: .final)
+                                    wrapUpSection
+                                }
+                                .background(sectionFrameTracker(for: .final))
                             }
-                            .background(sectionFrameTracker(for: .overview))
-
-                            // Small break between reference cards
-                            SectionSpacer(.small)
-
-                            // CARDED: Wrap-up (Reference - receipts)
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .final)
-                                wrapUpSection
-                            }
-                            .background(sectionFrameTracker(for: .final))
                         }
                         .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                         // iPad: Constrain content width for better readability

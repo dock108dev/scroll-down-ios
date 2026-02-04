@@ -266,11 +266,41 @@ extension GameDetailView {
         }
     }
 
+    /// Sections that have content to display
+    var visibleSections: [GameSection] {
+        var sections: [GameSection] = []
+
+        // Pregame - only if there are pregame tweets
+        if !viewModel.pregameTweets.isEmpty {
+            sections.append(.overview)
+        }
+
+        // Flow - always show (story blocks or PBP fallback)
+        sections.append(.timeline)
+
+        // Player Stats - if we have player stats data
+        if !viewModel.playerStats.isEmpty {
+            sections.append(.playerStats)
+        }
+
+        // Team Stats - if we have team stats data
+        if !viewModel.teamStats.isEmpty {
+            sections.append(.teamStats)
+        }
+
+        // Wrap-up - always show for completed games (has boxscore)
+        if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+            sections.append(.final)
+        }
+
+        return sections
+    }
+
     func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
         ScrollViewReader { scrollProxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
-                    ForEach(GameSection.navigationSections, id: \.self) { section in
+                    ForEach(visibleSections, id: \.self) { section in
                         Button {
                             onSelect(section)
                         } label: {

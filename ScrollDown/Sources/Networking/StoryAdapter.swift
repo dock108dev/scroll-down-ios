@@ -5,7 +5,7 @@ import Foundation
 /// Converts story response to display models
 enum StoryAdapter {
     static func convertToDisplayModels(from response: GameStoryResponse) -> [BlockDisplayModel] {
-        response.story.blocks.map { block in
+        response.blocks.map { block in
             BlockDisplayModel(
                 blockIndex: block.blockIndex,
                 role: block.role,
