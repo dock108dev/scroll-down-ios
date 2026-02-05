@@ -2,19 +2,20 @@ import SwiftUI
 
 extension GameDetailView {
     /// Timeline section implements content hierarchy:
-    /// - Tier 1 (Game Story): No card, largest typography, always expanded
-    /// - Tier 2 (PBP Timeline): Card container, collapsed by default
+    /// - Game Story: Card container for visual consistency with other sections
+    /// - PBP Timeline: Card container, collapsed by default
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: TierLayout.Primary.momentSpacing) {
-            // TIER 1: Game Story (Primary Content - No Card)
-            // This should feel like the page itself, not content inside a card
+            // Game Story - wrapped in card for visual consistency
             if viewModel.hasStoryData {
-                GameStoryView(
-                    viewModel: viewModel,
-                    isCompactStoryExpanded: $isCompactStoryExpanded
-                )
+                FlowCardContainer(title: "Game Flow") {
+                    GameStoryView(
+                        viewModel: viewModel,
+                        isCompactStoryExpanded: $isCompactStoryExpanded
+                    )
+                }
             }
-            // TIER 2: PBP Timeline (Secondary - Card Container)
+            // PBP Timeline (Secondary - Card Container)
             else if viewModel.hasPbpData {
                 Tier2Container(title: "Play-by-Play", isExpanded: $isTimelineExpanded) {
                     unifiedTimelineView
@@ -22,9 +23,13 @@ extension GameDetailView {
             }
             // Loading/Empty states
             else if viewModel.isLoadingAnyData {
-                timelineLoadingView
+                FlowCardContainer(title: "Game Flow") {
+                    timelineLoadingView
+                }
             } else {
-                comingSoonView
+                FlowCardContainer(title: "Game Flow") {
+                    comingSoonView
+                }
             }
         }
         .background(

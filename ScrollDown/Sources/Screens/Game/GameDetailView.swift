@@ -159,116 +159,127 @@ struct GameDetailView: View {
 
     var standardContentView: some View {
         ScrollViewReader { proxy in
-            ZStack(alignment: .topTrailing) {
-                ScrollView {
-                    VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
-                        // Header - constrained to max-width on iPad
-                        if let game = viewModel.game {
-                            GameHeaderView(game: game)
+            VStack(spacing: 0) {
+                // MARK: Sticky Navigation Bar
+                // Stays pinned at top when scrolling
+                sectionNavigationBar { section in
+                    isManualTabSelection = true
+                    selectedSection = section
+                    // Reset first to ensure onChange fires even for same section (re-tap)
+                    scrollToSection = nil
+                    // Trigger scroll via state change (handled by .onChange below)
+                    DispatchQueue.main.async {
+                        scrollToSection = section
+                    }
+                }
+                .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
+                .frame(maxWidth: .infinity) // Center on iPad
+                .background(GameTheme.background)
+
+                // Subtle divider below sticky nav
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.3))
+                    .frame(height: 0.5)
+
+                // MARK: Scrollable Content
+                ZStack(alignment: .topTrailing) {
+                    ScrollView {
+                        VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
+                            // Header - constrained to max-width on iPad
+                            if let game = viewModel.game {
+                                GameHeaderView(game: game)
+                                    .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                                    .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
+                                    .id(GameSection.header)
+                            }
+
+                            // Resume prompt (if applicable)
+                            if shouldShowResumePrompt {
+                                resumePromptView(
+                                    onResume: { resumeScroll(using: proxy) },
+                                    onStartOver: { startOver(using: proxy) }
+                                )
                                 .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                 .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
-                                .id(GameSection.header)
-                        }
-
-                        // Tab navigation - scrolls with content (not sticky)
-                        sectionNavigationBar { section in
-                            isManualTabSelection = true
-                            selectedSection = section
-                            // Reset first to ensure onChange fires even for same section (re-tap)
-                            scrollToSection = nil
-                            // Trigger scroll via state change (handled by .onChange below)
-                            DispatchQueue.main.async {
-                                scrollToSection = section
                             }
-                        }
-                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
-                        .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
 
-                        // Resume prompt (if applicable)
-                        if shouldShowResumePrompt {
-                            resumePromptView(
-                                onResume: { resumeScroll(using: proxy) },
-                                onStartOver: { startOver(using: proxy) }
-                            )
+                            // Content sections matching navigation order
+                            VStack(spacing: 0) {
+                                // Pregame section - only if content exists
+                                if !viewModel.pregameTweets.isEmpty {
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .overview)
+                                        pregameSection
+                                    }
+                                    .background(sectionFrameTracker(for: .overview))
+
+                                    SectionSpacer(.medium)
+                                }
+
+                                // Flow section (story blocks or PBP)
+                                VStack(spacing: 0) {
+                                    sectionAnchor(for: .timeline)
+                                    timelineSection(using: proxy)
+                                }
+                                .background(sectionFrameTracker(for: .timeline))
+
+                                // Player Stats - only if data exists
+                                if !viewModel.playerStats.isEmpty {
+                                    SectionSpacer(.medium)
+
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .playerStats)
+                                        playerStatsSection(viewModel.playerStats)
+                                    }
+                                    .background(sectionFrameTracker(for: .playerStats))
+                                }
+
+                                // Team Stats - only if data exists
+                                if !viewModel.teamStats.isEmpty {
+                                    SectionSpacer(.medium)
+
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .teamStats)
+                                        teamStatsSection(viewModel.teamStats)
+                                    }
+                                    .background(sectionFrameTracker(for: .teamStats))
+                                }
+
+                                // Wrap-up - for completed games
+                                if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+                                    SectionSpacer(.medium)
+
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .final)
+                                        wrapUpSection
+                                    }
+                                    .background(sectionFrameTracker(for: .final))
+                                }
+                            }
                             .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                            // iPad: Constrain content width for better readability
                             .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                         }
-
-                        // Content sections matching navigation order
-                        VStack(spacing: 0) {
-                            // Pregame section - only if content exists
-                            if !viewModel.pregameTweets.isEmpty {
-                                VStack(spacing: 0) {
-                                    sectionAnchor(for: .overview)
-                                    pregameSection
-                                }
-                                .background(sectionFrameTracker(for: .overview))
-
-                                SectionSpacer(.medium)
-                            }
-
-                            // Flow section (story blocks or PBP)
-                            VStack(spacing: 0) {
-                                sectionAnchor(for: .timeline)
-                                timelineSection(using: proxy)
-                            }
-                            .background(sectionFrameTracker(for: .timeline))
-
-                            // Player Stats - only if data exists
-                            if !viewModel.playerStats.isEmpty {
-                                SectionSpacer(.medium)
-
-                                VStack(spacing: 0) {
-                                    sectionAnchor(for: .playerStats)
-                                    playerStatsSection(viewModel.playerStats)
-                                }
-                                .background(sectionFrameTracker(for: .playerStats))
-                            }
-
-                            // Team Stats - only if data exists
-                            if !viewModel.teamStats.isEmpty {
-                                SectionSpacer(.medium)
-
-                                VStack(spacing: 0) {
-                                    sectionAnchor(for: .teamStats)
-                                    teamStatsSection(viewModel.teamStats)
-                                }
-                                .background(sectionFrameTracker(for: .teamStats))
-                            }
-
-                            // Wrap-up - for completed games
-                            if viewModel.game?.status == .completed || viewModel.game?.status == .final {
-                                SectionSpacer(.medium)
-
-                                VStack(spacing: 0) {
-                                    sectionAnchor(for: .final)
-                                    wrapUpSection
-                                }
-                                .background(sectionFrameTracker(for: .final))
-                            }
+                        .padding(.bottom, GameDetailLayout.bottomPadding)
+                    }
+                    .coordinateSpace(name: GameDetailLayout.scrollCoordinateSpace)
+                    .background(
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: ScrollViewFramePreferenceKey.self,
+                                value: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
+                            )
                         }
-                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
-                        // iPad: Constrain content width for better readability
-                        .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
-                    }
-                    .padding(.bottom, GameDetailLayout.bottomPadding)
-                }
-                .coordinateSpace(name: GameDetailLayout.scrollCoordinateSpace)
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(
-                            key: ScrollViewFramePreferenceKey.self,
-                            value: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
-                        )
-                    }
-                )
+                    )
 
-                if let viewingText = viewingPillText {
-                    viewingPillView(text: viewingText)
-                        .padding(.top, GameDetailLayout.viewingPillTopPadding)
-                        .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
-                        .transition(.opacity)
-                        .accessibilityLabel("Viewing \(viewingText)")
+                    if let viewingText = viewingPillText {
+                        viewingPillView(text: viewingText)
+                            .padding(.top, GameDetailLayout.viewingPillTopPadding)
+                            .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
+                            .transition(.opacity)
+                            .accessibilityLabel("Viewing \(viewingText)")
+                    }
                 }
             }
             .background(GameTheme.background)
