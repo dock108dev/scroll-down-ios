@@ -39,17 +39,25 @@ struct Tier1PlayRowView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    // Score change emphasis
+                    // Score change emphasis with team colors
                     if let home = event.homeScore, let away = event.awayScore {
                         HStack(spacing: 4) {
-                            Text("\(awayTeam) \(away)")
+                            Text(TeamAbbreviations.abbreviation(for: awayTeam))
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(DesignSystem.TeamColors.color(for: awayTeam))
+                            Text("\(away)")
                                 .font(.caption.weight(.bold).monospacedDigit())
+                                .foregroundColor(DesignSystem.TextColor.primary)
                             Text("–")
                                 .font(.caption)
-                            Text("\(home) \(homeTeam)")
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                            Text("\(home)")
                                 .font(.caption.weight(.bold).monospacedDigit())
+                                .foregroundColor(DesignSystem.TextColor.primary)
+                            Text(TeamAbbreviations.abbreviation(for: homeTeam))
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(DesignSystem.TeamColors.color(for: homeTeam))
                         }
-                        .foregroundColor(DesignSystem.TextColor.scoreHighlight)
                     }
                 }
 

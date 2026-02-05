@@ -296,9 +296,9 @@ struct GameDetailView: View {
             .onChange(of: scrollToSection) { _, target in
                 guard let target else { return }
                 // Position section at top of visible area (anchor .top)
-                // The section anchor view has the .id, so scrollTo targets it directly
+                // Use anchorId to target the content anchor, not the nav button
                 withAnimation(.easeInOut(duration: 0.35)) {
-                    proxy.scrollTo(target, anchor: .top)
+                    proxy.scrollTo(target.anchorId, anchor: .top)
                 }
                 // Reset after scroll completes
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

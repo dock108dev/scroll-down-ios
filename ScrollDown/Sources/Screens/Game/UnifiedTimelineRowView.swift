@@ -89,17 +89,32 @@ struct UnifiedTimelineRowView: View {
                 .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)
 
-            Text("\(awayTeam) \(away) – \(home) \(homeTeam)")
-                .font(.caption2.weight(.semibold))
-                .foregroundColor(DesignSystem.TextColor.scoreHighlight)
-                .fixedSize()
+            // Away team with color
+            HStack(spacing: 4) {
+                Text(TeamAbbreviations.abbreviation(for: awayTeam))
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(DesignSystem.TeamColors.color(for: awayTeam))
+                Text("\(away)")
+                    .font(.caption2.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                Text("–")
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                Text("\(home)")
+                    .font(.caption2.weight(.semibold).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                Text(TeamAbbreviations.abbreviation(for: homeTeam))
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(DesignSystem.TeamColors.color(for: homeTeam))
+            }
+            .fixedSize()
 
             Rectangle()
                 .fill(DesignSystem.borderColor.opacity(0.5))
                 .frame(height: 0.5)
         }
         .padding(.horizontal, layout.rowPadding)
-        .padding(.bottom, 6) // Tightened
+        .padding(.bottom, 6)
     }
     
     // MARK: - Tweet Row

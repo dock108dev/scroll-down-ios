@@ -28,4 +28,9 @@ enum GameSection: String, CaseIterable, Hashable {
             return "Wrap-up"
         }
     }
+
+    /// Unique ID for content section anchors (separate from nav button IDs)
+    var anchorId: String {
+        "content-anchor-\(rawValue)"
+    }
 }

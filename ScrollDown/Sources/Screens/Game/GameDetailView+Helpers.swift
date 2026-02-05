@@ -336,10 +336,11 @@ extension GameDetailView {
 
     /// Creates an invisible anchor view for scroll-to-section functionality
     /// The anchor is positioned at the top of each section for reliable scrollTo targeting
+    /// Uses anchorId to avoid ID conflicts with navigation buttons
     func sectionAnchor(for section: GameSection) -> some View {
         Color.clear
             .frame(height: 1)
-            .id(section)
+            .id(section.anchorId)
             .accessibilityHidden(true)
     }
 

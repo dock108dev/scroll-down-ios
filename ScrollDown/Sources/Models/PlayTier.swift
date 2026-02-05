@@ -108,11 +108,32 @@ enum PlayTierClassifier {
     }
 
     private static func isScoringPlay(desc: String) -> Bool {
+        // Exclude missed shots first
+        if desc.contains("miss") { return false }
+
         // Basketball made shots
         if desc.contains("makes") { return true }
-        if desc.contains("free throw") && !desc.contains("miss") { return true }
-        if desc.contains("dunk") && !desc.contains("miss") { return true }
-        if desc.contains("layup") && !desc.contains("miss") { return true }
+
+        // Backend format: "Player 24' 3PT (3 PTS)" - contains "PTS" without "MISS"
+        if desc.contains("pts") { return true }
+
+        // Shot types that indicate made baskets (without "miss")
+        if desc.contains("dunk") { return true }
+        if desc.contains("layup") { return true }
+        if desc.contains("free throw") { return true }
+        if desc.contains("3pt") { return true }
+        if desc.contains("jump shot") { return true }
+        if desc.contains("hook shot") { return true }
+        if desc.contains("tip shot") { return true }
+        if desc.contains("turnaround") { return true }
+        if desc.contains("fadeaway") { return true }
+        if desc.contains("pullup") { return true }
+        if desc.contains("floating") { return true }
+        if desc.contains("driving") && desc.contains("shot") { return true }
+        if desc.contains("step back") { return true }
+        if desc.contains("finger roll") { return true }
+        if desc.contains("alley oop") { return true }
+        if desc.contains("putback") { return true }
 
         return false
     }
