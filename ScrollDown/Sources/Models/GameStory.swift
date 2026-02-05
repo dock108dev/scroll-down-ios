@@ -97,6 +97,23 @@ struct BlockPlayerStat: Codable, Equatable {
         }
         return "\(base) (\(delta.joined(separator: "/")))"
     }
+
+    /// Compact basketball stats: "12p 4r" on first line
+    var compactBasketballStats: String {
+        var parts: [String] = []
+        if let p = pts, p > 0 { parts.append("\(p)p") }
+        if let r = reb, r > 0 { parts.append("\(r)r") }
+        if let a = ast, a > 0 { parts.append("\(a)a") }
+        return parts.isEmpty ? "-" : parts.joined(separator: " ")
+    }
+
+    /// Compact hockey stats: "2g 1a"
+    var compactHockeyStats: String {
+        var parts: [String] = []
+        if let g = goals, g > 0 { parts.append("\(g)g") }
+        if let a = assists, a > 0 { parts.append("\(a)a") }
+        return parts.isEmpty ? "-" : parts.joined(separator: " ")
+    }
 }
 
 // MARK: - Block Team Mini Box

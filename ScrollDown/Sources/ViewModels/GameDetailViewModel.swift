@@ -163,7 +163,8 @@ final class GameDetailViewModel: ObservableObject {
             let response = try await service.fetchStory(gameId: gameId)
             storyResponse = response
             storyPlays = response.plays
-            blockDisplayModels = StoryAdapter.convertToDisplayModels(from: response)
+            let sport = game?.leagueCode ?? response.sport ?? "NBA"
+            blockDisplayModels = StoryAdapter.convertToDisplayModels(from: response, sport: sport)
             storyState = .loaded
             logger.info("📖 Loaded story: \(response.blocks.count, privacy: .public) blocks, \(response.plays.count, privacy: .public) plays")
         } catch {

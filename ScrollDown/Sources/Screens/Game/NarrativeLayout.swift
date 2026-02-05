@@ -82,73 +82,80 @@ struct MiniBoxScoreView: View {
     let sport: String
 
     private var isHockey: Bool { sport == "NHL" }
-
     private var awayAbbrev: String { teamAbbreviation(awayTeam) }
     private var homeAbbrev: String { teamAbbreviation(homeTeam) }
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Score column
-            VStack(spacing: 4) {
-                scoreRow(abbrev: awayAbbrev, score: endScore.away, color: DesignSystem.TeamColors.teamA)
-                scoreRow(abbrev: homeAbbrev, score: endScore.home, color: DesignSystem.TeamColors.teamB)
-            }
+        VStack(spacing: 0) {
+            // Away team row
+            teamRow(
+                abbrev: awayAbbrev,
+                score: endScore.away,
+                players: miniBox.away.topPlayers,
+                color: DesignSystem.TeamColors.teamA
+            )
 
             Divider()
-                .frame(height: 36)
+                .padding(.vertical, 6)
 
-            // Players column
-            VStack(alignment: .leading, spacing: 4) {
-                playersRow(teamBox: miniBox.away)
-                playersRow(teamBox: miniBox.home)
+            // Home team row
+            teamRow(
+                abbrev: homeAbbrev,
+                score: endScore.home,
+                players: miniBox.home.topPlayers,
+                color: DesignSystem.TeamColors.teamB
+            )
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.4))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func teamRow(abbrev: String, score: Int, players: [BlockPlayerStat], color: Color) -> some View {
+        HStack(spacing: 0) {
+            // Team & Score
+            HStack(spacing: 6) {
+                Text(abbrev)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(color)
+
+                Text("\(score)")
+                    .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundColor(DesignSystem.TextColor.primary)
+            }
+            .frame(width: 70, alignment: .leading)
+
+            // Players
+            HStack(spacing: 20) {
+                ForEach(players.prefix(2), id: \.name) { player in
+                    playerCell(player: player)
+                }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(12)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func scoreRow(abbrev: String, score: Int, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Text(abbrev)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(color)
-                .frame(width: 36, alignment: .leading)
-
-            Text("\(score)")
-                .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundColor(DesignSystem.TextColor.primary)
-                .frame(width: 44, alignment: .trailing)
-        }
-    }
-
-    private func playersRow(teamBox: BlockTeamMiniBox) -> some View {
-        HStack(spacing: 16) {
-            ForEach(teamBox.topPlayers.prefix(2), id: \.name) { player in
-                playerView(player: player)
-            }
-        }
-    }
-
-    private func playerView(player: BlockPlayerStat) -> some View {
+    private func playerCell(player: BlockPlayerStat) -> some View {
         let isBlockStar = miniBox.isBlockStar(player.name)
-        let statLine = isHockey ? player.hockeyStatLine : player.basketballStatLine
+        let statLine = isHockey ? player.compactHockeyStats : player.compactBasketballStats
 
-        return HStack(spacing: 4) {
+        return VStack(alignment: .leading, spacing: 1) {
             Text(player.name)
-                .font(.caption.weight(isBlockStar ? .semibold : .regular))
+                .font(.system(size: 12, weight: isBlockStar ? .semibold : .regular))
                 .foregroundColor(isBlockStar ? DesignSystem.TextColor.primary : DesignSystem.TextColor.secondary)
+                .lineLimit(1)
 
             Text(statLine)
-                .font(.caption2.monospacedDigit())
+                .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(DesignSystem.TextColor.tertiary)
+                .lineLimit(1)
         }
+        .frame(width: 80, alignment: .leading)
     }
 
     private func teamAbbreviation(_ fullName: String) -> String {
-        // Common NBA/NHL team abbreviations
         let abbreviations: [String: String] = [
             "Atlanta Hawks": "ATL", "Boston Celtics": "BOS", "Brooklyn Nets": "BKN",
             "Charlotte Hornets": "CHA", "Chicago Bulls": "CHI", "Cleveland Cavaliers": "CLE",
@@ -162,13 +169,7 @@ struct MiniBoxScoreView: View {
             "Sacramento Kings": "SAC", "San Antonio Spurs": "SAS", "Toronto Raptors": "TOR",
             "Utah Jazz": "UTA", "Washington Wizards": "WAS"
         ]
-
-        if let abbrev = abbreviations[fullName] {
-            return abbrev
-        }
-
-        // Fallback: first 3 letters
-        return String(fullName.prefix(3)).uppercased()
+        return abbreviations[fullName] ?? String(fullName.prefix(3)).uppercased()
     }
 }
 
