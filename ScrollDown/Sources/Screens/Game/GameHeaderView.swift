@@ -145,7 +145,7 @@ private struct TappableTeamBlock: View {
                 if !isHome {
                     // Away team: color bar on left
                     Rectangle()
-                        .fill(DesignSystem.TeamColors.teamABar)
+                        .fill(DesignSystem.TeamColors.color(for: teamName).opacity(0.8))
                         .frame(width: 3)
 
                     TeamBlockView(
@@ -164,7 +164,7 @@ private struct TappableTeamBlock: View {
                     .padding(.trailing, 12)
 
                     Rectangle()
-                        .fill(DesignSystem.TeamColors.teamBBar)
+                        .fill(DesignSystem.TeamColors.color(for: teamName).opacity(0.8))
                         .frame(width: 3)
                 }
             }
@@ -318,7 +318,7 @@ private struct TeamBlockView: View {
     }
 
     private var teamColor: Color {
-        isHome ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA
+        DesignSystem.TeamColors.color(for: teamName)
     }
 }
 
