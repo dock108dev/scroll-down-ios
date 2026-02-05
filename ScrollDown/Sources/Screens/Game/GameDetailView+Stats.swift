@@ -100,6 +100,7 @@ extension GameDetailView {
 
     private func teamFilterButton(title: String, team: String?) -> some View {
         let isSelected = playerStatsTeamFilter == team
+        let teamColor = team.map { DesignSystem.TeamColors.color(for: $0) } ?? GameTheme.accentColor
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 playerStatsTeamFilter = team
@@ -109,7 +110,7 @@ extension GameDetailView {
                 .font(DesignSystem.Typography.rowMeta.weight(.medium))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isSelected ? GameTheme.accentColor : DesignSystem.Colors.elevatedBackground)
+                .background(isSelected ? teamColor : DesignSystem.Colors.elevatedBackground)
                 .foregroundColor(isSelected ? .white : .primary)
                 .clipShape(Capsule())
         }
@@ -140,19 +141,19 @@ extension GameDetailView {
     }
 
     private func frozenDataCell(_ stat: PlayerStat, isAlternate: Bool) -> some View {
-        let isHomeTeam = stat.team == viewModel.game?.homeTeam
+        let teamColor = DesignSystem.TeamColors.color(for: stat.team)
         let bgColor = isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground
 
         return HStack(spacing: 4) {
             PlayerNameCell(fullName: stat.playerName)
                 .frame(width: 100, alignment: .leading)
 
-            Text(teamAbbreviation(stat.team))
+            Text(TeamAbbreviations.abbreviation(for: stat.team))
                 .font(.caption2.weight(.medium))
-                .foregroundColor(isHomeTeam ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamA)
+                .foregroundColor(teamColor)
                 .padding(.horizontal, 5)
                 .padding(.vertical, 2)
-                .background(isHomeTeam ? DesignSystem.Colors.homeBadge : DesignSystem.Colors.awayBadge)
+                .background(teamColor.opacity(0.15))
                 .clipShape(Capsule())
                 .frame(width: 36)
         }

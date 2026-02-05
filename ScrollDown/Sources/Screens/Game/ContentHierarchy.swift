@@ -234,6 +234,8 @@ struct Tier3Container<Content: View>: View {
 
             if isExpanded {
                 content
+                    .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
+                    .padding(.bottom, TierLayout.Supporting.verticalSpacing)
                     .transition(.opacity)
             }
         }
@@ -291,6 +293,8 @@ struct Tier4Container<Content: View>: View {
 
             if isExpanded {
                 content
+                    .padding(.horizontal, TierLayout.Reference.horizontalPadding)
+                    .padding(.bottom, TierLayout.Reference.verticalSpacing)
                     .transition(.opacity)
             }
         }

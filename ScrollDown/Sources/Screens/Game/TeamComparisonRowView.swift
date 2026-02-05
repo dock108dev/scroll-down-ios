@@ -41,6 +41,8 @@ struct TeamStatsContainer: View {
                         stats: shootingStats,
                         homeAbbrev: homeAbbrev,
                         awayAbbrev: awayAbbrev,
+                        homeTeam: homeTeam,
+                        awayTeam: awayTeam,
                         allStats: stats
                     )
                     .frame(maxWidth: .infinity)
@@ -52,6 +54,8 @@ struct TeamStatsContainer: View {
                         stats: volumeStats,
                         homeAbbrev: homeAbbrev,
                         awayAbbrev: awayAbbrev,
+                        homeTeam: homeTeam,
+                        awayTeam: awayTeam,
                         allStats: stats
                     )
                     .frame(maxWidth: .infinity)
@@ -65,6 +69,8 @@ struct TeamStatsContainer: View {
                     stats: disciplineStats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam,
                     allStats: stats
                 )
                 .frame(maxWidth: .infinity)
@@ -81,6 +87,8 @@ struct TeamStatsContainer: View {
                     stats: shootingStats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam,
                     allStats: stats
                 )
             }
@@ -91,6 +99,8 @@ struct TeamStatsContainer: View {
                     stats: volumeStats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam,
                     allStats: stats
                 )
             }
@@ -101,6 +111,8 @@ struct TeamStatsContainer: View {
                     stats: disciplineStats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam,
                     allStats: stats
                 )
             }
@@ -108,25 +120,28 @@ struct TeamStatsContainer: View {
     }
     
     // MARK: - Team Identity Header
-    /// DUAL-TEAM COLORS: Away (left) = Team A, Home (right) = Team B
+    /// Uses actual team colors for visual identity
     private var teamIdentityHeader: some View {
-        HStack {
-            // Away team (left) — Team A color (indigo)
+        let awayColor = DesignSystem.TeamColors.color(for: awayTeam)
+        let homeColor = DesignSystem.TeamColors.color(for: homeTeam)
+
+        return HStack {
+            // Away team (left)
             Text(awayAbbrev)
                 .font(.caption.weight(.bold))
-                .foregroundColor(DesignSystem.TeamColors.teamA)
+                .foregroundColor(awayColor)
                 .frame(width: 44, height: 26)
-                .background(DesignSystem.Colors.awayBadge)
+                .background(awayColor.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.small))
-            
+
             Spacer()
-            
-            // Home team (right) — Team B color (teal)
+
+            // Home team (right)
             Text(homeAbbrev)
                 .font(.caption.weight(.bold))
-                .foregroundColor(DesignSystem.TeamColors.teamB)
+                .foregroundColor(homeColor)
                 .frame(width: 44, height: 26)
-                .background(DesignSystem.Colors.homeBadge)
+                .background(homeColor.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.small))
         }
         .padding(.horizontal, 4)
@@ -190,12 +205,16 @@ private struct StatGroupView: View {
     let allStats: [TeamComparisonStat]  // All stats for cross-referencing annotations
     let homeAbbrev: String
     let awayAbbrev: String
+    let homeTeam: String
+    let awayTeam: String
 
-    init(title: String, stats: [TeamComparisonStat], homeAbbrev: String, awayAbbrev: String, allStats: [TeamComparisonStat]? = nil) {
+    init(title: String, stats: [TeamComparisonStat], homeAbbrev: String, awayAbbrev: String, homeTeam: String = "", awayTeam: String = "", allStats: [TeamComparisonStat]? = nil) {
         self.title = title
         self.stats = stats
         self.homeAbbrev = homeAbbrev
         self.awayAbbrev = awayAbbrev
+        self.homeTeam = homeTeam
+        self.awayTeam = awayTeam
         self.allStats = allStats ?? stats
     }
 
@@ -214,6 +233,8 @@ private struct StatGroupView: View {
                 ForEach(Array(stats.enumerated()), id: \.element.id) { index, stat in
                     SimplifiedStatRow(
                         stat: stat,
+                        homeTeam: homeTeam,
+                        awayTeam: awayTeam,
                         annotation: StatAnnotationGenerator.annotation(
                             for: stat,
                             allStats: allStats,
@@ -238,23 +259,34 @@ private struct StatGroupView: View {
 }
 
 // MARK: - Simplified Stat Row
-/// DUAL-TEAM COLORS: Away = Team A (indigo), Home = Team B (teal)
-/// Numbers and bars use consistent team colors for instant comparison
+/// Uses actual team colors for visual comparison
 
 private struct SimplifiedStatRow: View {
     let stat: TeamComparisonStat
+    let homeTeam: String
+    let awayTeam: String
     let annotation: String?
 
-    init(stat: TeamComparisonStat, annotation: String? = nil) {
+    init(stat: TeamComparisonStat, homeTeam: String = "", awayTeam: String = "", annotation: String? = nil) {
         self.stat = stat
+        self.homeTeam = homeTeam
+        self.awayTeam = awayTeam
         self.annotation = annotation
+    }
+
+    private var homeColor: Color {
+        DesignSystem.TeamColors.color(for: homeTeam)
+    }
+
+    private var awayColor: Color {
+        DesignSystem.TeamColors.color(for: awayTeam)
     }
 
     var body: some View {
         VStack(spacing: 4) {
             // Values and bars row
             HStack(spacing: 10) {
-                // Away value (left) — Team A color
+                // Away value (left)
                 Text(stat.awayDisplay)
                     .font(.subheadline.weight(awayIsHigher ? .semibold : .regular))
                     .foregroundColor(awayValueColor)
@@ -263,7 +295,7 @@ private struct SimplifiedStatRow: View {
                 // Visual comparison bar — both teams get their own color
                 comparisonBar
 
-                // Home value (right) — Team B color
+                // Home value (right)
                 Text(stat.homeDisplay)
                     .font(.subheadline.weight(homeIsHigher ? .semibold : .regular))
                     .foregroundColor(homeValueColor)
@@ -289,48 +321,46 @@ private struct SimplifiedStatRow: View {
         .accessibilityLabel(stat.name)
         .accessibilityValue("Away \(stat.awayDisplay), Home \(stat.homeDisplay)\(annotation.map { ". \($0)" } ?? "")")
     }
-    
+
     // MARK: - Value Colors
-    // Each team gets its color, winner is bolder
-    
+    // Each team gets its actual color, winner is bolder
+
     private var awayValueColor: Color {
-        // Team A always uses indigo, winner is full color, loser is muted
-        awayIsHigher ? DesignSystem.TeamColors.teamA : DesignSystem.TeamColors.teamA.opacity(0.5)
+        awayIsHigher ? awayColor : awayColor.opacity(0.5)
     }
-    
+
     private var homeValueColor: Color {
-        // Team B always uses teal, winner is full color, loser is muted
-        homeIsHigher ? DesignSystem.TeamColors.teamB : DesignSystem.TeamColors.teamB.opacity(0.5)
+        homeIsHigher ? homeColor : homeColor.opacity(0.5)
     }
-    
+
     // MARK: - Comparison Bar
-    /// Both bars use team colors — grey track behind both
+    /// Both bars use actual team colors
     private var comparisonBar: some View {
         GeometryReader { geo in
             let totalWidth = geo.size.width
             let awayWidth = barWidth(for: stat.awayValue, total: totalWidth)
             let homeWidth = barWidth(for: stat.homeValue, total: totalWidth)
-            
+
             HStack(spacing: 1) {
-                // Away bar (left) — Team A color (indigo)
+                // Away bar (left)
                 HStack {
                     Spacer()
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(DesignSystem.TeamColors.teamABar)
+                        .fill(awayColor.opacity(0.8))
                         .frame(width: awayWidth)
                 }
                 // Grey track behind
                 .background(Color(.systemGray5).opacity(0.5))
-                
+
                 // Center divider — subtle neutral
                 Rectangle()
                     .fill(Color(.separator).opacity(0.4))
                     .frame(width: 1)
-                
-                // Home bar (right) — Team B color (teal)
+
+                // Home bar (right)
                 HStack {
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(DesignSystem.TeamColors.teamBBar)
+                        .fill(homeColor.opacity(0.8))
                         .frame(width: homeWidth)
                     Spacer()
                 }
@@ -389,7 +419,7 @@ struct TeamComparisonRowView: View {
     let awayTeam: String
 
     var body: some View {
-        SimplifiedStatRow(stat: stat)
+        SimplifiedStatRow(stat: stat, homeTeam: homeTeam, awayTeam: awayTeam)
             .background(DesignSystem.Colors.elevatedBackground)
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
