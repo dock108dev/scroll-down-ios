@@ -43,8 +43,9 @@ struct FullPlayByPlayView: View {
                 }
             }
             .onAppear {
-                // Initialize all periods as expanded (none collapsed)
-                collapsedPeriods = []
+                // Only Q1/P1 expanded by default, all others collapsed
+                let allPeriods = Set(groupedPeriods.map { $0.period })
+                collapsedPeriods = allPeriods.filter { $0 != 1 }
                 expandedTier3Groups = []
             }
         }
