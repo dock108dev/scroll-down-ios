@@ -11,11 +11,19 @@ struct GameHeaderView: View {
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    private var awayColor: Color {
+        DesignSystem.TeamColors.color(for: game.awayTeam)
+    }
+
+    private var homeColor: Color {
+        DesignSystem.TeamColors.color(for: game.homeTeam)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // MARK: Primary Row - Team Matchup
+            // MARK: Primary Row - Team Matchup (NO SCORE - spoiler free!)
             HStack(spacing: 0) {
-                // Away team block (left side) - tappable with color bar
+                // Away team block (left side)
                 TappableTeamBlock(
                     teamName: game.awayTeam,
                     leagueCode: game.leagueCode,
@@ -24,36 +32,58 @@ struct GameHeaderView: View {
 
                 Spacer()
 
-                // Center separator - low contrast "@"
-                Text("@")
-                    .font(.subheadline.weight(.regular))
-                    .foregroundColor(Color(.tertiaryLabel))
+                // Center: "vs" styled element
+                VStack(spacing: 2) {
+                    Text("vs")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                }
 
                 Spacer()
 
-                // Home team block (right side) - tappable with color bar
+                // Home team block (right side)
                 TappableTeamBlock(
                     teamName: game.homeTeam,
                     leagueCode: game.leagueCode,
                     isHome: true
                 )
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, 20)
 
             // Subtle divider
             Rectangle()
                 .fill(Color(.separator).opacity(0.3))
                 .frame(height: 0.5)
 
-            // MARK: Metadata Row - Game State + Date
-            HStack(spacing: 0) {
-                Text(metadataText)
-                    .font(.caption.weight(.semibold))
+            // MARK: Metadata Row - Game State + Date + League
+            HStack(spacing: 8) {
+                // Status badge
+                Text(gameStatusText)
+                    .font(.caption2.weight(.bold))
                     .textCase(.uppercase)
-                    .tracking(0.5)
-                    .foregroundColor(Color(.secondaryLabel))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(statusBadgeColor.opacity(0.15))
+                    .foregroundColor(statusBadgeColor)
+                    .clipShape(Capsule())
+
+                Text("·")
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+
+                Text(formattedGameDate)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(DesignSystem.TextColor.secondary)
 
                 Spacer()
+
+                // League badge
+                Text(game.leagueCode)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(DesignSystem.Colors.elevatedBackground)
+                    .clipShape(Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -77,6 +107,19 @@ struct GameHeaderView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Matchup: \(game.awayTeam) at \(game.homeTeam)")
         .accessibilityValue(statusAccessibilityLabel)
+    }
+
+    private var statusBadgeColor: Color {
+        switch game.status {
+        case .completed, .final:
+            return .green
+        case .inProgress:
+            return .red
+        case .scheduled:
+            return .blue
+        case .postponed, .canceled:
+            return .orange
+        }
     }
 
     // MARK: - Metadata Text
