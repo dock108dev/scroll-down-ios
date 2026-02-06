@@ -14,6 +14,9 @@ struct HomeView: View {
     @State private var selectedLeague: LeagueCode?
     @State private var showingAdminSettings = false // Beta admin access
     @State private var hasLoadedInitialData = false // Prevents reload on back navigation
+    @State private var viewMode: HomeViewMode = .recaps
+    @StateObject private var oddsViewModel = OddsComparisonViewModel()
+    @State private var selectedOddsLeague: FairBetLeague?
 
     var body: some View {
         ZStack {
@@ -78,18 +81,44 @@ struct HomeView: View {
                 .padding(.top, 8)
             }
             #endif
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: HomeLayout.filterSpacing) {
-                    leagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
-                    ForEach(LeagueCode.allCases, id: \.self) { league in
-                        leagueFilterButton(league, label: league.rawValue)
-                    }
+
+            // Recaps / Odds segmented toggle
+            Picker("Mode", selection: $viewMode) {
+                ForEach(HomeViewMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
-                .padding(.horizontal, horizontalPadding)
-                .padding(.vertical, HomeLayout.filterVerticalPadding)
             }
-            .background(HomeTheme.background)
+            .pickerStyle(.segmented)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+
+            // Conditional league filter
+            if viewMode == .recaps {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: HomeLayout.filterSpacing) {
+                        leagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
+                        ForEach(LeagueCode.allCases, id: \.self) { league in
+                            leagueFilterButton(league, label: league.rawValue)
+                        }
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.vertical, HomeLayout.filterVerticalPadding)
+                }
+                .background(HomeTheme.background)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: HomeLayout.filterSpacing) {
+                        oddsLeagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
+                        ForEach(FairBetLeague.allCases) { league in
+                            oddsLeagueFilterButton(league, label: league.rawValue)
+                        }
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.vertical, HomeLayout.filterVerticalPadding)
+                }
+                .background(HomeTheme.background)
+            }
         }
     }
 
@@ -104,6 +133,21 @@ struct HomeView: View {
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
                 .background(selectedLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedLeague == league ? .white : .primary)
+                .clipShape(Capsule())
+        }
+    }
+
+    private func oddsLeagueFilterButton(_ league: FairBetLeague?, label: String) -> some View {
+        Button(action: {
+            selectedOddsLeague = league
+            oddsViewModel.selectLeague(league)
+        }) {
+            Text(label)
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, HomeLayout.filterHorizontalPadding)
+                .padding(.vertical, HomeLayout.filterVerticalPadding)
+                .background(selectedOddsLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
+                .foregroundColor(selectedOddsLeague == league ? .white : .primary)
                 .clipShape(Capsule())
         }
     }
@@ -127,10 +171,14 @@ struct HomeView: View {
 
     private var contentView: some View {
         Group {
-            if let error = errorMessage {
-                errorView(error)
+            if viewMode == .recaps {
+                if let error = errorMessage {
+                    errorView(error)
+                } else {
+                    gameListView
+                }
             } else {
-                gameListView
+                OddsComparisonView(viewModel: oddsViewModel)
             }
         }
     }

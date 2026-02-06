@@ -1,5 +1,15 @@
 import SwiftUI
 
+// MARK: - Home View Mode
+
+/// Toggle between Recaps (game feed) and Odds (FairBet) in HomeView
+enum HomeViewMode: String, CaseIterable, Identifiable {
+    case recaps = "Recaps"
+    case odds = "Odds"
+
+    var id: String { rawValue }
+}
+
 // MARK: - Section State
 
 /// Tracks state for each collapsible section in HomeView
