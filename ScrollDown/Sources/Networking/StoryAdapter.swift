@@ -4,9 +4,14 @@ import Foundation
 
 /// Converts story response to display models
 enum StoryAdapter {
-    static func convertToDisplayModels(from response: GameStoryResponse, sport: String? = nil) -> [BlockDisplayModel] {
+    static func convertToDisplayModels(
+        from response: GameStoryResponse,
+        sport: String? = nil,
+        socialPosts: [SocialPostEntry] = []
+    ) -> [BlockDisplayModel] {
         let sportCode = sport ?? response.sport ?? "NBA"
         let playsById = Dictionary(uniqueKeysWithValues: response.plays.map { ($0.playId, $0) })
+        let socialPostsById = Dictionary(uniqueKeysWithValues: socialPosts.map { ($0.id, $0) })
 
         return response.blocks.map { block in
             // Derive clock times from plays, sorted by playIndex (chronological)
@@ -17,6 +22,8 @@ enum StoryAdapter {
             // Last play (chronologically) has the end time
             let startClock = blockPlays.first?.clock
             let endClock = blockPlays.last?.clock
+
+            let resolvedPost = block.embeddedSocialPostId.flatMap { socialPostsById[$0] }
 
             return BlockDisplayModel(
                 blockIndex: block.blockIndex,
@@ -31,7 +38,7 @@ enum StoryAdapter {
                 playIds: block.playIds,
                 keyPlayIds: Set(block.keyPlayIds),
                 miniBox: block.miniBox,
-                embeddedTweet: block.embeddedTweet,
+                embeddedSocialPost: resolvedPost,
                 sport: sportCode
             )
         }

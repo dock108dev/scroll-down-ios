@@ -62,9 +62,9 @@ struct StoryBlockCardView: View {
                 )
             }
 
-            // Embedded tweet (if present)
-            if let tweet = block.embeddedTweet {
-                EmbeddedTweetView(tweet: tweet)
+            // Embedded social post (if present)
+            if let post = block.embeddedSocialPost {
+                EmbeddedSocialPostView(post: post)
             }
         }
         .padding(.vertical, 16)
@@ -173,11 +173,11 @@ struct MiniBoxScoreView: View {
     }
 }
 
-// MARK: - Embedded Tweet View
+// MARK: - Embedded Social Post View
 
-/// Displays an embedded tweet within a story block
-struct EmbeddedTweetView: View {
-    let tweet: EmbeddedTweet
+/// Displays an embedded social post within a story block
+struct EmbeddedSocialPostView: View {
+    let post: SocialPostEntry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -185,15 +185,16 @@ struct EmbeddedTweetView: View {
                 Image(systemName: "bubble.left.fill")
                     .font(.caption2)
                     .foregroundColor(DesignSystem.TextColor.tertiary)
-                Text(tweet.author)
+                Text(post.sourceHandle ?? "Unknown")
                     .font(.caption.weight(.medium))
                     .foregroundColor(DesignSystem.TextColor.secondary)
             }
-
-            Text(tweet.text)
-                .font(.subheadline)
-                .foregroundColor(DesignSystem.TextColor.primary)
-                .fixedSize(horizontal: false, vertical: true)
+            if let text = post.tweetText {
+                Text(text)
+                    .font(.subheadline)
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(12)
         .background(DesignSystem.Colors.cardBackground.opacity(0.3))

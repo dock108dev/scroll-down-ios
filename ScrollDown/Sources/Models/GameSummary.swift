@@ -13,7 +13,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         case id, leagueCode, gameDate, homeTeam, awayTeam
         case statusRaw = "status"
         case homeScore, awayScore
-        case hasBoxscore, hasPlayerStats, hasOdds, hasSocial, hasPbp, hasStory
+        case hasBoxscore, hasPlayerStats, hasOdds, hasSocial, hasPbp, hasFlow
         case playCount, socialPostCount, hasRequiredData, scrapeVersion
         case lastScrapedAt, lastIngestedAt, lastPbpAt, lastSocialAt
     }
@@ -25,7 +25,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
     let hasOdds: Bool?
     let hasSocial: Bool?
     let hasPbp: Bool?
-    let hasStory: Bool?
+    let hasFlow: Bool?
     let playCount: Int?
     let socialPostCount: Int?
     let hasRequiredData: Bool?
@@ -50,7 +50,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         hasOdds: Bool?,
         hasSocial: Bool?,
         hasPbp: Bool?,
-        hasStory: Bool? = nil,
+        hasFlow: Bool? = nil,
         playCount: Int?,
         socialPostCount: Int?,
         hasRequiredData: Bool?,
@@ -70,7 +70,7 @@ struct GameSummary: Decodable, Identifiable, Hashable {
         self.hasOdds = hasOdds
         self.hasSocial = hasSocial
         self.hasPbp = hasPbp
-        self.hasStory = hasStory
+        self.hasFlow = hasFlow
         self.playCount = playCount
         self.socialPostCount = socialPostCount
         self.hasRequiredData = hasRequiredData

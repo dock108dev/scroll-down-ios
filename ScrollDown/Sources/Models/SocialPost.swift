@@ -1,7 +1,7 @@
 import Foundation
 
 /// Social post entry in game detail
-struct SocialPostEntry: Codable, Identifiable {
+struct SocialPostEntry: Codable, Identifiable, Equatable {
     let id: Int
     let postUrl: String
     let postedAt: String

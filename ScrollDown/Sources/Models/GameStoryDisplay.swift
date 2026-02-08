@@ -16,7 +16,7 @@ struct BlockDisplayModel: Identifiable, Equatable {
     let playIds: [Int]
     let keyPlayIds: Set<Int>
     let miniBox: BlockMiniBox?
-    let embeddedTweet: EmbeddedTweet?
+    let embeddedSocialPost: SocialPostEntry?
     let sport: String
 
     var id: Int { blockIndex }

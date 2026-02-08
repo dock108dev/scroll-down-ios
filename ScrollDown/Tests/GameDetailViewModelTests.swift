@@ -198,29 +198,7 @@ private struct StubGameService: GameService {
         )
     }
 
-    func fetchRelatedPosts(gameId: Int) async throws -> RelatedPostListResponse {
-        RelatedPostListResponse(posts: [], total: 0)
-    }
-
     func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        GameStoryResponse(
-            gameId: gameId,
-            sport: "NBA",
-            storyVersion: "2.0.0",
-            chapters: [],
-            chapterCount: 0,
-            totalPlays: 0,
-            sections: [],
-            sectionCount: 0,
-            compactStory: nil,
-            wordCount: nil,
-            targetWordCount: nil,
-            quality: nil,
-            readingTimeEstimateMinutes: nil,
-            generatedAt: nil,
-            hasStory: false,
-            hasCompactStory: false,
-            metadata: nil
-        )
+        GameStoryResponse(gameId: gameId, sport: "NBA")
     }
 }

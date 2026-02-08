@@ -18,29 +18,6 @@ enum BlockRole: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Embedded Tweet
-
-/// Social content embedded within a story block
-struct EmbeddedTweet: Codable, Equatable {
-    let tweetId: String
-    let postedAt: String?
-    let text: String
-    let author: String
-    let phase: String?
-    let score: Double?
-    let position: String?
-    let hasMedia: Bool?
-    let mediaType: String?
-
-    enum CodingKeys: String, CodingKey {
-        case tweetId = "tweet_id"
-        case postedAt = "posted_at"
-        case text, author, phase, score, position
-        case hasMedia = "has_media"
-        case mediaType = "media_type"
-    }
-}
-
 // MARK: - Block Player Stat
 
 /// Player stats within a block's mini box score
@@ -67,12 +44,9 @@ struct BlockPlayerStat: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case name, pts, reb, ast
         case threePm = "3pm"
-        case deltaPts = "delta_pts"
-        case deltaReb = "delta_reb"
-        case deltaAst = "delta_ast"
+        case deltaPts, deltaReb, deltaAst
         case goals, assists, sog, plusMinus
-        case deltaGoals = "delta_goals"
-        case deltaAssists = "delta_assists"
+        case deltaGoals, deltaAssists
     }
 
     /// Formatted stat line for basketball: "15p/4r/6a (+7p/+2r)"
@@ -150,11 +124,6 @@ struct BlockMiniBox: Codable, Equatable {
     let away: BlockTeamMiniBox
     let blockStars: [String]
 
-    enum CodingKeys: String, CodingKey {
-        case home, away
-        case blockStars = "block_stars"
-    }
-
     func isBlockStar(_ name: String) -> Bool {
         blockStars.contains(name)
     }
@@ -175,7 +144,7 @@ struct StoryBlock: Codable, Identifiable, Equatable {
     let keyPlayIds: [Int]
     let narrative: String
     let miniBox: BlockMiniBox?
-    let embeddedTweet: EmbeddedTweet?
+    let embeddedSocialPostId: Int?
 
     var id: Int { blockIndex }
 
@@ -222,33 +191,47 @@ struct StoryPlay: Codable, Identifiable, Equatable {
 
 // MARK: - Game Story Response
 
-/// Response from the story endpoint
+/// Response from the flow endpoint
 struct GameStoryResponse: Decodable {
     let gameId: Int
     let sport: String?
-    let storyVersion: String?
-    let generatedAt: String?
     let plays: [StoryPlay]
     let blocks: [StoryBlock]
     let validationPassed: Bool
     let validationErrors: [String]
 
     enum CodingKeys: String, CodingKey {
-        case gameId, sport, storyVersion, generatedAt, plays, blocks, validationPassed, validationErrors
+        case gameId, sport, plays, flow, validationPassed, validationErrors
+    }
+
+    enum FlowKeys: String, CodingKey {
+        case blocks, moments
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
         gameId = try container.decode(Int.self, forKey: .gameId)
         sport = try container.decodeIfPresent(String.self, forKey: .sport)
-        storyVersion = try container.decodeIfPresent(String.self, forKey: .storyVersion)
-        generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
-        // Blocks are at top level in API response
-        blocks = try container.decodeIfPresent([StoryBlock].self, forKey: .blocks) ?? []
         plays = try container.decodeIfPresent([StoryPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
+
+        // Blocks are nested inside "flow" wrapper
+        if let flowContainer = try? container.nestedContainer(keyedBy: FlowKeys.self, forKey: .flow) {
+            blocks = try flowContainer.decodeIfPresent([StoryBlock].self, forKey: .blocks) ?? []
+        } else {
+            blocks = []
+        }
+    }
+
+    init(gameId: Int, sport: String? = nil, plays: [StoryPlay] = [], blocks: [StoryBlock] = [],
+         validationPassed: Bool = true, validationErrors: [String] = []) {
+        self.gameId = gameId
+        self.sport = sport
+        self.plays = plays
+        self.blocks = blocks
+        self.validationPassed = validationPassed
+        self.validationErrors = validationErrors
     }
 }
 
