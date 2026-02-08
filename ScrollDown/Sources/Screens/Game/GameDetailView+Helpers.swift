@@ -270,8 +270,8 @@ extension GameDetailView {
     var visibleSections: [GameSection] {
         var sections: [GameSection] = []
 
-        // Pregame - only if there are pregame tweets
-        if !viewModel.pregameTweets.isEmpty {
+        // Pregame - only if there are pregame social posts
+        if !viewModel.pregameSocialPosts.isEmpty {
             sections.append(.overview)
         }
 

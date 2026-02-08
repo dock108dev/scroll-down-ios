@@ -185,7 +185,7 @@ struct EmbeddedTweetView: View {
                 Image(systemName: "bubble.left.fill")
                     .font(.caption2)
                     .foregroundColor(DesignSystem.TextColor.tertiary)
-                Text(tweet.authorHandle)
+                Text(tweet.author)
                     .font(.caption.weight(.medium))
                     .foregroundColor(DesignSystem.TextColor.secondary)
             }

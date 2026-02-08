@@ -171,37 +171,35 @@ extension GameDetailView {
 
     @ViewBuilder
     var postGameSocialContent: some View {
-        let tweets = viewModel.postGameTweets
-        if tweets.isEmpty {
+        let posts = viewModel.postgameSocialPosts
+        if posts.isEmpty {
             EmptySectionView(text: "No post-game reactions yet.")
         } else {
             VStack(alignment: .leading, spacing: GameDetailLayout.listSpacing) {
                 Text("Reactions")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.secondary)
-                ForEach(tweets) { tweet in
-                    postGameTweetRow(tweet)
+                ForEach(posts) { post in
+                    postGamePostRow(post)
                 }
             }
         }
     }
 
-    private func postGameTweetRow(_ tweet: UnifiedTimelineEvent) -> some View {
+    private func postGamePostRow(_ post: SocialPostEntry) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.text) {
             HStack {
-                if let handle = tweet.sourceHandle {
+                if let handle = post.sourceHandle {
                     Text("@\(handle)")
                         .font(DesignSystem.Typography.rowMeta.weight(.medium))
                         .foregroundColor(GameTheme.accentColor)
                 }
                 Spacer()
-                if let postedAt = tweet.postedAt {
-                    Text(formatTweetDate(postedAt))
-                        .font(DesignSystem.Typography.rowMeta)
-                        .foregroundColor(.secondary)
-                }
+                Text(formatTweetDate(post.postedAt))
+                    .font(DesignSystem.Typography.rowMeta)
+                    .foregroundColor(.secondary)
             }
-            if let text = tweet.tweetText {
+            if let text = post.tweetText {
                 Text(text)
                     .font(DesignSystem.Typography.rowTitle)
                     .foregroundColor(.primary)

@@ -134,7 +134,11 @@ final class MockGameService: GameService {
                     tweetText: entry.tweetText,
                     sourceHandle: entry.sourceHandle,
                     mediaType: entry.mediaType,
-                    revealLevel: .pre
+                    revealLevel: .pre,
+                    gamePhase: entry.gamePhase,
+                    likesCount: entry.likesCount,
+                    retweetsCount: entry.retweetsCount,
+                    repliesCount: entry.repliesCount
                 )
             }
             return SocialPostListResponse(posts: posts, total: posts.count)

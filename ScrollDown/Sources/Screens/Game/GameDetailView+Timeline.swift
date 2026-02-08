@@ -8,7 +8,7 @@ extension GameDetailView {
         VStack(spacing: TierLayout.Primary.momentSpacing) {
             // Game Story - wrapped in card for visual consistency
             if viewModel.hasStoryData {
-                FlowCardContainer(title: "Game Flow") {
+                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
                     GameStoryView(
                         viewModel: viewModel,
                         isCompactStoryExpanded: $isCompactStoryExpanded
@@ -23,11 +23,11 @@ extension GameDetailView {
             }
             // Loading/Empty states
             else if viewModel.isLoadingAnyData {
-                FlowCardContainer(title: "Game Flow") {
+                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
                     timelineLoadingView
                 }
             } else {
-                FlowCardContainer(title: "Game Flow") {
+                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
                     comingSoonView
                 }
             }

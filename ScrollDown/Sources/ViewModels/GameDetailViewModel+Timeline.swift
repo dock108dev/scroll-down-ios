@@ -145,6 +145,18 @@ extension GameDetailViewModel {
         return Array(afterLastPbp).filter { $0.eventType == .tweet }
     }
 
+    // MARK: - Phase-Filtered Social Posts
+
+    /// Pregame social posts based on server-assigned gamePhase
+    var pregameSocialPosts: [SocialPostEntry] {
+        detail?.socialPosts.filter { $0.gamePhase == "pregame" } ?? []
+    }
+
+    /// Postgame social posts based on server-assigned gamePhase
+    var postgameSocialPosts: [SocialPostEntry] {
+        detail?.socialPosts.filter { $0.gamePhase == "postgame" } ?? []
+    }
+
     // MARK: - Timeline Parsing Helpers
 
     func extractTimelineEvents(from value: Any) -> [[String: Any]] {

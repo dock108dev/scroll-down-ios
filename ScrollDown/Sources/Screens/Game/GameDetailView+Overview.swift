@@ -16,36 +16,34 @@ extension GameDetailView {
 
     @ViewBuilder
     private var pregameBuzzContent: some View {
-        let tweets = viewModel.pregameTweets
-        if tweets.isEmpty {
+        let posts = viewModel.pregameSocialPosts
+        if posts.isEmpty {
             EmptySectionView(text: "No pregame posts available.")
         } else {
             VStack(spacing: GameDetailLayout.listSpacing) {
-                ForEach(tweets) { tweet in
-                    pregameTweetRow(tweet)
+                ForEach(posts) { post in
+                    pregamePostRow(post)
                 }
             }
         }
     }
-    
-    /// Individual pre-game tweet row
-    private func pregameTweetRow(_ tweet: UnifiedTimelineEvent) -> some View {
+
+    /// Individual pre-game social post row
+    private func pregamePostRow(_ post: SocialPostEntry) -> some View {
         VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
             HStack {
-                if let handle = tweet.sourceHandle {
+                if let handle = post.sourceHandle {
                     Text("@\(handle)")
                         .font(.caption.weight(.medium))
                         .foregroundColor(GameTheme.accentColor)
                 }
                 Spacer()
-                if let postedAt = tweet.postedAt {
-                    Text(formatPregameDate(postedAt))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                Text(formatPregameDate(post.postedAt))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
-            
-            if let text = tweet.tweetText {
+
+            if let text = post.tweetText {
                 Text(text)
                     .font(.subheadline)
                     .foregroundColor(.primary)

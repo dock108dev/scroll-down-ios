@@ -341,11 +341,13 @@ enum MockDataGenerator {
                 postedAt: formatDate(Date()),
                 hasVideo: false,
                 teamAbbreviation: home,
-                tweetText: "\(home) open with crisp ball movement.",
-                videoUrl: nil,
-                imageUrl: nil,
-                sourceHandle: "FanHub",
-                mediaType: MediaType.none
+                tweetText: "Tonight's starting 5. Let's get it!",
+                sourceHandle: home,
+                mediaType: MediaType.none,
+                gamePhase: "pregame",
+                likesCount: Int.random(in: 100...500),
+                retweetsCount: Int.random(in: 20...100),
+                repliesCount: Int.random(in: 5...50)
             ),
             SocialPostEntry(
                 id: Int.random(in: 1000...9999),
@@ -354,22 +356,26 @@ enum MockDataGenerator {
                 hasVideo: false,
                 teamAbbreviation: away,
                 tweetText: "\(away) punch back with a quick run.",
-                videoUrl: nil,
-                imageUrl: nil,
-                sourceHandle: "FanHub",
-                mediaType: MediaType.none
+                sourceHandle: away,
+                mediaType: MediaType.none,
+                gamePhase: "in_game",
+                likesCount: Int.random(in: 200...800),
+                retweetsCount: Int.random(in: 40...200),
+                repliesCount: Int.random(in: 10...80)
             ),
             SocialPostEntry(
                 id: Int.random(in: 1000...9999),
-                postUrl: "https://x.com/fanhub/status/\(UUID().uuidString)",
+                postUrl: "https://x.com/\(home.lowercased())/status/\(UUID().uuidString)",
                 postedAt: formatDate(Date()),
                 hasVideo: false,
                 teamAbbreviation: home,
-                tweetText: "Momentum swings set up the second half.",
-                videoUrl: nil,
-                imageUrl: nil,
-                sourceHandle: "FanHub",
-                mediaType: MediaType.none
+                tweetText: "What a game! On to the next one.",
+                sourceHandle: home,
+                mediaType: MediaType.none,
+                gamePhase: "postgame",
+                likesCount: Int.random(in: 300...1000),
+                retweetsCount: Int.random(in: 50...300),
+                repliesCount: Int.random(in: 15...100)
             )
         ]
     }

@@ -23,9 +23,22 @@ enum BlockRole: String, Codable, CaseIterable {
 /// Social content embedded within a story block
 struct EmbeddedTweet: Codable, Equatable {
     let tweetId: String
-    let authorHandle: String
+    let postedAt: String?
     let text: String
-    let mediaUrl: String?
+    let author: String
+    let phase: String?
+    let score: Double?
+    let position: String?
+    let hasMedia: Bool?
+    let mediaType: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tweetId = "tweet_id"
+        case postedAt = "posted_at"
+        case text, author, phase, score, position
+        case hasMedia = "has_media"
+        case mediaType = "media_type"
+    }
 }
 
 // MARK: - Block Player Stat

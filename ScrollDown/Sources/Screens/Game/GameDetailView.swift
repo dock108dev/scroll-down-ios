@@ -18,6 +18,7 @@ struct GameDetailView: View {
     // Tier 2 (Timeline): Collapsed by default unless no story
     // Tier 3 (Stats): Collapsed by default
     // Tier 4 (Reference): Collapsed by default
+    @State var isFlowCardExpanded = true  // Flow Card: expanded by default (primary content)
     @State var isOverviewExpanded = false  // Tier 4: Reference
     @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no story)
     @State var isPlayerStatsExpanded = false  // Tier 3: Supporting
@@ -207,7 +208,7 @@ struct GameDetailView: View {
                             // Content sections matching navigation order
                             VStack(spacing: 0) {
                                 // Pregame section - only if content exists
-                                if !viewModel.pregameTweets.isEmpty {
+                                if !viewModel.pregameSocialPosts.isEmpty {
                                     VStack(spacing: 0) {
                                         sectionAnchor(for: .overview)
                                         pregameSection

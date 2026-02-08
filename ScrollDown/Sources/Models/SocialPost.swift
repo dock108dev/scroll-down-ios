@@ -12,6 +12,10 @@ struct SocialPostEntry: Codable, Identifiable {
     let imageUrl: String?
     let sourceHandle: String?
     let mediaType: MediaType?
+    let gamePhase: String?       // "pregame" | "in_game" | "postgame"
+    let likesCount: Int?
+    let retweetsCount: Int?
+    let repliesCount: Int?
 
     init(
         id: Int,
@@ -23,7 +27,11 @@ struct SocialPostEntry: Codable, Identifiable {
         videoUrl: String? = nil,
         imageUrl: String? = nil,
         sourceHandle: String? = nil,
-        mediaType: MediaType? = nil
+        mediaType: MediaType? = nil,
+        gamePhase: String? = nil,
+        likesCount: Int? = nil,
+        retweetsCount: Int? = nil,
+        repliesCount: Int? = nil
     ) {
         self.id = id
         self.postUrl = postUrl
@@ -35,6 +43,10 @@ struct SocialPostEntry: Codable, Identifiable {
         self.imageUrl = imageUrl
         self.sourceHandle = sourceHandle
         self.mediaType = mediaType
+        self.gamePhase = gamePhase
+        self.likesCount = likesCount
+        self.retweetsCount = retweetsCount
+        self.repliesCount = repliesCount
     }
 }
 
@@ -52,6 +64,10 @@ struct SocialPostResponse: Codable, Identifiable {
     let sourceHandle: String?
     let mediaType: MediaType?
     let revealLevel: RevealLevel?
+    let gamePhase: String?
+    let likesCount: Int?
+    let retweetsCount: Int?
+    let repliesCount: Int?
 
     init(
         id: Int,
@@ -65,7 +81,11 @@ struct SocialPostResponse: Codable, Identifiable {
         tweetText: String? = nil,
         sourceHandle: String? = nil,
         mediaType: MediaType? = nil,
-        revealLevel: RevealLevel? = nil
+        revealLevel: RevealLevel? = nil,
+        gamePhase: String? = nil,
+        likesCount: Int? = nil,
+        retweetsCount: Int? = nil,
+        repliesCount: Int? = nil
     ) {
         self.id = id
         self.gameId = gameId
@@ -79,6 +99,10 @@ struct SocialPostResponse: Codable, Identifiable {
         self.sourceHandle = sourceHandle
         self.mediaType = mediaType
         self.revealLevel = revealLevel
+        self.gamePhase = gamePhase
+        self.likesCount = likesCount
+        self.retweetsCount = retweetsCount
+        self.repliesCount = repliesCount
     }
 
     /// Whether this post is safe to show given current reveal state

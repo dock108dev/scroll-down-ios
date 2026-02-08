@@ -135,30 +135,50 @@ struct Tier1Container<Content: View>: View {
 
 /// Flow/Story content container - primary content wrapped in a card
 /// Unlike Tier1Container, this provides visual containment matching other sections
-/// Non-collapsible since this is the main content users scroll through
+/// Collapsible like other card sections
 struct FlowCardContainer<Content: View>: View {
     let title: String
+    @Binding var isExpanded: Bool
     let content: Content
 
-    init(title: String, @ViewBuilder content: () -> Content) {
+    init(title: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
         self.title = title
+        self._isExpanded = isExpanded
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Section header
-            Text(title.uppercased())
-                .font(.caption.weight(.bold))
-                .foregroundColor(DesignSystem.TextColor.tertiary)
-                .tracking(0.5)
+            // Section header (tappable)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Text(title.uppercased())
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                        .tracking(0.5)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
                 .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
                 .padding(.top, TierLayout.Supporting.verticalSpacing)
                 .padding(.bottom, 8)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
             // Content
-            content
-                .padding(.bottom, TierLayout.Supporting.verticalSpacing)
+            if isExpanded {
+                content
+                    .padding(.bottom, TierLayout.Supporting.verticalSpacing)
+                    .transition(.opacity)
+            }
         }
         .background(DesignSystem.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CardDisciplineLayout.cardCornerRadius))
@@ -169,6 +189,7 @@ struct FlowCardContainer<Content: View>: View {
             x: 0,
             y: 1
         )
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
 
