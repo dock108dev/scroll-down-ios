@@ -8,7 +8,6 @@ extension GameDetailView {
     func playerStatsSection(_ stats: [PlayerStat]) -> some View {
         Tier3Container(
             title: "Player Stats",
-            subtitle: viewModel.isNHL ? "Skaters & Goalies" : "Individual performance",
             isExpanded: $isPlayerStatsExpanded
         ) {
             // NHL uses separate skaters/goalies arrays
@@ -346,7 +345,6 @@ extension GameDetailView {
     func teamStatsSection(_ stats: [TeamStat]) -> some View {
         Tier3Container(
             title: "Team Stats",
-            subtitle: "How the game unfolded",
             isExpanded: $isTeamStatsExpanded
         ) {
             teamStatsContent(stats)

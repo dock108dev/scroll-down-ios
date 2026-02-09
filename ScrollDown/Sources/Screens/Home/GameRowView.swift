@@ -17,6 +17,11 @@ enum GameCardState {
 struct GameRowView: View {
     let game: GameSummary
 
+    /// Whether the user has read this game's wrap-up
+    private var isRead: Bool {
+        UserDefaults.standard.bool(forKey: "game.read.\(game.id)")
+    }
+
     /// Computed card state based on game status and data availability
     var cardState: GameCardState {
         guard let status = game.status else { return .locked }
@@ -50,6 +55,13 @@ struct GameRowView: View {
                 .foregroundColor(matchupTextColor)
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
+
+            // Final score for read games
+            if isRead, let home = game.homeScore, let away = game.awayScore {
+                Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(away)  -  \(home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundColor(.secondary)
+            }
 
             // Date + optional play/moment counts (debug)
             Text(dateDisplay)
@@ -119,10 +131,15 @@ struct GameRowView: View {
     private var rightElement: some View {
         switch cardState {
         case .available:
-            // Subtle chevron affordance - card itself invites the tap
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.medium))
-                .foregroundColor(Color(.tertiaryLabel))
+            if isRead {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundColor(Color(.tertiaryLabel))
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(Color(.tertiaryLabel))
+            }
         case .comingSoon:
             // Coming soon state - game completed but no PBP yet
             HStack(spacing: 4) {

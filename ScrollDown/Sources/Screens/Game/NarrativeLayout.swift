@@ -199,8 +199,7 @@ struct EmbeddedSocialPostView: View {
                 SocialMediaPreview(
                     imageUrl: post.imageUrl,
                     videoUrl: post.videoUrl,
-                    postUrl: post.postUrl,
-                    height: 140
+                    postUrl: post.postUrl
                 )
             }
         }

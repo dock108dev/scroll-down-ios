@@ -305,6 +305,11 @@ struct GameDetailView: View {
             .onChange(of: viewModel.detail?.plays.count ?? 0) {
                 loadResumeMarkerIfNeeded()
             }
+            .onChange(of: isWrapUpExpanded) { _, expanded in
+                if expanded {
+                    UserDefaults.standard.set(true, forKey: "game.read.\(gameId)")
+                }
+            }
             .onChange(of: scrollToSection) { _, target in
                 guard let target else { return }
                 // Position section at top of visible area (anchor .top)

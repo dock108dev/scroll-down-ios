@@ -155,8 +155,7 @@ struct UnifiedTimelineRowView: View {
                 SocialMediaPreview(
                     imageUrl: event.imageUrl,
                     videoUrl: event.videoUrl,
-                    postUrl: event.tweetUrl,
-                    height: 140
+                    postUrl: event.tweetUrl
                 )
             }
         }

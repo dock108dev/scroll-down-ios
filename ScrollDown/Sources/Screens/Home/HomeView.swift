@@ -15,6 +15,7 @@ struct HomeView: View {
     @State private var showingAdminSettings = false // Beta admin access
     @State private var hasLoadedInitialData = false // Prevents reload on back navigation
     @State private var viewMode: HomeViewMode = .recaps
+    @State private var refreshId = UUID()
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
 
@@ -232,6 +233,7 @@ struct HomeView: View {
                 }
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
             }
+            .onAppear { refreshId = UUID() }
             .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
                 withAnimation(.easeOut(duration: 0.3)) {
                     proxy.scrollTo(HomeStrings.sectionYesterday, anchor: .top)
@@ -308,6 +310,7 @@ struct HomeView: View {
                     gameCard(for: game)
                 }
             }
+            .id(refreshId)
             .padding(.horizontal, horizontalPadding)
             .transition(.opacity.animation(.easeIn(duration: 0.2)))
         }
