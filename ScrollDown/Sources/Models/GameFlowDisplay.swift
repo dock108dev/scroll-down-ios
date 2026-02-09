@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Block Display Model
 
-/// Display model for story blocks
+/// Display model for flow blocks
 struct BlockDisplayModel: Identifiable, Equatable {
     let blockIndex: Int
     let role: BlockRole

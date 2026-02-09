@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Block Role
 
-/// Semantic role for story blocks (backend classification, not displayed)
+/// Semantic role for flow blocks (backend classification, not displayed)
 enum BlockRole: String, Codable, CaseIterable {
     case setup = "SETUP"
     case momentumShift = "MOMENTUM_SHIFT"
@@ -121,7 +121,7 @@ struct BlockTeamMiniBox: Codable, Equatable {
 
 // MARK: - Block Mini Box
 
-/// Mini box score for a story block
+/// Mini box score for a flow block
 struct BlockMiniBox: Codable, Equatable {
     let home: BlockTeamMiniBox
     let away: BlockTeamMiniBox
@@ -137,10 +137,10 @@ struct BlockMiniBox: Codable, Equatable {
     }
 }
 
-// MARK: - Story Block
+// MARK: - Flow Block
 
-/// A narrative block in the game story
-struct StoryBlock: Codable, Identifiable, Equatable {
+/// A narrative block in the game flow
+struct FlowBlock: Codable, Identifiable, Equatable {
     let blockIndex: Int
     let role: BlockRole
     let momentIndices: [Int]
@@ -179,10 +179,10 @@ struct StoryBlock: Codable, Identifiable, Equatable {
     }
 }
 
-// MARK: - Story Play
+// MARK: - Flow Play
 
-/// Individual play details within the story
-struct StoryPlay: Codable, Identifiable, Equatable {
+/// Individual play details within the game flow
+struct FlowPlay: Codable, Identifiable, Equatable {
     let playId: Int
     let playIndex: Int
     let period: Int
@@ -197,14 +197,14 @@ struct StoryPlay: Codable, Identifiable, Equatable {
     var id: Int { playId }
 }
 
-// MARK: - Game Story Response
+// MARK: - Game Flow Response
 
 /// Response from the flow endpoint
-struct GameStoryResponse: Decodable {
+struct GameFlowResponse: Decodable {
     let gameId: Int
     let sport: String?
-    let plays: [StoryPlay]
-    let blocks: [StoryBlock]
+    let plays: [FlowPlay]
+    let blocks: [FlowBlock]
     let validationPassed: Bool
     let validationErrors: [String]
 
@@ -220,20 +220,20 @@ struct GameStoryResponse: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         gameId = try container.decode(Int.self, forKey: .gameId)
         sport = try container.decodeIfPresent(String.self, forKey: .sport)
-        plays = try container.decodeIfPresent([StoryPlay].self, forKey: .plays) ?? []
+        plays = try container.decodeIfPresent([FlowPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
 
         // Blocks are nested inside "flow" wrapper
         if container.contains(.flow) {
             let flowContainer = try container.nestedContainer(keyedBy: FlowKeys.self, forKey: .flow)
-            blocks = try flowContainer.decodeIfPresent([StoryBlock].self, forKey: .blocks) ?? []
+            blocks = try flowContainer.decodeIfPresent([FlowBlock].self, forKey: .blocks) ?? []
         } else {
             blocks = []
         }
     }
 
-    init(gameId: Int, sport: String? = nil, plays: [StoryPlay] = [], blocks: [StoryBlock] = [],
+    init(gameId: Int, sport: String? = nil, plays: [FlowPlay] = [], blocks: [FlowBlock] = [],
          validationPassed: Bool = true, validationErrors: [String] = []) {
         self.gameId = gameId
         self.sport = sport

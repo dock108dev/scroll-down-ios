@@ -313,13 +313,13 @@ struct HomeView: View {
         }
     }
 
-    /// Game card with conditional navigation based on story availability
+    /// Game card with conditional navigation based on flow availability
     @ViewBuilder
     private func gameCard(for game: GameSummary) -> some View {
         let rowView = GameRowView(game: game)
 
         if rowView.cardState.isTappable {
-            // Story available - enable navigation
+            // Flow available - enable navigation
             NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
                 rowView
             }
@@ -329,7 +329,7 @@ struct HomeView: View {
                 triggerHapticIfNeeded(for: game)
             })
         } else {
-            // Story pending or locked - no navigation, static card
+            // Flow pending or locked - no navigation, static card
             rowView
                 .allowsHitTesting(false)
         }

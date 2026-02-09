@@ -222,8 +222,8 @@ final class MockGameService: GameService {
         return events
     }
 
-    func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        // Mock service doesn't generate stories - use real API
+    func fetchFlow(gameId: Int) async throws -> GameFlowResponse {
+        // Mock service doesn't generate flow data - use real API
         throw GameServiceError.notFound
     }
 

@@ -27,13 +27,13 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var timelineArtifact: TimelineArtifactResponse?
     @Published private(set) var timelineArtifactState: TimelineArtifactState = .idle
 
-    // Story state
-    @Published private(set) var storyState: StoryState = .idle
-    @Published private(set) var storyResponse: GameStoryResponse?
+    // Flow state
+    @Published private(set) var flowState: FlowState = .idle
+    @Published private(set) var flowResponse: GameFlowResponse?
     @Published private(set) var blockDisplayModels: [BlockDisplayModel] = []
-    @Published private(set) var storyPlays: [StoryPlay] = []
+    @Published private(set) var flowPlays: [FlowPlay] = []
 
-    enum StoryState: Equatable {
+    enum FlowState: Equatable {
         case idle
         case loading
         case loaded
@@ -149,27 +149,27 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    func loadStory(gameId: Int, service: GameService) async {
-        switch storyState {
+    func loadFlow(gameId: Int, service: GameService) async {
+        switch flowState {
         case .loaded, .loading:
             return
         case .idle, .failed:
             break
         }
 
-        storyState = .loading
+        flowState = .loading
 
         do {
-            let response = try await service.fetchStory(gameId: gameId)
-            storyResponse = response
-            storyPlays = response.plays
+            let response = try await service.fetchFlow(gameId: gameId)
+            flowResponse = response
+            flowPlays = response.plays
             let sport = game?.leagueCode ?? response.sport ?? "NBA"
-            blockDisplayModels = StoryAdapter.convertToDisplayModels(from: response, sport: sport, socialPosts: detail?.socialPosts ?? [])
-            storyState = .loaded
-            logger.info("📖 Loaded story: \(response.blocks.count, privacy: .public) blocks, \(response.plays.count, privacy: .public) plays")
+            blockDisplayModels = FlowAdapter.convertToDisplayModels(from: response, sport: sport, socialPosts: detail?.socialPosts ?? [])
+            flowState = .loaded
+            logger.info("📖 Loaded flow: \(response.blocks.count, privacy: .public) blocks, \(response.plays.count, privacy: .public) plays")
         } catch {
-            logger.error("📖 Story fetch failed: \(error.localizedDescription, privacy: .public)")
-            storyState = .failed(error.localizedDescription)
+            logger.error("📖 Flow fetch failed: \(error.localizedDescription, privacy: .public)")
+            flowState = .failed(error.localizedDescription)
         }
     }
 
@@ -195,11 +195,11 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Story Computed Properties
+    // MARK: - Flow Computed Properties
 
-    /// Story is available if we have loaded blocks
-    var hasStoryData: Bool {
-        storyState == .loaded && !blockDisplayModels.isEmpty
+    /// Flow is available if we have loaded blocks
+    var hasFlowData: Bool {
+        flowState == .loaded && !blockDisplayModels.isEmpty
     }
 
     /// PBP is available from either main detail or separate fetch
@@ -208,21 +208,21 @@ final class GameDetailViewModel: ObservableObject {
         return !playsFromDetail.isEmpty || !pbpEvents.isEmpty
     }
 
-    /// Combined loading state for story and PBP
+    /// Combined loading state for flow and PBP
     var isLoadingAnyData: Bool {
-        isLoading || storyState == .loading || pbpState == .loading
+        isLoading || flowState == .loading || pbpState == .loading
     }
 
     /// No content available after all loading attempts completed
     var hasNoContent: Bool {
-        storyState != .loading && pbpState != .loading && !isLoading &&
-        !hasStoryData && !hasPbpData
+        flowState != .loading && pbpState != .loading && !isLoading &&
+        !hasFlowData && !hasPbpData
     }
 
     /// Get plays for a specific block
-    func playsForBlock(_ block: BlockDisplayModel) -> [StoryPlay] {
+    func playsForBlock(_ block: BlockDisplayModel) -> [FlowPlay] {
         let ids = Set(block.playIds)
-        return storyPlays.filter { ids.contains($0.playId) }
+        return flowPlays.filter { ids.contains($0.playId) }
     }
 
     /// Check if a play is a key play within a block
@@ -230,11 +230,11 @@ final class GameDetailViewModel: ObservableObject {
         block.keyPlayIds.contains(playId)
     }
 
-    /// Whether to show the Story View (completed games with story data)
-    var shouldShowStoryView: Bool {
+    /// Whether to show the Flow View (completed games with flow data)
+    var shouldShowFlowView: Bool {
         guard let game = game else { return false }
         let isCompleted = game.status == .completed || game.status == .final
-        return isCompleted && hasStoryData
+        return isCompleted && hasFlowData
     }
 
     /// Get social posts filtered by reveal level

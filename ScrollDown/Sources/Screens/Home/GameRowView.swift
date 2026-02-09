@@ -13,7 +13,7 @@ enum GameCardState {
 
 
 /// Row view for displaying a game summary in a list
-/// Supports three visual states: story available, story pending, and locked
+/// Supports three visual states: flow available, flow pending, and locked
 struct GameRowView: View {
     let game: GameSummary
 
@@ -175,8 +175,8 @@ struct GameRowView: View {
         }
     }
 
-    /// Whether this game has full story content (not just PBP)
-    private var hasFullStory: Bool {
+    /// Whether this game has full flow content (not just PBP)
+    private var hasFullFlow: Bool {
         (game.hasRequiredData == true) || (game.hasPbp == true && game.hasSocial == true)
     }
 
@@ -184,7 +184,7 @@ struct GameRowView: View {
         let stateDescription: String
         switch cardState {
         case .available:
-            stateDescription = "Tap to read story"
+            stateDescription = "Tap to view game flow"
         case .comingSoon:
             stateDescription = "Coming soon, play-by-play data is being processed"
         case .locked:
@@ -194,7 +194,7 @@ struct GameRowView: View {
     }
 
     private var accessibilityHint: String {
-        cardState.isTappable ? "Double tap to read story" : ""
+        cardState.isTappable ? "Double tap to view game flow" : ""
     }
 }
 

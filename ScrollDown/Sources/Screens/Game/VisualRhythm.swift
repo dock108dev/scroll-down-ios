@@ -291,7 +291,7 @@ struct TierTransition: View {
 
 #Preview("Section Header - Primary") {
     VStack(alignment: .leading, spacing: 20) {
-        SectionHeader(title: "Game Story", tier: .primary)
+        SectionHeader(title: "Game Flow", tier: .primary)
         Text("Primary content with generous spacing...")
             .font(.body)
     }

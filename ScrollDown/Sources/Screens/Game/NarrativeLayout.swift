@@ -31,10 +31,10 @@ struct NarrativeSpine: View {
     }
 }
 
-// MARK: - Story Block Card View
+// MARK: - Flow Block Card View
 
-/// A single story block with narrative and mini box score
-struct StoryBlockCardView: View {
+/// A single flow block with narrative and mini box score
+struct FlowBlockCardView: View {
     let block: BlockDisplayModel
     let homeTeam: String
     let awayTeam: String
@@ -175,7 +175,7 @@ struct MiniBoxScoreView: View {
 
 // MARK: - Embedded Social Post View
 
-/// Displays an embedded social post within a story block
+/// Displays an embedded social post within a flow block
 struct EmbeddedSocialPostView: View {
     let post: SocialPostEntry
 
@@ -206,10 +206,10 @@ struct EmbeddedSocialPostView: View {
     }
 }
 
-// MARK: - Story Container View
+// MARK: - Flow Container View
 
-/// Container for story blocks
-struct StoryContainerView: View {
+/// Container for flow blocks
+struct FlowContainerView: View {
     @ObservedObject var viewModel: GameDetailViewModel
 
     var body: some View {
@@ -224,7 +224,7 @@ struct StoryContainerView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(blocks) { block in
-                    StoryBlockCardView(
+                    FlowBlockCardView(
                         block: block,
                         homeTeam: homeTeam,
                         awayTeam: awayTeam,

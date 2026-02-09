@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// Main story view container for completed games
-struct GameStoryView: View {
+/// Main flow view container for completed games
+struct GameFlowView: View {
     @ObservedObject var viewModel: GameDetailViewModel
-    @Binding var isCompactStoryExpanded: Bool
+    @Binding var isCompactFlowExpanded: Bool
     @State private var showingFullPlayByPlay = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            StoryContainerView(viewModel: viewModel)
+            FlowContainerView(viewModel: viewModel)
 
             if viewModel.hasUnifiedTimeline {
                 ContentBreak()

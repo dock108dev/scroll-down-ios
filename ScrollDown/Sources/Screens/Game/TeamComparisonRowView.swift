@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Team Stats Container
-/// Simplified team stats view that tells the story of how the game tilted.
+/// Simplified team stats view that shows how the game tilted.
 /// Design: Team identity at top, stats grouped logically, numbers primary.
 /// iPad: Multi-column layout for better use of space and improved readability.
 

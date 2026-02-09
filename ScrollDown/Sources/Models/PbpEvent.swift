@@ -265,7 +265,7 @@ extension PlayEntry {
     }
 }
 
-extension StoryPlay {
+extension FlowPlay {
     /// Extracts player name from the play
     var effectivePlayerName: String? {
         if let name = playerName, !name.isEmpty {

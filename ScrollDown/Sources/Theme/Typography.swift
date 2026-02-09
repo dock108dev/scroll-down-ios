@@ -9,13 +9,13 @@ import SwiftUI
 /// Four explicit text roles - never use system defaults interchangeably
 enum TextStyle {
     // MARK: - Narrative Text (Primary Reading)
-    /// Used for: Game Story paragraphs, narrative summaries, inline explanations
+    /// Used for: Game Flow paragraphs, narrative summaries, inline explanations
     /// Feels like a book or article, not a system label
     case narrative
     case narrativeEmphasis  // For highlighted moments
 
     // MARK: - Section Headers (Orientation)
-    /// Used for: Game Story header, Momentum/Player Impact headers
+    /// Used for: Game Flow header, Momentum/Player Impact headers
     /// Headers orient - they do not shout
     case sectionHeader
     case subSectionHeader
@@ -334,7 +334,7 @@ struct NarrativeParagraph<Content: View>: View {
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
 
-                SectionHeaderText("Game Story")
+                SectionHeaderText("Game Flow")
                 SectionHeaderText("Player Impact", subsection: true)
             }
 
@@ -386,7 +386,7 @@ struct NarrativeParagraph<Content: View>: View {
 #Preview("Narrative Paragraph Flow") {
     ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeaderText("Game Story")
+            SectionHeaderText("Game Flow")
 
             NarrativeParagraph {
                 MetadataText("Q1 12:00 – 8:30", small: true)

@@ -2,16 +2,16 @@ import SwiftUI
 
 extension GameDetailView {
     /// Timeline section implements content hierarchy:
-    /// - Game Story: Card container for visual consistency with other sections
+    /// - Game Flow: Card container for visual consistency with other sections
     /// - PBP Timeline: Card container, collapsed by default
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: TierLayout.Primary.momentSpacing) {
-            // Game Story - wrapped in card for visual consistency
-            if viewModel.hasStoryData {
+            // Game Flow - wrapped in card for visual consistency
+            if viewModel.hasFlowData {
                 FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
-                    GameStoryView(
+                    GameFlowView(
                         viewModel: viewModel,
-                        isCompactStoryExpanded: $isCompactStoryExpanded
+                        isCompactFlowExpanded: $isCompactFlowExpanded
                     )
                 }
             }
@@ -59,8 +59,8 @@ extension GameDetailView {
     }
 
     private var timelineSubtitle: String {
-        if viewModel.hasStoryData {
-            return "Game Story"
+        if viewModel.hasFlowData {
+            return "Game Flow"
         }
 
         let events = viewModel.unifiedTimelineEvents
@@ -73,18 +73,18 @@ extension GameDetailView {
 
     func timelineContent(using proxy: ScrollViewProxy) -> some View {
         VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Priority 1: Show story if available (story with moments)
-            if viewModel.hasStoryData {
-                GameStoryView(
+            // Priority 1: Show flow if available (flow with blocks)
+            if viewModel.hasFlowData {
+                GameFlowView(
                     viewModel: viewModel,
-                    isCompactStoryExpanded: $isCompactStoryExpanded
+                    isCompactFlowExpanded: $isCompactFlowExpanded
                 )
             }
             // Priority 2: Show PBP grouped by period (from PBP API or detail.plays)
             else if viewModel.hasPbpData {
                 unifiedTimelineView
             }
-            // Priority 3: Still loading story or PBP
+            // Priority 3: Still loading flow or PBP
             else if viewModel.isLoadingAnyData {
                 timelineLoadingView
             }

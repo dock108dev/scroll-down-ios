@@ -10,7 +10,7 @@ import SwiftUI
 /// - Supporting (Tier 3): Card for interactive/explorable content
 /// - Reference (Tier 4): Card for deep-dive data
 enum ContentTier: Int {
-    case primary = 1      // Game Story - the main content (EMBEDDED)
+    case primary = 1      // Game Flow - the main content (EMBEDDED)
     case secondary = 2    // Momentum/Swings - optional exploration (CARD)
     case supporting = 3   // Player Impact - interactive (CARD)
     case reference = 4    // Raw Data - reference (CARD)
@@ -69,7 +69,7 @@ enum ContentTier: Int {
 
 /// Tier-specific layout configuration
 enum TierLayout {
-    // MARK: - Tier 1: Primary (Game Story)
+    // MARK: - Tier 1: Primary (Game Flow)
     enum Primary {
         static let verticalSpacing: CGFloat = 24
         static let horizontalPadding: CGFloat = 20
@@ -133,7 +133,7 @@ struct Tier1Container<Content: View>: View {
 
 // MARK: - Flow Card Container (Primary Content with Card)
 
-/// Flow/Story content container - primary content wrapped in a card
+/// Flow content container - primary content wrapped in a card
 /// Unlike Tier1Container, this provides visual containment matching other sections
 /// Collapsible like other card sections
 struct FlowCardContainer<Content: View>: View {

@@ -198,7 +198,7 @@ private struct StubGameService: GameService {
         )
     }
 
-    func fetchStory(gameId: Int) async throws -> GameStoryResponse {
-        GameStoryResponse(gameId: gameId, sport: "NBA")
+    func fetchFlow(gameId: Int) async throws -> GameFlowResponse {
+        GameFlowResponse(gameId: gameId, sport: "NBA")
     }
 }

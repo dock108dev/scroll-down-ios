@@ -115,7 +115,7 @@ final class RealGameService: GameService {
         try await request(path: "api/admin/sports/timelines/game/\(gameId)", queryItems: [])
     }
 
-    func fetchStory(gameId: Int) async throws -> GameStoryResponse {
+    func fetchFlow(gameId: Int) async throws -> GameFlowResponse {
         try await request(path: "api/admin/sports/games/\(gameId)/flow", queryItems: [])
     }
 

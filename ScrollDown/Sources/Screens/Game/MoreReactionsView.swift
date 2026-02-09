@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Collapsible section for social posts that couldn't be matched to story sections
+/// Collapsible section for social posts that couldn't be matched to flow sections
 /// Hidden when empty, collapsed by default
 struct MoreReactionsView: View {
     let posts: [UnifiedTimelineEvent]

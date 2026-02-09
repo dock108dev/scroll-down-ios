@@ -12,15 +12,15 @@ struct GameDetailView: View {
     @State var selectedSection: GameSection = .overview
     @State var collapsedQuarters: Set<Int> = []
     @State var hasInitializedQuarters = false
-    @State var isCompactStoryExpanded = false
+    @State var isCompactFlowExpanded = false
     // Content Hierarchy Default States:
-    // Tier 1 (Game Story): Always expanded - handled by GameStoryView
-    // Tier 2 (Timeline): Collapsed by default unless no story
+    // Tier 1 (Game Flow): Always expanded - handled by GameFlowView
+    // Tier 2 (Timeline): Collapsed by default unless no flow
     // Tier 3 (Stats): Collapsed by default
     // Tier 4 (Reference): Collapsed by default
     @State var isFlowCardExpanded = true  // Flow Card: expanded by default (primary content)
     @State var isOverviewExpanded = false  // Tier 4: Reference
-    @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no story)
+    @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no flow)
     @State var isPlayerStatsExpanded = false  // Tier 3: Supporting
     @State var playerStatsTeamFilter: String? = nil
     @State var isTeamStatsExpanded = false  // Tier 3: Supporting
@@ -76,16 +76,16 @@ struct GameDetailView: View {
                 // Load user preferences
                 viewModel.loadSocialTabPreference(for: gameId)
 
-                // Load timeline and social in parallel with story loading
+                // Load timeline and social in parallel with flow loading
                 async let timelineTask: () = viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
                 async let socialTask: () = loadSocialIfEnabled()
 
-                // 1. First try story
-                await viewModel.loadStory(gameId: gameId, service: appConfig.gameService)
+                // 1. First try flow
+                await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
 
-                // 2. If story found, collapse timeline (users can expand to see full PBP)
-                //    If no story, fetch PBP as fallback and keep timeline expanded
-                if viewModel.hasStoryData {
+                // 2. If flow found, collapse timeline (users can expand to see full PBP)
+                //    If no flow, fetch PBP as fallback and keep timeline expanded
+                if viewModel.hasFlowData {
                     isTimelineExpanded = false
                 } else {
                     await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
@@ -218,7 +218,7 @@ struct GameDetailView: View {
                                     SectionSpacer(.medium)
                                 }
 
-                                // Flow section (story blocks or PBP)
+                                // Flow section (flow blocks or PBP)
                                 VStack(spacing: 0) {
                                     sectionAnchor(for: .timeline)
                                     timelineSection(using: proxy)

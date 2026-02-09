@@ -12,17 +12,17 @@ extension GameDetailViewModel {
         // Get sport for period labeling (NBA, NHL, NCAAB, etc.)
         let sport = detail?.game.leagueCode
 
-        // Priority: detail.plays > storyPlays > pbpEvents
+        // Priority: detail.plays > flowPlays > pbpEvents
         let plays = detail?.plays ?? []
         if !plays.isEmpty {
             let playEvents = plays.enumerated().map { index, play in
                 UnifiedTimelineEvent(from: playToDictionary(play), index: index, sport: sport)
             }
             events.append(contentsOf: playEvents)
-        } else if !storyPlays.isEmpty {
-            // Use story plays if available (when story loaded but detail.plays is empty)
-            let playEvents = storyPlays.enumerated().map { index, play in
-                UnifiedTimelineEvent(from: storyPlayToDictionary(play), index: index, sport: sport)
+        } else if !flowPlays.isEmpty {
+            // Use flow plays if available (when flow loaded but detail.plays is empty)
+            let playEvents = flowPlays.enumerated().map { index, play in
+                UnifiedTimelineEvent(from: flowPlayToDictionary(play), index: index, sport: sport)
             }
             events.append(contentsOf: playEvents)
         } else if !pbpEvents.isEmpty {
@@ -49,10 +49,10 @@ extension GameDetailViewModel {
     }
 
     /// Whether timeline/PBP data is available for "View All Plays"
-    /// True if we have: story plays, detail plays, or separately fetched PBP events
+    /// True if we have: flow plays, detail plays, or separately fetched PBP events
     var hasUnifiedTimeline: Bool {
-        // Story plays are available
-        if !storyPlays.isEmpty {
+        // Flow plays are available
+        if !flowPlays.isEmpty {
             return true
         }
         // Regular timeline events are available
@@ -260,8 +260,8 @@ extension GameDetailViewModel {
         return dict
     }
 
-    /// Convert StoryPlay to dictionary for UnifiedTimelineEvent parsing
-    func storyPlayToDictionary(_ play: StoryPlay) -> [String: Any] {
+    /// Convert FlowPlay to dictionary for UnifiedTimelineEvent parsing
+    func flowPlayToDictionary(_ play: FlowPlay) -> [String: Any] {
         var dict: [String: Any] = [
             "event_type": "pbp",
             "play_index": play.playIndex,

@@ -30,10 +30,10 @@ protocol GameService {
     /// - Returns: Timeline artifact response
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse
 
-    /// Fetch game story (moments-based)
+    /// Fetch game flow
     /// - Parameter gameId: The game ID
-    /// - Returns: Story response with moments and plays
-    func fetchStory(gameId: Int) async throws -> GameStoryResponse
+    /// - Returns: Flow response with blocks and plays
+    func fetchFlow(gameId: Int) async throws -> GameFlowResponse
 }
 
 // MARK: - Reveal Level

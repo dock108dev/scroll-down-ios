@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Game Header View
-/// Editorial, story-first header anchoring context, not score.
+/// Editorial, flow-first header anchoring context, not score.
 /// Design philosophy: Calm, intentional, identical across all leagues.
 
 struct GameHeaderView: View {

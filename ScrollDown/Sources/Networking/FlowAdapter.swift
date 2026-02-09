@@ -1,11 +1,11 @@
 import Foundation
 
-// MARK: - Story Adapter
+// MARK: - Flow Adapter
 
-/// Converts story response to display models
-enum StoryAdapter {
+/// Converts flow response to display models
+enum FlowAdapter {
     static func convertToDisplayModels(
-        from response: GameStoryResponse,
+        from response: GameFlowResponse,
         sport: String? = nil,
         socialPosts: [SocialPostEntry] = []
     ) -> [BlockDisplayModel] {
