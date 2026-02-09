@@ -45,10 +45,13 @@ struct SocialPostCardView: View {
             }
             
             // Media preview
-            if post.hasVideo, let videoUrl = post.videoUrl {
-                mediaPreview(url: videoUrl, type: "Video")
-            } else if let imageUrl = post.imageUrl {
-                mediaPreview(url: imageUrl, type: "Image")
+            if post.imageUrl != nil || post.videoUrl != nil {
+                SocialMediaPreview(
+                    imageUrl: post.imageUrl,
+                    videoUrl: post.videoUrl,
+                    postUrl: post.postUrl,
+                    height: 160
+                )
             }
             
             // Source attribution
@@ -71,23 +74,6 @@ struct SocialPostCardView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Social post from \(post.teamId)")
-    }
-    
-    /// Media preview placeholder
-    private func mediaPreview(url: String, type: String) -> some View {
-        HStack(spacing: Layout.smallSpacing) {
-            Image(systemName: type == "Video" ? "play.rectangle" : "photo")
-                .font(.caption)
-            Text("\(type) available")
-                .font(.caption)
-            Spacer()
-            Image(systemName: "arrow.up.right")
-                .font(.caption2)
-        }
-        .foregroundColor(.secondary)
-        .padding(Layout.mediaPreviewPadding)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: Layout.smallCornerRadius))
     }
     
     /// Border color: subtle differentiation for post-reveal content
@@ -133,6 +119,79 @@ private enum Layout {
     static let cornerRadius: CGFloat = 12
     static let smallCornerRadius: CGFloat = 8
     static let borderWidth: CGFloat = 1
+}
+
+// MARK: - Shared Social Media Preview
+
+/// Reusable media preview that loads images via AsyncImage and shows video thumbnails
+struct SocialMediaPreview: View {
+    let imageUrl: String?
+    let videoUrl: String?
+    var postUrl: String? = nil
+    var height: CGFloat = 180
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if let imageUrlString = imageUrl, let url = URL(string: imageUrlString) {
+            Button {
+                openPost()
+            } label: {
+                ZStack {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color(.systemGray6))
+                            .overlay { ProgressView() }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: height)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    if videoUrl != nil {
+                        Circle()
+                            .fill(.black.opacity(0.5))
+                            .frame(width: 44, height: 44)
+                            .overlay {
+                                Image(systemName: "play.fill")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 18))
+                            }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+        } else if videoUrl != nil {
+            Button {
+                openPost()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.rectangle.fill")
+                        .font(.title3)
+                    Text("Watch video")
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
+                .padding(12)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func openPost() {
+        if let postUrl, let url = URL(string: postUrl) {
+            openURL(url)
+        }
+    }
 }
 
 #Preview {

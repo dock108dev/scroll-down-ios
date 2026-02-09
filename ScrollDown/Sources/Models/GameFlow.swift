@@ -128,8 +128,7 @@ struct BlockMiniBox: Codable, Equatable {
     let blockStars: [String]
 
     enum CodingKeys: String, CodingKey {
-        case home, away
-        case blockStars = "block_stars"
+        case home, away, blockStars
     }
 
     func isBlockStar(_ name: String) -> Bool {
@@ -209,11 +208,7 @@ struct GameFlowResponse: Decodable {
     let validationErrors: [String]
 
     enum CodingKeys: String, CodingKey {
-        case gameId, sport, plays, flow, validationPassed, validationErrors
-    }
-
-    enum FlowKeys: String, CodingKey {
-        case blocks, moments
+        case gameId, sport, plays, blocks, validationPassed, validationErrors
     }
 
     init(from decoder: Decoder) throws {
@@ -223,14 +218,7 @@ struct GameFlowResponse: Decodable {
         plays = try container.decodeIfPresent([FlowPlay].self, forKey: .plays) ?? []
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
-
-        // Blocks are nested inside "flow" wrapper
-        if container.contains(.flow) {
-            let flowContainer = try container.nestedContainer(keyedBy: FlowKeys.self, forKey: .flow)
-            blocks = try flowContainer.decodeIfPresent([FlowBlock].self, forKey: .blocks) ?? []
-        } else {
-            blocks = []
-        }
+        blocks = try container.decodeIfPresent([FlowBlock].self, forKey: .blocks) ?? []
     }
 
     init(gameId: Int, sport: String? = nil, plays: [FlowPlay] = [], blocks: [FlowBlock] = [],

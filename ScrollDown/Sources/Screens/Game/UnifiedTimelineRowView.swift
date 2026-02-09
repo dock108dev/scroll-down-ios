@@ -150,16 +150,14 @@ struct UnifiedTimelineRowView: View {
                     .foregroundColor(DesignSystem.TextColor.primary)
             }
             
-            // Media preview — NEUTRAL secondary
+            // Media preview
             if event.imageUrl != nil || event.videoUrl != nil {
-                HStack {
-                    Image(systemName: event.videoUrl != nil ? "play.rectangle.fill" : "photo.fill")
-                        .font(layout.metaFont)
-                        .foregroundColor(DesignSystem.TextColor.secondary)
-                    Text(event.videoUrl != nil ? "Video" : "Image")
-                        .font(layout.metaFont)
-                        .foregroundColor(DesignSystem.TextColor.secondary)
-                }
+                SocialMediaPreview(
+                    imageUrl: event.imageUrl,
+                    videoUrl: event.videoUrl,
+                    postUrl: event.tweetUrl,
+                    height: 140
+                )
             }
         }
         .padding(layout.rowPadding)

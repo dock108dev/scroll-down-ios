@@ -205,30 +205,17 @@ extension GameDetailView {
                     .foregroundColor(.primary)
             }
 
-            if post.hasVideo, post.videoUrl != nil {
-                wrapUpMediaIndicator(type: "Video")
-            } else if post.imageUrl != nil {
-                wrapUpMediaIndicator(type: "Image")
+            if post.imageUrl != nil || post.videoUrl != nil {
+                SocialMediaPreview(
+                    imageUrl: post.imageUrl,
+                    videoUrl: post.videoUrl,
+                    postUrl: post.postUrl,
+                    height: 160
+                )
             }
         }
         .padding(DesignSystem.Spacing.elementPadding)
         .background(DesignSystem.Colors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-    }
-
-    private func wrapUpMediaIndicator(type: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: type == "Video" ? "play.rectangle" : "photo")
-                .font(.caption)
-            Text("\(type) available")
-                .font(.caption)
-            Spacer()
-            Image(systemName: "arrow.up.right")
-                .font(.caption2)
-        }
-        .foregroundColor(.secondary)
-        .padding(10)
-        .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
 

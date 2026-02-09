@@ -195,6 +195,14 @@ struct EmbeddedSocialPostView: View {
                     .foregroundColor(DesignSystem.TextColor.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if post.imageUrl != nil || post.videoUrl != nil {
+                SocialMediaPreview(
+                    imageUrl: post.imageUrl,
+                    videoUrl: post.videoUrl,
+                    postUrl: post.postUrl,
+                    height: 140
+                )
+            }
         }
         .padding(12)
         .background(DesignSystem.Colors.cardBackground.opacity(0.3))

@@ -147,14 +147,16 @@ extension GameDetailViewModel {
 
     // MARK: - Phase-Filtered Social Posts
 
-    /// Pregame social posts based on server-assigned gamePhase
+    /// Pregame social posts based on server-assigned gamePhase (oldest first)
     var pregameSocialPosts: [SocialPostEntry] {
-        detail?.socialPosts.filter { $0.gamePhase == "pregame" && $0.hasContent } ?? []
+        (detail?.socialPosts.filter { $0.gamePhase == "pregame" && $0.hasContent } ?? [])
+            .sorted { $0.postedAt < $1.postedAt }
     }
 
-    /// Postgame social posts based on server-assigned gamePhase
+    /// Postgame social posts based on server-assigned gamePhase (oldest first)
     var postgameSocialPosts: [SocialPostEntry] {
-        detail?.socialPosts.filter { $0.gamePhase == "postgame" && $0.hasContent } ?? []
+        (detail?.socialPosts.filter { $0.gamePhase == "postgame" && $0.hasContent } ?? [])
+            .sorted { $0.postedAt < $1.postedAt }
     }
 
     // MARK: - Timeline Parsing Helpers
