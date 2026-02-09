@@ -155,6 +155,21 @@ struct APIBet: Identifiable, Codable, Equatable {
     }
 }
 
+// MARK: - Book Filtering
+
+extension APIBet {
+    /// Returns a copy of this bet with books filtered to only the allowed set.
+    func filteringBooks(to allowedBooks: Set<String>) -> APIBet {
+        APIBet(
+            gameId: gameId, leagueCode: leagueCode,
+            homeTeam: homeTeam, awayTeam: awayTeam,
+            gameDate: gameDate, marketKey: marketKey,
+            selectionKey: selectionKey, lineValue: lineValue,
+            books: books.filter { allowedBooks.contains($0.name) }
+        )
+    }
+}
+
 /// Sportsbook price from the API
 struct BookPrice: Identifiable, Codable, Equatable {
     let book: String

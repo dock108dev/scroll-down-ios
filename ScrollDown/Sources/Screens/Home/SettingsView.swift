@@ -8,11 +8,6 @@ struct SettingsView: View {
         "FanDuel",
         "BetMGM",
         "Caesars",
-        "PointsBet",
-        "BetRivers",
-        "Fanatics",
-        "ESPN BET",
-        "Hard Rock Bet",
         "bet365"
     ]
 

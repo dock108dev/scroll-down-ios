@@ -11,6 +11,11 @@ import SwiftUI
 
 @MainActor
 final class OddsComparisonViewModel: ObservableObject {
+    /// Only include odds from these 5 sportsbooks
+    static let allowedBooks: Set<String> = [
+        "DraftKings", "FanDuel", "BetMGM", "Caesars", "bet365"
+    ]
+
     private enum StorageKeys {
         static let oddsFormat = "oddsFormatPreference"
         static let hideLimitedData = "hideLimitedData"
@@ -184,6 +189,9 @@ final class OddsComparisonViewModel: ObservableObject {
             }
 
             allBets = allFetchedBets
+                .map { $0.filteringBooks(to: Self.allowedBooks) }
+                .filter { !$0.books.isEmpty }
+            booksAvailable = booksAvailable.filter { Self.allowedBooks.contains($0) }
             loadingProgress = "Calculating EV for \(allBets.count) bets..."
 
             // Pre-compute pairs once (O(n) instead of O(n²))
@@ -222,7 +230,9 @@ final class OddsComparisonViewModel: ObservableObject {
     func loadMockData() {
         let response = mockDataProvider.getMockBetsResponse()
         allBets = response.bets
-        booksAvailable = response.booksAvailable
+            .map { $0.filteringBooks(to: Self.allowedBooks) }
+            .filter { !$0.books.isEmpty }
+        booksAvailable = response.booksAvailable.filter { Self.allowedBooks.contains($0) }
         cachedPairs = BetPairingService.pairBets(allBets)
         computeAllEVs()
         applyFilters()
