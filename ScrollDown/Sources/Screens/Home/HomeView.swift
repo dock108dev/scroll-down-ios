@@ -231,6 +231,7 @@ struct HomeView: View {
                         }
                     }
                 }
+                .id(refreshId)
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
             }
             .onAppear { refreshId = UUID() }
@@ -310,7 +311,6 @@ struct HomeView: View {
                     gameCard(for: game)
                 }
             }
-            .id(refreshId)
             .padding(.horizontal, horizontalPadding)
             .transition(.opacity.animation(.easeIn(duration: 0.2)))
         }
