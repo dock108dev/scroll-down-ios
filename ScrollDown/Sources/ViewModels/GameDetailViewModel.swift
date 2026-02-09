@@ -394,6 +394,132 @@ final class GameDetailViewModel: ObservableObject {
         detail?.dataHealth?.isHealthy ?? true
     }
 
+    // MARK: - Odds Result
+
+    var oddsResult: OddsResult? {
+        guard let detail, let game = detail.game as Game? else { return nil }
+        guard game.status.isCompleted else { return nil }
+        guard let homeScore = game.homeScore, let awayScore = game.awayScore else { return nil }
+        let odds = detail.odds
+        guard !odds.isEmpty else { return nil }
+
+        let preferredBook = UserDefaults.standard.string(forKey: "preferredSportsbook") ?? "DraftKings"
+
+        // Find best entry for a given market/side using fallback priority:
+        // 1. Preferred book closing line
+        // 2. Preferred book any line
+        // 3. Any book closing line
+        // 4. Any book any line
+        func bestEntry(market: MarketType, side: String) -> OddsEntry? {
+            let matches = odds.filter { $0.marketType == market && $0.side == side }
+            if let e = matches.first(where: { $0.book == preferredBook && $0.isClosingLine }) { return e }
+            if let e = matches.first(where: { $0.book == preferredBook }) { return e }
+            if let e = matches.first(where: { $0.isClosingLine }) { return e }
+            return matches.first
+        }
+
+        let resolvedBook: String
+
+        // Spread
+        var spreadResult: OddsResult.SpreadResult?
+        let homeSpread = bestEntry(market: .spread, side: game.homeTeam)
+        let awaySpread = bestEntry(market: .spread, side: game.awayTeam)
+        let spreadEntry = homeSpread ?? awaySpread
+        if let entry = spreadEntry, let line = entry.line {
+            resolvedBook = entry.book
+            let favoredTeam: String
+            let favoredLine: Double
+            if line < 0 {
+                favoredTeam = entry.side ?? game.homeTeam
+                favoredLine = line
+            } else if line > 0 {
+                // This side is the underdog — the other team is favored
+                let otherTeam = (entry.side == game.homeTeam) ? game.awayTeam : game.homeTeam
+                favoredTeam = otherTeam
+                favoredLine = -line
+            } else {
+                favoredTeam = entry.side ?? game.homeTeam
+                favoredLine = 0
+            }
+            let margin: Int
+            if favoredTeam == game.homeTeam {
+                margin = homeScore - awayScore
+            } else {
+                margin = awayScore - homeScore
+            }
+            let absLine = abs(favoredLine)
+            let push = Double(margin) == absLine
+            let covered = Double(margin) > absLine
+            spreadResult = OddsResult.SpreadResult(
+                favoredTeam: TeamAbbreviations.abbreviation(for: favoredTeam),
+                line: favoredLine,
+                covered: covered,
+                push: push
+            )
+        } else {
+            resolvedBook = preferredBook
+        }
+
+        // Total (O/U)
+        var totalResult: OddsResult.TotalResult?
+        if let overEntry = bestEntry(market: .total, side: "over"), let line = overEntry.line {
+            let actualTotal = homeScore + awayScore
+            let push = Double(actualTotal) == line
+            let wentOver = Double(actualTotal) > line
+            totalResult = OddsResult.TotalResult(
+                line: line,
+                actualTotal: actualTotal,
+                wentOver: wentOver,
+                push: push
+            )
+        }
+
+        // Moneyline
+        var moneylineResult: OddsResult.MoneylineResult?
+        let homeML = bestEntry(market: .moneyline, side: game.homeTeam)
+        let awayML = bestEntry(market: .moneyline, side: game.awayTeam)
+        if let hml = homeML, let aml = awayML,
+           let hp = hml.price, let ap = aml.price {
+            let favoredTeam: String
+            let underdogTeam: String
+            let favoredPrice: Int
+            let underdogPrice: Int
+            if hp < ap {
+                favoredTeam = game.homeTeam
+                underdogTeam = game.awayTeam
+                favoredPrice = Int(hp)
+                underdogPrice = Int(ap)
+            } else {
+                favoredTeam = game.awayTeam
+                underdogTeam = game.homeTeam
+                favoredPrice = Int(ap)
+                underdogPrice = Int(hp)
+            }
+            let favoriteWon: Bool
+            if favoredTeam == game.homeTeam {
+                favoriteWon = homeScore > awayScore
+            } else {
+                favoriteWon = awayScore > homeScore
+            }
+            moneylineResult = OddsResult.MoneylineResult(
+                favoredTeam: TeamAbbreviations.abbreviation(for: favoredTeam),
+                favoredPrice: favoredPrice,
+                underdogTeam: TeamAbbreviations.abbreviation(for: underdogTeam),
+                underdogPrice: underdogPrice,
+                favoriteWon: favoriteWon
+            )
+        }
+
+        guard spreadResult != nil || totalResult != nil || moneylineResult != nil else { return nil }
+
+        return OddsResult(
+            bookName: spreadEntry?.book ?? resolvedBook,
+            spread: spreadResult,
+            total: totalResult,
+            moneyline: moneylineResult
+        )
+    }
+
     // MARK: - Private Helpers
 
     private func timelineGameId(for gameId: Int) -> Int {
@@ -434,6 +560,37 @@ final class GameDetailViewModel: ObservableObject {
     private func scoreDisplay(home: Int?, away: Int?) -> String? {
         guard let home, let away else { return nil }
         return "\(away) - \(home)"
+    }
+}
+
+// MARK: - Odds Result Types
+
+struct OddsResult {
+    let bookName: String
+    let spread: SpreadResult?
+    let total: TotalResult?
+    let moneyline: MoneylineResult?
+
+    struct SpreadResult {
+        let favoredTeam: String
+        let line: Double
+        let covered: Bool
+        let push: Bool
+    }
+
+    struct TotalResult {
+        let line: Double
+        let actualTotal: Int
+        let wentOver: Bool
+        let push: Bool
+    }
+
+    struct MoneylineResult {
+        let favoredTeam: String
+        let favoredPrice: Int
+        let underdogTeam: String
+        let underdogPrice: Int
+        let favoriteWon: Bool
     }
 }
 

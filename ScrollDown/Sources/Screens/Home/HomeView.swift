@@ -107,7 +107,7 @@ struct HomeView: View {
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
                 }
                 .background(HomeTheme.background)
-            } else {
+            } else if viewMode == .odds {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: HomeLayout.filterSpacing) {
                         oddsLeagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
@@ -178,8 +178,10 @@ struct HomeView: View {
                 } else {
                     gameListView
                 }
-            } else {
+            } else if viewMode == .odds {
                 OddsComparisonView(viewModel: oddsViewModel)
+            } else {
+                SettingsView()
             }
         }
     }

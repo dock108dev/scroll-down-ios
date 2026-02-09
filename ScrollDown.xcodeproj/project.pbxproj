@@ -97,6 +97,7 @@
 		STORY001000000000000007 /* GameFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000008 /* GameFlowView.swift */; };
 		STORY00100000000000000B /* MoreReactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000C /* MoreReactionsView.swift */; };
 		STORY00100000000000000D /* FullPlayByPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000E /* FullPlayByPlayView.swift */; };
+		F2E1D0C9B8A7F6E5D4C3B2A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -190,6 +191,7 @@
 		STORY001000000000000008 /* GameFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameFlowView.swift; sourceTree = "<group>"; };
 		STORY00100000000000000C /* MoreReactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoreReactionsView.swift; sourceTree = "<group>"; };
 		STORY00100000000000000E /* FullPlayByPlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FullPlayByPlayView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -325,6 +327,7 @@
 				0AADCA528A2C95E3311E6A78 /* HomeTheme.swift */,
 				B9075A075C8B6ACA78BE487A /* HomeView.swift */,
 				DF1E2F9CCDAA151BBB872DA6 /* HomeViewSupport.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -624,6 +627,7 @@
 				64A236D86CFE5306390C8718 /* GameFlowDisplay.swift in Sources */,
 				04E0E81409E9CF33F84FA1F5 /* FlowAdapter.swift in Sources */,
 				16C676513902F4901D80098A /* HomeViewSupport.swift in Sources */,
+				F2E1D0C9B8A7F6E5D4C3B2A1 /* SettingsView.swift in Sources */,
 				4A70E261308F486937F45170 /* TeamView.swift in Sources */,
 				B23F900B963764515587B020 /* PlayTier.swift in Sources */,
 				459DF1DF6064B89414EF07AD /* TieredPlayRowView.swift in Sources */,
