@@ -2,8 +2,7 @@
 //  BetCardV2.swift
 //  ScrollDown
 //
-//  Compact bet cards - tap to expand for details
-//  Default view answers "Is this worth betting?" at a glance
+//  Always-open bet cards with organized layout
 //
 
 import SwiftUI
@@ -12,8 +11,6 @@ struct BetCardV2: View {
     let bet: APIBet
     let oddsFormat: OddsFormat
     let evResult: OddsComparisonViewModel.EVResult?
-
-    @State private var isExpanded = false
 
     // MARK: - Computed Properties
 
@@ -48,16 +45,78 @@ struct BetCardV2: View {
         bet.books.sorted { $0.price > $1.price }
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Compact default view
-            compactView
+    private var opponentName: String {
+        bet.selection == bet.homeTeam ? bet.awayTeam : bet.homeTeam
+    }
 
-            // Expanded details
-            if isExpanded {
-                expandedDetails
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Row 1: Selection name + League badge & Market
+            HStack(alignment: .top) {
+                Text(bet.selectionDisplay)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    LeagueBadgeSmall(league: bet.league)
+                    Text(FairBetCopy.marketLabel(for: bet.market.rawValue))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
+
+            // Row 2: Opponent + Date/Time
+            HStack {
+                Text("vs \(opponentName)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Text(formattedTime)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // Row 3: EV + Best book (right-aligned)
+            if let ev = bestBookEV, let best = bestBook {
+                HStack {
+                    Spacer()
+                    Text(FairBetCopy.formatEV(ev))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundColor(evColor(for: ev))
+                    Text("\(abbreviatedBookName(best.name)) \(FairBetCopy.formatOdds(best.price))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            // Row 4: Fair Odds + Confidence
+            HStack {
+                HStack(spacing: 6) {
+                    Text("Fair Odds")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.primary)
+                }
+
+                Spacer()
+
+                if confidence == .low || confidence == .none {
+                    ConfidenceIndicator()
+                }
+            }
+
+            // Row 5: Books Grid
+            booksGrid
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -70,96 +129,6 @@ struct BetCardV2: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(isHighValueBet ? FairBetTheme.positive.opacity(0.4) : FairBetTheme.cardBorder, lineWidth: isHighValueBet ? 1.5 : 1)
         )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
-            }
-        }
-    }
-
-    // MARK: - Compact View (default)
-
-    private var compactView: some View {
-        HStack(spacing: 12) {
-            // Left: Selection + Context
-            VStack(alignment: .leading, spacing: 2) {
-                Text(bet.selectionDisplay)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-
-                Text(compactContext)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            // Right: EV + Best Book
-            if let ev = bestBookEV, let best = bestBook {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(FairBetCopy.formatEV(ev))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundColor(evColor(for: ev))
-
-                    Text("\(abbreviatedBookName(best.name)) \(FairBetCopy.formatOdds(best.price))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // Expand indicator
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.caption)
-                .foregroundColor(.secondary.opacity(0.5))
-        }
-    }
-
-    private var compactContext: String {
-        let opponent = bet.selection == bet.homeTeam ? bet.awayTeam : bet.homeTeam
-        let market = FairBetCopy.marketLabel(for: bet.market.rawValue)
-        return "vs \(opponent) · \(market) · \(formattedTime)"
-    }
-
-    // MARK: - Expanded Details
-
-    private var expandedDetails: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-                .padding(.top, 10)
-
-            // Fair odds row
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Fair Odds")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                }
-
-                Spacer()
-
-                // League + Time
-                HStack(spacing: 8) {
-                    if confidence == .low || confidence == .none {
-                        ConfidenceIndicator()
-                    }
-
-                    LeagueBadgeSmall(league: bet.league)
-
-                    Text(formattedTime)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // All books
-            booksGrid
-        }
     }
 
     private var formattedTime: String {
@@ -168,13 +137,16 @@ struct BetCardV2: View {
 
         if calendar.isDateInToday(bet.commenceTime) {
             formatter.dateFormat = "h:mm a"
-            return formatter.string(from: bet.commenceTime)
+            return "Today · \(formatter.string(from: bet.commenceTime))"
         } else if calendar.isDateInTomorrow(bet.commenceTime) {
             formatter.dateFormat = "h:mm a"
-            return "Tomorrow \(formatter.string(from: bet.commenceTime))"
+            return "Tomorrow · \(formatter.string(from: bet.commenceTime))"
         } else {
-            formatter.dateFormat = "MMM d, h:mm a"
-            return formatter.string(from: bet.commenceTime)
+            formatter.dateFormat = "MMM d"
+            let datePart = formatter.string(from: bet.commenceTime)
+            formatter.dateFormat = "h:mm a"
+            let timePart = formatter.string(from: bet.commenceTime)
+            return "\(datePart) · \(timePart)"
         }
     }
 
