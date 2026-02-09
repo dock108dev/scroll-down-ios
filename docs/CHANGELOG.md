@@ -4,62 +4,48 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
-### Changed - Blocks-Based Story System (Feb 2025)
-Migrated from moments-based to blocks-based story architecture:
+### Added - FairBet Odds Comparison
+- `OddsComparisonView` with filterable bet list
+- `BetCardV2` always-visible card layout (selection, opponent, EV, fair odds, books grid)
+- `FairOddsCalculator` using sharp book vig-removal and median aggregation
+- `EVCalculator` with per-book fee models (P2P, exchange, traditional)
+- `BetPairing` for matching opposite sides of markets
+- `FairBetAPIClient` fetching from `/api/fairbet/odds`
+
+### Changed - Blocks-Based Flow System (Feb 2025)
+Migrated to blocks-based flow architecture:
 
 **Models:**
-- `StoryBlock` replaces `StoryMoment` as primary narrative unit
-- `BlockDisplayModel` replaces `MomentDisplayModel`
-- `BlockMiniBox` with `blockStars` replaces `MomentBoxScore`
+- `FlowBlock` as primary narrative unit
+- `BlockDisplayModel` for UI rendering
+- `BlockMiniBox` with `blockStars` for top performers
 - `BlockPlayerStat` includes delta stats (cumulative + per-block changes)
-- Server-provided `BlockRole` replaces client-derived `BeatType`
+- Server-provided `BlockRole` (SETUP, MOMENTUM_SHIFT, etc.)
 
 **Views:**
-- `StoryContainerView` renders block list with spine
-- `StoryBlockCardView` shows narrative + mini box score at bottom
+- `FlowContainerView` renders block list with spine
+- `FlowBlockCardView` shows narrative + mini box score at bottom
 - `MiniBoxScoreView` displays top 2 players per team with blockStar highlighting
-
-**Removed:**
-- `StoryMoment`, `MomentDisplayModel`, `BeatType` models
-- `MomentCardView`, `NarrativeBlockView`, `NarrativeContainerView` views
-- `MockGameService+StoryGeneration.swift` (stories from API only)
-- `GameDetailViewModel+StoryDerivation.swift`
-- Legacy moments fallback paths
 
 ### Added - Interaction Polish (Jan 2025)
 - Unified `InteractiveRowButtonStyle` for consistent tap feedback
 - `SubtleInteractiveButtonStyle` for less prominent elements
-- Standardized chevron behavior (chevron.right, 0°→90° rotation)
+- Standardized chevron behavior (chevron.right, 0 to 90 degree rotation)
 - Standardized spring animations across all collapsible sections
 - Tab bar scroll-to-section with re-tap support
 - Clickable team headers in game detail (navigates to team page)
 - `TeamView` for team page display
-- Styled play descriptions with visual hierarchy (emphasized actions, de-emphasized metadata)
+- Styled play descriptions with visual hierarchy
 
 ### Added - Timeline Improvements
 - Global expand/collapse for timeline boundaries via header tap
 - Full row tap targets on boundary headers
 - `contentShape(Rectangle())` for reliable touch handling
 
-### Removed - Code Cleanup (Jan 2025)
-- Deleted `RelatedPost` model and `RelatedPostCardView`
-- Removed `fetchRelatedPosts` from GameService protocol
-- Removed `GameDetailView+Social.swift` (unused)
-- Deleted `related-posts.json` mock file
-- Removed legacy `.social` case from `GameSection` enum
-- Deleted `StorySectionBlockView` (replaced by blocks-based views)
-- Deleted `SocialPostMatcher` (social posts now displayed separately)
-- Deleted `SectionEntry` and `ChapterEntry` models (replaced by blocks-based structure)
-
 ### Added - NHL Support
 - `NHLSkaterStat` and `NHLGoalieStat` models
 - Dedicated NHL stats tables (Skaters/Goalies)
 - Sport-aware period labels (Period 1/2/3 vs Q1/Q2/Q3/Q4)
-
-### Added - Story System (Superseded by Blocks in Feb 2025)
-- `GameStoryView` for completed games with story data
-- `StoryAdapter` for converting API response to display models
-- `FullPlayByPlayView` with period grouping
 
 ---
 
@@ -90,7 +76,6 @@ Migrated from moments-based to blocks-based story architecture:
 - Home feed with Earlier/Today/Upcoming sections
 - Game detail with collapsible sections
 - Dev-mode clock for consistent mock data
-- Feature flag for game preview scores
 
 ## Phase A - Foundation
 - Basic MVVM architecture

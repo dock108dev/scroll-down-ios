@@ -2,29 +2,14 @@
 
 iOS app structure, data flow, and design principles.
 
-## Directory Layout
-
-```
-ScrollDown/Sources/
-├── Models/           # Codable data models (API-aligned)
-├── ViewModels/       # Business logic and state management
-├── Screens/
-│   ├── Home/         # Game list and feed
-│   ├── Game/         # Game detail (split into extensions)
-│   └── Team/         # Team page
-├── Components/       # Reusable UI components
-├── Networking/       # GameService protocol + implementations
-├── Services/         # TimeService (snapshot mode)
-├── Logging/          # Structured logging utilities
-└── Mock/games/       # Static mock JSON for development
-```
+For directory layout, data models, API endpoints, and environment reference, see [AGENTS.md](../AGENTS.md).
 
 ## MVVM Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         SwiftUI View                            │
-│   (HomeView, GameDetailView, StoryBlockCardView, etc.)          │
+│   (HomeView, GameDetailView, FlowBlockCardView, etc.)           │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ observes @Published
                           ▼
@@ -41,7 +26,7 @@ ScrollDown/Sources/
 ┌─────────────────────────────────────────────────────────────────┐
 │                      GameService                                │
 │   protocol GameService { ... }                                  │
-│   • MockGameService — returns errors (stories from real API)    │
+│   • MockGameService — generated local data for offline dev      │
 │   • RealGameService — calls backend APIs                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -61,31 +46,37 @@ We talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
 ### 3. User-Controlled Pacing
 Nothing is auto-revealed. Users move through timeline at their own pace.
 
-## Key Data Models
+## Flow Rendering
 
-| Model | Description |
-|-------|-------------|
-| `GameSummary` | List view representation from `/games` endpoint |
-| `GameDetailResponse` | Full game detail from `/games/{id}` |
-| `GameStoryResponse` | Story with blocks and plays from `/games/{id}/story` |
-| `StoryBlock` | Narrative segment with role, mini box score, period range |
-| `StoryPlay` | Individual play within a story |
-| `BlockDisplayModel` | UI-ready block for rendering |
-| `BlockMiniBox` | Per-block player stats with blockStars |
-| `UnifiedTimelineEvent` | Single timeline entry (PBP play or tweet) |
-| `PlayEntry` | Individual play-by-play event |
+The flow system uses **blocks** as the primary display unit:
+
+1. **Blocks** — Consumer-facing narrative segments
+   - Server provides 4-7 blocks per game
+   - Each block has narrative text + mini box score at bottom
+   - Designed for ~2.5 blocks visible on screen at once
+   - `blockStars` highlights top performers per block
+
+2. **FlowAdapter** — Converts `GameFlowResponse` to `[BlockDisplayModel]`
+   - Simple mapping, no client-side derivation
+   - Server provides all semantic information
+
+3. **Views:**
+   - `FlowContainerView` — Renders block list with spine
+   - `FlowBlockCardView` — Single block with narrative + mini box
+   - `MiniBoxScoreView` — Per-block player stats
+
+4. **PBP Timeline** — When flow data isn't available, PBP events render chronologically grouped by period.
 
 ### Block Structure
 
-Each `StoryBlock` contains:
-- `blockIndex` — Position in the story (0 to N-1)
+Each `FlowBlock` contains:
+- `blockIndex` — Position in the flow (0 to N-1)
 - `role` — Server-provided semantic role (SETUP, MOMENTUM_SHIFT, etc.) — not displayed
 - `narrative` — 1-2 sentence description (~35 words)
 - `miniBox` — Player stats for this segment with `blockStars` array
 - `periodStart`/`periodEnd` — Period range covered
 - `scoreBefore`/`scoreAfter` — Score progression as `[away, home]`
 - `keyPlayIds` — Plays explicitly mentioned in narrative
-- `embeddedTweet` — Optional social content (structure ready, no live data yet)
 
 ### NHL-Specific Models
 
@@ -94,41 +85,37 @@ Each `StoryBlock` contains:
 | `NHLSkaterStat` | Skater stats (TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM) |
 | `NHLGoalieStat` | Goalie stats (TOI, SA, SV, GA, SV%) |
 
-## Story Rendering
+## FairBet Architecture
 
-The story system uses **blocks** as the primary display unit:
+The FairBet module computes fair odds and expected value across sportsbooks:
 
-1. **Blocks** — Consumer-facing narrative segments
-   - Server provides 4-7 blocks per game
-   - Each block has narrative text + mini box score at bottom
-   - Designed for ~2.5 blocks visible on screen at once
-   - `blockStars` highlights top performers per block
+```
+FairBetAPIClient → [APIBet] → BetPairing → FairOddsCalculator → EVCalculator
+                                                                       │
+OddsComparisonViewModel ← caches EV results ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+       │
+       ▼
+OddsComparisonView → BetCardV2 (always-visible card layout)
+```
 
-2. **StoryAdapter** — Converts `GameStoryResponse` to `[BlockDisplayModel]`
-   - Simple mapping, no client-side derivation
-   - Server provides all semantic information
+**Fair Odds Computation:**
+- Uses sharp book (Pinnacle, Circa, BetCris) vig-removal and median aggregation
+- Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
 
-3. **Views:**
-   - `StoryContainerView` — Renders block list with spine
-   - `StoryBlockCardView` — Single block with narrative + mini box
-   - `MiniBoxScoreView` — Per-block player stats
+**EV Computation:**
+- Per-book EV using fair probability and book-specific fee models
+- P2P platforms (Novig, ProphetX) have 2% fee on winnings
+- Exchanges (Betfair, Smarkets) have 1% fee on winnings
+- Traditional sportsbooks have no explicit fee
 
 ## Configuration
 
 The app uses `AppConfig` to manage runtime behavior:
 
 ```swift
-AppConfig.shared.environment  // .mock, .localhost, or .live
+AppConfig.shared.environment  // .localhost or .live
 AppConfig.shared.gameService  // Returns appropriate service implementation
 ```
-
-### Environments
-
-| Environment | Base URL | Use Case |
-|-------------|----------|----------|
-| `.live` | `sports-data-admin.dock108.ai` | Production |
-| `.localhost` | `localhost:8000` | Local backend dev |
-| `.mock` | N/A | Offline UI development (no story data) |
 
 ### Dev Clock
 
@@ -139,18 +126,14 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 
 ## Game Detail View Structure
 
-`GameDetailView` is split into focused extensions:
+`GameDetailView` is split into focused extensions. See [AGENTS.md](../AGENTS.md) for the full file table.
 
-| File | Responsibility |
-|------|---------------|
-| `GameDetailView.swift` | Main view, navigation, state, scroll handling |
-| `GameDetailView+Overview.swift` | Pregame section |
-| `GameDetailView+Timeline.swift` | Timeline/story section |
-| `GameDetailView+Stats.swift` | Player and team stats |
-| `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
-| `GameDetailView+WrapUp.swift` | Post-game wrap-up section |
-| `GameDetailView+Helpers.swift` | Utility functions, quarter titles |
-| `GameDetailView+Layout.swift` | Layout constants, preference keys |
+Sections render conditionally based on game status:
+- **Pregame (Overview):** Matchup context
+- **Timeline:** Flow blocks (primary) or PBP grouped by period
+- **Stats:** Player stats + team comparison
+- **NHL Stats:** Sport-specific skater/goalie tables
+- **Wrap-Up:** Post-game final score, highlights
 
 ## Interaction Patterns
 
@@ -171,7 +154,6 @@ Routes defined in `ContentView.swift`:
 enum AppRoute: Hashable {
     case game(id: Int, league: String)
     case team(name: String, abbreviation: String, league: String)
-    case deepLinkPlaceholder(String)
 }
 ```
 

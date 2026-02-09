@@ -17,8 +17,9 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 |---------|--------|
 | Home feed (Earlier/Yesterday/Today/Upcoming) | Live |
 | Game detail with collapsible sections | Live |
-| Story-based timeline with narrative blocks | Live |
+| Flow-based timeline with narrative blocks | Live |
 | Play-by-play grouped by quarter/period | Live |
+| FairBet odds comparison with EV analysis | Live |
 | NHL skater/goalie stats | Live |
 | Team page navigation | Live |
 | Dark mode | Live |
@@ -41,7 +42,6 @@ xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 1
 |------|-------------|
 | `.live` | Production API at `sports-data-admin.dock108.ai` |
 | `.localhost` | Local server at `localhost:8000` |
-| `.mock` | Generated local data for offline development |
 
 Default is live mode. Set via `AppConfig.shared.environment`.
 
@@ -49,9 +49,9 @@ Default is live mode. Set via `AppConfig.shared.environment`.
 
 | Document | Description |
 |----------|-------------|
-| [Architecture](docs/architecture.md) | MVVM structure and data flow |
+| [Architecture](docs/architecture.md) | MVVM structure, data flow, design patterns |
 | [Development](docs/development.md) | Local dev, testing, debugging |
 | [Snapshot Mode](docs/BETA_TIME_OVERRIDE.md) | Time override for historical testing |
 | [Changelog](docs/CHANGELOG.md) | Feature history |
 
-For AI agent context, see [AGENTS.md](docs/AGENTS.md).
+For AI agent context, see [AGENTS.md](AGENTS.md).

@@ -4,13 +4,12 @@ Guide for local development, testing, and debugging.
 
 ## Environments
 
-The app supports three environments via `AppConfig.shared.environment`:
+The app supports two environments via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
 | `.live` | Production backend API | Default, real data |
 | `.localhost` | Local dev server (port 8000) | Backend development |
-| `.mock` | Generated local data | Offline UI development |
 
 **Default:** Live mode. To use localhost by default, set `FeatureFlags.defaultToLocalhost = true` in `AppConfig.swift`.
 
@@ -18,7 +17,7 @@ The app supports three environments via `AppConfig.shared.environment`:
 
 ```swift
 // In code
-AppConfig.shared.environment = .mock
+AppConfig.shared.environment = .localhost
 
 // Or via Admin Settings (debug builds only)
 // Long-press "Updated X ago" in Home feed
@@ -38,23 +37,7 @@ Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 
 `MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
 
-**Note:** Mock service does not generate stories. Story data comes from the real API only.
-
-## Story Architecture
-
-Stories are rendered using a **blocks-based** system from the `/games/{id}/story` endpoint:
-
-1. **Blocks** — Primary narrative units (4-7 per game)
-   - Each block has: narrative text, mini box score, period range, scores
-   - `blockStars` array highlights top performers
-   - Server provides semantic `role` (not displayed to users)
-
-2. **Views:**
-   - `StoryContainerView` — Block list with visual spine
-   - `StoryBlockCardView` — Single block with mini box at bottom
-   - `MiniBoxScoreView` — Compact player stats per block
-
-3. **Fallback:** When story data isn't available, PBP events render chronologically grouped by period.
+**Note:** Mock service does not generate flow data. Flow blocks come from the real API only.
 
 ## Building & Testing
 
@@ -113,7 +96,7 @@ See [BETA_TIME_OVERRIDE.md](BETA_TIME_OVERRIDE.md) for full documentation.
 
 ### Check current environment
 ```swift
-print(AppConfig.shared.environment)  // .live, .localhost, or .mock
+print(AppConfig.shared.environment)  // .live or .localhost
 ```
 
 ### Inspect dev clock
@@ -136,10 +119,10 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 - Verify `scrollToSection` state is being set
 - Check anchor offset in `UnitPoint(x: 0.5, y: -0.08)`
 
-**Story not loading:**
-- Check `viewModel.hasStoryData` returns true
+**Flow not loading:**
+- Check `viewModel.hasFlowData` returns true
 - Verify API responses in network logs
-- Confirm game has story generated (not all games have stories)
+- Confirm game has flow data generated (not all games have flow)
 
 **Mock data not appearing:**
 - Confirm `environment = .mock`
