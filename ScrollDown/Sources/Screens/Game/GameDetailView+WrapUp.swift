@@ -187,47 +187,6 @@ extension GameDetailView {
     }
 
     private func postGamePostRow(_ post: SocialPostEntry) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.text) {
-            HStack {
-                if let handle = post.sourceHandle {
-                    Text("@\(handle)")
-                        .font(DesignSystem.Typography.rowMeta.weight(.medium))
-                        .foregroundColor(GameTheme.accentColor)
-                }
-                Spacer()
-                Text(formatTweetDate(post.postedAt))
-                    .font(DesignSystem.Typography.rowMeta)
-                    .foregroundColor(.secondary)
-            }
-            if let text = post.tweetText {
-                Text(text)
-                    .font(DesignSystem.Typography.rowTitle)
-                    .foregroundColor(.primary)
-            }
-
-            if post.imageUrl != nil || post.videoUrl != nil {
-                SocialMediaPreview(
-                    imageUrl: post.imageUrl,
-                    videoUrl: post.videoUrl,
-                    postUrl: post.postUrl
-                )
-            } else if post.hasVideo {
-                WatchOnXButton(postUrl: post.postUrl)
-            }
-        }
-        .padding(DesignSystem.Spacing.elementPadding)
-        .background(DesignSystem.Colors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-    }
-
-    private func formatTweetDate(_ dateString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let parsedDate = formatter.date(from: dateString)
-            ?? ISO8601DateFormatter().date(from: dateString)
-        if let parsedDate {
-            return parsedDate.formatted(date: .abbreviated, time: .shortened)
-        }
-        return dateString
+        SocialPostRow(post: post, displayMode: .standard)
     }
 }

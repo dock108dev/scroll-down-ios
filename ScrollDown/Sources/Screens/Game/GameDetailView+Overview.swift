@@ -30,49 +30,6 @@ extension GameDetailView {
 
     /// Individual pre-game social post row
     private func pregamePostRow(_ post: SocialPostEntry) -> some View {
-        VStack(alignment: .leading, spacing: GameDetailLayout.smallSpacing) {
-            HStack {
-                if let handle = post.sourceHandle {
-                    Text("@\(handle)")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(GameTheme.accentColor)
-                }
-                Spacer()
-                Text(formatPregameDate(post.postedAt))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-
-            if let text = post.tweetText {
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-            }
-
-            if post.imageUrl != nil || post.videoUrl != nil {
-                SocialMediaPreview(
-                    imageUrl: post.imageUrl,
-                    videoUrl: post.videoUrl,
-                    postUrl: post.postUrl
-                )
-            } else if post.hasVideo {
-                WatchOnXButton(postUrl: post.postUrl)
-            }
-        }
-        .padding(GameDetailLayout.listSpacing)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func formatPregameDate(_ dateString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let parsedDate = formatter.date(from: dateString)
-            ?? ISO8601DateFormatter().date(from: dateString)
-        if let parsedDate {
-            return parsedDate.formatted(date: .omitted, time: .shortened)
-        }
-        return dateString
+        SocialPostRow(post: post, displayMode: .standard)
     }
 }

@@ -180,36 +180,7 @@ struct EmbeddedSocialPostView: View {
     let post: SocialPostEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: "bubble.left.fill")
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                Text(post.sourceHandle ?? "Unknown")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(DesignSystem.TextColor.secondary)
-            }
-            if let text = post.tweetText {
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundColor(DesignSystem.TextColor.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if post.imageUrl != nil || post.videoUrl != nil {
-                SocialMediaPreview(
-                    imageUrl: post.imageUrl,
-                    videoUrl: post.videoUrl,
-                    postUrl: post.postUrl
-                )
-            }
-        }
-        .padding(12)
-        .background(DesignSystem.Colors.cardBackground.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: 1)
-        )
+        SocialPostRow(post: post, displayMode: .embedded)
     }
 }
 
