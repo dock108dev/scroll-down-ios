@@ -82,22 +82,7 @@ struct BetCardV2: View {
                     .foregroundColor(.secondary)
             }
 
-            // Row 3: EV + Best book (right-aligned)
-            if let ev = bestBookEV, let best = bestBook {
-                HStack {
-                    Spacer()
-                    Text(FairBetCopy.formatEV(ev))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundColor(evColor(for: ev))
-                    Text("\(abbreviatedBookName(best.name)) \(FairBetCopy.formatOdds(best.price))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            Divider()
-
-            // Row 4: Fair Odds + Confidence
+            // Row 3: Fair Odds + EV
             HStack {
                 HStack(spacing: 6) {
                     Text("Fair Odds")
@@ -113,7 +98,15 @@ struct BetCardV2: View {
                 if confidence == .low || confidence == .none {
                     ConfidenceIndicator()
                 }
+
+                if let ev = bestBookEV {
+                    Text(FairBetCopy.formatEV(ev))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundColor(evColor(for: ev))
+                }
             }
+
+            Divider()
 
             // Row 5: Books Grid
             booksGrid
