@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 
 /// Social post card displaying team reactions and highlights
@@ -5,7 +6,8 @@ import SwiftUI
 struct SocialPostCardView: View {
     let post: SocialPostResponse
     let isOutcomeRevealed: Bool
-    
+    @State private var showingSafari = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.contentSpacing) {
             // Header: team + timestamp
@@ -49,9 +51,10 @@ struct SocialPostCardView: View {
                 SocialMediaPreview(
                     imageUrl: post.imageUrl,
                     videoUrl: post.videoUrl,
-                    postUrl: post.postUrl,
-                    height: 160
+                    postUrl: post.postUrl
                 )
+            } else if post.hasVideo {
+                WatchOnXButton(postUrl: post.postUrl)
             }
             
             // Source attribution
@@ -74,6 +77,12 @@ struct SocialPostCardView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Social post from \(post.teamId)")
+        .sheet(isPresented: $showingSafari) {
+            if let url = URL(string: post.postUrl) {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
     }
     
     /// Border color: subtle differentiation for post-reveal content
@@ -121,6 +130,23 @@ private enum Layout {
     static let borderWidth: CGFloat = 1
 }
 
+// MARK: - In-App Safari View
+
+/// Wraps SFSafariViewController for in-app browsing (videos, full posts)
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = false
+        let vc = SFSafariViewController(url: url, configuration: config)
+        vc.preferredControlTintColor = .label
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
 // MARK: - Shared Social Media Preview
 
 /// Reusable media preview that loads images via AsyncImage and shows video thumbnails
@@ -128,68 +154,103 @@ struct SocialMediaPreview: View {
     let imageUrl: String?
     let videoUrl: String?
     var postUrl: String? = nil
-    var height: CGFloat = 180
+    var height: CGFloat = 80
 
-    @Environment(\.openURL) private var openURL
+    @State private var showingSafari = false
 
     var body: some View {
-        if let imageUrlString = imageUrl, let url = URL(string: imageUrlString) {
-            Button {
-                openPost()
-            } label: {
-                ZStack {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color(.systemGray6))
-                            .overlay { ProgressView() }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: height)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+        Group {
+            if let imageUrlString = imageUrl, let url = URL(string: imageUrlString) {
+                Button {
+                    showingSafari = true
+                } label: {
+                    ZStack {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color(.systemGray6))
+                                .overlay { ProgressView() }
+                                .frame(height: height)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: height)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                    if videoUrl != nil {
-                        Circle()
-                            .fill(.black.opacity(0.5))
-                            .frame(width: 44, height: 44)
-                            .overlay {
-                                Image(systemName: "play.fill")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 18))
-                            }
+                        if videoUrl != nil {
+                            Circle()
+                                .fill(.black.opacity(0.5))
+                                .frame(width: 44, height: 44)
+                                .overlay {
+                                    Image(systemName: "play.fill")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 18))
+                                }
+                        }
                     }
                 }
-            }
-            .buttonStyle(.plain)
-        } else if videoUrl != nil {
-            Button {
-                openPost()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.title3)
-                    Text("Watch video")
-                        .font(.subheadline.weight(.medium))
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption)
+                .buttonStyle(.plain)
+            } else if videoUrl != nil {
+                Button {
+                    showingSafari = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.title3)
+                        Text("Watch video")
+                            .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(12)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-                .foregroundColor(.secondary)
-                .padding(12)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+        }
+        .sheet(isPresented: $showingSafari) {
+            if let postUrl, let url = URL(string: postUrl) {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
         }
     }
+}
 
-    private func openPost() {
-        if let postUrl, let url = URL(string: postUrl) {
-            openURL(url)
+// MARK: - Watch on X Button
+
+/// Standalone button for video posts that lack a direct media URL
+struct WatchOnXButton: View {
+    let postUrl: String
+
+    @State private var showingSafari = false
+
+    var body: some View {
+        Button { showingSafari = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "play.rectangle.fill")
+                    .font(.title3)
+                Text("Watch on X")
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+            }
+            .foregroundColor(.secondary)
+            .padding(12)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingSafari) {
+            if let url = URL(string: postUrl) {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
         }
     }
 }

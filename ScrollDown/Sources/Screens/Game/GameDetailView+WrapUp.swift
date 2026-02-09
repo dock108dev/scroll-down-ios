@@ -209,9 +209,10 @@ extension GameDetailView {
                 SocialMediaPreview(
                     imageUrl: post.imageUrl,
                     videoUrl: post.videoUrl,
-                    postUrl: post.postUrl,
-                    height: 160
+                    postUrl: post.postUrl
                 )
+            } else if post.hasVideo {
+                WatchOnXButton(postUrl: post.postUrl)
             }
         }
         .padding(DesignSystem.Spacing.elementPadding)
