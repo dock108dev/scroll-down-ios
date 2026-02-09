@@ -119,9 +119,8 @@ struct BetCardV2: View {
 
     private var compactContext: String {
         let opponent = bet.selection == bet.homeTeam ? bet.awayTeam : bet.homeTeam
-        let shortOpponent = opponent.split(separator: " ").last.map(String.init) ?? opponent
         let market = FairBetCopy.marketLabel(for: bet.market.rawValue)
-        return "vs \(shortOpponent) · \(market)"
+        return "vs \(opponent) · \(market) · \(formattedTime)"
     }
 
     // MARK: - Expanded Details
