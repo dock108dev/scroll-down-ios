@@ -38,7 +38,7 @@ struct BookFeeConfig: Codable, Equatable {
 /// Static fee configuration by book category
 struct FeeConfiguration {
 
-    /// Book fee profiles (v1 simple)
+    /// Book fee profiles
     static let bookFees: [String: BookFeeConfig] = [
         "draftkings": .none,
         "fanduel": .none,
@@ -323,7 +323,7 @@ extension BetGroup {
     }
 }
 
-// MARK: - APIBet Compatibility Layer
+// MARK: - APIBet Convenience Methods
 
 extension EVCalculator {
 

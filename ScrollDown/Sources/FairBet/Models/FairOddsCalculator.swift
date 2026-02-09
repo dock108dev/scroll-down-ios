@@ -3,7 +3,6 @@
 //  ScrollDown
 //
 //  Fair odds computation using sharp book vig-removal and median aggregation.
-//  Implements the FairBet v1 Fair Odds Formula specification.
 //
 
 import Foundation
@@ -46,7 +45,7 @@ struct SharpBookConfig {
 enum FairOddsConfidence: String, Codable {
     case high       // 2+ sharp books pricing both sides
     case medium     // 1 sharp book pricing both sides
-    case low        // No sharp books, using consensus (future)
+    case low        // No sharp books available
     case none       // Cannot compute fair odds
 }
 

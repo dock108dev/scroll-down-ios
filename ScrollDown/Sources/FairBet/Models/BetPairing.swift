@@ -38,7 +38,7 @@ struct BetPairingService {
 
     /// Generate a pairing key for matching opposite sides of a market
     static func pairingKey(for bet: APIBet) -> String {
-        let lineKey = bet.line.map { String(format: "%.1f", abs($0)) } ?? "nil"
+        let lineKey = bet.lineValue.map { String(format: "%.1f", abs($0)) } ?? "nil"
         return "\(bet.league.rawValue)|\(bet.homeTeam)|\(bet.awayTeam)|\(bet.market.rawValue)|\(lineKey)"
     }
 

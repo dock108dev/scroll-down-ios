@@ -135,17 +135,17 @@ struct BetCardV2: View {
         let formatter = DateFormatter()
         let calendar = Calendar.current
 
-        if calendar.isDateInToday(bet.commenceTime) {
+        if calendar.isDateInToday(bet.gameDate) {
             formatter.dateFormat = "h:mm a"
-            return "Today · \(formatter.string(from: bet.commenceTime))"
-        } else if calendar.isDateInTomorrow(bet.commenceTime) {
+            return "Today · \(formatter.string(from: bet.gameDate))"
+        } else if calendar.isDateInTomorrow(bet.gameDate) {
             formatter.dateFormat = "h:mm a"
-            return "Tomorrow · \(formatter.string(from: bet.commenceTime))"
+            return "Tomorrow · \(formatter.string(from: bet.gameDate))"
         } else {
             formatter.dateFormat = "MMM d"
-            let datePart = formatter.string(from: bet.commenceTime)
+            let datePart = formatter.string(from: bet.gameDate)
             formatter.dateFormat = "h:mm a"
-            let timePart = formatter.string(from: bet.commenceTime)
+            let timePart = formatter.string(from: bet.gameDate)
             return "\(datePart) · \(timePart)"
         }
     }
@@ -200,7 +200,7 @@ struct BetCardV2: View {
     }
 }
 
-// MARK: - Mini Book Chip (smaller for expanded view)
+// MARK: - Mini Book Chip
 
 struct MiniBookChip: View {
     let book: BookPrice

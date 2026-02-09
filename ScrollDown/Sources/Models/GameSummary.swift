@@ -136,10 +136,10 @@ extension GameSummary {
     var homeTeamAbbreviation: String { String(homeTeam.prefix(3)).uppercased() }
     var awayTeamAbbreviation: String { String(awayTeam.prefix(3)).uppercased() }
 
-    /// League code accessor (for compatibility)
+    /// League code shorthand
     var league: String { leagueCode }
 
-    /// Start time accessor (for compatibility)
+    /// Game date shorthand
     var startTime: String { gameDate }
 
     /// Formatted score string (e.g., "112 - 108")

@@ -96,12 +96,6 @@ struct APIBet: Identifiable, Codable, Equatable {
         MarketKey(rawValue: marketKey) ?? .h2h
     }
 
-    /// Commence time (alias for gameDate)
-    var commenceTime: Date { gameDate }
-
-    /// Line value (alias)
-    var line: Double? { lineValue }
-
     /// Parse selection from selection_key (e.g., "team:los_angeles_lakers" -> "Los Angeles Lakers")
     var selection: String {
         let parts = selectionKey.split(separator: ":")
@@ -129,11 +123,6 @@ struct APIBet: Identifiable, Codable, Equatable {
 
         // Fallback: capitalize each word
         return normalized.capitalized
-    }
-
-    /// Display string for the matchup (Away @ Home)
-    var matchupDisplay: String {
-        "\(awayTeam) @ \(homeTeam)"
     }
 
     /// Display string for the selection with line if applicable
@@ -178,7 +167,7 @@ struct BookPrice: Identifiable, Codable, Equatable {
 
     var id: String { book }
 
-    /// Alias for book name (for compatibility)
+    /// Display name for the book
     var name: String { book }
 
     /// Price as Int for calculations (rounds the Double from API)

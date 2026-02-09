@@ -16,8 +16,6 @@ struct ContentView: View {
                             }
                     case .team(let name, let abbreviation, let league):
                         TeamView(teamName: name, abbreviation: abbreviation, leagueCode: league)
-                    case .deepLinkPlaceholder(let value):
-                        DeepLinkPlaceholderView(value: value)
                     }
                 }
         }
@@ -27,40 +25,6 @@ struct ContentView: View {
 enum AppRoute: Hashable {
     case game(id: Int, league: String)
     case team(name: String, abbreviation: String, league: String)
-    case deepLinkPlaceholder(String)
-}
-
-private struct DeepLinkPlaceholderView: View {
-    let value: String
-
-    var body: some View {
-        VStack(spacing: Layout.spacing) {
-            Image(systemName: Layout.iconName)
-                .font(.system(size: Layout.iconSize))
-                .foregroundColor(.secondary)
-            Text(Layout.title)
-                .font(.headline)
-            Text(value)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Layout.padding)
-        .navigationTitle(Layout.navigationTitle)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Layout.accessibilityLabel)
-    }
-}
-
-private enum Layout {
-    static let spacing: CGFloat = 16
-    static let iconSize: CGFloat = 48
-    static let padding: CGFloat = 24
-    static let iconName = "link"
-    static let title = "Deep Link Placeholder"
-    static let navigationTitle = "Deep Link"
-    static let accessibilityLabel = "Deep link placeholder screen"
 }
 
 #Preview {

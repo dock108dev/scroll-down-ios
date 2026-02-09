@@ -246,7 +246,7 @@ final class OddsComparisonViewModel: ObservableObject {
 
         // Hide games that have already started (no live support)
         let now = Date()
-        filtered = filtered.filter { $0.commenceTime > now }
+        filtered = filtered.filter { $0.gameDate > now }
 
         // Require minimum 3 books for reliable data
         filtered = filtered.filter { $0.books.count >= 3 }
@@ -279,7 +279,7 @@ final class OddsComparisonViewModel: ObservableObject {
         case .bestEV:
             filtered = filtered.sorted { bestEV(for: $0) > bestEV(for: $1) }
         case .gameTime:
-            filtered = filtered.sorted { $0.commenceTime < $1.commenceTime }
+            filtered = filtered.sorted { $0.gameDate < $1.gameDate }
         case .league:
             filtered = filtered.sorted { $0.leagueCode < $1.leagueCode }
         }
