@@ -44,9 +44,12 @@ struct BlockPlayerStat: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case name, pts, reb, ast
         case threePm = "3pm"
-        case deltaPts, deltaReb, deltaAst
+        case deltaPts = "delta_pts"
+        case deltaReb = "delta_reb"
+        case deltaAst = "delta_ast"
         case goals, assists, sog, plusMinus
-        case deltaGoals, deltaAssists
+        case deltaGoals = "delta_goals"
+        case deltaAssists = "delta_assists"
     }
 
     /// Formatted stat line for basketball: "15p/4r/6a (+7p/+2r)"
@@ -123,6 +126,11 @@ struct BlockMiniBox: Codable, Equatable {
     let home: BlockTeamMiniBox
     let away: BlockTeamMiniBox
     let blockStars: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case home, away
+        case blockStars = "block_stars"
+    }
 
     func isBlockStar(_ name: String) -> Bool {
         blockStars.contains(name)
@@ -217,7 +225,8 @@ struct GameStoryResponse: Decodable {
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
 
         // Blocks are nested inside "flow" wrapper
-        if let flowContainer = try? container.nestedContainer(keyedBy: FlowKeys.self, forKey: .flow) {
+        if container.contains(.flow) {
+            let flowContainer = try container.nestedContainer(keyedBy: FlowKeys.self, forKey: .flow)
             blocks = try flowContainer.decodeIfPresent([StoryBlock].self, forKey: .blocks) ?? []
         } else {
             blocks = []
