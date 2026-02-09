@@ -149,12 +149,12 @@ extension GameDetailViewModel {
 
     /// Pregame social posts based on server-assigned gamePhase
     var pregameSocialPosts: [SocialPostEntry] {
-        detail?.socialPosts.filter { $0.gamePhase == "pregame" } ?? []
+        detail?.socialPosts.filter { $0.gamePhase == "pregame" && $0.hasContent } ?? []
     }
 
     /// Postgame social posts based on server-assigned gamePhase
     var postgameSocialPosts: [SocialPostEntry] {
-        detail?.socialPosts.filter { $0.gamePhase == "postgame" } ?? []
+        detail?.socialPosts.filter { $0.gamePhase == "postgame" && $0.hasContent } ?? []
     }
 
     // MARK: - Timeline Parsing Helpers

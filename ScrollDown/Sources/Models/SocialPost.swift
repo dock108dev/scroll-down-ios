@@ -50,6 +50,12 @@ struct SocialPostEntry: Codable, Identifiable, Equatable {
     }
 }
 
+extension SocialPostEntry {
+    var hasContent: Bool {
+        tweetText != nil || imageUrl != nil || videoUrl != nil
+    }
+}
+
 /// Social post API response
 struct SocialPostResponse: Codable, Identifiable {
     let id: Int

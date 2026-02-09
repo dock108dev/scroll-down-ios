@@ -48,13 +48,35 @@ extension GameDetailView {
                     .font(.subheadline)
                     .foregroundColor(.primary)
             }
+
+            if post.hasVideo, post.videoUrl != nil {
+                pregameMediaIndicator(type: "Video")
+            } else if post.imageUrl != nil {
+                pregameMediaIndicator(type: "Image")
+            }
         }
         .padding(GameDetailLayout.listSpacing)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    
+
+    private func pregameMediaIndicator(type: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: type == "Video" ? "play.rectangle" : "photo")
+                .font(.caption)
+            Text("\(type) available")
+                .font(.caption)
+            Spacer()
+            Image(systemName: "arrow.up.right")
+                .font(.caption2)
+        }
+        .foregroundColor(.secondary)
+        .padding(10)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
     private func formatPregameDate(_ dateString: String) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
