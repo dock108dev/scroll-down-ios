@@ -351,7 +351,8 @@ final class GameDetailViewModel: ObservableObject {
             return []
         }
 
-        return ViewModelConstants.teamComparisonKeys.map { key in
+        let keys = isNHL ? ViewModelConstants.nhlTeamComparisonKeys : ViewModelConstants.teamComparisonKeys
+        return keys.map { key in
             let homeValue = statValue(for: key.key, in: home.stats)
             let awayValue = statValue(for: key.key, in: away.stats)
             return TeamComparisonStat(
@@ -629,6 +630,12 @@ private enum ViewModelConstants {
         ("blk", "Blocks"),
         ("tov", "Turnovers"),
         ("pf", "Personal Fouls")
+    ]
+    static let nhlTeamComparisonKeys: [(key: String, label: String)] = [
+        ("shots_on_goal", "Shots on Goal"),
+        ("points", "Points"),
+        ("assists", "Assists"),
+        ("penalty_minutes", "Penalty Minutes")
     ]
     static let defaultTimelineGameId = 401585601
 }

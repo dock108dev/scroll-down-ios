@@ -32,13 +32,14 @@ struct TeamStatsContainer: View {
 
     // MARK: - iPad Multi-Column Layout
     private var multiColumnStatGroups: some View {
-        VStack(spacing: 16) {
-            // First row: Shooting and Volume side-by-side
-            HStack(alignment: .top, spacing: 16) {
-                if !shootingStats.isEmpty {
+        let groups = statGroups
+        return VStack(spacing: 16) {
+            // First row: pair first two groups side-by-side
+            if groups.count >= 2 {
+                HStack(alignment: .top, spacing: 16) {
                     StatGroupView(
-                        title: "Shooting",
-                        stats: shootingStats,
+                        title: groups[0].title,
+                        stats: groups[0].stats,
                         homeAbbrev: homeAbbrev,
                         awayAbbrev: awayAbbrev,
                         homeTeam: homeTeam,
@@ -46,12 +47,10 @@ struct TeamStatsContainer: View {
                         allStats: stats
                     )
                     .frame(maxWidth: .infinity)
-                }
 
-                if !volumeStats.isEmpty {
                     StatGroupView(
-                        title: "Volume",
-                        stats: volumeStats,
+                        title: groups[1].title,
+                        stats: groups[1].stats,
                         homeAbbrev: homeAbbrev,
                         awayAbbrev: awayAbbrev,
                         homeTeam: homeTeam,
@@ -60,13 +59,24 @@ struct TeamStatsContainer: View {
                     )
                     .frame(maxWidth: .infinity)
                 }
+            } else if groups.count == 1 {
+                StatGroupView(
+                    title: groups[0].title,
+                    stats: groups[0].stats,
+                    homeAbbrev: homeAbbrev,
+                    awayAbbrev: awayAbbrev,
+                    homeTeam: homeTeam,
+                    awayTeam: awayTeam,
+                    allStats: stats
+                )
+                .frame(maxWidth: .infinity)
             }
 
-            // Second row: Discipline (full width when alone, or could pair with future categories)
-            if !disciplineStats.isEmpty {
+            // Remaining groups (full width)
+            ForEach(Array(groups.dropFirst(2).enumerated()), id: \.offset) { _, group in
                 StatGroupView(
-                    title: "Discipline",
-                    stats: disciplineStats,
+                    title: group.title,
+                    stats: group.stats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
                     homeTeam: homeTeam,
@@ -81,34 +91,10 @@ struct TeamStatsContainer: View {
     // MARK: - iPhone Single Column Layout
     private var singleColumnStatGroups: some View {
         VStack(spacing: 16) {
-            if !shootingStats.isEmpty {
+            ForEach(Array(statGroups.enumerated()), id: \.offset) { _, group in
                 StatGroupView(
-                    title: "Shooting",
-                    stats: shootingStats,
-                    homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev,
-                    homeTeam: homeTeam,
-                    awayTeam: awayTeam,
-                    allStats: stats
-                )
-            }
-
-            if !volumeStats.isEmpty {
-                StatGroupView(
-                    title: "Volume",
-                    stats: volumeStats,
-                    homeAbbrev: homeAbbrev,
-                    awayAbbrev: awayAbbrev,
-                    homeTeam: homeTeam,
-                    awayTeam: awayTeam,
-                    allStats: stats
-                )
-            }
-
-            if !disciplineStats.isEmpty {
-                StatGroupView(
-                    title: "Discipline",
-                    stats: disciplineStats,
+                    title: group.title,
+                    stats: group.stats,
                     homeAbbrev: homeAbbrev,
                     awayAbbrev: awayAbbrev,
                     homeTeam: homeTeam,
@@ -149,20 +135,39 @@ struct TeamStatsContainer: View {
     
     // MARK: - Stat Groupings
     /// Logical groupings make the stats easier to scan
-    
+
+    private var isHockey: Bool {
+        stats.contains { $0.name == "Shots on Goal" }
+    }
+
+    private var statGroups: [(title: String, stats: [TeamComparisonStat])] {
+        if isHockey {
+            return [
+                ("Offense", stats.filter { ["Shots on Goal", "Points", "Assists"].contains($0.name) }),
+                ("Discipline", stats.filter { $0.name == "Penalty Minutes" })
+            ].filter { !$0.stats.isEmpty }
+        } else {
+            return [
+                ("Shooting", shootingStats),
+                ("Volume", volumeStats),
+                ("Discipline", disciplineStats)
+            ].filter { !$0.stats.isEmpty }
+        }
+    }
+
     private var shootingStats: [TeamComparisonStat] {
         stats.filter { stat in
             ["Field Goal %", "3-Point %", "Free Throw %"].contains(stat.name)
         }
     }
-    
+
     private var volumeStats: [TeamComparisonStat] {
         stats.filter { stat in
             ["Field Goals Made", "3-Pointers Made", "Free Throws Made",
              "Total Rebounds", "Offensive Rebounds", "Defensive Rebounds", "Assists"].contains(stat.name)
         }
     }
-    
+
     private var disciplineStats: [TeamComparisonStat] {
         stats.filter { stat in
             ["Steals", "Blocks", "Turnovers", "Personal Fouls"].contains(stat.name)
@@ -170,29 +175,13 @@ struct TeamStatsContainer: View {
     }
     
     // MARK: - Abbreviation Helpers
-    
+
     private var homeAbbrev: String {
-        teamAbbreviation(homeTeam)
+        TeamAbbreviations.abbreviation(for: homeTeam)
     }
-    
+
     private var awayAbbrev: String {
-        teamAbbreviation(awayTeam)
-    }
-    
-    private func teamAbbreviation(_ fullName: String) -> String {
-        let abbreviations: [String: String] = [
-            "Atlanta Hawks": "ATL", "Boston Celtics": "BOS", "Brooklyn Nets": "BKN",
-            "Charlotte Hornets": "CHA", "Chicago Bulls": "CHI", "Cleveland Cavaliers": "CLE",
-            "Dallas Mavericks": "DAL", "Denver Nuggets": "DEN", "Detroit Pistons": "DET",
-            "Golden State Warriors": "GSW", "Houston Rockets": "HOU", "Indiana Pacers": "IND",
-            "Los Angeles Clippers": "LAC", "Los Angeles Lakers": "LAL", "Memphis Grizzlies": "MEM",
-            "Miami Heat": "MIA", "Milwaukee Bucks": "MIL", "Minnesota Timberwolves": "MIN",
-            "New Orleans Pelicans": "NOP", "New York Knicks": "NYK", "Oklahoma City Thunder": "OKC",
-            "Orlando Magic": "ORL", "Philadelphia 76ers": "PHI", "Phoenix Suns": "PHX",
-            "Portland Trail Blazers": "POR", "Sacramento Kings": "SAC", "San Antonio Spurs": "SAS",
-            "Toronto Raptors": "TOR", "Utah Jazz": "UTA", "Washington Wizards": "WAS"
-        ]
-        return abbreviations[fullName] ?? String(fullName.split(separator: " ").last?.prefix(3) ?? "").uppercased()
+        TeamAbbreviations.abbreviation(for: awayTeam)
     }
 }
 
@@ -405,7 +394,10 @@ private struct SimplifiedStatRow: View {
             "Steals": "STL",
             "Blocks": "BLK",
             "Turnovers": "TO",
-            "Personal Fouls": "PF"
+            "Personal Fouls": "PF",
+            "Shots on Goal": "SOG",
+            "Points": "PTS",
+            "Penalty Minutes": "PIM"
         ]
         return shorts[stat.name] ?? stat.name
     }
