@@ -244,6 +244,10 @@ final class OddsComparisonViewModel: ObservableObject {
     private func applyFilters() {
         var filtered = allBets
 
+        // Hide games that have already started (no live support)
+        let now = Date()
+        filtered = filtered.filter { $0.commenceTime > now }
+
         // Require minimum 3 books for reliable data
         filtered = filtered.filter { $0.books.count >= 3 }
 
