@@ -158,6 +158,7 @@ struct TeamStatsContainer: View {
     private var shootingStats: [TeamComparisonStat] {
         stats.filter { stat in
             ["Field Goal %", "3-Point %", "Free Throw %"].contains(stat.name)
+                && (stat.homeValue != nil || stat.awayValue != nil)
         }
     }
 
@@ -165,12 +166,14 @@ struct TeamStatsContainer: View {
         stats.filter { stat in
             ["Field Goals Made", "3-Pointers Made", "Free Throws Made",
              "Total Rebounds", "Offensive Rebounds", "Defensive Rebounds", "Assists"].contains(stat.name)
+                && (stat.homeValue != nil || stat.awayValue != nil)
         }
     }
 
     private var disciplineStats: [TeamComparisonStat] {
         stats.filter { stat in
             ["Steals", "Blocks", "Turnovers", "Personal Fouls"].contains(stat.name)
+                && (stat.homeValue != nil || stat.awayValue != nil)
         }
     }
     
@@ -224,12 +227,7 @@ private struct StatGroupView: View {
                         stat: stat,
                         homeTeam: homeTeam,
                         awayTeam: awayTeam,
-                        annotation: StatAnnotationGenerator.annotation(
-                            for: stat,
-                            allStats: allStats,
-                            homeAbbrev: homeAbbrev,
-                            awayAbbrev: awayAbbrev
-                        )
+                        annotation: nil
                     )
 
                     // Divider between rows — subtle

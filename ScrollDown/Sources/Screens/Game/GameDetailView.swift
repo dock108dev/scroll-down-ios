@@ -42,6 +42,14 @@ struct GameDetailView: View {
         self.gameId = gameId
         self.leagueCode = leagueCode
         _viewModel = StateObject(wrappedValue: GameDetailViewModel(detail: detail))
+
+        let prefs = UserDefaults.standard.string(forKey: "gameExpandedSections") ?? "timeline"
+        let expandedSet = Set(prefs.split(separator: ",").map(String.init))
+        _isFlowCardExpanded = State(initialValue: expandedSet.contains("timeline"))
+        _isOverviewExpanded = State(initialValue: expandedSet.contains("overview"))
+        _isPlayerStatsExpanded = State(initialValue: expandedSet.contains("playerStats"))
+        _isTeamStatsExpanded = State(initialValue: expandedSet.contains("teamStats"))
+        _isWrapUpExpanded = State(initialValue: expandedSet.contains("final"))
     }
 
     var body: some View {

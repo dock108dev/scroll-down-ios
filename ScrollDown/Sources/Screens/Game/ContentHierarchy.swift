@@ -361,8 +361,9 @@ struct Tier4Container<Content: View>: View {
             }
         }
         // Minimal card chrome - just enough to indicate it's a container
-        .background(DesignSystem.Colors.rowBackground)
+        .background(DesignSystem.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(DesignSystem.borderColor, lineWidth: DesignSystem.borderWidth))
         // No shadow - reference content shouldn't demand attention
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }

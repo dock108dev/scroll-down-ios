@@ -11,8 +11,6 @@ import SwiftUI
 
 struct OddsComparisonView: View {
     @ObservedObject var viewModel: OddsComparisonViewModel
-    @State private var showingSettings = false
-
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading && viewModel.allBets.isEmpty {
@@ -56,9 +54,6 @@ struct OddsComparisonView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingSettings) {
-            FairBetSettingsSheet(viewModel: viewModel)
-        }
         .task {
             if viewModel.allBets.isEmpty {
                 await viewModel.loadAllData()
@@ -86,7 +81,7 @@ struct OddsComparisonView: View {
         HStack(spacing: 8) {
             if viewModel.positiveEVCount > 0 {
                 Text("\(viewModel.positiveEVCount) +EV Bets")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.title3.weight(.bold))
                     .foregroundColor(FairBetTheme.positive)
             } else {
                 Text("No +EV bets right now")
@@ -98,7 +93,7 @@ struct OddsComparisonView: View {
                 Text("·")
                     .foregroundColor(.secondary)
                 Text("Best +\(String(format: "%.1f", bestEV))%")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(.secondary)
             }
 
@@ -109,22 +104,12 @@ struct OddsComparisonView: View {
                 .foregroundColor(.secondary)
 
             Spacer()
-
-            // Settings button
-            Button {
-                showingSettings = true
-            } label: {
-                Image(systemName: "gear")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(FairBetTheme.surfaceSecondary.opacity(0.6))
+                .fill(viewModel.positiveEVCount > 0 ? FairBetTheme.positive.opacity(0.12) : FairBetTheme.surfaceSecondary.opacity(0.6))
         )
     }
 
@@ -283,60 +268,5 @@ struct FairBetErrorStateView: View {
                 .background(Capsule().fill(Color.accentColor))
         }
         .padding()
-    }
-}
-
-// MARK: - Settings Sheet
-
-struct FairBetSettingsSheet: View {
-    @ObservedObject var viewModel: OddsComparisonViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Display") {
-                    Picker("Odds Format", selection: $viewModel.oddsFormat) {
-                        ForEach(OddsFormat.allCases) { format in
-                            Text(format.rawValue).tag(format)
-                        }
-                    }
-                }
-
-                Section("Data Quality") {
-                    Toggle("Hide Limited Data", isOn: $viewModel.hideLimitedData)
-
-                    Text("When enabled, only shows bets with reliable fair odds (proper vig removal from multiple books).")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                Section("About") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("FairBet compares odds across sportsbooks to help you find value.")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-
-                        Text("Fair odds are estimated by removing vig from current market prices.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                Section {
-                    Text(FairBetCopy.disclaimer)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
     }
 }

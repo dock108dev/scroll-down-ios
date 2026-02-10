@@ -28,6 +28,7 @@ extension GameDetailView {
         } else {
             let processedStats = filteredAndSortedStats(stats)
             let teams = uniqueTeams(from: stats)
+            let columns = availableStatColumns(stats)
 
             VStack(spacing: GameDetailLayout.listSpacing) {
                 // Team filter
@@ -53,9 +54,9 @@ extension GameDetailView {
                     // SCROLLABLE COLUMNS - all rows scroll together
                     ScrollView(.horizontal, showsIndicators: false) {
                         VStack(spacing: 0) {
-                            scrollableHeaderCell
+                            scrollableHeaderCell(columns: columns)
                             ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2))
+                                scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2), columns: columns)
                             }
                         }
                     }
@@ -63,6 +64,24 @@ extension GameDetailView {
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
             }
         }
+    }
+
+    private func availableStatColumns(_ stats: [PlayerStat]) -> Set<String> {
+        var available = Set<String>()
+        for stat in stats {
+            if stat.minutes != nil { available.insert("min") }
+            if stat.points != nil { available.insert("pts") }
+            if stat.rebounds != nil { available.insert("reb") }
+            if stat.assists != nil { available.insert("ast") }
+            if rawStatInt(stat, "fg") != nil { available.insert("fg") }
+            if rawStatInt(stat, "fg3") != nil { available.insert("3pt") }
+            if rawStatInt(stat, "ft") != nil { available.insert("ft") }
+            if rawStatInt(stat, "stl") != nil { available.insert("stl") }
+            if rawStatInt(stat, "blk") != nil { available.insert("blk") }
+            if rawStatInt(stat, "tov") != nil { available.insert("tov") }
+            if rawStatString(stat, "plus_minus") != nil { available.insert("+/-") }
+        }
+        return available
     }
 
     private func uniqueTeams(from stats: [PlayerStat]) -> [String] {
@@ -171,19 +190,19 @@ extension GameDetailView {
 
     // MARK: - Scrollable Column Cells (Stats)
 
-    private var scrollableHeaderCell: some View {
+    private func scrollableHeaderCell(columns: Set<String>) -> some View {
         HStack(spacing: 6) {
-            Text("MIN").frame(width: 38)
-            Text("PTS").frame(width: 34)
-            Text("REB").frame(width: 34)
-            Text("AST").frame(width: 34)
-            Text("FG").frame(width: 48)
-            Text("3PT").frame(width: 48)
-            Text("FT").frame(width: 48)
-            Text("STL").frame(width: 30)
-            Text("BLK").frame(width: 30)
-            Text("TO").frame(width: 30)
-            Text("+/-").frame(width: 38)
+            if columns.contains("min") { Text("MIN").frame(width: 38) }
+            if columns.contains("pts") { Text("PTS").frame(width: 34) }
+            if columns.contains("reb") { Text("REB").frame(width: 34) }
+            if columns.contains("ast") { Text("AST").frame(width: 34) }
+            if columns.contains("fg") { Text("FG").frame(width: 48) }
+            if columns.contains("3pt") { Text("3PT").frame(width: 48) }
+            if columns.contains("ft") { Text("FT").frame(width: 48) }
+            if columns.contains("stl") { Text("STL").frame(width: 30) }
+            if columns.contains("blk") { Text("BLK").frame(width: 30) }
+            if columns.contains("tov") { Text("TO").frame(width: 30) }
+            if columns.contains("+/-") { Text("+/-").frame(width: 38) }
         }
         .font(DesignSystem.Typography.statLabel)
         .foregroundColor(DesignSystem.TextColor.secondary)
@@ -193,45 +212,67 @@ extension GameDetailView {
         .background(DesignSystem.Colors.elevatedBackground)
     }
 
-    private func scrollableDataCell(_ stat: PlayerStat, isAlternate: Bool) -> some View {
+    private func scrollableDataCell(_ stat: PlayerStat, isAlternate: Bool, columns: Set<String>) -> some View {
         let bgColor = isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground
         return HStack(spacing: 6) {
-            Text(formatMinutes(stat.minutes))
-                .foregroundColor(DesignSystem.TextColor.secondary)
-                .frame(width: 38)
+            if columns.contains("min") {
+                Text(formatMinutes(stat.minutes))
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .frame(width: 38)
+            }
 
-            Text(stat.points.map(String.init) ?? "--")
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.TextColor.primary)
-                .frame(width: 34)
+            if columns.contains("pts") {
+                Text(stat.points.map(String.init) ?? "--")
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.TextColor.primary)
+                    .frame(width: 34)
+            }
 
-            Text(stat.rebounds.map(String.init) ?? "--")
-                .frame(width: 34)
+            if columns.contains("reb") {
+                Text(stat.rebounds.map(String.init) ?? "--")
+                    .frame(width: 34)
+            }
 
-            Text(stat.assists.map(String.init) ?? "--")
-                .frame(width: 34)
+            if columns.contains("ast") {
+                Text(stat.assists.map(String.init) ?? "--")
+                    .frame(width: 34)
+            }
 
-            Text(formatShotStat(made: rawStatInt(stat, "fg"), attempted: rawStatInt(stat, "fga")))
-                .frame(width: 48)
+            if columns.contains("fg") {
+                Text(formatShotStat(made: rawStatInt(stat, "fg"), attempted: rawStatInt(stat, "fga")))
+                    .frame(width: 48)
+            }
 
-            Text(formatShotStat(made: rawStatInt(stat, "fg3"), attempted: rawStatInt(stat, "fg3a")))
-                .frame(width: 48)
+            if columns.contains("3pt") {
+                Text(formatShotStat(made: rawStatInt(stat, "fg3"), attempted: rawStatInt(stat, "fg3a")))
+                    .frame(width: 48)
+            }
 
-            Text(formatShotStat(made: rawStatInt(stat, "ft"), attempted: rawStatInt(stat, "fta")))
-                .frame(width: 48)
+            if columns.contains("ft") {
+                Text(formatShotStat(made: rawStatInt(stat, "ft"), attempted: rawStatInt(stat, "fta")))
+                    .frame(width: 48)
+            }
 
-            Text(rawStatInt(stat, "stl").map(String.init) ?? "--")
-                .frame(width: 30)
+            if columns.contains("stl") {
+                Text(rawStatInt(stat, "stl").map(String.init) ?? "--")
+                    .frame(width: 30)
+            }
 
-            Text(rawStatInt(stat, "blk").map(String.init) ?? "--")
-                .frame(width: 30)
+            if columns.contains("blk") {
+                Text(rawStatInt(stat, "blk").map(String.init) ?? "--")
+                    .frame(width: 30)
+            }
 
-            Text(rawStatInt(stat, "tov").map(String.init) ?? "--")
-                .frame(width: 30)
+            if columns.contains("tov") {
+                Text(rawStatInt(stat, "tov").map(String.init) ?? "--")
+                    .frame(width: 30)
+            }
 
-            Text(rawStatString(stat, "plus_minus") ?? "--")
-                .foregroundColor(plusMinusColor(rawStatString(stat, "plus_minus")))
-                .frame(width: 38)
+            if columns.contains("+/-") {
+                Text(rawStatString(stat, "plus_minus") ?? "--")
+                    .foregroundColor(plusMinusColor(rawStatString(stat, "plus_minus")))
+                    .frame(width: 38)
+            }
         }
         .font(DesignSystem.Typography.statValue)
         .foregroundColor(DesignSystem.TextColor.secondary)

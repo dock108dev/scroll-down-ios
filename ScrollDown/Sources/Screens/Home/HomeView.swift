@@ -7,10 +7,10 @@ import UIKit
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var earlierSection = HomeSectionState(range: .earlier, title: HomeStrings.sectionEarlier, isExpanded: false)
-    @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: false)
-    @State private var todaySection = HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: false)
-    @State private var tomorrowSection = HomeSectionState(range: .tomorrow, title: HomeStrings.sectionTomorrow, isExpanded: false)
+    @State private var earlierSection: HomeSectionState
+    @State private var yesterdaySection: HomeSectionState
+    @State private var todaySection: HomeSectionState
+    @State private var tomorrowSection: HomeSectionState
     @State private var errorMessage: String?
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
@@ -20,6 +20,15 @@ struct HomeView: View {
     @State private var refreshId = UUID()
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
+
+    init() {
+        let prefs = UserDefaults.standard.string(forKey: "homeExpandedSections") ?? ""
+        let expandedSet = Set(prefs.split(separator: ",").map(String.init))
+        _earlierSection = State(initialValue: HomeSectionState(range: .earlier, title: HomeStrings.sectionEarlier, isExpanded: expandedSet.contains("earlier")))
+        _yesterdaySection = State(initialValue: HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: expandedSet.contains("yesterday")))
+        _todaySection = State(initialValue: HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: expandedSet.contains("current")))
+        _tomorrowSection = State(initialValue: HomeSectionState(range: .tomorrow, title: HomeStrings.sectionTomorrow, isExpanded: expandedSet.contains("tomorrow")))
+    }
 
     var body: some View {
         ZStack {
@@ -187,7 +196,7 @@ struct HomeView: View {
             } else if viewMode == .odds {
                 OddsComparisonView(viewModel: oddsViewModel)
             } else {
-                SettingsView()
+                SettingsView(oddsViewModel: oddsViewModel)
             }
         }
     }

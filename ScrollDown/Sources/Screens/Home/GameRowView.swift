@@ -3,11 +3,12 @@ import SwiftUI
 /// Display state for game cards on home screen
 enum GameCardState {
     case available   // Has PBP data - tappable, prominent
+    case pregame     // Scheduled but has odds/pregame data - tappable
     case comingSoon  // Completed but hasPbp == false - greyed, non-tappable
     case upcoming    // Upcoming/scheduled game - non-tappable, muted appearance
 
     var isTappable: Bool {
-        self == .available
+        self == .available || self == .pregame
     }
 }
 
@@ -34,7 +35,9 @@ struct GameRowView: View {
                 return .comingSoon
             }
             return .available
-        case .scheduled, .inProgress, .postponed, .canceled:
+        case .scheduled:
+            return .pregame
+        case .inProgress, .postponed, .canceled:
             return .upcoming
         }
     }
@@ -47,7 +50,7 @@ struct GameRowView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(leagueColor.opacity(cardState == .available ? 1.0 : 0.4))
+                .background(leagueColor.opacity(cardState == .available || cardState == .pregame ? 1.0 : 0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             // Matchup title - the headline
@@ -57,11 +60,17 @@ struct GameRowView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            // Final score for read games
+            // Final score for read games — team-colored
             if isRead, let home = game.homeScore, let away = game.awayScore {
-                Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(away)  -  \(home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(away)")
+                        .foregroundColor(DesignSystem.TeamColors.color(for: game.awayTeamName))
+                    Text("-")
+                        .foregroundColor(.secondary)
+                    Text("\(home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                        .foregroundColor(DesignSystem.TeamColors.color(for: game.homeTeamName))
+                }
+                .font(.caption.weight(.semibold).monospacedDigit())
             }
 
             // Date + optional play/moment counts (debug)
@@ -97,7 +106,7 @@ struct GameRowView: View {
 
     private var matchupTextColor: Color {
         switch cardState {
-        case .available: return .primary
+        case .available, .pregame: return .primary
         case .comingSoon, .upcoming: return Color(.secondaryLabel)
         }
     }
@@ -105,7 +114,7 @@ struct GameRowView: View {
     private var cardBackground: some View {
         Group {
             switch cardState {
-            case .available:
+            case .available, .pregame:
                 HomeTheme.cardBackground
             case .comingSoon, .upcoming:
                 // Muted background - lighter in dark mode to avoid blending
@@ -116,14 +125,14 @@ struct GameRowView: View {
 
     private var shadowColor: Color {
         switch cardState {
-        case .available: return HomeTheme.cardShadow
+        case .available, .pregame: return HomeTheme.cardShadow
         case .comingSoon, .upcoming: return .clear
         }
     }
 
     private var shadowRadius: CGFloat {
         switch cardState {
-        case .available: return HomeTheme.cardShadowRadius
+        case .available, .pregame: return HomeTheme.cardShadowRadius
         case .comingSoon, .upcoming: return 0
         }
     }
@@ -141,6 +150,14 @@ struct GameRowView: View {
                     .font(.caption.weight(.medium))
                     .foregroundColor(Color(.tertiaryLabel))
             }
+        case .pregame:
+            HStack(spacing: 4) {
+                Image(systemName: "bubble.left.and.text.bubble.right")
+                    .font(.caption2)
+                Text("Pregame")
+                    .font(.caption2)
+            }
+            .foregroundColor(Color(.secondaryLabel))
         case .comingSoon:
             // Coming soon state - game completed but no PBP yet
             HStack(spacing: 4) {
@@ -196,6 +213,8 @@ struct GameRowView: View {
         switch cardState {
         case .available:
             stateDescription = "Tap to view game flow"
+        case .pregame:
+            stateDescription = "Tap to view pregame buzz"
         case .comingSoon:
             stateDescription = "Coming soon, play-by-play data is being processed"
         case .upcoming:
@@ -205,7 +224,7 @@ struct GameRowView: View {
     }
 
     private var accessibilityHint: String {
-        cardState.isTappable ? "Double tap to view game flow" : ""
+        cardState.isTappable ? "Double tap to view game" : ""
     }
 }
 

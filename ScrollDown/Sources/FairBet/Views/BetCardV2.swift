@@ -205,19 +205,19 @@ struct MiniBookChip: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(abbreviatedName)
-                .font(.caption2.weight(.medium))
+                .font(.caption.weight(.medium))
                 .foregroundColor(isPositiveEV ? evColor : .secondary)
 
             Text(FairBetCopy.formatOdds(book.price))
-                .font(.caption.weight(.semibold))
+                .font(.subheadline.weight(.bold))
                 .foregroundColor(isPositiveEV ? evColor : .primary)
 
             Text(FairBetCopy.formatEV(ev))
-                .font(.caption2)
+                .font(.caption)
                 .foregroundColor(evColor.opacity(0.8))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(chipBackground)
