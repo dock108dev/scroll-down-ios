@@ -157,10 +157,14 @@ final class OddsComparisonViewModel: ObservableObject {
 
     /// Load ALL data from the API (fetch all pages)
     func loadAllData() async {
+        let isInitialLoad = allBets.isEmpty
         isLoading = true
         errorMessage = nil
-        allBets = []
-        loadingProgress = "Loading odds..."
+
+        // Only clear data and show progress on initial load — preserve existing data during refresh
+        if isInitialLoad {
+            loadingProgress = "Loading odds..."
+        }
 
         do {
             var allFetchedBets: [APIBet] = []
@@ -169,7 +173,9 @@ final class OddsComparisonViewModel: ObservableObject {
             var hasMore = true
 
             while hasMore {
-                loadingProgress = "Loading \(allFetchedBets.count)+ bets..."
+                if isInitialLoad {
+                    loadingProgress = "Loading \(allFetchedBets.count)+ bets..."
+                }
 
                 let response = try await apiClient.fetchOdds(
                     league: nil, // Fetch all leagues
@@ -192,7 +198,10 @@ final class OddsComparisonViewModel: ObservableObject {
                 .map { $0.filteringBooks(to: Self.allowedBooks) }
                 .filter { !$0.books.isEmpty }
             booksAvailable = booksAvailable.filter { Self.allowedBooks.contains($0) }
-            loadingProgress = "Calculating EV for \(allBets.count) bets..."
+
+            if isInitialLoad {
+                loadingProgress = "Calculating EV for \(allBets.count) bets..."
+            }
 
             // Pre-compute pairs once (O(n) instead of O(n²))
             cachedPairs = BetPairingService.pairBets(allBets)
@@ -203,8 +212,11 @@ final class OddsComparisonViewModel: ObservableObject {
             applyFilters()
 
         } catch {
-            errorMessage = error.localizedDescription
-            loadMockData()
+            // On refresh with existing data, silently keep showing old data
+            if allBets.isEmpty {
+                errorMessage = error.localizedDescription
+                loadMockData()
+            }
         }
 
         isLoading = false

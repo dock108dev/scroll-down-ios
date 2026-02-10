@@ -400,8 +400,10 @@ struct HomeView: View {
         updateLastUpdatedAt(from: results)
         saveSectionsToCache(results, cache: cache)
 
-        // 5. Only show global error if ALL sections failed AND no cached data
-        if results.allSatisfy({ $0.errorMessage != nil }) && !hasCachedData {
+        // 5. Only show global error if ALL sections failed AND no data to display
+        let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
+            || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
+        if results.allSatisfy({ $0.errorMessage != nil }) && !hasAnyData {
             errorMessage = HomeStrings.globalErrorMessage
         }
 
@@ -439,21 +441,28 @@ struct HomeView: View {
 
             switch result.range {
             case .earlier:
-                // Reverse chronological - most recent at bottom, scroll up to go back in time
-                earlierSection.games = sortedGames.reversed()
-                earlierSection.errorMessage = result.errorMessage
+                if result.errorMessage == nil {
+                    earlierSection.games = sortedGames.reversed()
+                }
+                earlierSection.errorMessage = earlierSection.games.isEmpty ? result.errorMessage : nil
                 earlierSection.isLoading = false
             case .yesterday:
-                yesterdaySection.games = sortedGames
-                yesterdaySection.errorMessage = result.errorMessage
+                if result.errorMessage == nil {
+                    yesterdaySection.games = sortedGames
+                }
+                yesterdaySection.errorMessage = yesterdaySection.games.isEmpty ? result.errorMessage : nil
                 yesterdaySection.isLoading = false
             case .current:
-                todaySection.games = sortedGames
-                todaySection.errorMessage = result.errorMessage
+                if result.errorMessage == nil {
+                    todaySection.games = sortedGames
+                }
+                todaySection.errorMessage = todaySection.games.isEmpty ? result.errorMessage : nil
                 todaySection.isLoading = false
             case .tomorrow:
-                tomorrowSection.games = sortedGames
-                tomorrowSection.errorMessage = result.errorMessage
+                if result.errorMessage == nil {
+                    tomorrowSection.games = sortedGames
+                }
+                tomorrowSection.errorMessage = tomorrowSection.games.isEmpty ? result.errorMessage : nil
                 tomorrowSection.isLoading = false
             case .next24:
                 break
