@@ -71,6 +71,12 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: threeDaysAgo)))
             queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
 
+        case .tomorrow:
+            let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
+            let dateStr = dateFormatter.string(from: tomorrow)
+            queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
+            queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
+
         case .next24:
             let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
             let todayStr = dateFormatter.string(from: today)

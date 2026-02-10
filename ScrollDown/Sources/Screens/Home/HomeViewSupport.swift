@@ -106,10 +106,12 @@ enum HomeStrings {
     static let sectionYesterday = "Yesterday"
     static let sectionToday = "Today"
     static let sectionUpcoming = "Coming Up"
+    static let sectionTomorrow = "Tomorrow"
     static let sectionLoading = "Loading section..."
     static let earlierEmpty = "No games from earlier."
     static let yesterdayEmpty = "No games from yesterday."
     static let todayEmpty = "No games scheduled for today."
+    static let tomorrowEmpty = "No games scheduled for tomorrow."
     static let upcomingEmpty = "No games scheduled in the next 24 hours."
     static let updatedTemplate = "Updated %@"
     static let updateUnavailable = "Update time unavailable"
@@ -117,6 +119,7 @@ enum HomeStrings {
     static let earlierError = "Earlier games unavailable. %@"
     static let yesterdayError = "Yesterday's games unavailable. %@"
     static let todayError = "Today's games unavailable. %@"
+    static let tomorrowError = "Tomorrow's games unavailable. %@"
     static let upcomingError = "Coming up games unavailable. %@"
 }
 

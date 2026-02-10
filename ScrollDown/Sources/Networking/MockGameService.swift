@@ -83,6 +83,13 @@ final class MockGameService: GameService {
                 guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
                 return gameDate >= todayStart && gameDate <= todayEnd
             }
+        case .tomorrow:
+            let tomorrowStart = estCalendar.date(byAdding: .day, value: 1, to: todayStart)!
+            let tomorrowEnd = estCalendar.date(byAdding: .day, value: 2, to: todayStart)!.addingTimeInterval(-1)
+            return games.filter { game in
+                guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
+                return gameDate >= tomorrowStart && gameDate <= tomorrowEnd
+            }
         case .next24:
             let windowEnd = now.addingTimeInterval(24 * 60 * 60)
             return games.filter { game in

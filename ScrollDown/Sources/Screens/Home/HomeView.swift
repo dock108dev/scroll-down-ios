@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var earlierSection = HomeSectionState(range: .earlier, title: HomeStrings.sectionEarlier, isExpanded: false)
     @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: true)
     @State private var todaySection = HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: true)
+    @State private var tomorrowSection = HomeSectionState(range: .tomorrow, title: HomeStrings.sectionTomorrow, isExpanded: true)
     @State private var errorMessage: String?
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
@@ -224,13 +225,18 @@ struct HomeView: View {
                         sectionContent(for: yesterdaySection)
                     }
 
-                    // Today section (only completed games)
-                    if !todaySection.completedGames.isEmpty || todaySection.isLoading {
-                        sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
-                            .id(todaySection.title)
-                        if todaySection.isExpanded {
-                            sectionContent(for: todaySection, completedOnly: true)
-                        }
+                    // Today section (all games — completed recaps + scheduled/in-progress)
+                    sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
+                        .id(todaySection.title)
+                    if todaySection.isExpanded {
+                        sectionContent(for: todaySection)
+                    }
+
+                    // Tomorrow section
+                    sectionHeader(for: tomorrowSection, isExpanded: $tomorrowSection.isExpanded)
+                        .id(tomorrowSection.title)
+                    if tomorrowSection.isExpanded {
+                        sectionContent(for: tomorrowSection)
                     }
                 }
                 .id(refreshId)
@@ -334,7 +340,7 @@ struct HomeView: View {
                 triggerHapticIfNeeded(for: game)
             })
         } else {
-            // Flow pending or locked - no navigation, static card
+            // Flow pending or upcoming - no navigation, static card
             rowView
                 .allowsHitTesting(false)
         }
@@ -349,17 +355,20 @@ struct HomeView: View {
         earlierSection.isLoading = true
         yesterdaySection.isLoading = true
         todaySection.isLoading = true
+        tomorrowSection.isLoading = true
         earlierSection.errorMessage = nil
         yesterdaySection.errorMessage = nil
         todaySection.errorMessage = nil
+        tomorrowSection.errorMessage = nil
 
         let service = appConfig.gameService
 
         async let earlierResult = loadSection(range: .earlier, service: service)
         async let yesterdayResult = loadSection(range: .yesterday, service: service)
         async let todayResult = loadSection(range: .current, service: service)
+        async let tomorrowResult = loadSection(range: .tomorrow, service: service)
 
-        let results = await [earlierResult, yesterdayResult, todayResult]
+        let results = await [earlierResult, yesterdayResult, todayResult, tomorrowResult]
 
         applyHomeSectionResults(results)
         updateLastUpdatedAt(from: results)
@@ -414,8 +423,12 @@ struct HomeView: View {
                 todaySection.games = sortedGames
                 todaySection.errorMessage = result.errorMessage
                 todaySection.isLoading = false
+            case .tomorrow:
+                tomorrowSection.games = sortedGames
+                tomorrowSection.errorMessage = result.errorMessage
+                tomorrowSection.isLoading = false
             case .next24:
-                break // Not used - we don't show upcoming games
+                break
             }
         }
     }
@@ -444,7 +457,7 @@ struct HomeView: View {
     }
 
     private var sectionsInOrder: [HomeSectionState] {
-        [earlierSection, yesterdaySection, todaySection]
+        [earlierSection, yesterdaySection, todaySection, tomorrowSection]
     }
 
     private func sectionEmptyMessage(for section: HomeSectionState) -> String {
@@ -455,6 +468,8 @@ struct HomeView: View {
             return HomeStrings.yesterdayEmpty
         case .current:
             return HomeStrings.todayEmpty
+        case .tomorrow:
+            return HomeStrings.tomorrowEmpty
         case .next24:
             return HomeStrings.upcomingEmpty
         }
@@ -468,6 +483,8 @@ struct HomeView: View {
             return String(format: HomeStrings.yesterdayError, error)
         case .current:
             return String(format: HomeStrings.todayError, error)
+        case .tomorrow:
+            return String(format: HomeStrings.tomorrowError, error)
         case .next24:
             return String(format: HomeStrings.upcomingError, error)
         }

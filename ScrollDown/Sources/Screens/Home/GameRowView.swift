@@ -4,7 +4,7 @@ import SwiftUI
 enum GameCardState {
     case available   // Has PBP data - tappable, prominent
     case comingSoon  // Completed but hasPbp == false - greyed, non-tappable
-    case locked      // Upcoming/scheduled game - non-tappable, locked appearance
+    case upcoming    // Upcoming/scheduled game - non-tappable, muted appearance
 
     var isTappable: Bool {
         self == .available
@@ -13,18 +13,19 @@ enum GameCardState {
 
 
 /// Row view for displaying a game summary in a list
-/// Supports three visual states: flow available, flow pending, and locked
+/// Supports three visual states: flow available, flow pending, and upcoming
 struct GameRowView: View {
     let game: GameSummary
 
     /// Whether the user has read this game's wrap-up
     private var isRead: Bool {
-        UserDefaults.standard.bool(forKey: "game.read.\(game.id)")
+        guard game.status?.isCompleted == true else { return false }
+        return UserDefaults.standard.bool(forKey: "game.read.\(game.id)")
     }
 
     /// Computed card state based on game status and data availability
     var cardState: GameCardState {
-        guard let status = game.status else { return .locked }
+        guard let status = game.status else { return .upcoming }
 
         switch status {
         case .completed, .final:
@@ -34,7 +35,7 @@ struct GameRowView: View {
             }
             return .available
         case .scheduled, .inProgress, .postponed, .canceled:
-            return .locked
+            return .upcoming
         }
     }
 
@@ -97,7 +98,7 @@ struct GameRowView: View {
     private var matchupTextColor: Color {
         switch cardState {
         case .available: return .primary
-        case .comingSoon, .locked: return Color(.secondaryLabel)
+        case .comingSoon, .upcoming: return Color(.secondaryLabel)
         }
     }
 
@@ -106,7 +107,7 @@ struct GameRowView: View {
             switch cardState {
             case .available:
                 HomeTheme.cardBackground
-            case .comingSoon, .locked:
+            case .comingSoon, .upcoming:
                 // Muted background - lighter in dark mode to avoid blending
                 Color(.systemGray5)
             }
@@ -116,14 +117,14 @@ struct GameRowView: View {
     private var shadowColor: Color {
         switch cardState {
         case .available: return HomeTheme.cardShadow
-        case .comingSoon, .locked: return .clear
+        case .comingSoon, .upcoming: return .clear
         }
     }
 
     private var shadowRadius: CGFloat {
         switch cardState {
         case .available: return HomeTheme.cardShadowRadius
-        case .comingSoon, .locked: return 0
+        case .comingSoon, .upcoming: return 0
         }
     }
 
@@ -149,15 +150,8 @@ struct GameRowView: View {
                     .font(.caption2)
             }
             .foregroundColor(Color(.quaternaryLabel))
-        case .locked:
-            // Clear lock state without chevron
-            HStack(spacing: 4) {
-                Image(systemName: "lock.fill")
-                    .font(.caption2)
-                Text("After game")
-                    .font(.caption2)
-            }
-            .foregroundColor(Color(.quaternaryLabel))
+        case .upcoming:
+            EmptyView()
         }
     }
 
@@ -168,8 +162,8 @@ struct GameRowView: View {
     }
 
     private var dateDisplay: String {
-        // For locked games, emphasize the scheduled time
-        if cardState == .locked, let date = game.parsedGameDate {
+        // For upcoming games, emphasize the scheduled time
+        if cardState == .upcoming, let date = game.parsedGameDate {
             let formatter = DateFormatter()
             if Calendar.current.isDateInTomorrow(date) {
                 formatter.timeStyle = .short
@@ -204,8 +198,8 @@ struct GameRowView: View {
             stateDescription = "Tap to view game flow"
         case .comingSoon:
             stateDescription = "Coming soon, play-by-play data is being processed"
-        case .locked:
-            stateDescription = "Available after game completes"
+        case .upcoming:
+            stateDescription = "Upcoming game, not yet available"
         }
         return "\(game.awayTeamName) at \(game.homeTeamName). \(stateDescription)."
     }
