@@ -139,35 +139,11 @@ struct GameRowView: View {
 
     @ViewBuilder
     private var rightElement: some View {
-        switch cardState {
-        case .available:
-            if isRead {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(Color(.tertiaryLabel))
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(Color(.tertiaryLabel))
-            }
-        case .pregame:
-            HStack(spacing: 4) {
-                Image(systemName: "bubble.left.and.text.bubble.right")
-                    .font(.caption2)
-                Text("Pregame")
-                    .font(.caption2)
-            }
-            .foregroundColor(Color(.secondaryLabel))
-        case .comingSoon:
-            // Coming soon state - game completed but no PBP yet
-            HStack(spacing: 4) {
-                Image(systemName: "clock")
-                    .font(.caption2)
-                Text("Coming Soon")
-                    .font(.caption2)
-            }
-            .foregroundColor(Color(.quaternaryLabel))
-        case .upcoming:
+        if cardState == .available && isRead {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundColor(Color(.tertiaryLabel))
+        } else {
             EmptyView()
         }
     }

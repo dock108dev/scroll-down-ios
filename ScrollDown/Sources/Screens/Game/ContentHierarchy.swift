@@ -108,7 +108,7 @@ enum TierLayout {
         static let horizontalPadding: CGFloat = 10
         static let rowSpacing: CGFloat = 0
 
-        static var headerFont: Font { .caption.weight(.semibold) }
+        static var headerFont: Font { .footnote.weight(.semibold) }
         static var bodyFont: Font { .caption }
     }
 }
@@ -156,17 +156,12 @@ struct FlowCardContainer<Content: View>: View {
                 }
             } label: {
                 HStack {
-                    Text(title.uppercased())
-                        .font(.caption.weight(.bold))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .tracking(0.5)
+                    Text(title)
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(DesignSystem.TextColor.secondary)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
-                .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
+                .padding(.horizontal, 16)
                 .padding(.top, TierLayout.Supporting.verticalSpacing)
                 .padding(.bottom, 8)
                 .contentShape(Rectangle())
@@ -340,10 +335,10 @@ struct Tier4Container<Content: View>: View {
                 HStack {
                     Text(title)
                         .font(TierLayout.Reference.headerFont)
-                        .foregroundColor(DesignSystem.TextColor.secondary)
+                        .foregroundColor(DesignSystem.TextColor.primary)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption2)
+                        .font(.caption2.weight(.semibold))
                         .foregroundColor(DesignSystem.TextColor.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }

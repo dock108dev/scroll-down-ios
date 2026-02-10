@@ -42,9 +42,9 @@ struct FlowBlockCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Period indicator
+            // Period indicator (structural anchor)
             Text(block.periodDisplay)
-                .textStyle(.metadataSmall)
+                .textStyle(.structure)
 
             // Narrative text
             Text(block.narrative)

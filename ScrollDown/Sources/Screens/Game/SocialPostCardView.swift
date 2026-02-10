@@ -263,11 +263,11 @@ struct SocialPostRow: View {
                 // Attribution header
                 attributionHeader
 
-                // Tweet text
+                // Tweet text (secondary to narrative — reacts to the game, doesn't explain it)
                 if let text = post.tweetText {
                     Text(text)
                         .font(.subheadline)
-                        .foregroundColor(DesignSystem.TextColor.primary)
+                        .foregroundColor(DesignSystem.TextColor.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
@@ -312,21 +312,21 @@ struct SocialPostRow: View {
     // MARK: - Attribution Header
 
     private var attributionHeader: some View {
-        HStack(spacing: 6) {
-            // X platform badge
+        HStack(spacing: 5) {
+            // X platform badge (citation-sized, not dominant)
             ZStack {
                 Circle()
-                    .fill(Color(.label))
-                    .frame(width: 18, height: 18)
+                    .fill(Color(.label).opacity(0.5))
+                    .frame(width: 14, height: 14)
                 Text("\u{1D54F}")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 7, weight: .bold))
                     .foregroundColor(Color(.systemBackground))
             }
 
             if let handle = post.sourceHandle {
                 Text("@\(handle)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
             }
 
             Spacer()

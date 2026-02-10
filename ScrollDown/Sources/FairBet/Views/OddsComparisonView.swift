@@ -27,13 +27,26 @@ struct OddsComparisonView: View {
                 // Bets feed
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        // Slim summary bar
-                        summaryBar
-                            .padding(.bottom, 4)
-
-                        // Compact filters (market + EV toggle, no league filters)
-                        filtersSection
-                            .padding(.bottom, 8)
+                        // Refresh button (right-aligned)
+                        HStack {
+                            Spacer()
+                            Button {
+                                Task { await viewModel.refresh() }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule()
+                                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(viewModel.isLoading)
+                        }
+                        .padding(.bottom, 4)
 
                         // Bet cards
                         ForEach(viewModel.displayedBets) { bet in
@@ -75,71 +88,7 @@ struct OddsComparisonView: View {
         }
     }
 
-    // MARK: - Summary Bar
-
-    private var summaryBar: some View {
-        HStack(spacing: 8) {
-            if viewModel.positiveEVCount > 0 {
-                Text("\(viewModel.positiveEVCount) +EV Bets")
-                    .font(.title3.weight(.bold))
-                    .foregroundColor(FairBetTheme.positive)
-            } else {
-                Text("No +EV bets right now")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.secondary)
-            }
-
-            if let bestEV = viewModel.bestEVAvailable, bestEV > 0 {
-                Text("·")
-                    .foregroundColor(.secondary)
-                Text("Best +\(String(format: "%.1f", bestEV))%")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
-            }
-
-            Text("·")
-                .foregroundColor(.secondary)
-            Text("\(viewModel.booksAvailable.count) Books")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(viewModel.positiveEVCount > 0 ? FairBetTheme.positive.opacity(0.12) : FairBetTheme.surfaceSecondary.opacity(0.6))
-        )
-    }
-
-    // MARK: - Filters Section (market + EV toggle only, no league)
-
-    private var filtersSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                // +EV Only toggle
-                CompactEVToggle(isOn: $viewModel.showOnlyPositiveEV)
-
-                // Refresh button
-                Button {
-                    Task { await viewModel.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .disabled(viewModel.isLoading)
-            }
-        }
-    }
+    // MARK: - Filters Section removed (summary bar + EV toggle removed, refresh moved inline)
 
     // MARK: - Empty State
 

@@ -82,33 +82,9 @@ struct BetCardV2: View {
                     .foregroundColor(.secondary)
             }
 
-            // Row 3: Fair Odds + EV
-            HStack {
-                HStack(spacing: 6) {
-                    Text("Fair Odds")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                }
-
-                Spacer()
-
-                if confidence == .low || confidence == .none {
-                    ConfidenceIndicator()
-                }
-
-                if let ev = bestBookEV {
-                    Text(FairBetCopy.formatEV(ev))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundColor(evColor(for: ev))
-                }
-            }
-
             Divider()
 
-            // Row 5: Books Grid
+            // Books Grid (with Fair Odds as first chip)
             booksGrid
         }
         .padding(.horizontal, 14)
@@ -147,6 +123,22 @@ struct BetCardV2: View {
 
     private var booksGrid: some View {
         FlowLayout(spacing: 6) {
+            // Fair Odds chip (first in row)
+            HStack(spacing: 4) {
+                Text("Fair Odds")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.secondary)
+                Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(.primary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(FairBetTheme.surfaceSecondary.opacity(0.5))
+            )
+
             ForEach(sortedBooks) { book in
                 MiniBookChip(
                     book: book,

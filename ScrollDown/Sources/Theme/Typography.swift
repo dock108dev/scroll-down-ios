@@ -26,6 +26,11 @@ enum TextStyle {
     case label
     case labelSmall
 
+    // MARK: - Structure (Orientation Markers)
+    /// Used for: Period/time markers (H1 · 12:43–11:30), game state indicators
+    /// Structural anchors — smaller than narrative but never ignorable
+    case structure
+
     // MARK: - Metadata (Contextual, De-emphasized)
     /// Used for: Time remaining, score changes, quarter indicators, stat units
     /// Readable but ignorable
@@ -112,6 +117,8 @@ struct TextStyleModifier: ViewModifier {
             return .subheadline
         case .labelSmall:
             return .caption
+        case .structure:
+            return .caption
         case .metadata:
             return .caption
         case .metadataSmall:
@@ -137,6 +144,8 @@ struct TextStyleModifier: ViewModifier {
             return .medium
         case .labelSmall:
             return .medium
+        case .structure:
+            return .medium
         case .metadata:
             return .regular
         case .metadataSmall:
@@ -160,6 +169,8 @@ struct TextStyleModifier: ViewModifier {
             return DesignSystem.TextColor.secondary
         case .label, .labelSmall:
             return DesignSystem.TextColor.secondary
+        case .structure:
+            return DesignSystem.TextColor.secondary
         case .metadata, .metadataSmall:
             return DesignSystem.TextColor.tertiary
         case .scoreDisplay:
@@ -177,6 +188,8 @@ struct TextStyleModifier: ViewModifier {
             return TypographyConfig.headerLineHeight
         case .label, .labelSmall:
             return TypographyConfig.labelLineHeight
+        case .structure:
+            return TypographyConfig.metadataLineHeight
         case .metadata, .metadataSmall:
             return TypographyConfig.metadataLineHeight
         case .scoreDisplay, .scoreLarge:
