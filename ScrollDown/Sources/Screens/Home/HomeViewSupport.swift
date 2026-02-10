@@ -33,6 +33,11 @@ struct HomeSectionState: Identifiable {
     var completedGames: [GameSummary] {
         games.filter { $0.status?.isCompleted == true }
     }
+
+    /// Number of completed games the user has read (expanded the Wrap Up)
+    var readCount: Int {
+        games.filter { $0.status?.isCompleted == true && UserDefaults.standard.bool(forKey: "game.read.\($0.id)") }.count
+    }
 }
 
 /// Result from loading a single section

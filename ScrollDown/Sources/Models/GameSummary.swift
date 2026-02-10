@@ -2,7 +2,7 @@ import Foundation
 
 /// Game summary for list views matching the admin API /games endpoint
 /// All fields use camelCase per API specification
-struct GameSummary: Decodable, Identifiable, Hashable {
+struct GameSummary: Codable, Identifiable, Hashable {
     let id: Int
     let leagueCode: String
     let gameDate: String

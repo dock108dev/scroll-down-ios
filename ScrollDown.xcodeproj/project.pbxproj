@@ -14,6 +14,7 @@
 		01B986765AC67398B8DD9F30 /* RealGameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB568BF5AFFF75D7E35466F /* RealGameService.swift */; };
 		037238B5678E56309A67E681 /* GameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70694AE5FC38C7D7CED2BD1E /* GameService.swift */; };
 		04E0E81409E9CF33F84FA1F5 /* FlowAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97270479011A3128120BEE14 /* FlowAdapter.swift */; };
+		A1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */; };
 		05588280D44FDEA42F825A97 /* GameDetailView+NHLStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF49679F62AA381F3FD77922 /* GameDetailView+NHLStats.swift */; };
 		055F3D27BD6A844858305041 /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C44CFE6E65A8CFA9D20B226 /* MockDataGenerator.swift */; };
 		080FF3C88C14516E9D6EFCC4 /* SocialPostCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9095C21AD848523F5F28AF47 /* SocialPostCardView.swift */; };
@@ -192,6 +193,7 @@
 		STORY00100000000000000C /* MoreReactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoreReactionsView.swift; sourceTree = "<group>"; };
 		STORY00100000000000000E /* FullPlayByPlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FullPlayByPlayView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGameCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -421,6 +423,7 @@
 				1C44CFE6E65A8CFA9D20B226 /* MockDataGenerator.swift */,
 				70694AE5FC38C7D7CED2BD1E /* GameService.swift */,
 				97270479011A3128120BEE14 /* FlowAdapter.swift */,
+				B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -626,6 +629,7 @@
 				STORY00100000000000000D /* FullPlayByPlayView.swift in Sources */,
 				64A236D86CFE5306390C8718 /* GameFlowDisplay.swift in Sources */,
 				04E0E81409E9CF33F84FA1F5 /* FlowAdapter.swift in Sources */,
+				A1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift in Sources */,
 				16C676513902F4901D80098A /* HomeViewSupport.swift in Sources */,
 				F2E1D0C9B8A7F6E5D4C3B2A1 /* SettingsView.swift in Sources */,
 				4A70E261308F486937F45170 /* TeamView.swift in Sources */,

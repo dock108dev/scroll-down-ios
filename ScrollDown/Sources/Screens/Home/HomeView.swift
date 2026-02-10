@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import UIKit
 
@@ -7,9 +8,9 @@ struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var earlierSection = HomeSectionState(range: .earlier, title: HomeStrings.sectionEarlier, isExpanded: false)
-    @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: true)
-    @State private var todaySection = HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: true)
-    @State private var tomorrowSection = HomeSectionState(range: .tomorrow, title: HomeStrings.sectionTomorrow, isExpanded: true)
+    @State private var yesterdaySection = HomeSectionState(range: .yesterday, title: HomeStrings.sectionYesterday, isExpanded: false)
+    @State private var todaySection = HomeSectionState(range: .current, title: HomeStrings.sectionToday, isExpanded: false)
+    @State private var tomorrowSection = HomeSectionState(range: .tomorrow, title: HomeStrings.sectionTomorrow, isExpanded: false)
     @State private var errorMessage: String?
     @State private var lastUpdatedAt: Date?
     @State private var selectedLeague: LeagueCode?
@@ -58,6 +59,10 @@ struct HomeView: View {
         }) {
             AdminSettingsView()
                 .environmentObject(appConfig)
+        }
+        .onReceive(Timer.publish(every: 900, on: .main, in: .common).autoconnect()) { _ in
+            guard hasLoadedInitialData, viewMode == .recaps else { return }
+            Task { await loadGames(scrollToToday: false) }
         }
     }
 
@@ -242,6 +247,9 @@ struct HomeView: View {
                 .id(refreshId)
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
             }
+            .refreshable {
+                await loadGames(scrollToToday: false)
+            }
             .onAppear { refreshId = UUID() }
             .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
                 withAnimation(.easeOut(duration: 0.3)) {
@@ -270,9 +278,18 @@ struct HomeView: View {
                         .font(.caption.weight(.bold))
                         .foregroundColor(Color(.secondaryLabel))
                         .tracking(0.8)
-                    
+
+                    if !isExpanded.wrappedValue && !section.isLoading && !section.games.isEmpty {
+                        let readCount = section.readCount
+                        Text(readCount > 0
+                             ? "\(section.games.count) games \u{00B7} \(readCount) read"
+                             : "\(section.games.count) games")
+                            .font(.caption2)
+                            .foregroundColor(Color(.tertiaryLabel))
+                    }
+
                     Spacer()
-                    
+
                     Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
                         .font(.caption2.weight(.semibold))
                         .foregroundColor(Color(.secondaryLabel))
@@ -351,16 +368,24 @@ struct HomeView: View {
 
     private func loadGames(scrollToToday: Bool = true) async {
         errorMessage = nil
-
-        earlierSection.isLoading = true
-        yesterdaySection.isLoading = true
-        todaySection.isLoading = true
-        tomorrowSection.isLoading = true
         earlierSection.errorMessage = nil
         yesterdaySection.errorMessage = nil
         todaySection.errorMessage = nil
         tomorrowSection.errorMessage = nil
 
+        // 1. Load cached data first (instant UI, no spinners)
+        let cache = HomeGameCache.shared
+        let hasCachedData = loadCachedSections(from: cache)
+
+        // 2. Only show loading spinners if no cached data exists
+        if !hasCachedData {
+            earlierSection.isLoading = true
+            yesterdaySection.isLoading = true
+            todaySection.isLoading = true
+            tomorrowSection.isLoading = true
+        }
+
+        // 3. Fetch fresh data from network
         let service = appConfig.gameService
 
         async let earlierResult = loadSection(range: .earlier, service: service)
@@ -370,10 +395,13 @@ struct HomeView: View {
 
         let results = await [earlierResult, yesterdayResult, todayResult, tomorrowResult]
 
+        // 4. Silent swap — apply results + save to cache
         applyHomeSectionResults(results)
         updateLastUpdatedAt(from: results)
+        saveSectionsToCache(results, cache: cache)
 
-        if results.allSatisfy({ $0.errorMessage != nil }) {
+        // 5. Only show global error if ALL sections failed AND no cached data
+        if results.allSatisfy({ $0.errorMessage != nil }) && !hasCachedData {
             errorMessage = HomeStrings.globalErrorMessage
         }
 
@@ -444,6 +472,42 @@ struct HomeView: View {
             return date
         }
         return homeDateFormatter.date(from: value)
+    }
+
+    /// Load cached sections. Returns true if at least one section had cached data.
+    private func loadCachedSections(from cache: HomeGameCache) -> Bool {
+        var hasCachedData = false
+
+        if let cached = cache.load(range: .earlier, league: selectedLeague) {
+            earlierSection.games = cached.games
+            earlierSection.isLoading = false
+            hasCachedData = true
+        }
+        if let cached = cache.load(range: .yesterday, league: selectedLeague) {
+            yesterdaySection.games = cached.games
+            yesterdaySection.isLoading = false
+            hasCachedData = true
+        }
+        if let cached = cache.load(range: .current, league: selectedLeague) {
+            todaySection.games = cached.games
+            todaySection.isLoading = false
+            hasCachedData = true
+        }
+        if let cached = cache.load(range: .tomorrow, league: selectedLeague) {
+            tomorrowSection.games = cached.games
+            tomorrowSection.isLoading = false
+            hasCachedData = true
+        }
+
+        return hasCachedData
+    }
+
+    /// Save successful results to disk cache.
+    private func saveSectionsToCache(_ results: [HomeSectionResult], cache: HomeGameCache) {
+        for result in results where result.errorMessage == nil {
+            cache.save(games: result.games, lastUpdatedAt: result.lastUpdatedAt,
+                       range: result.range, league: selectedLeague)
+        }
     }
 
     private var dataFreshnessText: String {
