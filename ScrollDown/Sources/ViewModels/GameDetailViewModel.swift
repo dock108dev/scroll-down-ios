@@ -403,7 +403,7 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Odds Matching
 
-    /// Find the best odds entry for a market/side with fallback priority.
+    /// Find the best odds entry for a market/side.
     /// Side matching is case-insensitive and supports "home"/"away" aliases as well as team abbreviations.
     private func bestOddsEntry(
         market: MarketType,

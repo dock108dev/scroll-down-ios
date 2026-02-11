@@ -17,14 +17,14 @@ final class RealGameService: GameService {
     /// EST calendar for date formatting (API expects dates in Eastern Time)
     private var estCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
         return calendar
     }
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
+        formatter.timeZone = TimeZone(identifier: "America/New_York")!
         return formatter
     }
 

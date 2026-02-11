@@ -143,15 +143,15 @@ final class ModelDecodingTests: XCTestCase {
 
     // MARK: - Game Summary Logic
 
-    func testGameSummaryInferredStatus() {
-        let scheduledGame = makeGameSummary(playCount: 0)
-        XCTAssertEqual(scheduledGame.inferredStatus, .scheduled)
+    func testGameSummaryStatus() {
+        let noStatus = makeGameSummary()
+        XCTAssertNil(noStatus.status)
 
-        let inProgressGame = makeGameSummary(playCount: 12)
-        XCTAssertEqual(inProgressGame.inferredStatus, .inProgress)
+        let scheduled = makeGameSummary(status: .scheduled)
+        XCTAssertEqual(scheduled.status, .scheduled)
 
-        let completedGame = makeGameSummary(homeScore: 3, awayScore: 2)
-        XCTAssertEqual(completedGame.inferredStatus, .completed)
+        let completed = makeGameSummary(status: .completed)
+        XCTAssertEqual(completed.status, .completed)
     }
 }
 

@@ -3,26 +3,26 @@ import XCTest
 
 final class GameSummaryTests: XCTestCase {
 
-    // MARK: - inferredStatus
+    // MARK: - status
 
-    func testInferredStatusScheduledNoPlays() {
-        let game = TestFixtures.makeGameSummary(playCount: 0)
-        XCTAssertEqual(game.inferredStatus, .scheduled)
+    func testStatusNilWhenMissing() {
+        let game = TestFixtures.makeGameSummary()
+        XCTAssertNil(game.status)
     }
 
-    func testInferredStatusInProgressWithPlays() {
-        let game = TestFixtures.makeGameSummary(playCount: 12)
-        XCTAssertEqual(game.inferredStatus, .inProgress)
-    }
-
-    func testInferredStatusCompletedWithScores() {
-        let game = TestFixtures.makeGameSummary(homeScore: 3, awayScore: 2)
-        XCTAssertEqual(game.inferredStatus, .completed)
-    }
-
-    func testInferredStatusExplicitOverridesInference() {
+    func testStatusFromExplicitValue() {
         let game = TestFixtures.makeGameSummary(status: .postponed)
-        XCTAssertEqual(game.inferredStatus, .postponed)
+        XCTAssertEqual(game.status, .postponed)
+    }
+
+    func testStatusCompleted() {
+        let game = TestFixtures.makeGameSummary(status: .completed)
+        XCTAssertEqual(game.status, .completed)
+    }
+
+    func testStatusInProgress() {
+        let game = TestFixtures.makeGameSummary(status: .inProgress)
+        XCTAssertEqual(game.status, .inProgress)
     }
 
     // MARK: - Computed Properties

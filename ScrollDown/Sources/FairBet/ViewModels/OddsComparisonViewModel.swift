@@ -212,9 +212,8 @@ final class OddsComparisonViewModel: ObservableObject {
             applyFilters()
 
         } catch {
-            // On refresh with existing data, silently keep showing old data
+            errorMessage = error.localizedDescription
             if allBets.isEmpty {
-                errorMessage = error.localizedDescription
                 loadMockData()
             }
         }

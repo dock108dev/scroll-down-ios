@@ -59,16 +59,16 @@ final class MockGameService: GameService {
 
         // Use EST for categorization - game dates represent US game calendar dates
         var estCalendar = Calendar(identifier: .gregorian)
-        estCalendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
+        estCalendar.timeZone = TimeZone(identifier: "America/New_York")!
 
         let todayStart = estCalendar.startOfDay(for: now)
-        let todayEnd = (estCalendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart.addingTimeInterval(86400)).addingTimeInterval(-1)
-        let yesterdayStart = estCalendar.date(byAdding: .day, value: -1, to: todayStart) ?? todayStart.addingTimeInterval(-86400)
+        let todayEnd = estCalendar.date(byAdding: .day, value: 1, to: todayStart)!.addingTimeInterval(-1)
+        let yesterdayStart = estCalendar.date(byAdding: .day, value: -1, to: todayStart)!
         let earlierEnd = yesterdayStart
 
         switch range {
         case .earlier:
-            let historyStart = estCalendar.date(byAdding: .day, value: -2, to: todayStart) ?? todayStart.addingTimeInterval(-172800)
+            let historyStart = estCalendar.date(byAdding: .day, value: -2, to: todayStart)!
             return games.filter { game in
                 guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
                 return gameDate >= historyStart && gameDate < earlierEnd
@@ -84,8 +84,8 @@ final class MockGameService: GameService {
                 return gameDate >= todayStart && gameDate <= todayEnd
             }
         case .tomorrow:
-            let tomorrowStart = estCalendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart.addingTimeInterval(86400)
-            let tomorrowEnd = (estCalendar.date(byAdding: .day, value: 2, to: todayStart) ?? todayStart.addingTimeInterval(172800)).addingTimeInterval(-1)
+            let tomorrowStart = estCalendar.date(byAdding: .day, value: 1, to: todayStart)!
+            let tomorrowEnd = estCalendar.date(byAdding: .day, value: 2, to: todayStart)!.addingTimeInterval(-1)
             return games.filter { game in
                 guard let gameDate = gameCalendarDate(game, calendar: estCalendar) else { return false }
                 return gameDate >= tomorrowStart && gameDate <= tomorrowEnd

@@ -99,7 +99,7 @@ enum DesignSystem {
     // Dark mode: brighter purple, softer teal for better visibility
 
     enum TeamColors {
-        // Fallback colors when team not found
+        // Default colors when team not found
         static let teamA = Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
                 ? UIColor(red: 160/255, green: 130/255, blue: 255/255, alpha: 1)
@@ -607,7 +607,7 @@ enum DesignSystem {
                     traits.userInterfaceStyle == .dark ? colors.dark : colors.light
                 })
             }
-            // Fallback to system indigo
+            // Default to system indigo
             return Color(uiColor: .systemIndigo)
         }
 

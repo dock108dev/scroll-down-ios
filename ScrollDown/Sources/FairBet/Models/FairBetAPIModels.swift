@@ -121,7 +121,7 @@ struct APIBet: Identifiable, Codable, Equatable {
             return awayTeam
         }
 
-        // Fallback: capitalize each word
+        // No team match — capitalize each word
         return normalized.capitalized
     }
 

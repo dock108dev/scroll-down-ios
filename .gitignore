@@ -15,48 +15,20 @@ xcuserdata/
 *.xcuserstate
 *.xcscmblueprint
 
-# CocoaPods
-Pods/
-Podfile.lock
-*.xcworkspace
-!default.xcworkspace
-
-# Carthage
-Carthage/Build
-Carthage/Checkouts
-
 # Swift Package Manager
 .build/
 .swiftpm/
 Package.resolved
 
-# Accio
-Dependencies/
-.accio/
-
-# fastlane
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots
-fastlane/test_output
-
-# Code Injection
-iOSInjectionProject/
-
 # macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 ._*
-.Spotlight-V100
-.Trashes
 
 # IDE
 *.swp
 *.swo
 *~
 .idea/
-*.iml
 
 # Keys and secrets
 *.p12

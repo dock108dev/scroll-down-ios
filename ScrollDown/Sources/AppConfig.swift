@@ -58,7 +58,7 @@ enum AppDate {
         components.hour = 12
         components.minute = 0
         components.second = 0
-        return Calendar.current.date(from: components) ?? Date()
+        return Calendar.current.date(from: components)!
     }()
     
     /// Returns the current date based on priority:
@@ -83,7 +83,7 @@ enum AppDate {
     /// EST calendar for game date calculations (US sports assumption)
     private static var estCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
         return calendar
     }
 
@@ -94,17 +94,17 @@ enum AppDate {
 
     /// End of today (23:59:59) based on AppDate.now() in EST
     static var endOfToday: Date {
-        (estCalendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday.addingTimeInterval(86400)).addingTimeInterval(-1)
+        estCalendar.date(byAdding: .day, value: 1, to: startOfToday)!.addingTimeInterval(-1)
     }
 
     /// Start of the history window (2 days ago) in EST
     static var historyWindowStart: Date {
-        estCalendar.date(byAdding: .day, value: -2, to: startOfToday) ?? startOfToday.addingTimeInterval(-172800)
+        estCalendar.date(byAdding: .day, value: -2, to: startOfToday)!
     }
 
     /// Start of tomorrow in EST
     static var startOfTomorrow: Date {
-        estCalendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday.addingTimeInterval(86400)
+        estCalendar.date(byAdding: .day, value: 1, to: startOfToday)!
     }
 }
 
