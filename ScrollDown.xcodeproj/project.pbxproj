@@ -79,6 +79,7 @@
 		BCE50D2C4838214DA779BAD1 /* MockGameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5857C5EF8BD71E2B61329862 /* MockGameService.swift */; };
 		BD9EB25C2596892B0BF33880 /* PlayEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43AF74C463100CC0955B823 /* PlayEntry.swift */; };
 		BEA220A732D6110F8B0C0BA4 /* SectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36873CB832A3BC5165DE53E /* SectionCardView.swift */; };
+		C3C221A6E6F7DBF6853E1594 /* RealityAndFeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA21BEB69518BAA2B993128 /* RealityAndFeedbackView.swift */; };
 		C4FB7A0ABE3E13F261BB863A /* CardDiscipline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F427E4DB61BEFF052D28DF /* CardDiscipline.swift */; };
 		C7B67AF43E6DA6570E575B44 /* OddsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A773FEEE798C93E9FC2818C /* OddsCalculator.swift */; };
 		CA4010C61C616A2D6402EB72 /* CollapsibleCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */; };
@@ -149,6 +150,7 @@
 		468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairOddsCalculator.swift; sourceTree = "<group>"; };
 		48EA8126B015E4B4AF86450D /* GameDetailDisplayModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailDisplayModels.swift; sourceTree = "<group>"; };
 		4A773FEEE798C93E9FC2818C /* OddsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OddsCalculator.swift; sourceTree = "<group>"; };
+		4AA21BEB69518BAA2B993128 /* RealityAndFeedbackView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealityAndFeedbackView.swift; sourceTree = "<group>"; };
 		4EA5E9853782A831DDDAB964 /* GameRoutingLogger.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRoutingLogger.swift; sourceTree = "<group>"; };
 		52A7BE5EB9BFCDA634A45337 /* NarrativeLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NarrativeLayout.swift; sourceTree = "<group>"; };
 		56A1B2C3D4E5F6A7B8C9D0E1 /* UnifiedTimelineEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnifiedTimelineEvent.swift; sourceTree = "<group>"; };
@@ -388,6 +390,7 @@
 				B9075A075C8B6ACA78BE487A /* HomeView.swift */,
 				DF1E2F9CCDAA151BBB872DA6 /* HomeViewSupport.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */,
+				4AA21BEB69518BAA2B993128 /* RealityAndFeedbackView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -777,6 +780,7 @@
 				43082696385ACD228BBAFB90 /* BetCard.swift in Sources */,
 				3BCFAFA9043F5EA53ADC6039 /* FairBetCopy.swift in Sources */,
 				9C67DF5667E4FDEFE835975D /* FairBetTheme.swift in Sources */,
+				C3C221A6E6F7DBF6853E1594 /* RealityAndFeedbackView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
