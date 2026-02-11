@@ -64,11 +64,11 @@ struct GameRowView: View {
             if isRead, let home = game.homeScore, let away = game.awayScore {
                 HStack(spacing: 4) {
                     Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(away)")
-                        .foregroundColor(DesignSystem.TeamColors.color(for: game.awayTeamName))
+                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
                     Text("-")
                         .foregroundColor(.secondary)
                     Text("\(home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                        .foregroundColor(DesignSystem.TeamColors.color(for: game.homeTeamName))
+                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
                 }
                 .font(.caption.weight(.semibold).monospacedDigit())
             }

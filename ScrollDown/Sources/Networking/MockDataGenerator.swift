@@ -242,25 +242,19 @@ enum MockDataGenerator {
     }
 
     private static func generateOdds() -> [OddsEntry] {
-        [
-            OddsEntry(
-                book: "DraftKings",
-                marketType: .spread,
-                side: "home",
-                line: Double.random(in: -7...7),
-                price: -110,
-                isClosingLine: true,
-                observedAt: formatDate(Date())
-            ),
-            OddsEntry(
-                book: "FanDuel",
-                marketType: .total,
-                side: "over",
-                line: Double.random(in: 210...235),
-                price: -110,
-                isClosingLine: true,
-                observedAt: formatDate(Date())
-            )
+        let spread = Double(Int.random(in: -7...7))
+        let total = Double(Int.random(in: 210...235)) + (Bool.random() ? 0.5 : 0)
+        let favML = Int.random(in: -250 ... -110)
+        let dogML = Int.random(in: 100...250)
+        let now = formatDate(Date())
+
+        return [
+            OddsEntry(book: "DraftKings", marketType: .spread, side: "home", line: spread, price: -110, isClosingLine: true, observedAt: now),
+            OddsEntry(book: "DraftKings", marketType: .spread, side: "away", line: -spread, price: -110, isClosingLine: true, observedAt: now),
+            OddsEntry(book: "DraftKings", marketType: .total, side: "over", line: total, price: -110, isClosingLine: true, observedAt: now),
+            OddsEntry(book: "DraftKings", marketType: .total, side: "under", line: total, price: -110, isClosingLine: true, observedAt: now),
+            OddsEntry(book: "DraftKings", marketType: .moneyline, side: "home", line: nil, price: Double(favML), isClosingLine: true, observedAt: now),
+            OddsEntry(book: "DraftKings", marketType: .moneyline, side: "away", line: nil, price: Double(dogML), isClosingLine: true, observedAt: now),
         ]
     }
 

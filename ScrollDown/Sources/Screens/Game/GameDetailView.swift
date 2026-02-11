@@ -20,6 +20,7 @@ struct GameDetailView: View {
     // Tier 4 (Reference): Collapsed by default
     @State var isFlowCardExpanded = true  // Flow Card: expanded by default (primary content)
     @State var isOverviewExpanded = false  // Tier 4: Reference
+    @State var pregamePostsShown = 5  // Paginate pregame posts
     @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no flow)
     @State var isPlayerStatsExpanded = false  // Tier 3: Supporting
     @State var playerStatsTeamFilter: String? = nil

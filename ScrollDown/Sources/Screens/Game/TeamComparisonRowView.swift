@@ -106,10 +106,10 @@ struct TeamStatsContainer: View {
     }
     
     // MARK: - Team Identity Header
-    /// Uses actual team colors for visual identity
+    /// Uses matchup-aware team colors for visual identity
     private var teamIdentityHeader: some View {
-        let awayColor = DesignSystem.TeamColors.color(for: awayTeam)
-        let homeColor = DesignSystem.TeamColors.color(for: homeTeam)
+        let awayColor = DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam)
+        let homeColor = DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam)
 
         return HStack {
             // Away team (left)
@@ -262,11 +262,11 @@ private struct SimplifiedStatRow: View {
     }
 
     private var homeColor: Color {
-        DesignSystem.TeamColors.color(for: homeTeam)
+        DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam)
     }
 
     private var awayColor: Color {
-        DesignSystem.TeamColors.color(for: awayTeam)
+        DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam)
     }
 
     var body: some View {

@@ -12,11 +12,11 @@ struct GameHeaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var awayColor: Color {
-        DesignSystem.TeamColors.color(for: game.awayTeam)
+        DesignSystem.TeamColors.matchupColor(for: game.awayTeam, against: game.homeTeam, isHome: false)
     }
 
     private var homeColor: Color {
-        DesignSystem.TeamColors.color(for: game.homeTeam)
+        DesignSystem.TeamColors.matchupColor(for: game.homeTeam, against: game.awayTeam, isHome: true)
     }
 
     var body: some View {
@@ -26,6 +26,7 @@ struct GameHeaderView: View {
                 // Away team block (left side)
                 TappableTeamBlock(
                     teamName: game.awayTeam,
+                    opponentName: game.homeTeam,
                     leagueCode: game.leagueCode,
                     isHome: false
                 )
@@ -44,6 +45,7 @@ struct GameHeaderView: View {
                 // Home team block (right side)
                 TappableTeamBlock(
                     teamName: game.homeTeam,
+                    opponentName: game.awayTeam,
                     leagueCode: game.leagueCode,
                     isHome: true
                 )
@@ -175,6 +177,7 @@ struct GameHeaderView: View {
 
 private struct TappableTeamBlock: View {
     let teamName: String
+    let opponentName: String
     let leagueCode: String
     let isHome: Bool
 
@@ -188,11 +191,12 @@ private struct TappableTeamBlock: View {
                 if !isHome {
                     // Away team: color bar on left
                     Rectangle()
-                        .fill(DesignSystem.TeamColors.color(for: teamName).opacity(0.8))
+                        .fill(DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome).opacity(0.8))
                         .frame(width: 3)
 
                     TeamBlockView(
                         teamName: teamName,
+                        opponentName: opponentName,
                         isHome: false,
                         alignment: .leading
                     )
@@ -201,13 +205,14 @@ private struct TappableTeamBlock: View {
                     // Home team: color bar on right
                     TeamBlockView(
                         teamName: teamName,
+                        opponentName: opponentName,
                         isHome: true,
                         alignment: .trailing
                     )
                     .padding(.trailing, 12)
 
                     Rectangle()
-                        .fill(DesignSystem.TeamColors.color(for: teamName).opacity(0.8))
+                        .fill(DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome).opacity(0.8))
                         .frame(width: 3)
                 }
             }
@@ -342,6 +347,7 @@ enum TeamAbbreviations {
 
 private struct TeamBlockView: View {
     let teamName: String
+    let opponentName: String
     let isHome: Bool
     let alignment: HorizontalAlignment
 
@@ -361,7 +367,7 @@ private struct TeamBlockView: View {
     }
 
     private var teamColor: Color {
-        DesignSystem.TeamColors.color(for: teamName)
+        DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome)
     }
 }
 

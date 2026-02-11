@@ -120,6 +120,13 @@ enum DesignSystem {
         static func color(for teamName: String) -> Color {
             TeamColorProvider.color(for: teamName)
         }
+
+        /// Get team color for matchup contexts where both teams appear side by side.
+        /// Pass `isHome: true` for the home team — it yields to neutral on color clash.
+        /// The away team always keeps its original color.
+        static func matchupColor(for teamName: String, against opponentName: String, isHome: Bool) -> Color {
+            TeamColorProvider.matchupColor(for: teamName, against: opponentName, yieldsOnClash: isHome)
+        }
     }
 
     // MARK: - Team Color Provider
@@ -602,6 +609,52 @@ enum DesignSystem {
             }
             // Fallback to system indigo
             return Color(uiColor: .systemIndigo)
+        }
+
+        /// Returns the team color for matchup display.
+        /// `yieldsOnClash`: when true, this team's color is replaced with neutral if it clashes.
+        /// Away team should pass false (keeps color), home team should pass true (yields).
+        static func matchupColor(for teamName: String, against opponentName: String, yieldsOnClash: Bool) -> Color {
+            guard yieldsOnClash else {
+                return color(for: teamName)
+            }
+            let teamColor = resolvedColorPair(for: teamName)
+            let opponentColor = resolvedColorPair(for: opponentName)
+
+            return Color(uiColor: UIColor { traits in
+                let isDark = traits.userInterfaceStyle == .dark
+                let a = isDark ? teamColor.dark : teamColor.light
+                let b = isDark ? opponentColor.dark : opponentColor.light
+                if colorDistance(a, b) < 0.12 {
+                    return isDark ? .white : .black
+                }
+                return a
+            })
+        }
+
+        // MARK: - Color Similarity
+
+        /// Resolve the (light, dark) UIColor pair for a team name
+        private static func resolvedColorPair(for teamName: String) -> (light: UIColor, dark: UIColor) {
+            if let colors = nbaColors[teamName] ?? nhlColors[teamName] ?? collegeColors[teamName] {
+                return colors
+            }
+            if let key = collegeSortedKeys.first(where: { teamName.hasPrefix($0) }),
+               let colors = collegeColors[key] {
+                return colors
+            }
+            return (light: .systemIndigo, dark: .systemIndigo)
+        }
+
+        /// Normalized Euclidean distance between two UIColors in RGB space (0.0–1.0)
+        private static func colorDistance(_ a: UIColor, _ b: UIColor) -> CGFloat {
+            var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+            var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+            a.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+            b.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+            let dr = r1 - r2, dg = g1 - g2, db = b1 - b2
+            // max possible distance is sqrt(3) ≈ 1.73; normalize to 0–1
+            return sqrt(dr * dr + dg * dg + db * db) / 1.732
         }
     }
     

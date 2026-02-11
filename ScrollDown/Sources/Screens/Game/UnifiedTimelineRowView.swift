@@ -93,7 +93,7 @@ struct UnifiedTimelineRowView: View {
             HStack(spacing: 4) {
                 Text(TeamAbbreviations.abbreviation(for: awayTeam))
                     .font(.caption2.weight(.bold))
-                    .foregroundColor(DesignSystem.TeamColors.color(for: awayTeam))
+                    .foregroundColor(DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam))
                 Text("\(away)")
                     .font(.caption2.weight(.semibold).monospacedDigit())
                     .foregroundColor(DesignSystem.TextColor.primary)
@@ -105,7 +105,7 @@ struct UnifiedTimelineRowView: View {
                     .foregroundColor(DesignSystem.TextColor.primary)
                 Text(TeamAbbreviations.abbreviation(for: homeTeam))
                     .font(.caption2.weight(.bold))
-                    .foregroundColor(DesignSystem.TeamColors.color(for: homeTeam))
+                    .foregroundColor(DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam))
             }
             .fixedSize()
 

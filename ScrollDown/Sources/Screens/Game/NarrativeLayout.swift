@@ -92,7 +92,7 @@ struct MiniBoxScoreView: View {
                 abbrev: awayAbbrev,
                 score: endScore.away,
                 players: miniBox.away.topPlayers,
-                color: DesignSystem.TeamColors.color(for: awayTeam)
+                color: DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
             )
 
             Divider()
@@ -103,7 +103,7 @@ struct MiniBoxScoreView: View {
                 abbrev: homeAbbrev,
                 score: endScore.home,
                 players: miniBox.home.topPlayers,
-                color: DesignSystem.TeamColors.color(for: homeTeam)
+                color: DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
             )
         }
         .padding(.horizontal, 12)

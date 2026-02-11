@@ -147,10 +147,10 @@ extension GameDetailViewModel {
 
     // MARK: - Phase-Filtered Social Posts
 
-    /// Pregame social posts based on server-assigned gamePhase (oldest first)
+    /// Pregame social posts sorted by likes (most popular first)
     var pregameSocialPosts: [SocialPostEntry] {
         (detail?.socialPosts.filter { $0.gamePhase == "pregame" && $0.hasContent } ?? [])
-            .sorted { $0.postedAt < $1.postedAt }
+            .sorted { ($0.likesCount ?? 0) > ($1.likesCount ?? 0) }
     }
 
     /// Postgame social posts based on server-assigned gamePhase (oldest first)

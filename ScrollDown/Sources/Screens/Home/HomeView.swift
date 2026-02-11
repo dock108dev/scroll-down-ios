@@ -196,7 +196,7 @@ struct HomeView: View {
             } else if viewMode == .odds {
                 OddsComparisonView(viewModel: oddsViewModel)
             } else {
-                SettingsView(oddsViewModel: oddsViewModel)
+                SettingsView(oddsViewModel: oddsViewModel, completedGameIds: allCompletedGameIds)
             }
         }
     }
@@ -540,6 +540,10 @@ struct HomeView: View {
 
     private var sectionsInOrder: [HomeSectionState] {
         [earlierSection, yesterdaySection, todaySection, tomorrowSection]
+    }
+
+    private var allCompletedGameIds: [Int] {
+        sectionsInOrder.flatMap { $0.completedGames.map(\.id) }
     }
 
     private func sectionEmptyMessage(for section: HomeSectionState) -> String {

@@ -2,9 +2,11 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
+    let completedGameIds: [Int]
     @AppStorage("preferredSportsbook") private var preferredSportsbook = "DraftKings"
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
+    @State private var readStateRefreshId = UUID()
 
     private let sportsbooks = [
         "DraftKings",
@@ -87,6 +89,39 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            if !completedGameIds.isEmpty {
+                Section("Read Status") {
+                    Button {
+                        for id in completedGameIds {
+                            UserDefaults.standard.set(true, forKey: "game.read.\(id)")
+                        }
+                        readStateRefreshId = UUID()
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle")
+                            Text("Mark All Final as Read")
+                        }
+                    }
+
+                    Button {
+                        for id in completedGameIds {
+                            UserDefaults.standard.removeObject(forKey: "game.read.\(id)")
+                        }
+                        readStateRefreshId = UUID()
+                    } label: {
+                        HStack {
+                            Image(systemName: "circle")
+                            Text("Mark All Final as Unread")
+                        }
+                    }
+
+                    Text("\(readCount) of \(completedGameIds.count) final games marked as read.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .id(readStateRefreshId)
+                }
+            }
+
             Section("About FairBet") {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("FairBet compares odds across sportsbooks to help you find value.")
@@ -106,6 +141,10 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
         }
+    }
+
+    private var readCount: Int {
+        completedGameIds.filter { UserDefaults.standard.bool(forKey: "game.read.\($0)") }.count
     }
 
     private func expandedSet(from string: String) -> Set<String> {

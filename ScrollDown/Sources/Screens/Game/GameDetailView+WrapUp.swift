@@ -49,9 +49,9 @@ extension GameDetailView {
             .filter { $0.team == game.homeTeam }
             .max(by: { ($0.points ?? 0) < ($1.points ?? 0) })
 
-        // Use actual team colors
-        let awayColor = DesignSystem.TeamColors.color(for: game.awayTeam)
-        let homeColor = DesignSystem.TeamColors.color(for: game.homeTeam)
+        // Use matchup-aware team colors (handles same-color teams)
+        let awayColor = DesignSystem.TeamColors.matchupColor(for: game.awayTeam, against: game.homeTeam, isHome: false)
+        let homeColor = DesignSystem.TeamColors.matchupColor(for: game.homeTeam, against: game.awayTeam, isHome: true)
 
         return VStack(spacing: 0) {
             // Header row
