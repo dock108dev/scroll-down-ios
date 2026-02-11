@@ -42,7 +42,7 @@ struct BetCardV2: View {
     }
 
     private var sortedBooks: [BookPrice] {
-        bet.books.sorted { $0.price > $1.price }
+        bet.books.sorted { computeEV(for: $0) > computeEV(for: $1) }
     }
 
     private var opponentName: String {
@@ -122,8 +122,20 @@ struct BetCardV2: View {
     // MARK: - Books Grid
 
     private var booksGrid: some View {
-        FlowLayout(spacing: 6) {
-            // Fair Odds chip (first in row)
+        HStack(alignment: .top, spacing: 6) {
+            FlowLayout(spacing: 6) {
+                ForEach(sortedBooks) { book in
+                    MiniBookChip(
+                        book: book,
+                        isBest: book.price == bestBook?.price,
+                        ev: computeEV(for: book)
+                    )
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            // Fair Odds chip (right-justified)
             HStack(spacing: 4) {
                 Text("Fair Odds")
                     .font(.caption.weight(.medium))
@@ -138,14 +150,6 @@ struct BetCardV2: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(FairBetTheme.surfaceSecondary.opacity(0.5))
             )
-
-            ForEach(sortedBooks) { book in
-                MiniBookChip(
-                    book: book,
-                    isBest: book.price == bestBook?.price,
-                    ev: computeEV(for: book)
-                )
-            }
         }
     }
 

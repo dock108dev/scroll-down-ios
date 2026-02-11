@@ -160,6 +160,10 @@ struct FlowCardContainer<Content: View>: View {
                         .font(.footnote.weight(.medium))
                         .foregroundColor(DesignSystem.TextColor.secondary)
                     Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, TierLayout.Supporting.verticalSpacing)
