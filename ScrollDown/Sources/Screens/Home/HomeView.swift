@@ -20,6 +20,9 @@ struct HomeView: View {
     @State private var refreshId = UUID()
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
+    
+    // Timer for periodic refresh
+    private let refreshTimer = Timer.publish(every: 900, on: .main, in: .common)
 
     init() {
         let prefs = UserDefaults.standard.string(forKey: "homeExpandedSections") ?? ""
@@ -69,9 +72,12 @@ struct HomeView: View {
             AdminSettingsView()
                 .environmentObject(appConfig)
         }
-        .onReceive(Timer.publish(every: 900, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(refreshTimer) { _ in
             guard hasLoadedInitialData, viewMode == .recaps else { return }
             Task { await loadGames(scrollToToday: false) }
+        }
+        .onAppear {
+            _ = refreshTimer.connect()
         }
     }
 
