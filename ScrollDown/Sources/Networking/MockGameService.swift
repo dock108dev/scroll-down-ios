@@ -59,7 +59,7 @@ final class MockGameService: GameService {
 
         // Use EST for categorization - game dates represent US game calendar dates
         var estCalendar = Calendar(identifier: .gregorian)
-        estCalendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000)!
+        estCalendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
 
         let todayStart = estCalendar.startOfDay(for: now)
         let todayEnd = (estCalendar.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart.addingTimeInterval(86400)).addingTimeInterval(-1)

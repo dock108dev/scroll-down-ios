@@ -83,7 +83,7 @@ enum AppDate {
     /// EST calendar for game date calculations (US sports assumption)
     private static var estCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000)!
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
         return calendar
     }
 

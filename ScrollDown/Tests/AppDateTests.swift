@@ -13,7 +13,7 @@ final class AppDateTests: XCTestCase {
         let startOfToday = AppDate.startOfToday
         let endOfToday = AppDate.endOfToday
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone(secondsFromGMT: -18000) ?? .current
         XCTAssertEqual(
             calendar.component(.day, from: startOfToday),
             calendar.component(.day, from: endOfToday)
