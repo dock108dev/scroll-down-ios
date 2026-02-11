@@ -68,7 +68,7 @@ final class ModelDecodingTests: XCTestCase {
         // Verify first event
         let firstEvent = response.events[0]
         XCTAssertEqual(firstEvent.id.intValue, 1)
-        XCTAssertEqual(firstEvent.gameId.intValue, 12345)
+        XCTAssertEqual(firstEvent.gameId?.intValue, 12345)
         XCTAssertEqual(firstEvent.period, 1)
         XCTAssertEqual(firstEvent.eventType, "jump_ball")
     }

@@ -14,7 +14,6 @@
 		01B986765AC67398B8DD9F30 /* RealGameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB568BF5AFFF75D7E35466F /* RealGameService.swift */; };
 		037238B5678E56309A67E681 /* GameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70694AE5FC38C7D7CED2BD1E /* GameService.swift */; };
 		04E0E81409E9CF33F84FA1F5 /* FlowAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97270479011A3128120BEE14 /* FlowAdapter.swift */; };
-		A1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */; };
 		05588280D44FDEA42F825A97 /* GameDetailView+NHLStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF49679F62AA381F3FD77922 /* GameDetailView+NHLStats.swift */; };
 		055F3D27BD6A844858305041 /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C44CFE6E65A8CFA9D20B226 /* MockDataGenerator.swift */; };
 		080FF3C88C14516E9D6EFCC4 /* SocialPostCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9095C21AD848523F5F28AF47 /* SocialPostCardView.swift */; };
@@ -64,6 +63,7 @@
 		9E45CF05E4308A03E07BA0D9 /* FairBetMockDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA25EFFBFB27E3522263ED14 /* FairBetMockDataProvider.swift */; };
 		9FBB6DD500720CC6BD4BD723 /* FairOddsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */; };
 		A19B7CE47212A56979443EA2 /* PreviewFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF562A067C0D828F3495D32A /* PreviewFixtures.swift */; };
+		A1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */; };
 		A4B56207F3AD06F73C811CF7 /* PbpEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEDD72AB15D6E74583ECE63 /* PbpEvent.swift */; };
 		AD23148AA6BF8C33E198EE58 /* GameDetailViewModel+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B884933AA48960B74270148E /* GameDetailViewModel+Timeline.swift */; };
 		AE92945926AB3551DCF5C3CA /* TimelineScoreChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879FF16F095E482875F2E9FD /* TimelineScoreChipView.swift */; };
@@ -91,6 +91,7 @@
 		DE84E8BDFB66D40C3D81FB4F /* GameDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3872C5AE773FD5B767ED3235 /* GameDetailViewModel.swift */; };
 		EC6F593C7CE99636B229F060 /* PlayerStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC5233841162F11987FAF6C /* PlayerStat.swift */; };
 		EF0A8C1DFCB5BE1EC1A2F2F4 /* BetPairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = C460E0D3A82E860630D7C898 /* BetPairing.swift */; };
+		F2E1D0C9B8A7F6E5D4C3B2A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */; };
 		F565F95EAD2D1AB1CDC547AF /* ScrollDownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880FB613006C951586FFDA0D /* ScrollDownApp.swift */; };
 		F6CF1CD4AD36C010A0D6E118 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589342DA26AB1E4514A712D6 /* Typography.swift */; };
 		FE1D381FDC873B5BAB938189 /* game-001.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C3E1CA0DC85903F544E917 /* game-001.json */; };
@@ -98,8 +99,35 @@
 		STORY001000000000000007 /* GameFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY001000000000000008 /* GameFlowView.swift */; };
 		STORY00100000000000000B /* MoreReactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000C /* MoreReactionsView.swift */; };
 		STORY00100000000000000D /* FullPlayByPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = STORY00100000000000000E /* FullPlayByPlayView.swift */; };
-		F2E1D0C9B8A7F6E5D4C3B2A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */; };
+		T20000000000000000000001 /* ModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000001 /* ModelDecodingTests.swift */; };
+		T20000000000000000000002 /* GameDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000002 /* GameDetailViewModelTests.swift */; };
+		T20000000000000000000003 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000003 /* TestFixtures.swift */; };
+		T20000000000000000000004 /* OddsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000004 /* OddsCalculatorTests.swift */; };
+		T20000000000000000000005 /* EVCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000005 /* EVCalculatorTests.swift */; };
+		T20000000000000000000006 /* AmericanOddsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000006 /* AmericanOddsTests.swift */; };
+		T20000000000000000000007 /* BetPairingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000007 /* BetPairingTests.swift */; };
+		T20000000000000000000008 /* FairOddsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000008 /* FairOddsCalculatorTests.swift */; };
+		T20000000000000000000009 /* SharpBookConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000009 /* SharpBookConfigTests.swift */; };
+		T2000000000000000000000A /* GameSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000A /* GameSummaryTests.swift */; };
+		T2000000000000000000000B /* GameModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000B /* GameModelTests.swift */; };
+		T2000000000000000000000C /* EnumsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000C /* EnumsTests.swift */; };
+		T2000000000000000000000D /* SocialPostTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000D /* SocialPostTests.swift */; };
+		T2000000000000000000000E /* GameFlowModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000E /* GameFlowModelTests.swift */; };
+		T2000000000000000000000F /* FlowAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T1000000000000000000000F /* FlowAdapterTests.swift */; };
+		T20000000000000000000010 /* HomeGameCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000010 /* HomeGameCacheTests.swift */; };
+		T20000000000000000000011 /* MockLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000011 /* MockLoaderTests.swift */; };
+		T20000000000000000000012 /* AppDateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T10000000000000000000012 /* AppDateTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		T70000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0800000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0500000000000001;
+			remoteInfo = ScrollDown;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0200000000000019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -152,6 +180,7 @@
 		9D4999165CE89FE47041D145 /* GameDetailView+Overview.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Overview.swift"; sourceTree = "<group>"; };
 		9F6B4901C3D2397DF2D9B369 /* APIConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIConfiguration.swift; sourceTree = "<group>"; };
 		A040BC246294F832953CFC46 /* GameDetailResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailResponse.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A3E7976DD4969294B43B9E17 /* Enums.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		A52F9D482B0211D379660CEA /* BetGroup.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetGroup.swift; sourceTree = "<group>"; };
 		A7768BF37B031FE2DE6730DE /* GameHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameHeaderView.swift; sourceTree = "<group>"; };
@@ -161,6 +190,7 @@
 		AFA4D175D08915D573090FB9 /* FairBetCopy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairBetCopy.swift; sourceTree = "<group>"; };
 		B0E1CCA27FCC32300E46395D /* TieredPlayRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TieredPlayRowView.swift; sourceTree = "<group>"; };
 		B13C2CF9E65EFC84AE5EF7DD /* HighlightCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HighlightCardView.swift; sourceTree = "<group>"; };
+		B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGameCache.swift; sourceTree = "<group>"; };
 		B6BE4EF78C845F94B14C714B /* LoadingSkeletonView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoadingSkeletonView.swift; sourceTree = "<group>"; };
 		B884933AA48960B74270148E /* GameDetailViewModel+Timeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailViewModel+Timeline.swift"; sourceTree = "<group>"; };
 		B9075A075C8B6ACA78BE487A /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -183,6 +213,7 @@
 		E6C8A43EE676A5BF149FFBC7 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EE1AC093104FDC3AD864F1B2 /* TimelineRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimelineRowView.swift; sourceTree = "<group>"; };
 		EF562A067C0D828F3495D32A /* PreviewFixtures.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PreviewFixtures.swift; sourceTree = "<group>"; };
+		F0C5D2022BD44FDA40E4EC20 /* ScrollDown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ScrollDown.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F959356DAD3C7BA04D4A21EF /* GameFlowDisplay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameFlowDisplay.swift; sourceTree = "<group>"; };
 		F95D753106C9E23F1CCAF32F /* GameListResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameListResponse.swift; sourceTree = "<group>"; };
 		FAD114683271A58615ABCE51 /* AdminSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminSettingsView.swift; sourceTree = "<group>"; };
@@ -192,12 +223,36 @@
 		STORY001000000000000008 /* GameFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameFlowView.swift; sourceTree = "<group>"; };
 		STORY00100000000000000C /* MoreReactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoreReactionsView.swift; sourceTree = "<group>"; };
 		STORY00100000000000000E /* FullPlayByPlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FullPlayByPlayView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		B1C2E3F4B5D6A7B8C9E0F1A2 /* HomeGameCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGameCache.swift; sourceTree = "<group>"; };
+		T10000000000000000000001 /* ModelDecodingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModelDecodingTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000002 /* GameDetailViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailViewModelTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000003 /* TestFixtures.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
+		T10000000000000000000004 /* OddsCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OddsCalculatorTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000005 /* EVCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EVCalculatorTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000006 /* AmericanOddsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AmericanOddsTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000007 /* BetPairingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetPairingTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000008 /* FairOddsCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairOddsCalculatorTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000009 /* SharpBookConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharpBookConfigTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000A /* GameSummaryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameSummaryTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000B /* GameModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameModelTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000C /* EnumsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnumsTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000D /* SocialPostTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SocialPostTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000E /* GameFlowModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameFlowModelTests.swift; sourceTree = "<group>"; };
+		T1000000000000000000000F /* FlowAdapterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowAdapterTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000010 /* HomeGameCacheTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGameCacheTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000011 /* MockLoaderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockLoaderTests.swift; sourceTree = "<group>"; };
+		T10000000000000000000012 /* AppDateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDateTests.swift; sourceTree = "<group>"; };
+		T30000000000000000000001 /* ScrollDownTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScrollDownTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0300000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		T50000000000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -220,6 +275,7 @@
 			children = (
 				0400000000000003 /* Sources */,
 				0400000000000009 /* Resources */,
+				T60000000000000000000001 /* Tests */,
 			);
 			path = ScrollDown;
 			sourceTree = "<group>";
@@ -227,6 +283,8 @@
 		0400000000000002 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				T30000000000000000000001 /* ScrollDownTests.xctest */,
+				F0C5D2022BD44FDA40E4EC20 /* ScrollDown.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -496,6 +554,39 @@
 			path = games;
 			sourceTree = "<group>";
 		};
+		T60000000000000000000001 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				T60000000000000000000002 /* Helpers */,
+				T10000000000000000000001 /* ModelDecodingTests.swift */,
+				T10000000000000000000002 /* GameDetailViewModelTests.swift */,
+				T10000000000000000000004 /* OddsCalculatorTests.swift */,
+				T10000000000000000000005 /* EVCalculatorTests.swift */,
+				T10000000000000000000006 /* AmericanOddsTests.swift */,
+				T10000000000000000000007 /* BetPairingTests.swift */,
+				T10000000000000000000008 /* FairOddsCalculatorTests.swift */,
+				T10000000000000000000009 /* SharpBookConfigTests.swift */,
+				T1000000000000000000000A /* GameSummaryTests.swift */,
+				T1000000000000000000000B /* GameModelTests.swift */,
+				T1000000000000000000000C /* EnumsTests.swift */,
+				T1000000000000000000000D /* SocialPostTests.swift */,
+				T1000000000000000000000E /* GameFlowModelTests.swift */,
+				T1000000000000000000000F /* FlowAdapterTests.swift */,
+				T10000000000000000000010 /* HomeGameCacheTests.swift */,
+				T10000000000000000000011 /* MockLoaderTests.swift */,
+				T10000000000000000000012 /* AppDateTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		T60000000000000000000002 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				T10000000000000000000003 /* TestFixtures.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -513,7 +604,26 @@
 			);
 			name = ScrollDown;
 			productName = ScrollDown;
+			productReference = F0C5D2022BD44FDA40E4EC20 /* ScrollDown.app */;
 			productType = "com.apple.product-type.application";
+		};
+		T40000000000000000000001 /* ScrollDownTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = TA0000000000000000000001 /* Build configuration list for PBXNativeTarget "ScrollDownTests" */;
+			buildPhases = (
+				T50000000000000000000001 /* Sources */,
+				T50000000000000000000002 /* Frameworks */,
+				T50000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				T80000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = ScrollDownTests;
+			productName = ScrollDownTests;
+			productReference = T30000000000000000000001 /* ScrollDownTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -527,6 +637,10 @@
 				TargetAttributes = {
 					0500000000000001 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					T40000000000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 0500000000000001;
 					};
 				};
 			};
@@ -544,6 +658,7 @@
 			projectRoot = "";
 			targets = (
 				0500000000000001 /* ScrollDown */,
+				T40000000000000000000001 /* ScrollDownTests */,
 			);
 		};
 /* End PBXProject section */
@@ -559,6 +674,13 @@
 				2CD104DA7B33C73E6DF92ACE /* game-list.json in Resources */,
 				525D7497F91710305BA1C096 /* game-002.json in Resources */,
 				BA9845F1EDE4D3A195A1A1F4 /* pbp-001.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		T50000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -658,7 +780,40 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		T50000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				T20000000000000000000001 /* ModelDecodingTests.swift in Sources */,
+				T20000000000000000000002 /* GameDetailViewModelTests.swift in Sources */,
+				T20000000000000000000003 /* TestFixtures.swift in Sources */,
+				T20000000000000000000004 /* OddsCalculatorTests.swift in Sources */,
+				T20000000000000000000005 /* EVCalculatorTests.swift in Sources */,
+				T20000000000000000000006 /* AmericanOddsTests.swift in Sources */,
+				T20000000000000000000007 /* BetPairingTests.swift in Sources */,
+				T20000000000000000000008 /* FairOddsCalculatorTests.swift in Sources */,
+				T20000000000000000000009 /* SharpBookConfigTests.swift in Sources */,
+				T2000000000000000000000A /* GameSummaryTests.swift in Sources */,
+				T2000000000000000000000B /* GameModelTests.swift in Sources */,
+				T2000000000000000000000C /* EnumsTests.swift in Sources */,
+				T2000000000000000000000D /* SocialPostTests.swift in Sources */,
+				T2000000000000000000000E /* GameFlowModelTests.swift in Sources */,
+				T2000000000000000000000F /* FlowAdapterTests.swift in Sources */,
+				T20000000000000000000010 /* HomeGameCacheTests.swift in Sources */,
+				T20000000000000000000011 /* MockLoaderTests.swift in Sources */,
+				T20000000000000000000012 /* AppDateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		T80000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0500000000000001 /* ScrollDown */;
+			targetProxy = T70000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0900000000000001 /* Debug */ = {
@@ -793,7 +948,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEPLOYMENT_LOCATION = YES;
 				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -833,7 +987,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEPLOYMENT_LOCATION = YES;
 				DEVELOPMENT_TEAM = E3G5D247ZN;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = NO;
@@ -864,6 +1017,48 @@
 			};
 			name = Release;
 		};
+		T90000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = E3G5D247ZN;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scrolldown.ScrollDownTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScrollDown.app/ScrollDown";
+			};
+			name = Debug;
+		};
+		T90000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = E3G5D247ZN;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scrolldown.ScrollDownTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScrollDown.app/ScrollDown";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -881,6 +1076,15 @@
 			buildConfigurations = (
 				0900000000000001 /* Debug */,
 				0900000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		TA0000000000000000000001 /* Build configuration list for PBXNativeTarget "ScrollDownTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				T90000000000000000000001 /* Debug */,
+				T90000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
