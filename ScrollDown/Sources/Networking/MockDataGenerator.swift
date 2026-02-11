@@ -395,9 +395,9 @@ enum MockDataGenerator {
             let playerName: String
 
             if isNHL {
-                playerName = isHomePlay ? nhlHomePlayers.randomElement()! : nhlAwayPlayers.randomElement()!
+                playerName = isHomePlay ? (nhlHomePlayers.randomElement() ?? "Unknown") : (nhlAwayPlayers.randomElement() ?? "Unknown")
             } else {
-                playerName = isHomePlay ? nbaHomePlayers.randomElement()! : nbaAwayPlayers.randomElement()!
+                playerName = isHomePlay ? (nbaHomePlayers.randomElement() ?? "Unknown") : (nbaAwayPlayers.randomElement() ?? "Unknown")
             }
 
             let playType: PlayType
@@ -421,7 +421,7 @@ enum MockDataGenerator {
                     (.giveaway, "\(playerName) giveaway", 0),
                     (.takeaway, "\(playerName) takeaway", 0),
                 ]
-                let selected = nhlPlayTypes.randomElement()!
+                let selected = nhlPlayTypes.randomElement() ?? (.hit, "\(playerName) hit", 0)
                 playType = selected.0
                 description = selected.1
                 let points = selected.2
@@ -453,7 +453,7 @@ enum MockDataGenerator {
                         (.turnover, "\(playerName) turnover"),
                         (.foul, "Foul on \(playerName)"),
                     ]
-                    let selected = missTypes.randomElement()!
+                    let selected = missTypes.randomElement() ?? (.missedShot, "\(playerName) misses shot")
                     playType = selected.0
                     description = selected.1
                 }
