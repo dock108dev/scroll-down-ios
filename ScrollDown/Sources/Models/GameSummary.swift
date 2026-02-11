@@ -101,10 +101,19 @@ extension GameSummary {
         static let statusUnavailableText = "Status unavailable"
     }
 
-    /// Status from API string
+    /// Status from API string, or derived from available data signals when the API omits it.
     var status: GameStatus? {
-        guard let raw = statusRaw else { return nil }
-        return GameStatus(rawValue: raw)
+        if let raw = statusRaw {
+            return GameStatus(rawValue: raw) ?? GameStatus(rawValue: raw.lowercased())
+        }
+        // API doesn't always include status — derive from data
+        if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
+            return .completed
+        }
+        if let date = parsedGameDate, date > Date() {
+            return .scheduled
+        }
+        return nil
     }
 
     /// Convenience accessors for team names
