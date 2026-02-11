@@ -65,7 +65,7 @@ export IOS_BETA_ASSUME_NOW=2024-10-23T04:00:00Z
 
 Or use Admin Settings (long-press "Updated X ago" in Home feed).
 
-See [BETA_TIME_OVERRIDE.md](BETA_TIME_OVERRIDE.md) for full documentation.
+See [beta-time-override.md](beta-time-override.md) for full documentation.
 
 ## QA Checklist
 

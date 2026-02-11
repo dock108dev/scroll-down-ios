@@ -51,7 +51,7 @@ Default is live mode. Set via `AppConfig.shared.environment`.
 |----------|-------------|
 | [Architecture](docs/architecture.md) | MVVM structure, data flow, design patterns |
 | [Development](docs/development.md) | Local dev, testing, debugging |
-| [Snapshot Mode](docs/BETA_TIME_OVERRIDE.md) | Time override for historical testing |
+| [Snapshot Mode](docs/beta-time-override.md) | Time override for historical testing |
 | [Changelog](docs/CHANGELOG.md) | Feature history |
 
 For AI agent context, see [AGENTS.md](AGENTS.md).

@@ -49,8 +49,6 @@ final class RealGameService: GameService {
         let now = TimeService.shared.now
         let today = estCalendar.startOfDay(for: now)
 
-        NSLog("📡 [fetchGames] range=%@ league=%@ now=%@ today=%@", range.rawValue, league?.rawValue ?? "nil", "\(now)", "\(today)")
-
         var queryItems: [URLQueryItem] = []
 
         switch range {
@@ -91,10 +89,8 @@ final class RealGameService: GameService {
 
         queryItems.append(URLQueryItem(name: "limit", value: "100"))
 
-        NSLog("📡 Fetching games: range=%@ league=%@", range.rawValue, league?.rawValue ?? "all")
         logger.info("📡 Fetching games: range=\(range.rawValue, privacy: .public) league=\(league?.rawValue ?? "all", privacy: .public)")
         let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)
-        NSLog("📡 Got %d games for range=%@", response.games.count, range.rawValue)
         logger.info("📡 Got \(response.games.count, privacy: .public) games")
 
         return GameListResponse(
@@ -147,13 +143,11 @@ final class RealGameService: GameService {
         }
 
         do {
-            NSLog("📡 [DEBUG] Requesting: %@", url.absoluteString)
             logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")
             let (data, response) = try await session.data(for: urlRequest)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLError(.badServerResponse)
             }
-            NSLog("📡 [DEBUG] Response status: %d, bytes: %d", httpResponse.statusCode, data.count)
             logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
 
             // Handle authentication errors specifically
@@ -168,24 +162,19 @@ final class RealGameService: GameService {
             }
             do {
                 let result = try decoder.decode(T.self, from: data)
-                NSLog("📡 [DEBUG] Decode success for %@", path)
                 logger.info("📡 Decode success for \(path, privacy: .public)")
                 return result
             } catch {
                 if let jsonString = String(data: data, encoding: .utf8) {
-                    NSLog("📡 [DEBUG] Decode failed. Raw: %@", String(jsonString.prefix(1000)))
                     logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")
                 }
-                NSLog("📡 [DEBUG] Decode error: %@", "\(error)")
                 logger.error("📡 Decode error: \(error.localizedDescription, privacy: .public)")
                 throw error
             }
         } catch let error as DecodingError {
-            NSLog("📡 [DEBUG] DecodingError: %@", "\(error)")
             logger.error("📡 DecodingError: \(String(describing: error), privacy: .public)")
             throw GameServiceError.decodingError(error)
         } catch {
-            NSLog("📡 [DEBUG] NetworkError: %@", "\(error)")
             logger.error("📡 NetworkError: \(error.localizedDescription, privacy: .public)")
             throw GameServiceError.networkError(error)
         }

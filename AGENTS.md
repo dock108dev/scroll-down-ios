@@ -100,10 +100,8 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 **Card layout (BetCard):**
 - Row 1: Selection name + league badge + market type
 - Row 2: Opponent + date/time
-- Row 3: EV% + best book (right-aligned)
 - Divider
-- Row 4: Fair odds + confidence indicator
-- Row 5: Books grid (FlowLayout with MiniBookChip)
+- Row 3: Books grid (sorted by EV, FlowLayout with MiniBookChip) + Fair Odds (right-justified)
 
 ## View Architecture
 
