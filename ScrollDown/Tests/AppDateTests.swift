@@ -12,7 +12,8 @@ final class AppDateTests: XCTestCase {
     func testEndOfTodaySameCalendarDayAsStartOfToday() {
         let startOfToday = AppDate.startOfToday
         let endOfToday = AppDate.endOfToday
-        let calendar = Calendar.current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
         XCTAssertEqual(
             calendar.component(.day, from: startOfToday),
             calendar.component(.day, from: endOfToday)
