@@ -87,9 +87,8 @@ enum StatAnnotationGenerator {
             return nil
         }
 
-        // More turnovers is bad, so the team with fewer had the advantage
-        let betterTeam = home < away ? homeAbbrev : awayAbbrev
-        let worseTeam = home < away ? awayAbbrev : homeAbbrev
+        // More turnovers is bad, so the team with more had the disadvantage
+        let worseTeam = home > away ? homeAbbrev : awayAbbrev
 
         return "\(worseTeam) +\(Int(diff)) giveaways"
     }
