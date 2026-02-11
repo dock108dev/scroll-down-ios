@@ -130,7 +130,9 @@ extension GameDetailView {
 
     private func teamFilterButton(title: String, team: String?) -> some View {
         let isSelected = playerStatsTeamFilter == team
-        let teamColor = team.map { DesignSystem.TeamColors.color(for: $0) } ?? GameTheme.accentColor
+        let homeTeam = viewModel.game?.homeTeam ?? ""
+        let awayTeam = viewModel.game?.awayTeam ?? ""
+        let teamColor = team.map { DesignSystem.TeamColors.matchupColor(for: $0, against: $0 == homeTeam ? awayTeam : homeTeam, isHome: $0 == homeTeam) } ?? GameTheme.accentColor
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 playerStatsTeamFilter = team
@@ -171,7 +173,9 @@ extension GameDetailView {
     }
 
     private func frozenDataCell(_ stat: PlayerStat, isAlternate: Bool) -> some View {
-        let teamColor = DesignSystem.TeamColors.color(for: stat.team)
+        let homeTeam = viewModel.game?.homeTeam ?? ""
+        let awayTeam = viewModel.game?.awayTeam ?? ""
+        let teamColor = DesignSystem.TeamColors.matchupColor(for: stat.team, against: stat.team == homeTeam ? awayTeam : homeTeam, isHome: stat.team == homeTeam)
         let bgColor = isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground
 
         return HStack(spacing: 4) {

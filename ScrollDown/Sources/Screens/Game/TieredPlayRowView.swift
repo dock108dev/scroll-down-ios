@@ -44,7 +44,7 @@ struct Tier1PlayRowView: View {
                         HStack(spacing: 4) {
                             Text(TeamAbbreviations.abbreviation(for: awayTeam))
                                 .font(.caption.weight(.bold))
-                                .foregroundColor(DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam))
+                                .foregroundColor(DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false))
                             Text("\(away)")
                                 .font(.caption.weight(.bold).monospacedDigit())
                                 .foregroundColor(DesignSystem.TextColor.primary)
@@ -56,7 +56,7 @@ struct Tier1PlayRowView: View {
                                 .foregroundColor(DesignSystem.TextColor.primary)
                             Text(TeamAbbreviations.abbreviation(for: homeTeam))
                                 .font(.caption.weight(.bold))
-                                .foregroundColor(DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam))
+                                .foregroundColor(DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true))
                         }
                     }
                 }
