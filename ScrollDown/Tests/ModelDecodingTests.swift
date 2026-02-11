@@ -95,47 +95,47 @@ final class ModelDecodingTests: XCTestCase {
         let json = """
         {
             "id": 1,
-            "league_code": "NBA",
+            "leagueCode": "NBA",
             "season": 2025,
-            "game_date": "2026-01-01T19:30:00Z",
-            "home_team": "Team A",
-            "away_team": "Team B",
+            "gameDate": "2026-01-01T19:30:00Z",
+            "homeTeam": "Team A",
+            "awayTeam": "Team B",
             "status": "completed"
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let game = try decoder.decode(Game.self, from: json)
         XCTAssertEqual(game.status, .completed)
     }
-    
+
     func testMarketTypeDecoding() throws {
         let json = """
         {
             "book": "FanDuel",
-            "market_type": "spread",
-            "is_closing_line": true
+            "marketType": "spread",
+            "isClosingLine": true
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let odds = try decoder.decode(OddsEntry.self, from: json)
         XCTAssertEqual(odds.marketType, .spread)
     }
-    
+
     func testMediaTypeDecoding() throws {
         let json = """
         {
             "id": 1,
-            "game_id": 1,
-            "team_id": "BOS",
-            "post_url": "https://x.com/test",
-            "posted_at": "2026-01-01T19:00:00Z",
-            "has_video": true,
-            "media_type": "video"
+            "gameId": 1,
+            "teamId": "BOS",
+            "postUrl": "https://x.com/test",
+            "postedAt": "2026-01-01T19:00:00Z",
+            "hasVideo": true,
+            "mediaType": "video"
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let post = try decoder.decode(SocialPostResponse.self, from: json)
         XCTAssertEqual(post.mediaType, .video)

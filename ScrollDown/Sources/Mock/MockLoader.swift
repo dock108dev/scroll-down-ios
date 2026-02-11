@@ -12,7 +12,9 @@ struct MockLoader {
         }
         let data = try Data(contentsOf: url)
         do {
-            return try JSONDecoder().decode(T.self, from: data)
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            return try decoder.decode(T.self, from: data)
         } catch {
             throw MockLoaderError.decodingFailed(file, error)
         }
@@ -29,6 +31,7 @@ struct MockLoader {
         do {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
             let decoded = try decoder.decode(T.self, from: data)
             return .success(decoded)
         } catch {

@@ -7,7 +7,7 @@ final class EnumsTests: XCTestCase {
 
     func testGameStatusDecodingCompleted() throws {
         let json = """
-        {"id":1,"league_code":"NBA","season":2025,"game_date":"2025-01-01T19:30:00Z","home_team":"A","away_team":"B","status":"completed"}
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"completed"}
         """.data(using: .utf8)!
         let game = try JSONDecoder().decode(Game.self, from: json)
         XCTAssertEqual(game.status, .completed)
@@ -15,7 +15,7 @@ final class EnumsTests: XCTestCase {
 
     func testGameStatusDecodingInProgress() throws {
         let json = """
-        {"id":1,"league_code":"NBA","season":2025,"game_date":"2025-01-01T19:30:00Z","home_team":"A","away_team":"B","status":"in_progress"}
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"in_progress"}
         """.data(using: .utf8)!
         let game = try JSONDecoder().decode(Game.self, from: json)
         XCTAssertEqual(game.status, .inProgress)
@@ -23,7 +23,7 @@ final class EnumsTests: XCTestCase {
 
     func testGameStatusDecodingScheduled() throws {
         let json = """
-        {"id":1,"league_code":"NBA","season":2025,"game_date":"2025-01-01T19:30:00Z","home_team":"A","away_team":"B","status":"scheduled"}
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"scheduled"}
         """.data(using: .utf8)!
         let game = try JSONDecoder().decode(Game.self, from: json)
         XCTAssertEqual(game.status, .scheduled)
@@ -41,7 +41,7 @@ final class EnumsTests: XCTestCase {
 
     func testMarketTypeDecoding() throws {
         let json = """
-        {"book":"FanDuel","market_type":"spread","is_closing_line":true}
+        {"book":"FanDuel","marketType":"spread","isClosingLine":true}
         """.data(using: .utf8)!
         let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
         XCTAssertEqual(odds.marketType, .spread)
@@ -49,7 +49,7 @@ final class EnumsTests: XCTestCase {
 
     func testMarketTypeMoneyline() throws {
         let json = """
-        {"book":"FanDuel","market_type":"moneyline","is_closing_line":false}
+        {"book":"FanDuel","marketType":"moneyline","isClosingLine":false}
         """.data(using: .utf8)!
         let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
         XCTAssertEqual(odds.marketType, .moneyline)
@@ -57,7 +57,7 @@ final class EnumsTests: XCTestCase {
 
     func testMarketTypeTotal() throws {
         let json = """
-        {"book":"FanDuel","market_type":"total","is_closing_line":false}
+        {"book":"FanDuel","marketType":"total","isClosingLine":false}
         """.data(using: .utf8)!
         let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
         XCTAssertEqual(odds.marketType, .total)
@@ -67,7 +67,7 @@ final class EnumsTests: XCTestCase {
 
     func testMediaTypeDecoding() throws {
         let json = """
-        {"id":1,"game_id":1,"team_id":"BOS","post_url":"https://x.com/test","posted_at":"2025-01-01T19:00:00Z","has_video":true,"media_type":"video"}
+        {"id":1,"gameId":1,"teamId":"BOS","postUrl":"https://x.com/test","postedAt":"2025-01-01T19:00:00Z","hasVideo":true,"mediaType":"video"}
         """.data(using: .utf8)!
         let post = try JSONDecoder().decode(SocialPostResponse.self, from: json)
         XCTAssertEqual(post.mediaType, .video)
