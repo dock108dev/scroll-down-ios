@@ -1,5 +1,5 @@
 //
-//  BetCardV2.swift
+//  BetCard.swift
 //  ScrollDown
 //
 //  Always-open bet cards with organized layout
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct BetCardV2: View {
+struct BetCard: View {
     let bet: APIBet
     let oddsFormat: OddsFormat
     let evResult: OddsComparisonViewModel.EVResult?
@@ -161,32 +161,6 @@ struct BetCardV2: View {
         )
     }
 
-    private func evColor(for ev: Double) -> Color {
-        if ev >= 5 {
-            return FairBetTheme.positive
-        } else if ev > 0 {
-            return FairBetTheme.positiveMuted
-        } else if ev < -2 {
-            return FairBetTheme.negative
-        }
-        return .primary
-    }
-
-    private func abbreviatedBookName(_ name: String) -> String {
-        switch name {
-        case "DraftKings": return "DK"
-        case "FanDuel": return "FD"
-        case "BetMGM": return "MGM"
-        case "Caesars": return "CZR"
-        case "PointsBet": return "PB"
-        case "BetRivers": return "BR"
-        case "Fanatics": return "FAN"
-        case "ESPNBet", "ESPN BET": return "ESPN"
-        case "Hard Rock Bet": return "HR"
-        case "bet365": return "365"
-        default: return String(name.prefix(3)).uppercased()
-        }
-    }
 }
 
 // MARK: - Mini Book Chip
@@ -258,20 +232,6 @@ struct MiniBookChip: View {
         case "bet365": return "365"
         default: return String(book.name.prefix(3)).uppercased()
         }
-    }
-}
-
-// MARK: - Confidence Indicator
-
-struct ConfidenceIndicator: View {
-    var body: some View {
-        HStack(spacing: 2) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption2)
-            Text("Limited")
-                .font(.caption2)
-        }
-        .foregroundColor(.secondary.opacity(0.6))
     }
 }
 

@@ -35,7 +35,7 @@
 		3F0B911114E84E91FC0B60FA /* GameDetailView+WrapUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63756D613F557AE4F72A61C7 /* GameDetailView+WrapUp.swift */; };
 		411CAF7BC51C99DD28A21B53 /* social-posts.json in Resources */ = {isa = PBXBuildFile; fileRef = C85573005E610E4D7897BC31 /* social-posts.json */; };
 		42C6EFE97E483463F4DEAEBB /* APIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6B4901C3D2397DF2D9B369 /* APIConfiguration.swift */; };
-		43082696385ACD228BBAFB90 /* BetCardV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D0549B86E4D275566F0FC7 /* BetCardV2.swift */; };
+		43082696385ACD228BBAFB90 /* BetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D0549B86E4D275566F0FC7 /* BetCard.swift */; };
 		459DF1DF6064B89414EF07AD /* TieredPlayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E1CCA27FCC32300E46395D /* TieredPlayRowView.swift */; };
 		47EE2DBC7CDD6CD4415ED2F1 /* GameDetailView+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6E31EB99A720B92370CB4 /* GameDetailView+Helpers.swift */; };
 		4A70E261308F486937F45170 /* TeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A25EB6B171A96090300768 /* TeamView.swift */; };
@@ -116,7 +116,7 @@
 		328AF513832F807FAEDAFEDE /* VisualRhythm.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VisualRhythm.swift; sourceTree = "<group>"; };
 		3872C5AE773FD5B767ED3235 /* GameDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailViewModel.swift; sourceTree = "<group>"; };
 		391A429C1EA5120D35ADF38B /* ContentHierarchy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentHierarchy.swift; sourceTree = "<group>"; };
-		40D0549B86E4D275566F0FC7 /* BetCardV2.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetCardV2.swift; sourceTree = "<group>"; };
+		40D0549B86E4D275566F0FC7 /* BetCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetCard.swift; sourceTree = "<group>"; };
 		4388D761310256CAA8B9F768 /* TimeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeService.swift; sourceTree = "<group>"; };
 		468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairOddsCalculator.swift; sourceTree = "<group>"; };
 		48EA8126B015E4B4AF86450D /* GameDetailDisplayModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailDisplayModels.swift; sourceTree = "<group>"; };
@@ -288,7 +288,7 @@
 			isa = PBXGroup;
 			children = (
 				59AF227F2395599E6C613BBB /* OddsComparisonView.swift */,
-				40D0549B86E4D275566F0FC7 /* BetCardV2.swift */,
+				40D0549B86E4D275566F0FC7 /* BetCard.swift */,
 				AFA4D175D08915D573090FB9 /* FairBetCopy.swift */,
 			);
 			name = Views;
@@ -652,7 +652,7 @@
 				9E45CF05E4308A03E07BA0D9 /* FairBetMockDataProvider.swift in Sources */,
 				675794BBECDBC4D616FDA657 /* OddsComparisonViewModel.swift in Sources */,
 				00080852C85019B7FEEAC962 /* OddsComparisonView.swift in Sources */,
-				43082696385ACD228BBAFB90 /* BetCardV2.swift in Sources */,
+				43082696385ACD228BBAFB90 /* BetCard.swift in Sources */,
 				3BCFAFA9043F5EA53ADC6039 /* FairBetCopy.swift in Sources */,
 				9C67DF5667E4FDEFE835975D /* FairBetTheme.swift in Sources */,
 			);

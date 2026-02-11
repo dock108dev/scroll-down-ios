@@ -2,13 +2,6 @@ import Foundation
 
 /// Internal models for organizing game detail display state
 
-/// Represents a period or quarter's worth of play-by-play events
-struct QuarterTimeline: Identifiable, Equatable {
-    let quarter: Int
-    let plays: [PlayEntry]
-    var id: Int { quarter }
-}
-
 /// Represents a specific point in the timeline where a score should be displayed (e.g. End of 1st)
 struct TimelineScoreMarker: Identifiable, Equatable {
     let id: String

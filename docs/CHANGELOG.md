@@ -6,7 +6,7 @@ Notable changes to the Scroll Down iOS app.
 
 ### Added - FairBet Odds Comparison
 - `OddsComparisonView` with filterable bet list
-- `BetCardV2` always-visible card layout (selection, opponent, EV, fair odds, books grid)
+- `BetCard` always-visible card layout (selection, opponent, EV, fair odds, books grid)
 - `FairOddsCalculator` using sharp book vig-removal and median aggregation
 - `EVCalculator` with per-book fee models (P2P, exchange, traditional)
 - `BetPairing` for matching opposite sides of markets

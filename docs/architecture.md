@@ -95,7 +95,7 @@ FairBetAPIClient → [APIBet] → BetPairing → FairOddsCalculator → EVCalcul
 OddsComparisonViewModel ← caches EV results ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
        │
        ▼
-OddsComparisonView → BetCardV2 (always-visible card layout)
+OddsComparisonView → BetCard (always-visible card layout)
 ```
 
 **Fair Odds Computation:**

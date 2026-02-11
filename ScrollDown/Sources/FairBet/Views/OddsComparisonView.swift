@@ -2,10 +2,6 @@
 //  OddsComparisonView.swift
 //  ScrollDown
 //
-//  Embedded odds comparison view for HomeView.
-//  NavigationStack wrapper and header removed — driven by HomeView.
-//  League filters removed — driven by HomeView's segmented control.
-//
 
 import SwiftUI
 
@@ -50,7 +46,7 @@ struct OddsComparisonView: View {
 
                         // Bet cards
                         ForEach(viewModel.displayedBets) { bet in
-                            BetCardV2(
+                            BetCard(
                                 bet: bet,
                                 oddsFormat: viewModel.oddsFormat,
                                 evResult: viewModel.evResult(for: bet)
@@ -87,8 +83,6 @@ struct OddsComparisonView: View {
             Spacer()
         }
     }
-
-    // MARK: - Filters Section removed (summary bar + EV toggle removed, refresh moved inline)
 
     // MARK: - Empty State
 
@@ -131,60 +125,6 @@ struct OddsComparisonView: View {
             Spacer()
         }
         .padding()
-    }
-}
-
-// MARK: - Compact Filter Chip
-
-struct CompactFilterChip: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundColor(isSelected ? .white : .primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.accentColor : Color.clear)
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? Color.clear : Color.secondary.opacity(0.3), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Compact EV Toggle
-
-struct CompactEVToggle: View {
-    @Binding var isOn: Bool
-
-    var body: some View {
-        Button {
-            isOn.toggle()
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
-                    .font(.caption2)
-                Text("+EV Only")
-                    .font(.caption.weight(.medium))
-            }
-            .foregroundColor(isOn ? .white : FairBetTheme.positive)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(isOn ? FairBetTheme.positive : FairBetTheme.positive.opacity(0.12))
-            )
-        }
-        .buttonStyle(.plain)
     }
 }
 
