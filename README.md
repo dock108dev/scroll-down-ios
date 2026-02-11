@@ -53,5 +53,8 @@ Default is live mode. Set via `AppConfig.shared.environment`.
 | [Development](docs/development.md) | Local dev, testing, debugging |
 | [Snapshot Mode](docs/beta-time-override.md) | Time override for historical testing |
 | [Changelog](docs/CHANGELOG.md) | Feature history |
+| [Code Review](docs/CODE_REVIEW.md) | Comprehensive code review findings |
+| [Review Summary](docs/REVIEW_SUMMARY.md) | Executive summary of code review |
+| [Security Policy](SECURITY.md) | Security practices and vulnerability reporting |
 
 For AI agent context, see [AGENTS.md](AGENTS.md).
