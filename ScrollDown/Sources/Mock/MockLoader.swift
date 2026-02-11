@@ -6,28 +6,16 @@ struct MockLoader {
     /// Load and decode a JSON file from the bundle
     /// - Parameter file: The filename without extension (e.g., "game-001")
     /// - Returns: Decoded object of type T
-    static func load<T: Decodable>(_ file: String) -> T {
+    static func load<T: Decodable>(_ file: String) throws -> T {
         guard let url = Bundle.main.url(forResource: file, withExtension: "json") else {
-            fatalError("MockLoader: Failed to locate \(file).json in bundle")
+            throw MockLoaderError.fileNotFound(file)
         }
-        
-        guard let data = try? Data(contentsOf: url) else {
-            fatalError("MockLoader: Failed to load \(file).json")
+        let data = try Data(contentsOf: url)
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw MockLoaderError.decodingFailed(file, error)
         }
-        
-        let decoder = JSONDecoder()
-        
-        guard let decoded = try? decoder.decode(T.self, from: data) else {
-            // Try to get more detailed error info
-            do {
-                _ = try decoder.decode(T.self, from: data)
-            } catch {
-                fatalError("MockLoader: Failed to decode \(file).json - \(error)")
-            }
-            fatalError("MockLoader: Failed to decode \(file).json")
-        }
-        
-        return decoded
     }
     
     /// Load and decode a JSON file with Result type for error handling

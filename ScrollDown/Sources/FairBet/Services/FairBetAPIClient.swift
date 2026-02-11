@@ -66,7 +66,9 @@ actor FairBetAPIClient {
         // Use ScrollDown's existing infrastructure for base URL
         let baseURL = AppConfig.shared.apiBaseURL
 
-        var components = URLComponents(url: baseURL.appendingPathComponent("/api/fairbet/odds"), resolvingAgainstBaseURL: true)!
+        guard var components = URLComponents(url: baseURL.appendingPathComponent("/api/fairbet/odds"), resolvingAgainstBaseURL: true) else {
+            throw APIError.invalidURL
+        }
 
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(limit)),

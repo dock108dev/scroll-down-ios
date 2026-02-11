@@ -19,7 +19,11 @@ final class HomeGameCache {
     init() {
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         cacheDir = base.appendingPathComponent("HomeGames", isDirectory: true)
-        try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        } catch {
+            print("[HomeGameCache] Failed to create cache directory: \(error.localizedDescription)")
+        }
     }
 
     /// Save a section's games to disk cache.
@@ -30,7 +34,7 @@ final class HomeGameCache {
             let data = try encoder.encode(section)
             try data.write(to: url, options: .atomic)
         } catch {
-            // Cache write failures are non-fatal — app continues working without cache
+            print("[HomeGameCache] Save failed for \(range.rawValue): \(error.localizedDescription)")
         }
     }
 
@@ -38,13 +42,26 @@ final class HomeGameCache {
     func load(range: GameRange, league: LeagueCode?) -> CachedSection? {
         let url = fileURL(for: range, league: league)
         guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? decoder.decode(CachedSection.self, from: data)
+        do {
+            return try decoder.decode(CachedSection.self, from: data)
+        } catch {
+            print("[HomeGameCache] Decode failed for \(range.rawValue): \(error.localizedDescription)")
+            return nil
+        }
     }
 
     /// Remove all cached game data.
     func clearAll() {
-        try? FileManager.default.removeItem(at: cacheDir)
-        try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.removeItem(at: cacheDir)
+        } catch {
+            print("[HomeGameCache] Failed to remove cache directory: \(error.localizedDescription)")
+        }
+        do {
+            try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        } catch {
+            print("[HomeGameCache] Failed to recreate cache directory: \(error.localizedDescription)")
+        }
     }
 
     private func fileURL(for range: GameRange, league: LeagueCode?) -> URL {

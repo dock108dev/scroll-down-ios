@@ -11,8 +11,10 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     @Published private(set) var detail: GameDetailResponse?
-    @Published var isLoading: Bool
+    @Published private(set) var loadState: GameDetailLoadState = .idle
     @Published var errorMessage: String?
+
+    var isLoading: Bool { loadState == .loading }
     @Published private(set) var isUnavailable: Bool = false
 
     // Outcome is always hidden per progressive disclosure principles
@@ -61,6 +63,10 @@ final class GameDetailViewModel: ObservableObject {
         case failed(String)
     }
 
+    enum GameDetailLoadState: Equatable {
+        case idle, loading, loaded, failed(String)
+    }
+
     // PBP data (fetched separately when not included in main detail)
     @Published private(set) var pbpEvents: [PbpEvent] = []
     @Published private(set) var pbpState: PbpState = .idle
@@ -75,18 +81,18 @@ final class GameDetailViewModel: ObservableObject {
 
     init(detail: GameDetailResponse? = nil) {
         self.detail = detail
-        self.isLoading = detail == nil
+        self.loadState = detail == nil ? .idle : .loaded
     }
 
     // MARK: - Loading Methods
 
     func load(gameId: Int, league: String?, service: GameService) async {
         guard detail == nil else {
-            isLoading = false
+            loadState = .loaded
             return
         }
 
-        isLoading = true
+        loadState = .loading
         errorMessage = nil
         isUnavailable = false
 
@@ -96,14 +102,14 @@ final class GameDetailViewModel: ObservableObject {
                 GameRoutingLogger.logMismatch(tappedId: gameId, destinationId: response.game.id, league: league)
                 detail = nil
                 isUnavailable = true
-                isLoading = false
+                loadState = .idle
                 return
             }
             detail = response
-            isLoading = false
+            loadState = .loaded
         } catch {
             errorMessage = error.localizedDescription
-            isLoading = false
+            loadState = .failed(error.localizedDescription)
         }
     }
 

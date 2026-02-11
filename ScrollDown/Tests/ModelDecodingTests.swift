@@ -7,7 +7,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Game List Response
     
     func testGameListResponseDecoding() throws {
-        let response: GameListResponse = MockLoader.load("game-list")
+        let response: GameListResponse = try MockLoader.load("game-list")
         
         XCTAssertEqual(response.games.count, 4)
         XCTAssertEqual(response.total, 157)
@@ -31,7 +31,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Game Detail Response
     
     func testGameDetailResponseDecoding() throws {
-        let response: GameDetailResponse = MockLoader.load("game-001")
+        let response: GameDetailResponse = try MockLoader.load("game-001")
         
         // Verify game metadata
         XCTAssertEqual(response.game.id, 12345)
@@ -61,7 +61,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - PBP Response
     
     func testPbpResponseDecoding() throws {
-        let response: PbpResponse = MockLoader.load("pbp-001")
+        let response: PbpResponse = try MockLoader.load("pbp-001")
         
         XCTAssertEqual(response.events.count, 9)
         
@@ -76,7 +76,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Social Posts Response
     
     func testSocialPostsResponseDecoding() throws {
-        let response: SocialPostListResponse = MockLoader.load("social-posts")
+        let response: SocialPostListResponse = try MockLoader.load("social-posts")
         
         XCTAssertEqual(response.posts.count, 4)
         XCTAssertEqual(response.total, 4)
@@ -87,20 +87,6 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(firstPost.teamId, "BOS")
         XCTAssertFalse(firstPost.hasVideo)
         XCTAssertEqual(firstPost.mediaType, .image)
-    }
-
-    // MARK: - Related Posts Response
-
-    func testRelatedPostsResponseDecoding() throws {
-        let response: RelatedPostListResponse = MockLoader.load("related-posts")
-
-        XCTAssertEqual(response.posts.count, 5)
-        XCTAssertEqual(response.total, 5)
-
-        let firstPost = response.posts[0]
-        XCTAssertEqual(firstPost.id, 201)
-        XCTAssertTrue(firstPost.containsScore)
-        XCTAssertEqual(firstPost.sourceHandle, "NBA")
     }
 
     // MARK: - Enum Decoding

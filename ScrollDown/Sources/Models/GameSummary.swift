@@ -161,6 +161,14 @@ extension GameSummary {
         return formatter.date(from: gameDate)
     }
 
+    /// Inferred game status based on available data signals.
+    /// Falls back to play count and scheduling heuristics when no explicit status is available.
+    var inferredStatus: GameStatus {
+        if let s = status { return s }
+        if let playCount, playCount > 0 { return .inProgress }
+        return .scheduled
+    }
+
     /// Formatted date for display
     var formattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
