@@ -122,23 +122,8 @@ struct SettingsView: View {
                 }
             }
 
-            Section("About FairBet") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("FairBet compares odds across sportsbooks to help you find value.")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-
-                    Text("Fair odds are estimated by removing vig from current market prices.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 4)
-            }
-
             Section {
-                Text(FairBetCopy.disclaimer)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                RealityAndFeedbackView()
             }
         }
     }

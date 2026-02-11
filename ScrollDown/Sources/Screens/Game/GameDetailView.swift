@@ -73,7 +73,7 @@ struct GameDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             guard isValidGameId else {
-                // Block fallback routing when identity is missing; show a neutral unavailable state.
+                // Invalid game ID — show unavailable state.
                 GameRoutingLogger.logInvalidNavigation(tappedId: gameId, destinationId: gameId, league: leagueCode)
                 return
             }
@@ -93,7 +93,7 @@ struct GameDetailView: View {
                 await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
 
                 // 2. If flow found, collapse timeline (users can expand to see full PBP)
-                //    If no flow, fetch PBP as fallback and keep timeline expanded
+                //    If no flow, fetch PBP and keep timeline expanded
                 if viewModel.hasFlowData {
                     isTimelineExpanded = false
                 } else {

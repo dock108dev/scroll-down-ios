@@ -2,12 +2,12 @@ import Foundation
 
 enum PreviewFixtures {
     static let highlightsHeavyGame: GameDetailResponse = {
-        let base: GameDetailResponse = MockLoader.load("game-001")
+        let base: GameDetailResponse = try! MockLoader.load("game-001")
         return base
     }()
 
     static let highlightsLightGame: GameDetailResponse = {
-        let base: GameDetailResponse = MockLoader.load("game-002")
+        let base: GameDetailResponse = try! MockLoader.load("game-002")
         return GameDetailResponse(
             game: base.game,
             teamStats: base.teamStats,
@@ -24,7 +24,7 @@ enum PreviewFixtures {
     }()
 
     static let overtimeGame: GameDetailResponse = {
-        let base: GameDetailResponse = MockLoader.load("game-001")
+        let base: GameDetailResponse = try! MockLoader.load("game-001")
         let extraPlay = PlayEntry(
             playIndex: 999,
             quarter: 5,
@@ -53,7 +53,7 @@ enum PreviewFixtures {
     }()
 
     static let preGameOnlyGame: GameDetailResponse = {
-        let base: GameDetailResponse = MockLoader.load("game-001")
+        let base: GameDetailResponse = try! MockLoader.load("game-001")
         return GameDetailResponse(
             game: base.game,
             teamStats: [],

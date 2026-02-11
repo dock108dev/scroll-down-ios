@@ -275,7 +275,7 @@ extension GameDetailView {
             sections.append(.overview)
         }
 
-        // Flow - always show (flow blocks or PBP fallback)
+        // Flow - always show (flow blocks or PBP)
         sections.append(.timeline)
 
         // Player Stats - if we have player stats data

@@ -58,25 +58,33 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .yesterday:
-            let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today)!
+            guard let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today) else {
+                throw GameServiceError.networkError(URLError(.unknown))
+            }
             let dateStr = dateFormatter.string(from: yesterday)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .earlier:
-            let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today)!
-            let threeDaysAgo = estCalendar.date(byAdding: .day, value: -3, to: today)!
+            guard let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today),
+                  let threeDaysAgo = estCalendar.date(byAdding: .day, value: -3, to: today) else {
+                throw GameServiceError.networkError(URLError(.unknown))
+            }
             queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: threeDaysAgo)))
             queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
 
         case .tomorrow:
-            let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
+            guard let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today) else {
+                throw GameServiceError.networkError(URLError(.unknown))
+            }
             let dateStr = dateFormatter.string(from: tomorrow)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .next24:
-            let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today)!
+            guard let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today) else {
+                throw GameServiceError.networkError(URLError(.unknown))
+            }
             let todayStr = dateFormatter.string(from: today)
             let tomorrowStr = dateFormatter.string(from: tomorrow)
             queryItems.append(URLQueryItem(name: "startDate", value: todayStr))

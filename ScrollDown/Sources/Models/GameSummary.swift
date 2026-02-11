@@ -101,33 +101,10 @@ extension GameSummary {
         static let statusUnavailableText = "Status unavailable"
     }
 
-    /// Normalized status from API string to GameStatus enum
+    /// Status from API string
     var status: GameStatus? {
-        guard let raw = statusRaw?.lowercased() else {
-            // Infer status from available data
-            if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
-                return .completed
-            }
-            if let date = parsedGameDate, date > Date() {
-                return .scheduled
-            }
-            return nil
-        }
-
-        switch raw {
-        case "final", "completed":
-            return .completed
-        case "live", "in_progress", "inprogress":
-            return .inProgress
-        case "scheduled", "upcoming":
-            return .scheduled
-        case "postponed":
-            return .postponed
-        case "canceled", "cancelled":
-            return .canceled
-        default:
-            return nil
-        }
+        guard let raw = statusRaw else { return nil }
+        return GameStatus(rawValue: raw)
     }
 
     /// Convenience accessors for team names

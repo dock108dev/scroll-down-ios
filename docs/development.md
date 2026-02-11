@@ -11,7 +11,7 @@ The app supports two environments via `AppConfig.shared.environment`:
 | `.live` | Production backend API | Default, real data |
 | `.localhost` | Local dev server (port 8000) | Backend development |
 
-**Default:** Live mode. To use localhost by default, set `FeatureFlags.defaultToLocalhost = true` in `AppConfig.swift`.
+**Default:** Live mode.
 
 ### Switching Modes
 
@@ -45,9 +45,6 @@ Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 # Build for simulator
 xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 
-# Build for specific iOS version
-xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro' build
-
 # Run tests
 xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
@@ -72,7 +69,6 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 ### UI
 - [ ] Dark and light mode
 - [ ] Long team names truncate gracefully
-- [ ] VoiceOver labels present
 - [ ] iPad adaptive layout (4-column grid, constrained width)
 
 ### Data
@@ -87,22 +83,7 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 - [ ] Tab bar scrolls to section reliably
 - [ ] Team headers are tappable
 
-### Interactions
-- [ ] Tap feedback on all interactive elements
-- [ ] Chevrons rotate consistently on expand
-- [ ] Animations feel smooth (spring timing)
-
 ## Debugging
-
-### Check current environment
-```swift
-print(AppConfig.shared.environment)  // .live or .localhost
-```
-
-### Inspect dev clock
-```swift
-print(AppDate.now())  // Nov 12, 2024 in mock mode
-```
 
 ### Console logs
 Filter by subsystem `com.scrolldown.app` in Console.app:
@@ -114,10 +95,6 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 | `networking` | API calls and responses |
 
 ### Common Issues
-
-**Sections not scrolling to position:**
-- Verify `scrollToSection` state is being set
-- Check anchor offset in `UnitPoint(x: 0.5, y: -0.08)`
 
 **Flow not loading:**
 - Check `viewModel.hasFlowData` returns true

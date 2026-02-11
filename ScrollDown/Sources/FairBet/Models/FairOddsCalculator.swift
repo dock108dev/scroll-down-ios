@@ -24,7 +24,7 @@ struct SharpBookConfig {
 
     /// Get sharp books for a given sport
     static func sharpBooks(for sport: String) -> [String] {
-        sharpBooksBySport[sport.lowercased()] ?? sharpBooksBySport["default"]!
+        sharpBooksBySport[sport.lowercased()] ?? sharpBooksBySport["default"] ?? ["pinnacle", "circa"]
     }
 
     /// Check if a book is considered sharp for a given sport
@@ -208,9 +208,7 @@ struct FairOddsCalculator {
 
         let total = medianProbs.values.reduce(0, +)
         if total > 0 && abs(total - 1.0) > 0.001 {
-            for side in medianProbs.keys {
-                medianProbs[side]! /= total
-            }
+            medianProbs = medianProbs.mapValues { $0 / total }
         }
 
         return medianProbs

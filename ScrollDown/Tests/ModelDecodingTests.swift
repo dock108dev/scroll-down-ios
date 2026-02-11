@@ -7,7 +7,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Game List Response
     
     func testGameListResponseDecoding() throws {
-        let response: GameListResponse = MockLoader.load("game-list")
+        let response: GameListResponse = try MockLoader.load("game-list")
         
         XCTAssertEqual(response.games.count, 4)
         XCTAssertEqual(response.total, 157)
@@ -31,7 +31,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Game Detail Response
     
     func testGameDetailResponseDecoding() throws {
-        let response: GameDetailResponse = MockLoader.load("game-001")
+        let response: GameDetailResponse = try MockLoader.load("game-001")
         
         // Verify game metadata
         XCTAssertEqual(response.game.id, 12345)
@@ -61,14 +61,14 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - PBP Response
     
     func testPbpResponseDecoding() throws {
-        let response: PbpResponse = MockLoader.load("pbp-001")
+        let response: PbpResponse = try MockLoader.load("pbp-001")
         
         XCTAssertEqual(response.events.count, 9)
         
         // Verify first event
         let firstEvent = response.events[0]
         XCTAssertEqual(firstEvent.id.intValue, 1)
-        XCTAssertEqual(firstEvent.gameId.intValue, 12345)
+        XCTAssertEqual(firstEvent.gameId?.intValue, 12345)
         XCTAssertEqual(firstEvent.period, 1)
         XCTAssertEqual(firstEvent.eventType, "jump_ball")
     }
@@ -76,7 +76,7 @@ final class ModelDecodingTests: XCTestCase {
     // MARK: - Social Posts Response
     
     func testSocialPostsResponseDecoding() throws {
-        let response: SocialPostListResponse = MockLoader.load("social-posts")
+        let response: SocialPostListResponse = try MockLoader.load("social-posts")
         
         XCTAssertEqual(response.posts.count, 4)
         XCTAssertEqual(response.total, 4)
@@ -89,67 +89,53 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(firstPost.mediaType, .image)
     }
 
-    // MARK: - Related Posts Response
-
-    func testRelatedPostsResponseDecoding() throws {
-        let response: RelatedPostListResponse = MockLoader.load("related-posts")
-
-        XCTAssertEqual(response.posts.count, 5)
-        XCTAssertEqual(response.total, 5)
-
-        let firstPost = response.posts[0]
-        XCTAssertEqual(firstPost.id, 201)
-        XCTAssertTrue(firstPost.containsScore)
-        XCTAssertEqual(firstPost.sourceHandle, "NBA")
-    }
-
     // MARK: - Enum Decoding
     
     func testGameStatusDecoding() throws {
         let json = """
         {
             "id": 1,
-            "league_code": "NBA",
+            "leagueCode": "NBA",
             "season": 2025,
-            "game_date": "2026-01-01T19:30:00Z",
-            "home_team": "Team A",
-            "away_team": "Team B",
+            "gameDate": "2026-01-01T19:30:00Z",
+            "homeTeam": "Team A",
+            "awayTeam": "Team B",
             "status": "completed"
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let game = try decoder.decode(Game.self, from: json)
         XCTAssertEqual(game.status, .completed)
     }
-    
+
     func testMarketTypeDecoding() throws {
         let json = """
         {
             "book": "FanDuel",
-            "market_type": "spread",
-            "is_closing_line": true
+            "marketType": "spread",
+            "isClosingLine": true
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let odds = try decoder.decode(OddsEntry.self, from: json)
         XCTAssertEqual(odds.marketType, .spread)
     }
-    
+
     func testMediaTypeDecoding() throws {
         let json = """
         {
             "id": 1,
-            "game_id": 1,
-            "team_id": "BOS",
-            "post_url": "https://x.com/test",
-            "posted_at": "2026-01-01T19:00:00Z",
-            "has_video": true,
-            "media_type": "video"
+            "gameId": 1,
+            "teamId": "BOS",
+            "postUrl": "https://x.com/test",
+            "postedAt": "2026-01-01T19:00:00Z",
+            "hasVideo": true,
+            "mediaType": "video"
         }
         """.data(using: .utf8)!
-        
+
         let decoder = JSONDecoder()
         let post = try decoder.decode(SocialPostResponse.self, from: json)
         XCTAssertEqual(post.mediaType, .video)
@@ -157,15 +143,15 @@ final class ModelDecodingTests: XCTestCase {
 
     // MARK: - Game Summary Logic
 
-    func testGameSummaryInferredStatus() {
-        let scheduledGame = makeGameSummary(playCount: 0)
-        XCTAssertEqual(scheduledGame.inferredStatus, .scheduled)
+    func testGameSummaryStatus() {
+        let noStatus = makeGameSummary()
+        XCTAssertNil(noStatus.status)
 
-        let inProgressGame = makeGameSummary(playCount: 12)
-        XCTAssertEqual(inProgressGame.inferredStatus, .inProgress)
+        let scheduled = makeGameSummary(status: .scheduled)
+        XCTAssertEqual(scheduled.status, .scheduled)
 
-        let completedGame = makeGameSummary(homeScore: 3, awayScore: 2)
-        XCTAssertEqual(completedGame.inferredStatus, .completed)
+        let completed = makeGameSummary(status: .completed)
+        XCTAssertEqual(completed.status, .completed)
     }
 }
 

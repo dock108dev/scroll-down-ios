@@ -121,7 +121,7 @@ final class MockGameService: GameService {
             return PbpResponse(events: mapPlaysToEvents(detail.plays, gameId: gameId))
         }
 
-        return MockLoader.load("pbp-001")
+        return try MockLoader.load("pbp-001")
     }
 
     func fetchSocialPosts(gameId: Int) async throws -> SocialPostListResponse {
@@ -157,7 +157,7 @@ final class MockGameService: GameService {
             return try await fetchSocialPosts(gameId: gameId)
         }
 
-        return MockLoader.load("social-posts")
+        return try MockLoader.load("social-posts")
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {

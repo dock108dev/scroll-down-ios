@@ -167,7 +167,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             default: return "\(period - 4)OT"
             }
         default:
-            // Generic fallback
+            // Default period label
             return "Q\(period)"
         }
     }

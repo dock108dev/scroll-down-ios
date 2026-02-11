@@ -49,35 +49,14 @@ Migrated to blocks-based flow architecture:
 
 ---
 
-## Phase G - Timeline API Integration
-- Timeline artifact fetch from `/games/{game_id}/timeline`
-- Unified timeline events combining PBP and social posts
+## Earlier Releases
 
-## Phase F - Quality Polish
-- Loading skeleton placeholders
-- Enhanced empty states with contextual icons
-- Tap-to-retry for error states
-
-## Phase E - Social Blending
+- Timeline API integration (`/games/{game_id}/timeline`, unified events)
+- Loading skeleton placeholders, enhanced empty states, tap-to-retry
 - Social feed with tap-to-reveal blur
-- Social service in Mock/Real environments
-
-## Phase D - Recaps & Reveal Control
-- Explicit reveal control in Game Detail
-- Per-game reveal preference persistence
-- Context section ("why the game mattered")
-
-## Phase C - Timeline Usability
-- Period/quarter grouping with collapsible sections
-- Pagination for long PBP sequences
-- LIVE indicator for current period
-
-## Phase B - Real Feeds
+- Explicit reveal control, per-game reveal persistence
+- Period/quarter grouping with collapsible sections, PBP pagination
 - Home feed with Earlier/Today/Upcoming sections
-- Game detail with collapsible sections
-- Dev-mode clock for consistent mock data
-
-## Phase A - Foundation
-- Basic MVVM architecture
-- SwiftUI views with dark mode
+- Game detail with collapsible sections, dev-mode clock
+- MVVM architecture, SwiftUI views with dark mode
 - Mock and real service implementations

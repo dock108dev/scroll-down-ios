@@ -58,7 +58,7 @@ enum AppDate {
         components.hour = 12
         components.minute = 0
         components.second = 0
-        return Calendar.current.date(from: components) ?? Date()
+        return Calendar.current.date(from: components)!
     }()
     
     /// Returns the current date based on priority:

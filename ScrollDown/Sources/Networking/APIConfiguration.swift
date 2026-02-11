@@ -35,7 +35,7 @@ enum APIConfiguration {
                 return key
             }
 
-            // Fallback: check environment variable (useful for development)
+            // Check environment variable (useful for development)
             if let key = ProcessInfo.processInfo.environment["SPORTS_DATA_API_KEY"],
                !key.isEmpty {
                 return key
