@@ -36,7 +36,10 @@ extension GameDetailView {
                     teamFilterPicker(teams: teams)
                 }
 
-                // Stats table with frozen columns + horizontal scroll
+                // Stats table with frozen columns + stat columns
+                // Use flexible layout when few columns (NCAAB), scrollable when many (NBA)
+                let useFlexible = columns.count <= 6
+
                 HStack(alignment: .top, spacing: 0) {
                     // FROZEN COLUMNS (Player + Team) - stays fixed
                     VStack(spacing: 0) {
@@ -51,12 +54,21 @@ extension GameDetailView {
                         .fill(DesignSystem.borderColor)
                         .frame(width: 1)
 
-                    // SCROLLABLE COLUMNS - all rows scroll together
-                    ScrollView(.horizontal, showsIndicators: false) {
+                    // STAT COLUMNS - flexible when few, scrollable when many
+                    if useFlexible {
                         VStack(spacing: 0) {
-                            scrollableHeaderCell(columns: columns)
+                            scrollableHeaderCell(columns: columns, flexible: true)
                             ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
-                                scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2), columns: columns)
+                                scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2), columns: columns, flexible: true)
+                            }
+                        }
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                scrollableHeaderCell(columns: columns, flexible: false)
+                                ForEach(Array(processedStats.enumerated()), id: \.element.id) { index, stat in
+                                    scrollableDataCell(stat, isAlternate: index.isMultiple(of: 2), columns: columns, flexible: false)
+                                }
                             }
                         }
                     }
@@ -190,19 +202,28 @@ extension GameDetailView {
 
     // MARK: - Scrollable Column Cells (Stats)
 
-    private func scrollableHeaderCell(columns: Set<String>) -> some View {
+    @ViewBuilder
+    private func statColumnFrame(_ text: String, width: CGFloat, flexible: Bool) -> some View {
+        if flexible {
+            Text(text).frame(maxWidth: .infinity)
+        } else {
+            Text(text).frame(width: width)
+        }
+    }
+
+    private func scrollableHeaderCell(columns: Set<String>, flexible: Bool = false) -> some View {
         HStack(spacing: 6) {
-            if columns.contains("min") { Text("MIN").frame(width: 38) }
-            if columns.contains("pts") { Text("PTS").frame(width: 34) }
-            if columns.contains("reb") { Text("REB").frame(width: 34) }
-            if columns.contains("ast") { Text("AST").frame(width: 34) }
-            if columns.contains("fg") { Text("FG").frame(width: 48) }
-            if columns.contains("3pt") { Text("3PT").frame(width: 48) }
-            if columns.contains("ft") { Text("FT").frame(width: 48) }
-            if columns.contains("stl") { Text("STL").frame(width: 30) }
-            if columns.contains("blk") { Text("BLK").frame(width: 30) }
-            if columns.contains("tov") { Text("TO").frame(width: 30) }
-            if columns.contains("+/-") { Text("+/-").frame(width: 38) }
+            if columns.contains("min") { statColumnFrame("MIN", width: 38, flexible: flexible) }
+            if columns.contains("pts") { statColumnFrame("PTS", width: 34, flexible: flexible) }
+            if columns.contains("reb") { statColumnFrame("REB", width: 34, flexible: flexible) }
+            if columns.contains("ast") { statColumnFrame("AST", width: 34, flexible: flexible) }
+            if columns.contains("fg") { statColumnFrame("FG", width: 48, flexible: flexible) }
+            if columns.contains("3pt") { statColumnFrame("3PT", width: 48, flexible: flexible) }
+            if columns.contains("ft") { statColumnFrame("FT", width: 48, flexible: flexible) }
+            if columns.contains("stl") { statColumnFrame("STL", width: 30, flexible: flexible) }
+            if columns.contains("blk") { statColumnFrame("BLK", width: 30, flexible: flexible) }
+            if columns.contains("tov") { statColumnFrame("TO", width: 30, flexible: flexible) }
+            if columns.contains("+/-") { statColumnFrame("+/-", width: 38, flexible: flexible) }
         }
         .font(DesignSystem.Typography.statLabel)
         .foregroundColor(DesignSystem.TextColor.secondary)
@@ -212,66 +233,97 @@ extension GameDetailView {
         .background(DesignSystem.Colors.elevatedBackground)
     }
 
-    private func scrollableDataCell(_ stat: PlayerStat, isAlternate: Bool, columns: Set<String>) -> some View {
+    @ViewBuilder
+    private func dataColumnFrame<V: View>(_ content: V, width: CGFloat, flexible: Bool) -> some View {
+        if flexible {
+            content.frame(maxWidth: .infinity)
+        } else {
+            content.frame(width: width)
+        }
+    }
+
+    private func scrollableDataCell(_ stat: PlayerStat, isAlternate: Bool, columns: Set<String>, flexible: Bool = false) -> some View {
         let bgColor = isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground
         return HStack(spacing: 6) {
             if columns.contains("min") {
-                Text(formatMinutes(stat.minutes))
-                    .foregroundColor(DesignSystem.TextColor.secondary)
-                    .frame(width: 38)
+                dataColumnFrame(
+                    Text(formatMinutes(stat.minutes))
+                        .foregroundColor(DesignSystem.TextColor.secondary),
+                    width: 38, flexible: flexible
+                )
             }
 
             if columns.contains("pts") {
-                Text(stat.points.map(String.init) ?? "--")
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.TextColor.primary)
-                    .frame(width: 34)
+                dataColumnFrame(
+                    Text(stat.points.map(String.init) ?? "--")
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.TextColor.primary),
+                    width: 34, flexible: flexible
+                )
             }
 
             if columns.contains("reb") {
-                Text(stat.rebounds.map(String.init) ?? "--")
-                    .frame(width: 34)
+                dataColumnFrame(
+                    Text(stat.rebounds.map(String.init) ?? "--"),
+                    width: 34, flexible: flexible
+                )
             }
 
             if columns.contains("ast") {
-                Text(stat.assists.map(String.init) ?? "--")
-                    .frame(width: 34)
+                dataColumnFrame(
+                    Text(stat.assists.map(String.init) ?? "--"),
+                    width: 34, flexible: flexible
+                )
             }
 
             if columns.contains("fg") {
-                Text(formatShotStat(made: rawStatInt(stat, "fg"), attempted: rawStatInt(stat, "fga")))
-                    .frame(width: 48)
+                dataColumnFrame(
+                    Text(formatShotStat(made: rawStatInt(stat, "fg"), attempted: rawStatInt(stat, "fga"))),
+                    width: 48, flexible: flexible
+                )
             }
 
             if columns.contains("3pt") {
-                Text(formatShotStat(made: rawStatInt(stat, "fg3"), attempted: rawStatInt(stat, "fg3a")))
-                    .frame(width: 48)
+                dataColumnFrame(
+                    Text(formatShotStat(made: rawStatInt(stat, "fg3"), attempted: rawStatInt(stat, "fg3a"))),
+                    width: 48, flexible: flexible
+                )
             }
 
             if columns.contains("ft") {
-                Text(formatShotStat(made: rawStatInt(stat, "ft"), attempted: rawStatInt(stat, "fta")))
-                    .frame(width: 48)
+                dataColumnFrame(
+                    Text(formatShotStat(made: rawStatInt(stat, "ft"), attempted: rawStatInt(stat, "fta"))),
+                    width: 48, flexible: flexible
+                )
             }
 
             if columns.contains("stl") {
-                Text(rawStatInt(stat, "stl").map(String.init) ?? "--")
-                    .frame(width: 30)
+                dataColumnFrame(
+                    Text(rawStatInt(stat, "stl").map(String.init) ?? "--"),
+                    width: 30, flexible: flexible
+                )
             }
 
             if columns.contains("blk") {
-                Text(rawStatInt(stat, "blk").map(String.init) ?? "--")
-                    .frame(width: 30)
+                dataColumnFrame(
+                    Text(rawStatInt(stat, "blk").map(String.init) ?? "--"),
+                    width: 30, flexible: flexible
+                )
             }
 
             if columns.contains("tov") {
-                Text(rawStatInt(stat, "tov").map(String.init) ?? "--")
-                    .frame(width: 30)
+                dataColumnFrame(
+                    Text(rawStatInt(stat, "tov").map(String.init) ?? "--"),
+                    width: 30, flexible: flexible
+                )
             }
 
             if columns.contains("+/-") {
-                Text(rawStatString(stat, "plus_minus") ?? "--")
-                    .foregroundColor(plusMinusColor(rawStatString(stat, "plus_minus")))
-                    .frame(width: 38)
+                dataColumnFrame(
+                    Text(rawStatString(stat, "plus_minus") ?? "--")
+                        .foregroundColor(plusMinusColor(rawStatString(stat, "plus_minus"))),
+                    width: 38, flexible: flexible
+                )
             }
         }
         .font(DesignSystem.Typography.statValue)

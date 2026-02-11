@@ -216,6 +216,7 @@ struct FlowContainerView: View {
                 }
             }
             .padding(.leading, NarrativeLayoutConfig.contentLeadingPadding)
+            .padding(.trailing, NarrativeLayoutConfig.contentLeadingPadding)
         }
     }
 }
