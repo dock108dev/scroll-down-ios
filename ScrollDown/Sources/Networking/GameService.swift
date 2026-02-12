@@ -69,7 +69,27 @@ enum GameServiceError: LocalizedError {
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):
+            if let decodingError = error as? DecodingError {
+                return "Data error: \(decodingError.detailedDescription)"
+            }
             return "Data error: \(error.localizedDescription)"
+        }
+    }
+}
+
+extension DecodingError {
+    var detailedDescription: String {
+        switch self {
+        case .keyNotFound(let key, let context):
+            return "Missing key '\(key.stringValue)' at \(context.codingPath.map(\.stringValue).joined(separator: "."))"
+        case .valueNotFound(let type, let context):
+            return "Null value for \(type) at \(context.codingPath.map(\.stringValue).joined(separator: "."))"
+        case .typeMismatch(let type, let context):
+            return "Type mismatch for \(type) at \(context.codingPath.map(\.stringValue).joined(separator: "."))"
+        case .dataCorrupted(let context):
+            return "Corrupted data at \(context.codingPath.map(\.stringValue).joined(separator: ".")): \(context.debugDescription)"
+        @unknown default:
+            return localizedDescription
         }
     }
 }
