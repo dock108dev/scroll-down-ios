@@ -121,6 +121,17 @@
 		197296BE28BC540FDF47276B /* TeamColorCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15E3C22D39FD7CDAEF9275B /* TeamColorCache.swift */; };
 		28DAB057B730C749893DF8EA /* DerivedMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */; };
 		F395E419C002F7B7F8A67AF3 /* ServerTieredPlayGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942D2F2F88262A286A8A139D /* ServerTieredPlayGroup.swift */; };
+		BB01C2D3E4F5A6B7C8D90001 /* BetGroupKeyBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90001 /* BetGroupKeyBuilder.swift */; };
+		BB01C2D3E4F5A6B7C8D90002 /* SelectionLabelBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90002 /* SelectionLabelBuilder.swift */; };
+		BB01C2D3E4F5A6B7C8D90003 /* BetGroupFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90003 /* BetGroupFactory.swift */; };
+		BB01C2D3E4F5A6B7C8D90004 /* SafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90004 /* SafariView.swift */; };
+		BB01C2D3E4F5A6B7C8D90005 /* SocialMediaPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90005 /* SocialMediaPreview.swift */; };
+		BB01C2D3E4F5A6B7C8D90006 /* SocialPostRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90006 /* SocialPostRow.swift */; };
+		BB01C2D3E4F5A6B7C8D90007 /* WatchOnXButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90007 /* WatchOnXButton.swift */; };
+		BB01C2D3E4F5A6B7C8D90008 /* HomeView+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90008 /* HomeView+Sections.swift */; };
+		BB01C2D3E4F5A6B7C8D90009 /* HomeView+DataLoading.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90009 /* HomeView+DataLoading.swift */; };
+		BB01C2D3E4F5A6B7C8D9000A /* StyledPlayDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */; };
+		BB01C2D3E4F5A6B7C8D9000B /* UnifiedTimelineRowView+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +261,17 @@
 		A15E3C22D39FD7CDAEF9275B /* TeamColorCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TeamColorCache.swift; sourceTree = "<group>"; };
 		2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DerivedMetrics.swift; sourceTree = "<group>"; };
 		942D2F2F88262A286A8A139D /* ServerTieredPlayGroup.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServerTieredPlayGroup.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90001 /* BetGroupKeyBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetGroupKeyBuilder.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90002 /* SelectionLabelBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SelectionLabelBuilder.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90003 /* BetGroupFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetGroupFactory.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90004 /* SafariView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SafariView.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90005 /* SocialMediaPreview.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SocialMediaPreview.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90006 /* SocialPostRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SocialPostRow.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90007 /* WatchOnXButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchOnXButton.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90008 /* HomeView+Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeView+Sections.swift"; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C90009 /* HomeView+DataLoading.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeView+DataLoading.swift"; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StyledPlayDescription.swift; sourceTree = "<group>"; };
+		AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UnifiedTimelineRowView+Layout.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -346,6 +368,7 @@
 			children = (
 				B6BE4EF78C845F94B14C714B /* LoadingSkeletonView.swift */,
 				03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */,
+				AA01B2C3D4E5F6A7B8C90004 /* SafariView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -397,6 +420,8 @@
 				DF1E2F9CCDAA151BBB872DA6 /* HomeViewSupport.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* SettingsView.swift */,
 				4AA21BEB69518BAA2B993128 /* RealityAndFeedbackView.swift */,
+				AA01B2C3D4E5F6A7B8C90008 /* HomeView+Sections.swift */,
+				AA01B2C3D4E5F6A7B8C90009 /* HomeView+DataLoading.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -450,6 +475,11 @@
 				328AF513832F807FAEDAFEDE /* VisualRhythm.swift */,
 				52A7BE5EB9BFCDA634A45337 /* NarrativeLayout.swift */,
 				D3F427E4DB61BEFF052D28DF /* CardDiscipline.swift */,
+				AA01B2C3D4E5F6A7B8C90005 /* SocialMediaPreview.swift */,
+				AA01B2C3D4E5F6A7B8C90006 /* SocialPostRow.swift */,
+				AA01B2C3D4E5F6A7B8C90007 /* WatchOnXButton.swift */,
+				AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */,
+				AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -475,6 +505,9 @@
 				4A773FEEE798C93E9FC2818C /* OddsCalculator.swift */,
 				468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */,
 				8FDB92C0E8E4F0BC1D2CD467 /* EVCalculator.swift */,
+				AA01B2C3D4E5F6A7B8C90001 /* BetGroupKeyBuilder.swift */,
+				AA01B2C3D4E5F6A7B8C90002 /* SelectionLabelBuilder.swift */,
+				AA01B2C3D4E5F6A7B8C90003 /* BetGroupFactory.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -793,6 +826,17 @@
 				197296BE28BC540FDF47276B /* TeamColorCache.swift in Sources */,
 				28DAB057B730C749893DF8EA /* DerivedMetrics.swift in Sources */,
 				F395E419C002F7B7F8A67AF3 /* ServerTieredPlayGroup.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90001 /* BetGroupKeyBuilder.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90002 /* SelectionLabelBuilder.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90003 /* BetGroupFactory.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90004 /* SafariView.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90005 /* SocialMediaPreview.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90006 /* SocialPostRow.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90007 /* WatchOnXButton.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90008 /* HomeView+Sections.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D90009 /* HomeView+DataLoading.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D9000A /* StyledPlayDescription.swift in Sources */,
+				BB01C2D3E4F5A6B7C8D9000B /* UnifiedTimelineRowView+Layout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

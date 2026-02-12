@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Loading skeleton placeholder that resembles final content
-/// Phase F: Replace generic spinners with intentional placeholders
+/// Loading skeleton placeholder that resembles final content layout
 struct LoadingSkeletonView: View {
     let style: SkeletonStyle
     @State private var isAnimating = false

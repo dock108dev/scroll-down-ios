@@ -6,14 +6,14 @@ import UIKit
 /// iPad: Wider layout with constrained content width for optimal readability
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var earlierSection: HomeSectionState
-    @State private var yesterdaySection: HomeSectionState
-    @State private var todaySection: HomeSectionState
-    @State private var tomorrowSection: HomeSectionState
-    @State private var errorMessage: String?
-    @State private var lastUpdatedAt: Date?
-    @State private var selectedLeague: LeagueCode?
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @State var earlierSection: HomeSectionState
+    @State var yesterdaySection: HomeSectionState
+    @State var todaySection: HomeSectionState
+    @State var tomorrowSection: HomeSectionState
+    @State var errorMessage: String?
+    @State var lastUpdatedAt: Date?
+    @State var selectedLeague: LeagueCode?
     @State private var showingAdminSettings = false // Beta admin access
     @State private var hasLoadedInitialData = false // Prevents reload on back navigation
     @State private var viewMode: HomeViewMode = .recaps
@@ -222,7 +222,7 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var gameListView: some View {
+    var gameListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass)) {
@@ -269,266 +269,6 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func sectionHeader(for section: HomeSectionState, isExpanded: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if section.title != HomeStrings.sectionEarlier {
-                Divider()
-                    .padding(.horizontal, horizontalPadding)
-                    .padding(.bottom, HomeLayout.sectionDividerPadding)
-            }
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.wrappedValue.toggle()
-                }
-            } label: {
-                HStack {
-                    Text(section.title.uppercased())
-                        .font(.caption.weight(.bold))
-                        .foregroundColor(Color(.secondaryLabel))
-                        .tracking(0.8)
-
-                    if !isExpanded.wrappedValue && !section.isLoading && !section.games.isEmpty {
-                        let readCount = section.readCount
-                        Text(readCount > 0
-                             ? "\(section.games.count) games \u{00B7} \(readCount) read"
-                             : "\(section.games.count) games")
-                            .font(.caption2)
-                            .foregroundColor(Color(.tertiaryLabel))
-                    }
-
-                    Spacer()
-
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(Color(.secondaryLabel))
-                }
-                .padding(.horizontal, horizontalPadding)
-                .padding(.top, HomeLayout.sectionHeaderTopPadding(horizontalSizeClass))
-                .padding(.bottom, horizontalSizeClass == .regular ? 6 : 8) // iPad: tighter bottom padding
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    @ViewBuilder
-    private func sectionContent(for section: HomeSectionState, completedOnly: Bool = false) -> some View {
-        let gamesToShow = completedOnly ? section.completedGames : section.games
-
-        if section.isLoading {
-            // Minimal loading indicator - just a subtle spinner
-            HStack {
-                Spacer()
-                ProgressView()
-                    .scaleEffect(0.8)
-                Spacer()
-            }
-            .padding(.vertical, HomeLayout.sectionStatePadding(horizontalSizeClass))
-        } else if let error = section.errorMessage {
-            EmptySectionView(text: sectionErrorMessage(for: section, error: error))
-                .padding(.horizontal, HomeLayout.horizontalPadding)
-                .padding(.vertical, HomeLayout.sectionStatePadding(horizontalSizeClass))
-                .transition(.opacity)
-        } else if gamesToShow.isEmpty {
-            EmptySectionView(text: sectionEmptyMessage(for: section))
-                .padding(.horizontal, HomeLayout.horizontalPadding)
-                .padding(.vertical, HomeLayout.sectionStatePadding(horizontalSizeClass))
-                .transition(.opacity)
-        } else {
-            // iPad: 4 columns, iPhone: 2 columns
-            let columnCount = horizontalSizeClass == .regular ? 4 : 2
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: columnCount)
-
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(gamesToShow) { game in
-                    gameCard(for: game)
-                }
-            }
-            .padding(.horizontal, horizontalPadding)
-            .transition(.opacity.animation(.easeIn(duration: 0.2)))
-        }
-    }
-
-    /// Game card with conditional navigation based on flow availability
-    @ViewBuilder
-    private func gameCard(for game: GameSummary) -> some View {
-        let rowView = GameRowView(game: game)
-
-        if rowView.cardState.isTappable {
-            // Flow available - enable navigation
-            NavigationLink(value: AppRoute.game(id: game.id, league: game.league)) {
-                rowView
-            }
-            .buttonStyle(CardPressButtonStyle())
-            .simultaneousGesture(TapGesture().onEnded {
-                GameRoutingLogger.logTap(gameId: game.id, league: game.league)
-                triggerHapticIfNeeded(for: game)
-            })
-        } else {
-            // Flow pending or upcoming - no navigation, static card
-            rowView
-                .allowsHitTesting(false)
-        }
-    }
-
-
-    // MARK: - Data Loading
-
-    private func loadGames(scrollToToday: Bool = true) async {
-        errorMessage = nil
-        earlierSection.errorMessage = nil
-        yesterdaySection.errorMessage = nil
-        todaySection.errorMessage = nil
-        tomorrowSection.errorMessage = nil
-
-        // 1. Load cached data first (instant UI, no spinners)
-        let cache = HomeGameCache.shared
-        let hasCachedData = loadCachedSections(from: cache)
-
-        // 2. Only show loading spinners if no cached data exists
-        if !hasCachedData {
-            earlierSection.isLoading = true
-            yesterdaySection.isLoading = true
-            todaySection.isLoading = true
-            tomorrowSection.isLoading = true
-        }
-
-        // 3. Fetch fresh data from network
-        let service = appConfig.gameService
-
-        async let earlierResult = loadSection(range: .earlier, service: service)
-        async let yesterdayResult = loadSection(range: .yesterday, service: service)
-        async let todayResult = loadSection(range: .current, service: service)
-        async let tomorrowResult = loadSection(range: .tomorrow, service: service)
-
-        let results = await [earlierResult, yesterdayResult, todayResult, tomorrowResult]
-
-        // 4. Silent swap — apply results + save to cache
-        applyHomeSectionResults(results)
-        updateLastUpdatedAt(from: results)
-        saveSectionsToCache(results, cache: cache)
-
-        // 5. Only show global error if ALL sections failed AND no data to display
-        let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
-            || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
-        if results.allSatisfy({ $0.errorMessage != nil }) && !hasAnyData {
-            errorMessage = HomeStrings.globalErrorMessage
-        }
-
-        if scrollToToday {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                NotificationCenter.default.post(name: .scrollToYesterday, object: nil)
-            }
-        }
-    }
-
-    private func loadSection(range: GameRange, service: GameService) async -> HomeSectionResult {
-        do {
-            let response = try await service.fetchGames(range: range, league: selectedLeague)
-
-            // Beta Admin: Apply snapshot mode filtering if active
-            // This excludes live/in-progress games to ensure deterministic replay
-            let filteredGames = appConfig.filterGamesForSnapshotMode(response.games)
-            
-            return HomeSectionResult(range: range, games: filteredGames, lastUpdatedAt: response.lastUpdatedAt, errorMessage: nil)
-        } catch {
-            return HomeSectionResult(range: range, games: [], lastUpdatedAt: nil, errorMessage: error.localizedDescription)
-        }
-    }
-
-    private func applyHomeSectionResults(_ results: [HomeSectionResult]) {
-        for result in results {
-            // Sort games by date (chronologically) within each section
-            let sortedGames = result.games.sorted { lhs, rhs in
-                guard let lhsDate = lhs.parsedGameDate,
-                      let rhsDate = rhs.parsedGameDate else {
-                    return false
-                }
-                return lhsDate < rhsDate
-            }
-
-            switch result.range {
-            case .earlier:
-                if result.errorMessage == nil {
-                    earlierSection.games = sortedGames.reversed()
-                }
-                earlierSection.errorMessage = earlierSection.games.isEmpty ? result.errorMessage : nil
-                earlierSection.isLoading = false
-            case .yesterday:
-                if result.errorMessage == nil {
-                    yesterdaySection.games = sortedGames
-                }
-                yesterdaySection.errorMessage = yesterdaySection.games.isEmpty ? result.errorMessage : nil
-                yesterdaySection.isLoading = false
-            case .current:
-                if result.errorMessage == nil {
-                    todaySection.games = sortedGames
-                }
-                todaySection.errorMessage = todaySection.games.isEmpty ? result.errorMessage : nil
-                todaySection.isLoading = false
-            case .tomorrow:
-                if result.errorMessage == nil {
-                    tomorrowSection.games = sortedGames
-                }
-                tomorrowSection.errorMessage = tomorrowSection.games.isEmpty ? result.errorMessage : nil
-                tomorrowSection.isLoading = false
-            case .next24:
-                break
-            }
-        }
-    }
-
-    private func updateLastUpdatedAt(from results: [HomeSectionResult]) {
-        let dates = results.compactMap { parseLastUpdatedAt($0.lastUpdatedAt) }
-        lastUpdatedAt = dates.max()
-    }
-
-    private func parseLastUpdatedAt(_ value: String?) -> Date? {
-        guard let value else { return nil }
-        if let date = homeDateFormatterWithFractional.date(from: value) {
-            return date
-        }
-        return homeDateFormatter.date(from: value)
-    }
-
-    /// Load cached sections. Returns true if at least one section had cached data.
-    private func loadCachedSections(from cache: HomeGameCache) -> Bool {
-        var hasCachedData = false
-
-        if let cached = cache.load(range: .earlier, league: selectedLeague) {
-            earlierSection.games = cached.games
-            earlierSection.isLoading = false
-            hasCachedData = true
-        }
-        if let cached = cache.load(range: .yesterday, league: selectedLeague) {
-            yesterdaySection.games = cached.games
-            yesterdaySection.isLoading = false
-            hasCachedData = true
-        }
-        if let cached = cache.load(range: .current, league: selectedLeague) {
-            todaySection.games = cached.games
-            todaySection.isLoading = false
-            hasCachedData = true
-        }
-        if let cached = cache.load(range: .tomorrow, league: selectedLeague) {
-            tomorrowSection.games = cached.games
-            tomorrowSection.isLoading = false
-            hasCachedData = true
-        }
-
-        return hasCachedData
-    }
-
-    /// Save successful results to disk cache.
-    private func saveSectionsToCache(_ results: [HomeSectionResult], cache: HomeGameCache) {
-        for result in results where result.errorMessage == nil {
-            cache.save(games: result.games, lastUpdatedAt: result.lastUpdatedAt,
-                       range: result.range, league: selectedLeague)
-        }
-    }
-
     private var dataFreshnessText: String {
         guard let lastUpdatedAt else {
             return HomeStrings.updateUnavailable
@@ -547,47 +287,9 @@ struct HomeView: View {
         sectionsInOrder.flatMap { $0.completedGames.map(\.id) }
     }
 
-    private func sectionEmptyMessage(for section: HomeSectionState) -> String {
-        switch section.range {
-        case .earlier:
-            return HomeStrings.earlierEmpty
-        case .yesterday:
-            return HomeStrings.yesterdayEmpty
-        case .current:
-            return HomeStrings.todayEmpty
-        case .tomorrow:
-            return HomeStrings.tomorrowEmpty
-        case .next24:
-            return HomeStrings.upcomingEmpty
-        }
-    }
-
-    private func sectionErrorMessage(for section: HomeSectionState, error: String) -> String {
-        switch section.range {
-        case .earlier:
-            return String(format: HomeStrings.earlierError, error)
-        case .yesterday:
-            return String(format: HomeStrings.yesterdayError, error)
-        case .current:
-            return String(format: HomeStrings.todayError, error)
-        case .tomorrow:
-            return String(format: HomeStrings.tomorrowError, error)
-        case .next24:
-            return String(format: HomeStrings.upcomingError, error)
-        }
-    }
-
-    // MARK: - Feedback
-
-    private func triggerHapticIfNeeded(for game: GameSummary) {
-        guard game.status?.isCompleted == true else { return }
-        let generator = UIImpactFeedbackGenerator(style: .soft)
-        generator.impactOccurred()
-    }
-
     // MARK: - Adaptive Layout
 
-    private var horizontalPadding: CGFloat {
+    var horizontalPadding: CGFloat {
         horizontalSizeClass == .regular ? 32 : HomeLayout.horizontalPadding
     }
 }
