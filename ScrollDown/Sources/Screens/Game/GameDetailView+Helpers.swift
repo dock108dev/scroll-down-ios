@@ -285,38 +285,64 @@ extension GameDetailView {
     }
 
     func sectionNavigationBar(onSelect: @escaping (GameSection) -> Void) -> some View {
-        ScrollViewReader { scrollProxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
-                    ForEach(visibleSections, id: \.self) { section in
-                        Button {
-                            onSelect(section)
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(section.title)
-                                    .font(.subheadline.weight(selectedSection == section ? .semibold : .regular))
-                                    .foregroundColor(selectedSection == section ? .primary : Color(.tertiaryLabel))
+        HStack(spacing: 0) {
+            ScrollViewReader { scrollProxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 20) {
+                        ForEach(visibleSections, id: \.self) { section in
+                            Button {
+                                onSelect(section)
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Text(section.title)
+                                        .font(.subheadline.weight(selectedSection == section ? .semibold : .regular))
+                                        .foregroundColor(selectedSection == section ? .primary : Color(.tertiaryLabel))
 
-                                // Subtle underline indicator
-                                Rectangle()
-                                    .fill(selectedSection == section ? Color(.label) : Color.clear)
-                                    .frame(height: 1.5)
-                                    .animation(.easeInOut(duration: 0.2), value: selectedSection)
+                                    // Subtle underline indicator
+                                    Rectangle()
+                                        .fill(selectedSection == section ? Color(.label) : Color.clear)
+                                        .frame(height: 1.5)
+                                        .animation(.easeInOut(duration: 0.2), value: selectedSection)
+                                }
                             }
+                            .id(section)
+                            .accessibilityLabel("Jump to \(section.title)")
                         }
-                        .id(section)
-                        .accessibilityLabel("Jump to \(section.title)")
+                    }
+                    .padding(.vertical, 12)
+                }
+                .onChange(of: selectedSection) { _, newSection in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        scrollProxy.scrollTo(newSection, anchor: .center)
                     }
                 }
-                .padding(.vertical, 12)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Section navigation")
             }
-            .onChange(of: selectedSection) { _, newSection in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    scrollProxy.scrollTo(newSection, anchor: .center)
+
+            if viewModel.hasUnifiedTimeline {
+                Spacer(minLength: 8)
+
+                Button {
+                    showingFullPlayByPlay = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.caption2)
+                        Text("PBP")
+                            .font(.caption.weight(.medium))
+                    }
+                    .foregroundColor(DesignSystem.Colors.accent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(DesignSystem.Colors.accent.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showingFullPlayByPlay) {
+                    FullPlayByPlayView(viewModel: viewModel)
                 }
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("Section navigation")
         }
     }
     

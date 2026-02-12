@@ -250,48 +250,62 @@ struct Tier2Container<Content: View>: View {
 /// Supporting content container - interactive data exploration
 /// CARD DISCIPLINE: This is a card because it's interactive/expandable
 /// Uses subtle shadow to signal interactivity
-struct Tier3Container<Content: View>: View {
+struct Tier3Container<Content: View, TrailingAction: View>: View {
     let title: String
     let subtitle: String?
     @Binding var isExpanded: Bool
+    let trailingAction: TrailingAction
     let content: Content
 
-    init(title: String, subtitle: String? = nil, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
+    init(title: String, subtitle: String? = nil, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) where TrailingAction == EmptyView {
         self.title = title
         self.subtitle = subtitle
         self._isExpanded = isExpanded
+        self.trailingAction = EmptyView()
+        self.content = content()
+    }
+
+    init(title: String, subtitle: String? = nil, isExpanded: Binding<Bool>, @ViewBuilder trailingAction: () -> TrailingAction, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.subtitle = subtitle
+        self._isExpanded = isExpanded
+        self.trailingAction = trailingAction()
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: TierLayout.Supporting.rowSpacing) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(title)
-                            .font(TierLayout.Supporting.headerFont)
-                            .foregroundColor(DesignSystem.TextColor.primary)
-                        if let subtitle, !isExpanded {
-                            Text(subtitle)
-                                .font(.caption2)
-                                .foregroundColor(DesignSystem.TextColor.tertiary)
-                        }
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(TierLayout.Supporting.headerFont)
+                                .foregroundColor(DesignSystem.TextColor.primary)
+                            if let subtitle, !isExpanded {
+                                Text(subtitle)
+                                    .font(.caption2)
+                                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    }
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
-                .padding(.vertical, TierLayout.Supporting.verticalSpacing)
-                .contentShape(Rectangle())
+                .buttonStyle(InteractiveRowButtonStyle())
+
+                trailingAction
             }
-            .buttonStyle(InteractiveRowButtonStyle())
+            .padding(.horizontal, CardDisciplineLayout.cardInternalPadding)
+            .padding(.vertical, TierLayout.Supporting.verticalSpacing)
 
             if isExpanded {
                 content

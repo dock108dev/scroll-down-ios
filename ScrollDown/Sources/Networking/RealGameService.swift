@@ -127,15 +127,37 @@ final class RealGameService: GameService {
     }
 
     func fetchTeamColors() async throws -> [TeamSummary] {
-        try await request(path: "api/admin/sports/teams", queryItems: [])
+        let response: TeamListResponse = try await request(path: "api/admin/sports/teams", queryItems: [])
+        return response.teams
     }
 
     func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
         let data: Data = try await requestRaw(path: "api/admin/sports/games/\(gameId)/timeline", queryItems: [])
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return []
+        let json = try JSONSerialization.jsonObject(with: data)
+
+        // Direct array format
+        if let array = json as? [[String: Any]] {
+            return array
         }
-        return json
+
+        // Wrapper format: extract from timelineJson field
+        if let wrapper = json as? [String: Any] {
+            if let timeline = wrapper["timelineJson"] as? [[String: Any]] {
+                return timeline
+            }
+            if let timeline = wrapper["timeline_json"] as? [[String: Any]] {
+                return timeline
+            }
+            // timelineJson might contain a nested array
+            if let timelineAny = wrapper["timelineJson"] as? [Any] {
+                return timelineAny.compactMap { $0 as? [String: Any] }
+            }
+            if let timelineAny = wrapper["timeline_json"] as? [Any] {
+                return timelineAny.compactMap { $0 as? [String: Any] }
+            }
+        }
+
+        return []
     }
 
     // MARK: - Networking

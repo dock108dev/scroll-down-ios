@@ -189,30 +189,63 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Extract unified timeline events from the already-loaded timeline artifact.
-    /// This avoids a duplicate network call and the raw/wrapper parsing mismatch
-    /// that would occur if `fetchUnifiedTimeline` returned wrapper format.
-    func extractUnifiedTimelineFromArtifact() {
+    /// Build unified timeline events from flow plays.
+    /// Flow plays contain all PBP data needed for the full play-by-play view.
+    /// Assigns tiers using key play IDs from flow blocks + scoring/routine heuristics.
+    func buildUnifiedTimelineFromFlow() {
         guard unifiedTimelineState != .loaded else { return }
-
-        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
-            unifiedTimelineState = .failed("No timeline artifact")
-            return
-        }
-
-        let rawEvents = extractTimelineEvents(from: timelineValue)
-        guard !rawEvents.isEmpty else {
-            unifiedTimelineState = .failed("Empty timeline")
-            return
-        }
+        guard !flowPlays.isEmpty else { return }
 
         let sport = detail?.game.leagueCode
-        let events = rawEvents.enumerated().map { index, dict in
-            UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+        let keyPlayIds = allKeyPlayIds
+
+        let events = flowPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
+            let tier = Self.assignFlowPlayTier(play: play, keyPlayIds: keyPlayIds)
+
+            return UnifiedTimelineEvent(from: [
+                "event_type": "pbp",
+                "event_id": "play-\(play.playId)",
+                "period": play.period,
+                "game_clock": play.clock as Any,
+                "description": play.description as Any,
+                "team": play.team as Any,
+                "player_name": play.playerName as Any,
+                "home_score": play.homeScore as Any,
+                "away_score": play.awayScore as Any,
+                "play_type": play.playType as Any,
+                "tier": tier
+            ], index: index, sport: sport)
         }
         serverUnifiedTimeline = events
         unifiedTimelineState = .loaded
-        logger.info("Extracted unified timeline from artifact: \(events.count, privacy: .public) events")
+        logger.info("Built unified timeline from flow: \(events.count, privacy: .public) plays")
+    }
+
+    /// Assign a tier (1/2/3) to a flow play based on key play IDs and description heuristics.
+    /// - Tier 1 (primary): key play or scoring play (has homeScore + awayScore)
+    /// - Tier 3 (tertiary): routine plays (miss, rebound, substitution, violation, jump ball)
+    /// - Tier 2 (secondary): everything else (fouls, turnovers, timeouts)
+    private static let routinePatterns: [String] = [
+        "miss", "rebound", "substitution", "violation", "jump ball"
+    ]
+
+    private static func assignFlowPlayTier(play: FlowPlay, keyPlayIds: Set<Int>) -> Int {
+        // Tier 1: key plays or scoring plays
+        if keyPlayIds.contains(play.playId) || (play.homeScore != nil && play.awayScore != nil) {
+            return 1
+        }
+
+        // Tier 3: routine/low-signal plays
+        if let desc = play.description?.lowercased() {
+            for pattern in routinePatterns {
+                if desc.contains(pattern) {
+                    return 3
+                }
+            }
+        }
+
+        // Tier 2: everything else
+        return 2
     }
 
     /// Load PBP data separately when not included in main game detail

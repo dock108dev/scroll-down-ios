@@ -6,6 +6,7 @@ struct Tier1PlayRowView: View {
     let event: UnifiedTimelineEvent
     let homeTeam: String
     let awayTeam: String
+    var isKeyPlay: Bool = false
 
     /// Resolve accent bar color to the scoring team's brand color
     private var accentColor: Color {
@@ -50,10 +51,17 @@ struct Tier1PlayRowView: View {
                 // Content - bold treatment
                 VStack(alignment: .leading, spacing: 4) {
                     if let description = event.description {
-                        Text(description)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(DesignSystem.TextColor.primary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: 4) {
+                            if isKeyPlay {
+                                Image(systemName: "star.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(.yellow)
+                            }
+                            Text(description)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(DesignSystem.TextColor.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
                     // Score change emphasis with team colors
@@ -185,6 +193,14 @@ struct TieredPlayGroupView: View {
     let group: TieredPlayGroup
     let homeTeam: String
     let awayTeam: String
+    var keyPlayIds: Set<Int> = []
+
+    /// Parse the integer play ID from an event ID formatted as "play-{id}"
+    private func playId(from event: UnifiedTimelineEvent) -> Int? {
+        guard event.id.hasPrefix("play-"),
+              let id = Int(event.id.dropFirst(5)) else { return nil }
+        return id
+    }
 
     var body: some View {
         switch group.tier {
@@ -193,7 +209,8 @@ struct TieredPlayGroupView: View {
                 Tier1PlayRowView(
                     event: event,
                     homeTeam: homeTeam,
-                    awayTeam: awayTeam
+                    awayTeam: awayTeam,
+                    isKeyPlay: playId(from: event).map { keyPlayIds.contains($0) } ?? false
                 )
             }
 

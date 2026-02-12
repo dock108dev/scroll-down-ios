@@ -26,6 +26,7 @@ struct GameDetailView: View {
     @State var playerStatsTeamFilter: String? = nil
     @State var isTeamStatsExpanded = false  // Tier 3: Supporting
     @State var isWrapUpExpanded = false  // Tier 4: Reference
+    @State var showingFullPlayByPlay = false
     @State var playRowFrames: [Int: CGRect] = [:]
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
@@ -92,15 +93,12 @@ struct GameDetailView: View {
                 // 1. First try flow
                 await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
 
-                // 2. If flow found, collapse timeline (users can expand to see full PBP)
-                //    If no flow, extract unified timeline from artifact, falling back to PBP
+                // 2. If flow found, build unified timeline from flow plays (for Full PBP popup)
                 if viewModel.hasFlowData {
                     isTimelineExpanded = false
+                    viewModel.buildUnifiedTimelineFromFlow()
                 } else {
-                    viewModel.extractUnifiedTimelineFromArtifact()
-                    if viewModel.unifiedTimelineEvents.isEmpty {
-                        await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
-                    }
+                    await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
                 }
 
                 // Await remaining parallel tasks

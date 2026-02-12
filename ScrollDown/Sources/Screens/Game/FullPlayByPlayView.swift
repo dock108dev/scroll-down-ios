@@ -120,7 +120,8 @@ struct FullPlayByPlayView: View {
                     TieredPlayGroupView(
                         group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away"
+                        awayTeam: viewModel.game?.awayTeam ?? "Away",
+                        keyPlayIds: viewModel.allKeyPlayIds
                     )
                 }
             }

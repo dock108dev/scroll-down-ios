@@ -119,12 +119,11 @@ struct TeamSummary: Codable {
     let name: String
     let colorLightHex: String?
     let colorDarkHex: String?
+}
 
-    enum CodingKeys: String, CodingKey {
-        case name
-        case colorLightHex = "color_light_hex"
-        case colorDarkHex = "color_dark_hex"
-    }
+/// Wrapper for GET /api/admin/sports/teams response
+struct TeamListResponse: Codable {
+    let teams: [TeamSummary]
 }
 
 // MARK: - UIColor hex init
