@@ -115,10 +115,40 @@ extension GameDetailViewModel {
             .sorted { ($0.likesCount ?? 0) > ($1.likesCount ?? 0) }
     }
 
+    /// In-game social posts (tweets posted during the game) sorted by time
+    var inGameSocialPosts: [SocialPostEntry] {
+        (detail?.socialPosts.filter { $0.gamePhase == "in_game" && $0.hasContent } ?? [])
+            .sorted { $0.postedAt < $1.postedAt }
+    }
+
     /// Postgame social posts based on server-assigned gamePhase (oldest first)
     var postgameSocialPosts: [SocialPostEntry] {
         (detail?.socialPosts.filter { $0.gamePhase == "postgame" && $0.hasContent } ?? [])
             .sorted { $0.postedAt < $1.postedAt }
+    }
+
+    // MARK: - Key Play IDs
+
+    /// Union of all key play IDs across all flow blocks
+    var allKeyPlayIds: Set<Int> {
+        guard let response = flowResponse else { return [] }
+        var ids = Set<Int>()
+        for block in response.blocks {
+            ids.formUnion(block.keyPlayIds)
+        }
+        return ids
+    }
+
+    // MARK: - Server Play Groupings
+
+    /// Server-provided tiered play groups from game detail response
+    var serverPlayGroups: [ServerTieredPlayGroup] {
+        detail?.groupedPlays ?? []
+    }
+
+    /// Whether the server provided pre-computed play groupings
+    var hasServerGroupings: Bool {
+        !serverPlayGroups.isEmpty
     }
 
     // MARK: - Timeline Parsing Helpers

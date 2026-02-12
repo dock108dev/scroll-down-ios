@@ -121,6 +121,7 @@
 		197296BE28BC540FDF47276B /* TeamColorCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15E3C22D39FD7CDAEF9275B /* TeamColorCache.swift */; };
 		28DAB057B730C749893DF8EA /* DerivedMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */; };
 		F395E419C002F7B7F8A67AF3 /* ServerTieredPlayGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942D2F2F88262A286A8A139D /* ServerTieredPlayGroup.swift */; };
+		F0814B7D9C4462580271392D /* ServerPlayGroupAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465650A590867756F99ECA3B /* ServerPlayGroupAdapter.swift */; };
 		BB01C2D3E4F5A6B7C8D90001 /* BetGroupKeyBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90001 /* BetGroupKeyBuilder.swift */; };
 		BB01C2D3E4F5A6B7C8D90002 /* SelectionLabelBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90002 /* SelectionLabelBuilder.swift */; };
 		BB01C2D3E4F5A6B7C8D90003 /* BetGroupFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C90003 /* BetGroupFactory.swift */; };
@@ -261,6 +262,7 @@
 		A15E3C22D39FD7CDAEF9275B /* TeamColorCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TeamColorCache.swift; sourceTree = "<group>"; };
 		2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DerivedMetrics.swift; sourceTree = "<group>"; };
 		942D2F2F88262A286A8A139D /* ServerTieredPlayGroup.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServerTieredPlayGroup.swift; sourceTree = "<group>"; };
+		465650A590867756F99ECA3B /* ServerPlayGroupAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServerPlayGroupAdapter.swift; sourceTree = "<group>"; };
 		AA01B2C3D4E5F6A7B8C90001 /* BetGroupKeyBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetGroupKeyBuilder.swift; sourceTree = "<group>"; };
 		AA01B2C3D4E5F6A7B8C90002 /* SelectionLabelBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SelectionLabelBuilder.swift; sourceTree = "<group>"; };
 		AA01B2C3D4E5F6A7B8C90003 /* BetGroupFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetGroupFactory.swift; sourceTree = "<group>"; };
@@ -551,6 +553,7 @@
 				DBF11F8B8F83124F1A28CA49 /* StatAnnotation.swift */,
 				2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */,
 				942D2F2F88262A286A8A139D /* ServerTieredPlayGroup.swift */,
+				465650A590867756F99ECA3B /* ServerPlayGroupAdapter.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -826,6 +829,7 @@
 				197296BE28BC540FDF47276B /* TeamColorCache.swift in Sources */,
 				28DAB057B730C749893DF8EA /* DerivedMetrics.swift in Sources */,
 				F395E419C002F7B7F8A67AF3 /* ServerTieredPlayGroup.swift in Sources */,
+				F0814B7D9C4462580271392D /* ServerPlayGroupAdapter.swift in Sources */,
 				BB01C2D3E4F5A6B7C8D90001 /* BetGroupKeyBuilder.swift in Sources */,
 				BB01C2D3E4F5A6B7C8D90002 /* SelectionLabelBuilder.swift in Sources */,
 				BB01C2D3E4F5A6B7C8D90003 /* BetGroupFactory.swift in Sources */,

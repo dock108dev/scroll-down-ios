@@ -6,6 +6,7 @@ struct UnifiedTimelineRowView: View {
     let event: UnifiedTimelineEvent
     var homeTeam: String = "Home"
     var awayTeam: String = "Away"
+    var isKeyPlay: Bool = false
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -55,12 +56,19 @@ struct UnifiedTimelineRowView: View {
 
                 // Content — styled with visual hierarchy
                 VStack(alignment: .leading, spacing: layout.textSpacing) {
-                    if let description = event.description {
-                        StyledPlayDescription(
-                            description: description,
-                            playType: event.playType,
-                            font: layout.descriptionFont
-                        )
+                    HStack(spacing: 4) {
+                        if isKeyPlay {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.Accent.primary)
+                        }
+                        if let description = event.description {
+                            StyledPlayDescription(
+                                description: description,
+                                playType: event.playType,
+                                font: layout.descriptionFont
+                            )
+                        }
                     }
                 }
 
@@ -159,6 +167,9 @@ struct UnifiedTimelineRowView: View {
                     postUrl: event.tweetUrl
                 )
             }
+
+            // Engagement metrics
+            tweetEngagementBar
         }
         .padding(layout.rowPadding)
         .background(DesignSystem.Colors.elevatedBackground)
@@ -218,6 +229,57 @@ struct UnifiedTimelineRowView: View {
         .padding(layout.rowPadding)
         .background(DesignSystem.Colors.elevatedBackground)
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+    }
+
+    // MARK: - Tweet Engagement
+
+    @ViewBuilder
+    private var tweetEngagementBar: some View {
+        let replies = event.repliesCount ?? 0
+        let retweets = event.retweetsCount ?? 0
+        let likes = event.likesCount ?? 0
+
+        if replies > 0 || retweets > 0 || likes > 0 {
+            HStack(spacing: 16) {
+                if replies > 0 {
+                    engagementMetric(icon: "bubble.right", count: replies)
+                }
+                if retweets > 0 {
+                    engagementMetric(icon: "arrow.2.squarepath", count: retweets)
+                }
+                if likes > 0 {
+                    engagementMetric(icon: "heart", count: likes)
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private func engagementMetric(icon: String, count: Int) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.caption2)
+            Text(compactNumber(count))
+                .font(.caption2)
+        }
+        .foregroundColor(DesignSystem.TextColor.tertiary)
+    }
+
+    private func compactNumber(_ value: Int) -> String {
+        switch value {
+        case 0..<1_000:
+            return "\(value)"
+        case 1_000..<1_000_000:
+            let k = Double(value) / 1_000.0
+            return k.truncatingRemainder(dividingBy: 1) == 0
+                ? "\(Int(k))K"
+                : String(format: "%.1fK", k)
+        default:
+            let m = Double(value) / 1_000_000.0
+            return m.truncatingRemainder(dividingBy: 1) == 0
+                ? "\(Int(m))M"
+                : String(format: "%.1fM", m)
+        }
     }
 
     // MARK: - Helpers

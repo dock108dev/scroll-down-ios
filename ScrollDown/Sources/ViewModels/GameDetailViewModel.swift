@@ -189,35 +189,30 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Load unified timeline
-    func loadUnifiedTimeline(gameId: Int, service: GameService) async {
-        switch unifiedTimelineState {
-        case .loaded, .loading:
+    /// Extract unified timeline events from the already-loaded timeline artifact.
+    /// This avoids a duplicate network call and the raw/wrapper parsing mismatch
+    /// that would occur if `fetchUnifiedTimeline` returned wrapper format.
+    func extractUnifiedTimelineFromArtifact() {
+        guard unifiedTimelineState != .loaded else { return }
+
+        guard let timelineValue = timelineArtifact?.timelineJson?.value else {
+            unifiedTimelineState = .failed("No timeline artifact")
             return
-        case .idle, .failed:
-            break
         }
 
-        unifiedTimelineState = .loading
-
-        do {
-            let rawEvents = try await service.fetchUnifiedTimeline(gameId: gameId)
-            guard !rawEvents.isEmpty else {
-                unifiedTimelineState = .failed("Empty timeline")
-                return
-            }
-
-            let sport = detail?.game.leagueCode
-            let events = rawEvents.enumerated().map { index, dict in
-                UnifiedTimelineEvent(from: dict, index: index, sport: sport)
-            }
-            serverUnifiedTimeline = events
-            unifiedTimelineState = .loaded
-            logger.info("Loaded unified timeline: \(events.count) events")
-        } catch {
-            logger.error("Unified timeline fetch failed: \(error.localizedDescription, privacy: .public)")
-            unifiedTimelineState = .failed(error.localizedDescription)
+        let rawEvents = extractTimelineEvents(from: timelineValue)
+        guard !rawEvents.isEmpty else {
+            unifiedTimelineState = .failed("Empty timeline")
+            return
         }
+
+        let sport = detail?.game.leagueCode
+        let events = rawEvents.enumerated().map { index, dict in
+            UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+        }
+        serverUnifiedTimeline = events
+        unifiedTimelineState = .loaded
+        logger.info("Extracted unified timeline from artifact: \(events.count, privacy: .public) events")
     }
 
     /// Load PBP data separately when not included in main game detail

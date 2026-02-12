@@ -35,6 +35,11 @@ struct UnifiedTimelineEvent: Identifiable {
     let videoUrl: String?
     let postedAt: String?
 
+    // Engagement metrics (tweets)
+    let likesCount: Int?
+    let retweetsCount: Int?
+    let repliesCount: Int?
+
     enum EventType: String, Equatable {
         case pbp
         case tweet
@@ -119,6 +124,13 @@ struct UnifiedTimelineEvent: Identifiable {
         self.imageUrl = dict["image_url"] as? String
         self.videoUrl = dict["video_url"] as? String
         self.postedAt = dict["posted_at"] as? String
+
+        self.likesCount = dict["likes_count"] as? Int
+            ?? dict["likesCount"] as? Int
+        self.retweetsCount = dict["retweets_count"] as? Int
+            ?? dict["retweetsCount"] as? Int
+        self.repliesCount = dict["replies_count"] as? Int
+            ?? dict["repliesCount"] as? Int
     }
 
     /// Display title for the event
@@ -146,6 +158,9 @@ extension UnifiedTimelineEvent: Equatable {
         lhs.gameClock == rhs.gameClock &&
         lhs.description == rhs.description &&
         lhs.homeScore == rhs.homeScore &&
-        lhs.awayScore == rhs.awayScore
+        lhs.awayScore == rhs.awayScore &&
+        lhs.likesCount == rhs.likesCount &&
+        lhs.retweetsCount == rhs.retweetsCount &&
+        lhs.repliesCount == rhs.repliesCount
     }
 }

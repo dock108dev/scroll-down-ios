@@ -93,11 +93,14 @@ struct GameDetailView: View {
                 await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
 
                 // 2. If flow found, collapse timeline (users can expand to see full PBP)
-                //    If no flow, fetch PBP and keep timeline expanded
+                //    If no flow, extract unified timeline from artifact, falling back to PBP
                 if viewModel.hasFlowData {
                     isTimelineExpanded = false
                 } else {
-                    await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
+                    viewModel.extractUnifiedTimelineFromArtifact()
+                    if viewModel.unifiedTimelineEvents.isEmpty {
+                        await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
+                    }
                 }
 
                 // Await remaining parallel tasks

@@ -46,6 +46,11 @@ struct FlowBlockCardView: View {
             Text(block.periodDisplay)
                 .textStyle(.structure)
 
+            // Role badge
+            if block.role != .unknown {
+                roleBadge(for: block.role)
+            }
+
             // Narrative text
             Text(block.narrative)
                 .textStyle(.narrative)
@@ -68,6 +73,38 @@ struct FlowBlockCardView: View {
             }
         }
         .padding(.vertical, 16)
+    }
+
+    private func roleBadge(for role: BlockRole) -> some View {
+        let (label, icon) = roleDisplay(for: role)
+        return HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption2)
+            Text(label)
+                .font(.caption2.weight(.medium))
+        }
+        .foregroundColor(DesignSystem.TextColor.secondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(DesignSystem.Colors.cardBackground.opacity(0.6))
+        .clipShape(Capsule())
+    }
+
+    private func roleDisplay(for role: BlockRole) -> (label: String, icon: String) {
+        switch role {
+        case .setup:
+            return ("Setup", "arrow.right.circle")
+        case .momentumShift:
+            return ("Shift", "arrow.triangle.swap")
+        case .response:
+            return ("Response", "arrow.uturn.left.circle")
+        case .decisionPoint:
+            return ("Pivotal", "exclamationmark.triangle")
+        case .resolution:
+            return ("Resolution", "checkmark.circle")
+        case .unknown:
+            return ("", "circle")
+        }
     }
 }
 
@@ -140,6 +177,7 @@ struct MiniBoxScoreView: View {
     private func playerCell(player: BlockPlayerStat) -> some View {
         let isBlockStar = miniBox.isBlockStar(player.name)
         let statLine = isHockey ? player.compactHockeyStats : player.compactBasketballStats
+        let deltaLine = isHockey ? player.hockeyDeltaLine : player.basketballDeltaLine
 
         return VStack(alignment: .leading, spacing: 1) {
             Text(player.name)
@@ -151,6 +189,13 @@ struct MiniBoxScoreView: View {
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(DesignSystem.TextColor.tertiary)
                 .lineLimit(1)
+
+            if let deltaLine {
+                Text(deltaLine)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(DesignSystem.Accent.primary)
+                    .lineLimit(1)
+            }
         }
         .frame(width: 80, alignment: .leading)
     }

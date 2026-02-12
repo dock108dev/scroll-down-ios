@@ -74,7 +74,25 @@ struct FullPlayByPlayView: View {
     // MARK: - Period Card with Tiered Display
 
     private func periodCard(_ group: PeriodGroup) -> some View {
-        let tieredGroups = TieredPlayGrouper.group(events: group.events)
+        let tieredGroups: [TieredPlayGroup] = {
+            if viewModel.hasServerGroupings {
+                // Filter server groups to this period's index range
+                let periodIndices = Set(group.events.compactMap { event -> Int? in
+                    guard let idx = viewModel.unifiedTimelineEvents.firstIndex(where: { $0.id == event.id }) else { return nil }
+                    return idx
+                })
+                let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
+                    !Set(serverGroup.playIndices).isDisjoint(with: periodIndices)
+                }
+                if !relevantServerGroups.isEmpty {
+                    return ServerPlayGroupAdapter.convert(
+                        serverGroups: relevantServerGroups,
+                        events: group.events
+                    )
+                }
+            }
+            return TieredPlayGrouper.group(events: group.events)
+        }()
 
         // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count

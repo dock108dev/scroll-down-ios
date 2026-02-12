@@ -27,14 +27,28 @@ struct TieredPlayGroup: Identifiable {
     let id: String
     let events: [UnifiedTimelineEvent]
     let tier: PlayTier
+    /// Server-provided summary text; when present, used instead of client-computed summary
+    let serverSummary: String?
+
+    init(id: String, events: [UnifiedTimelineEvent], tier: PlayTier, serverSummary: String? = nil) {
+        self.id = id
+        self.events = events
+        self.tier = tier
+        self.serverSummary = serverSummary
+    }
 
     /// Whether this group contains multiple events (for collapse UI)
     var isCollapsible: Bool {
         tier == .tertiary && events.count > 1
     }
 
-    /// Summary text for collapsed Tier 3 groups
+    /// Summary text for collapsed Tier 3 groups.
+    /// Prefers server-provided summary when available.
     var collapsedSummary: String {
+        if let serverSummary, !serverSummary.isEmpty {
+            return serverSummary
+        }
+
         let count = events.count
         let missCount = events.filter { $0.description?.lowercased().contains("miss") == true }.count
         let reboundCount = events.filter { $0.description?.lowercased().contains("rebound") == true }.count

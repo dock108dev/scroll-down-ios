@@ -104,6 +104,23 @@ struct BlockPlayerStat: Codable, Equatable {
         if let a = assists, a > 0 { parts.append("\(a)a") }
         return parts.isEmpty ? "-" : parts.joined(separator: " ")
     }
+
+    /// Delta line for basketball: "+7p +2r +1a" (omits zeros, nil if all zero)
+    var basketballDeltaLine: String? {
+        var parts: [String] = []
+        if let dp = deltaPts, dp != 0 { parts.append("+\(dp)p") }
+        if let dr = deltaReb, dr != 0 { parts.append("+\(dr)r") }
+        if let da = deltaAst, da != 0 { parts.append("+\(da)a") }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// Delta line for hockey: "+1g +1a" (omits zeros, nil if all zero)
+    var hockeyDeltaLine: String? {
+        var parts: [String] = []
+        if let dg = deltaGoals, dg != 0 { parts.append("+\(dg)g") }
+        if let da = deltaAssists, da != 0 { parts.append("+\(da)a") }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
 }
 
 // MARK: - Block Team Mini Box
