@@ -76,13 +76,13 @@ struct FullPlayByPlayView: View {
     private func periodCard(_ group: PeriodGroup) -> some View {
         let tieredGroups: [TieredPlayGroup] = {
             if viewModel.hasServerGroupings {
-                // Filter server groups to this period's index range
-                let periodIndices = Set(group.events.compactMap { event -> Int? in
-                    guard let idx = viewModel.unifiedTimelineEvents.firstIndex(where: { $0.id == event.id }) else { return nil }
-                    return idx
+                // Parse playIndex values from event IDs ("play-10002" → 10002)
+                let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
+                    guard event.id.hasPrefix("play-") else { return nil }
+                    return Int(event.id.dropFirst(5))
                 })
                 let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
-                    !Set(serverGroup.playIndices).isDisjoint(with: periodIndices)
+                    !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
                 }
                 if !relevantServerGroups.isEmpty {
                     return ServerPlayGroupAdapter.convert(
@@ -120,8 +120,7 @@ struct FullPlayByPlayView: View {
                     TieredPlayGroupView(
                         group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        keyPlayIds: viewModel.allKeyPlayIds
+                        awayTeam: viewModel.game?.awayTeam ?? "Away"
                     )
                 }
             }

@@ -11,31 +11,40 @@ enum ServerPlayGroupAdapter {
         serverGroups: [ServerTieredPlayGroup],
         events: [UnifiedTimelineEvent]
     ) -> [TieredPlayGroup] {
-        // Build index lookup: playIndex → event
-        // UnifiedTimelineEvent doesn't have playIndex directly, so use array position
         let pbpEvents = events.filter { $0.eventType == .pbp }
 
-        // Build a set of all indices covered by server groups
-        var coveredIndices = Set<Int>()
+        // Build lookup: playIndex → event by parsing "play-{playIndex}" IDs
+        var eventByPlayIndex: [Int: UnifiedTimelineEvent] = [:]
+        for event in pbpEvents {
+            if let playIndex = parsePlayIndex(from: event.id) {
+                eventByPlayIndex[playIndex] = event
+            }
+        }
+
+        // Build a set of all play indices covered by server groups
+        var coveredPlayIndices = Set<Int>()
         for group in serverGroups {
-            coveredIndices.formUnion(group.playIndices)
+            coveredPlayIndices.formUnion(group.playIndices)
         }
 
         var result: [TieredPlayGroup] = []
         var currentUncoveredGroup: [UnifiedTimelineEvent] = []
         var groupCounter = 0
+        var addedServerGroupIds = Set<String>()
 
-        for (arrayIndex, event) in pbpEvents.enumerated() {
+        for event in pbpEvents {
+            let playIndex = parsePlayIndex(from: event.id)
             let eventTier = PlayTier(rawTier: event.tier ?? 2)
 
-            // Check if this event's array index falls in a server group
-            if let serverGroup = serverGroups.first(where: { $0.playIndices.contains(arrayIndex) }) {
+            // Check if this event's playIndex falls in a server group
+            if let idx = playIndex,
+               let serverGroup = serverGroups.first(where: { $0.playIndices.contains(idx) }) {
                 // Flush any uncovered events first
                 if !currentUncoveredGroup.isEmpty {
                     result.append(TieredPlayGroup(
                         id: "uncovered-\(groupCounter)",
                         events: currentUncoveredGroup,
-                        tier: eventTier == .primary ? .primary : .secondary
+                        tier: .secondary
                     ))
                     groupCounter += 1
                     currentUncoveredGroup = []
@@ -43,11 +52,9 @@ enum ServerPlayGroupAdapter {
 
                 // Check if we already added this server group
                 let serverGroupId = "server-group-\(serverGroup.startIndex)-\(serverGroup.endIndex)"
-                if !result.contains(where: { $0.id == serverGroupId }) {
-                    let groupEvents = serverGroup.playIndices.compactMap { idx -> UnifiedTimelineEvent? in
-                        guard idx < pbpEvents.count else { return nil }
-                        return pbpEvents[idx]
-                    }
+                if !addedServerGroupIds.contains(serverGroupId) {
+                    addedServerGroupIds.insert(serverGroupId)
+                    let groupEvents = serverGroup.playIndices.compactMap { eventByPlayIndex[$0] }
                     result.append(TieredPlayGroup(
                         id: serverGroupId,
                         events: groupEvents,
@@ -90,5 +97,11 @@ enum ServerPlayGroupAdapter {
         }
 
         return result
+    }
+
+    /// Parse the integer play index from an event ID formatted as "play-{playIndex}"
+    private static func parsePlayIndex(from eventId: String) -> Int? {
+        guard eventId.hasPrefix("play-") else { return nil }
+        return Int(eventId.dropFirst(5))
     }
 }

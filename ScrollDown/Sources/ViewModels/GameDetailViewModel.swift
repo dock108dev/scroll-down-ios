@@ -191,7 +191,8 @@ final class GameDetailViewModel: ObservableObject {
 
     /// Build unified timeline events from flow plays.
     /// Flow plays contain all PBP data needed for the full play-by-play view.
-    /// Assigns tiers using key play IDs from flow blocks + scoring/routine heuristics.
+    /// Tier 1: key plays (from flow blocks) + scoring plays (score changed from previous play).
+    /// All others get nil (defaults to tier 2). Server groupedPlays handle tertiary collapsing.
     func buildUnifiedTimelineFromFlow() {
         guard unifiedTimelineState != .loaded else { return }
         guard !flowPlays.isEmpty else { return }
@@ -200,9 +201,7 @@ final class GameDetailViewModel: ObservableObject {
         let keyPlayIds = allKeyPlayIds
 
         let events = flowPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
-            let tier = Self.assignFlowPlayTier(play: play, keyPlayIds: keyPlayIds)
-
-            return UnifiedTimelineEvent(from: [
+            var dict: [String: Any] = [
                 "event_type": "pbp",
                 "event_id": "play-\(play.playId)",
                 "period": play.period,
@@ -212,40 +211,23 @@ final class GameDetailViewModel: ObservableObject {
                 "player_name": play.playerName as Any,
                 "home_score": play.homeScore as Any,
                 "away_score": play.awayScore as Any,
-                "play_type": play.playType as Any,
-                "tier": tier
-            ], index: index, sport: sport)
+                "play_type": play.playType as Any
+            ]
+            // Tier 1: key plays or actual scoring plays (score changed from previous play)
+            let isKeyPlay = keyPlayIds.contains(play.playId)
+            let isScoringPlay: Bool = {
+                guard let home = play.homeScore, let away = play.awayScore, index > 0 else { return false }
+                let prev = flowPlays[index - 1]
+                return home != prev.homeScore || away != prev.awayScore
+            }()
+            if isKeyPlay || isScoringPlay {
+                dict["tier"] = 1
+            }
+            return UnifiedTimelineEvent(from: dict, index: index, sport: sport)
         }
         serverUnifiedTimeline = events
         unifiedTimelineState = .loaded
         logger.info("Built unified timeline from flow: \(events.count, privacy: .public) plays")
-    }
-
-    /// Assign a tier (1/2/3) to a flow play based on key play IDs and description heuristics.
-    /// - Tier 1 (primary): key play or scoring play (has homeScore + awayScore)
-    /// - Tier 3 (tertiary): routine plays (miss, rebound, substitution, violation, jump ball)
-    /// - Tier 2 (secondary): everything else (fouls, turnovers, timeouts)
-    private static let routinePatterns: [String] = [
-        "miss", "rebound", "substitution", "violation", "jump ball"
-    ]
-
-    private static func assignFlowPlayTier(play: FlowPlay, keyPlayIds: Set<Int>) -> Int {
-        // Tier 1: key plays or scoring plays
-        if keyPlayIds.contains(play.playId) || (play.homeScore != nil && play.awayScore != nil) {
-            return 1
-        }
-
-        // Tier 3: routine/low-signal plays
-        if let desc = play.description?.lowercased() {
-            for pattern in routinePatterns {
-                if desc.contains(pattern) {
-                    return 3
-                }
-            }
-        }
-
-        // Tier 2: everything else
-        return 2
     }
 
     /// Load PBP data separately when not included in main game detail
