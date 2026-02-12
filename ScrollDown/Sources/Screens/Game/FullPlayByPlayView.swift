@@ -74,10 +74,7 @@ struct FullPlayByPlayView: View {
     // MARK: - Period Card with Tiered Display
 
     private func periodCard(_ group: PeriodGroup) -> some View {
-        let tieredGroups = TieredPlayGrouper.group(
-            events: group.events,
-            sport: viewModel.game?.leagueCode
-        )
+        let tieredGroups = TieredPlayGrouper.group(events: group.events)
 
         // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
@@ -114,37 +111,23 @@ struct FullPlayByPlayView: View {
 
     // MARK: - Period Title
 
-    /// Returns the appropriate period/quarter title based on sport
-    /// Prefers server-provided period label from first event in the group
+    /// Returns the period title
     private func periodTitle(_ period: Int, events: [UnifiedTimelineEvent] = []) -> String {
         if period == 0 {
             return "Additional"
         }
 
-        // Prefer server-provided label from first event in the period
-        if let firstLabel = events.first?.serverPeriodLabel, !firstLabel.isEmpty {
-            // Expand abbreviated labels for section headers
-            switch firstLabel {
-            case "P1": return "Period 1"
-            case "P2": return "Period 2"
-            case "P3": return "Period 3"
-            default: return firstLabel
-            }
+        guard let label = events.first?.periodLabel, !label.isEmpty else {
+            return "Q\(period)"
         }
 
-        // NHL uses "Period" terminology
-        if viewModel.isNHL {
-            if period > 3 {
-                return period == 4 ? "OT" : "OT\(period - 3)"
-            }
-            return "Period \(period)"
+        // Expand abbreviated labels for section headers
+        switch label {
+        case "P1": return "Period 1"
+        case "P2": return "Period 2"
+        case "P3": return "Period 3"
+        default: return label
         }
-
-        // NBA/NCAAB/other sports use "Q" for quarters
-        if period > 4 {
-            return period == 5 ? "OT" : "OT\(period - 4)"
-        }
-        return "Q\(period)"
     }
 }
 

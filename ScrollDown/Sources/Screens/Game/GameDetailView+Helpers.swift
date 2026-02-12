@@ -1,31 +1,13 @@
 import SwiftUI
 
 extension GameDetailView {
-    /// Returns the appropriate period/quarter title based on sport
-    /// Prefers server-provided label when available
-    /// NHL: "Period 1", "Period 2", "Period 3", "OT"
-    /// NBA/Other: "Q1", "Q2", "Q3", "Q4", "OT"
+    /// Returns the period/quarter title
     func quarterTitle(_ quarter: Int, serverLabel: String? = nil) -> String {
         if quarter == 0 {
             return "Additional"
         }
-
-        // Prefer server-provided label
         if let label = serverLabel, !label.isEmpty {
             return label
-        }
-
-        // NHL uses "Period" terminology
-        if viewModel.isNHL {
-            if quarter > 3 {
-                return quarter == 4 ? "OT" : "OT\(quarter - 3)"
-            }
-            return "Period \(quarter)"
-        }
-
-        // NBA/NCAAB/other sports use "Q" for quarters
-        if quarter > 4 {
-            return quarter == 5 ? "OT" : "OT\(quarter - 4)"
         }
         return "Q\(quarter)"
     }

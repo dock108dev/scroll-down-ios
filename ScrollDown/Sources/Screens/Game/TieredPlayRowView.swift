@@ -6,12 +6,9 @@ struct Tier1PlayRowView: View {
     let event: UnifiedTimelineEvent
     let homeTeam: String
     let awayTeam: String
-    /// Which team scored — inferred from score delta when event.team is nil
-    var scoringTeamIsHome: Bool?
 
     /// Resolve accent bar color to the scoring team's brand color
     private var accentColor: Color {
-        // Try event.team first (NBA provides this)
         if let team = event.team {
             let teamLower = team.lowercased()
             let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
@@ -20,15 +17,6 @@ struct Tier1PlayRowView: View {
             if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
                 return DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
             } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
-                return DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
-            }
-        }
-
-        // Fall back to score-delta inference
-        if let isHome = scoringTeamIsHome {
-            if isHome {
-                return DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
-            } else {
                 return DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
             }
         }
@@ -51,7 +39,7 @@ struct Tier1PlayRowView: View {
                             .font(.caption.weight(.medium).monospacedDigit())
                             .foregroundColor(DesignSystem.TextColor.secondary)
                     }
-                    if let label = event.effectivePeriodLabel {
+                    if let label = event.periodLabel {
                         Text(label)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
@@ -121,7 +109,7 @@ struct Tier2PlayRowView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundColor(DesignSystem.TextColor.tertiary)
                 }
-                if let label = event.effectivePeriodLabel {
+                if let label = event.periodLabel {
                     Text(label)
                         .font(.caption2)
                         .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.7))
@@ -197,19 +185,15 @@ struct TieredPlayGroupView: View {
     let group: TieredPlayGroup
     let homeTeam: String
     let awayTeam: String
-    /// Maps event ID → whether home team scored (for accent bar color)
-    var scoringTeamMap: [String: Bool] = [:]
 
     var body: some View {
         switch group.tier {
         case .primary:
-            // Tier 1: Individual rows with strong visual weight
             ForEach(group.events) { event in
                 Tier1PlayRowView(
                     event: event,
                     homeTeam: homeTeam,
-                    awayTeam: awayTeam,
-                    scoringTeamIsHome: scoringTeamMap[event.id]
+                    awayTeam: awayTeam
                 )
             }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Type-safe accessor wrapping the server-provided `derivedMetrics` dictionary.
+/// Type-safe accessor for the `derivedMetrics` dictionary.
 /// Provides display-ready labels for odds lines and outcomes.
 struct DerivedMetrics {
     private let dict: [String: Any]
@@ -59,16 +59,6 @@ struct DerivedMetrics {
     var bookName: String? { string("book_name") }
 
     // MARK: - Helpers
-
-    /// Whether the server provided any odds-related keys
-    var hasOddsData: Bool {
-        pregameSpreadLabel != nil || pregameTotalLabel != nil || pregameMLHomeLabel != nil
-    }
-
-    /// Whether the server provided outcome labels
-    var hasOutcomeData: Bool {
-        spreadOutcomeLabel != nil || totalOutcomeLabel != nil || mlOutcomeLabel != nil
-    }
 
     private func string(_ key: String) -> String? {
         dict[key] as? String

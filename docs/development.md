@@ -4,7 +4,7 @@ Guide for local development, testing, and debugging.
 
 ## Environments
 
-The app supports two environments via `AppConfig.shared.environment`:
+The app supports two runtime environments via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
@@ -12,6 +12,8 @@ The app supports two environments via `AppConfig.shared.environment`:
 | `.localhost` | Local dev server (port 8000) | Backend development |
 
 **Default:** Live mode.
+
+A `.mock` environment also exists in code (uses `MockGameService` with generated data) but is not the standard development path.
 
 ### Switching Modes
 
@@ -37,7 +39,7 @@ Static mock JSON lives in `ScrollDown/Sources/Mock/games/`:
 
 `MockDataGenerator` dynamically creates games with realistic data. The mock service uses a fixed dev clock (November 12, 2024) so temporal grouping behaves consistently.
 
-**Note:** Mock service does not generate flow data. Flow blocks come from the real API only.
+**Note:** Mock service does not generate flow data, team colors, or unified timelines. These come from the real API only.
 
 ## Building & Testing
 
@@ -93,6 +95,8 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 | `time` | Snapshot mode events |
 | `routing` | Navigation and game routing |
 | `networking` | API calls and responses |
+| `teamColors` | Team color cache loading |
+| `timeline` | Timeline and flow loading |
 
 ### Common Issues
 
@@ -101,6 +105,12 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 - Verify API responses in network logs
 - Confirm game has flow data generated (not all games have flow)
 
-**Mock data not appearing:**
-- Confirm `environment = .mock`
-- Check `AppDate.now()` returns expected date
+**Team colors showing default indigo:**
+- Check `TeamColorCache` loaded successfully (filter logs by `teamColors`)
+- Verify `/api/admin/sports/teams` returns color hex values for the team
+- Cache expires after 7 days — force refresh by clearing UserDefaults
+
+**Unified timeline empty:**
+- Check `unifiedTimelineState` — should be `.loaded`
+- Verify `/api/admin/sports/games/{id}/timeline` returns events
+- Not all games have unified timelines generated

@@ -19,7 +19,7 @@ For directory layout, data models, API endpoints, and environment reference, see
 │   • Holds @Published state                                      │
 │   • Handles user actions                                        │
 │   • Orchestrates service calls                                  │
-│   • Computes derived timeline/stats data                        │
+│   • Reads pre-computed data from API responses                  │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ calls async
                           ▼
@@ -33,6 +33,8 @@ For directory layout, data models, API endpoints, and environment reference, see
 
 Views never call services directly. ViewModels mediate all data access.
 
+The app is a **thin display layer**. The backend computes all derived data (period labels, play tiers, odds outcomes, team colors, merged timelines). The ViewModel reads these pre-computed values and exposes them to views.
+
 ## Core Principles
 
 ### 1. Progressive Disclosure
@@ -45,6 +47,37 @@ We talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
 
 ### 3. User-Controlled Pacing
 Nothing is auto-revealed. Users move through timeline at their own pace.
+
+## Server-Driven Data
+
+The backend provides all derived values. The app does not compute these:
+
+- **Period labels** — `periodLabel` on each play/timeline event (e.g., "Q1", "P2", "H1", "OT")
+- **Time labels** — `timeLabel` on each event (e.g., "Q4 2:35")
+- **Play tiers** — `tier` (1=primary, 2=secondary, 3=tertiary) for visual hierarchy
+- **Odds labels** — `derivedMetrics` dictionary with display-ready spread/total/moneyline labels
+- **Odds outcomes** — `derivedMetrics` with spread covered, total over/under, moneyline result
+- **Team colors** — Fetched from `/teams` endpoint, cached in `TeamColorCache` (7-day TTL)
+- **Unified timeline** — Merged PBP + social + odds events from `/games/{id}/timeline`
+
+### Team Color System
+
+`TeamColorCache` fetches team colors on app launch and caches in UserDefaults:
+
+```
+App Launch → TeamColorCache.loadCachedOrFetch()
+                    │
+                    ├─ Disk cache valid? → Use cached colors
+                    └─ Expired/empty?    → GET /api/admin/sports/teams → cache
+                                                                          │
+DesignSystem.TeamColors.color(for:) → TeamColorCache.color(for:) ← ─ ─ ─┘
+                                         │
+                                         ├─ Exact match? → (light, dark) UIColor pair
+                                         ├─ Prefix match? → (light, dark) UIColor pair
+                                         └─ Unknown? → .systemIndigo
+```
+
+Color clash detection prevents two similar team colors in matchup views.
 
 ## Flow Rendering
 
@@ -65,7 +98,7 @@ The flow system uses **blocks** as the primary display unit:
    - `FlowBlockCardView` — Single block with narrative + mini box
    - `MiniBoxScoreView` — Per-block player stats
 
-4. **PBP Timeline** — When flow data isn't available, PBP events render chronologically grouped by period.
+4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically, grouped by period and tiered by server-provided `tier` values.
 
 ### Block Structure
 

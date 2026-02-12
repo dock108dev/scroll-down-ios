@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Unified timeline row that renders both pbp and tweet events
-/// Branches on event_type — no client-side type detection
+/// Unified timeline row that renders pbp, tweet, and odds events
 /// iPad: Wider layout for improved readability
 struct UnifiedTimelineRowView: View {
     let event: UnifiedTimelineEvent
@@ -41,12 +40,8 @@ struct UnifiedTimelineRowView: View {
                             .foregroundColor(DesignSystem.TextColor.tertiary)
                             .monospacedDigit()
                     }
-                    if let label = event.effectivePeriodLabel {
+                    if let label = event.periodLabel {
                         Text(label)
-                            .font(layout.periodFont)
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                    } else if let period = event.period {
-                        Text("Q\(period)")
                             .font(layout.periodFont)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
                     }
@@ -196,7 +191,7 @@ struct UnifiedTimelineRowView: View {
 
             Spacer(minLength: 0)
 
-            if let label = event.effectivePeriodLabel {
+            if let label = event.periodLabel {
                 Text(label)
                     .font(layout.periodFont)
                     .foregroundColor(DesignSystem.TextColor.tertiary)

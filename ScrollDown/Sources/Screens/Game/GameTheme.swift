@@ -134,7 +134,7 @@ enum DesignSystem {
     enum TeamColorProvider {
 
         static func color(for teamName: String) -> Color {
-            // Check server-provided cache first
+            // Check cache
             if let colors = TeamColorCache.shared.color(for: teamName) {
                 return Color(uiColor: UIColor { traits in
                     traits.userInterfaceStyle == .dark ? colors.dark : colors.light

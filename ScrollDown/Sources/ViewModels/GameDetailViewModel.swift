@@ -67,7 +67,6 @@ final class GameDetailViewModel: ObservableObject {
         case idle, loading, loaded, failed(String)
     }
 
-    // Server unified timeline (Phase 6) — pre-merged PBP + social + odds
     @Published private(set) var serverUnifiedTimeline: [UnifiedTimelineEvent]?
     @Published private(set) var unifiedTimelineState: UnifiedTimelineState = .idle
 
@@ -190,7 +189,7 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Load unified timeline from server (Phase 6)
+    /// Load unified timeline
     func loadUnifiedTimeline(gameId: Int, service: GameService) async {
         switch unifiedTimelineState {
         case .loaded, .loading:
@@ -443,57 +442,7 @@ final class GameDetailViewModel: ObservableObject {
         detail?.dataHealth?.isHealthy ?? true
     }
 
-    // MARK: - Odds Matching
-
-    /// Find the best odds entry for a market/side.
-    /// Side matching is case-insensitive and supports "home"/"away" aliases as well as team abbreviations.
-    private func bestOddsEntry(
-        market: MarketType,
-        side: String,
-        odds: [OddsEntry],
-        homeTeam: String,
-        awayTeam: String
-    ) -> OddsEntry? {
-        let preferredBook = UserDefaults.standard.string(forKey: "preferredSportsbook") ?? "DraftKings"
-        let lowSide = side.lowercased()
-
-        // Resolve all valid side values for this team/side
-        var validSides: Set<String> = [side, lowSide]
-        if lowSide == "over" || lowSide == "under" {
-            validSides.insert(lowSide.capitalized) // "Over" / "Under"
-        } else {
-            // Team-based side: accept full name, "home"/"away", abbreviation
-            let abbrev = TeamAbbreviations.abbreviation(for: side)
-            validSides.insert(abbrev)
-            validSides.insert(abbrev.lowercased())
-            if side == homeTeam {
-                validSides.insert("home")
-                validSides.insert("Home")
-            } else if side == awayTeam {
-                validSides.insert("away")
-                validSides.insert("Away")
-            }
-        }
-
-        let matches = odds.filter { entry in
-            guard entry.marketType == market, let entrySide = entry.side else { return false }
-            return validSides.contains(entrySide)
-        }
-        if let e = matches.first(where: { $0.book == preferredBook && $0.isClosingLine }) { return e }
-        if let e = matches.first(where: { $0.book == preferredBook }) { return e }
-        if let e = matches.first(where: { $0.isClosingLine }) { return e }
-        return matches.first
-    }
-
-    private func formatOddsLine(_ value: Double) -> String {
-        if value == floor(value) {
-            let intVal = Int(value)
-            return intVal >= 0 ? "+\(intVal)" : "\(intVal)"
-        }
-        return value >= 0 ? String(format: "+%.1f", value) : String(format: "%.1f", value)
-    }
-
-    // MARK: - Pregame Odds Lines (no results)
+    // MARK: - Pregame Odds Lines
 
     /// Main betting lines for the pregame section — spread, total, moneyline without outcomes
     struct PregameOddsLine: Identifiable {
@@ -504,18 +453,7 @@ final class GameDetailViewModel: ObservableObject {
 
     var pregameOddsLines: [PregameOddsLine] {
         guard let detail else { return [] }
-
-        // Prefer server-provided derived metrics labels
         let metrics = DerivedMetrics(detail.derivedMetrics)
-        if metrics.hasOddsData {
-            return pregameOddsLinesFromServer(metrics)
-        }
-
-        // Fall back to client-side computation
-        return computePregameOddsClientSide()
-    }
-
-    private func pregameOddsLinesFromServer(_ metrics: DerivedMetrics) -> [PregameOddsLine] {
         var lines: [PregameOddsLine] = []
         if let spread = metrics.pregameSpreadLabel {
             lines.append(PregameOddsLine(id: "spread", label: "Spread", detail: spread))
@@ -529,83 +467,12 @@ final class GameDetailViewModel: ObservableObject {
         return lines
     }
 
-    private func computePregameOddsClientSide() -> [PregameOddsLine] {
-        guard let detail, let game = detail.game as Game? else { return [] }
-        let odds = detail.odds
-        guard !odds.isEmpty else { return [] }
-
-        var lines: [PregameOddsLine] = []
-
-        // Spread
-        let homeSpread = bestOddsEntry(market: .spread, side: game.homeTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let awaySpread = bestOddsEntry(market: .spread, side: game.awayTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        if let entry = homeSpread ?? awaySpread, let line = entry.line {
-            let favoredTeam: String
-            let favoredLine: Double
-            if line < 0 {
-                favoredTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam) ?? game.homeTeam
-                favoredLine = line
-            } else if line > 0 {
-                let entrySideTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-                let otherTeam = (entrySideTeam == game.homeTeam) ? game.awayTeam : game.homeTeam
-                favoredTeam = otherTeam
-                favoredLine = -line
-            } else {
-                favoredTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam) ?? game.homeTeam
-                favoredLine = 0
-            }
-            let shortName = favoredTeam.split(separator: " ").last.map(String.init) ?? favoredTeam
-            lines.append(PregameOddsLine(id: "spread", label: "Spread", detail: "\(shortName) \(formatOddsLine(favoredLine))"))
-        }
-
-        // Total (O/U)
-        let overEntry = bestOddsEntry(market: .total, side: "over", odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let underEntry = bestOddsEntry(market: .total, side: "under", odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        if let entry = overEntry ?? underEntry, let line = entry.line {
-            lines.append(PregameOddsLine(id: "total", label: "O/U", detail: "\(formatOddsLine(line).replacingOccurrences(of: "+", with: ""))"))
-        }
-
-        // Moneyline
-        let homeML = bestOddsEntry(market: .moneyline, side: game.homeTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let awayML = bestOddsEntry(market: .moneyline, side: game.awayTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        if let home = homeML, let away = awayML, let hp = home.price, let ap = away.price {
-            let homeShort = game.homeTeam.split(separator: " ").last.map(String.init) ?? game.homeTeam
-            let awayShort = game.awayTeam.split(separator: " ").last.map(String.init) ?? game.awayTeam
-            let hStr = hp >= 0 ? "+\(Int(hp))" : "\(Int(hp))"
-            let aStr = ap >= 0 ? "+\(Int(ap))" : "\(Int(ap))"
-            lines.append(PregameOddsLine(id: "ml", label: "ML", detail: "\(awayShort) \(aStr) / \(homeShort) \(hStr)"))
-        }
-
-        return lines
-    }
-
-    /// Resolve a side string back to the full team name (handles "home"/"away", abbreviations, and full names)
-    private func resolveTeamName(_ side: String?, homeTeam: String, awayTeam: String) -> String? {
-        guard let side else { return nil }
-        let low = side.lowercased()
-        if low == "home" { return homeTeam }
-        if low == "away" { return awayTeam }
-        if side == homeTeam || side == TeamAbbreviations.abbreviation(for: homeTeam) { return homeTeam }
-        if side == awayTeam || side == TeamAbbreviations.abbreviation(for: awayTeam) { return awayTeam }
-        return side
-    }
-
     // MARK: - Odds Result
 
     var oddsResult: OddsResult? {
         guard let detail else { return nil }
-
-        // Prefer server-provided derived metrics outcomes
         let metrics = DerivedMetrics(detail.derivedMetrics)
-        if metrics.hasOutcomeData {
-            return oddsResultFromServer(metrics)
-        }
 
-        // Fall back to client-side computation
-        return computeOddsResultClientSide()
-    }
-
-    private func oddsResultFromServer(_ metrics: DerivedMetrics) -> OddsResult? {
         var spreadResult: OddsResult.SpreadResult?
         if let line = metrics.spreadLine, let team = metrics.spreadFavoredTeam {
             spreadResult = OddsResult.SpreadResult(
@@ -642,117 +509,6 @@ final class GameDetailViewModel: ObservableObject {
 
         return OddsResult(
             bookName: metrics.bookName ?? "DraftKings",
-            spread: spreadResult,
-            total: totalResult,
-            moneyline: moneylineResult
-        )
-    }
-
-    private func computeOddsResultClientSide() -> OddsResult? {
-        guard let detail, let game = detail.game as Game? else { return nil }
-        guard game.status.isCompleted else { return nil }
-        guard let homeScore = game.homeScore, let awayScore = game.awayScore else { return nil }
-        let odds = detail.odds
-        guard !odds.isEmpty else { return nil }
-
-        let preferredBook = UserDefaults.standard.string(forKey: "preferredSportsbook") ?? "DraftKings"
-        let resolvedBook: String
-
-        // Spread
-        var spreadResult: OddsResult.SpreadResult?
-        let homeSpread = bestOddsEntry(market: .spread, side: game.homeTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let awaySpread = bestOddsEntry(market: .spread, side: game.awayTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let spreadEntry = homeSpread ?? awaySpread
-        if let entry = spreadEntry, let line = entry.line {
-            resolvedBook = entry.book
-            let favoredTeam: String
-            let favoredLine: Double
-            if line < 0 {
-                favoredTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam) ?? game.homeTeam
-                favoredLine = line
-            } else if line > 0 {
-                let entrySideTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-                let otherTeam = (entrySideTeam == game.homeTeam) ? game.awayTeam : game.homeTeam
-                favoredTeam = otherTeam
-                favoredLine = -line
-            } else {
-                favoredTeam = resolveTeamName(entry.side, homeTeam: game.homeTeam, awayTeam: game.awayTeam) ?? game.homeTeam
-                favoredLine = 0
-            }
-            let margin: Int
-            if favoredTeam == game.homeTeam {
-                margin = homeScore - awayScore
-            } else {
-                margin = awayScore - homeScore
-            }
-            let absLine = abs(favoredLine)
-            let push = Double(margin) == absLine
-            let covered = Double(margin) > absLine
-            spreadResult = OddsResult.SpreadResult(
-                favoredTeam: TeamAbbreviations.abbreviation(for: favoredTeam),
-                line: favoredLine,
-                covered: covered,
-                push: push
-            )
-        } else {
-            resolvedBook = preferredBook
-        }
-
-        // Total (O/U)
-        var totalResult: OddsResult.TotalResult?
-        if let overEntry = bestOddsEntry(market: .total, side: "over", odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam),
-           let line = overEntry.line {
-            let actualTotal = homeScore + awayScore
-            let push = Double(actualTotal) == line
-            let wentOver = Double(actualTotal) > line
-            totalResult = OddsResult.TotalResult(
-                line: line,
-                actualTotal: actualTotal,
-                wentOver: wentOver,
-                push: push
-            )
-        }
-
-        // Moneyline
-        var moneylineResult: OddsResult.MoneylineResult?
-        let homeML = bestOddsEntry(market: .moneyline, side: game.homeTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        let awayML = bestOddsEntry(market: .moneyline, side: game.awayTeam, odds: odds, homeTeam: game.homeTeam, awayTeam: game.awayTeam)
-        if let hml = homeML, let aml = awayML,
-           let hp = hml.price, let ap = aml.price {
-            let favoredTeam: String
-            let underdogTeam: String
-            let favoredPrice: Int
-            let underdogPrice: Int
-            if hp < ap {
-                favoredTeam = game.homeTeam
-                underdogTeam = game.awayTeam
-                favoredPrice = Int(hp)
-                underdogPrice = Int(ap)
-            } else {
-                favoredTeam = game.awayTeam
-                underdogTeam = game.homeTeam
-                favoredPrice = Int(ap)
-                underdogPrice = Int(hp)
-            }
-            let favoriteWon: Bool
-            if favoredTeam == game.homeTeam {
-                favoriteWon = homeScore > awayScore
-            } else {
-                favoriteWon = awayScore > homeScore
-            }
-            moneylineResult = OddsResult.MoneylineResult(
-                favoredTeam: TeamAbbreviations.abbreviation(for: favoredTeam),
-                favoredPrice: favoredPrice,
-                underdogTeam: TeamAbbreviations.abbreviation(for: underdogTeam),
-                underdogPrice: underdogPrice,
-                favoriteWon: favoriteWon
-            )
-        }
-
-        guard spreadResult != nil || totalResult != nil || moneylineResult != nil else { return nil }
-
-        return OddsResult(
-            bookName: spreadEntry?.book ?? resolvedBook,
             spread: spreadResult,
             total: totalResult,
             moneyline: moneylineResult

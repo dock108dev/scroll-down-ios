@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import OSLog
 
-/// Singleton cache for server-provided team colors.
+/// Singleton cache for team colors.
 /// Fetches `GET /api/admin/sports/teams` on app launch, stores in memory + UserDefaults (7-day TTL).
 /// Falls back to `.systemIndigo` for unknown teams or before colors are fetched.
 ///

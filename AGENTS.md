@@ -10,18 +10,20 @@
 
 **No external dependencies.** Uses only Foundation and SwiftUI.
 
+**Architecture:** The app is a thin display layer. The backend (`sports-data-admin`) computes all derived data — period labels, play tiers, odds outcomes, team colors, and merged timelines. The iOS client reads pre-computed values from the API and renders them.
+
 ## Directory Layout
 
 ```
 ScrollDown/Sources/
 ├── Models/              # Codable data models (API-aligned)
-├── ViewModels/          # State management, business logic
+├── ViewModels/          # State management, data loading
 ├── Screens/
 │   ├── Home/            # Game list feed
 │   ├── Game/            # Game detail view (split into extensions)
 │   └── Team/            # Team page
 ├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView)
-├── Networking/          # GameService protocol + implementations, FlowAdapter
+├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
 ├── Services/            # TimeService (snapshot mode)
 ├── Logging/             # Structured logging (GameRoutingLogger, GameStatusLogger)
 ├── Theme/               # Typography system
@@ -39,20 +41,23 @@ ScrollDown/Sources/
 1. **Progressive disclosure** — Context before scores; users arrive after games end
 2. **User-controlled pacing** — They decide when to reveal results
 3. **Mobile-first** — Touch navigation, vertical scrolling, collapsible sections
+4. **Server-driven display** — The backend computes derived data; the app renders it
 
 ## Key Data Models
 
 | Model | Purpose |
 |-------|---------|
 | `GameSummary` | List view representation (home feed) |
-| `GameDetailResponse` | Full game detail with plays, stats, odds |
+| `GameDetailResponse` | Full game detail with plays, stats, odds, derived metrics |
+| `DerivedMetrics` | Type-safe accessor for server-computed odds labels and outcomes |
 | `GameFlowResponse` | Flow with blocks and plays from `/games/{id}/flow` |
 | `FlowBlock` | Narrative segment with role, mini box, period range |
 | `FlowPlay` | Individual play within a flow |
 | `BlockDisplayModel` | UI-ready block for rendering |
 | `BlockMiniBox` | Per-block player stats with `blockStars` |
-| `UnifiedTimelineEvent` | Single timeline entry (PBP or tweet) |
-| `PlayEntry` | Individual play-by-play event |
+| `UnifiedTimelineEvent` | Single timeline entry (PBP, tweet, or odds event) |
+| `PlayEntry` | Individual play-by-play event with `periodLabel`, `timeLabel`, `tier` |
+| `TeamSummary` | Team name + color hex values from `/teams` endpoint |
 
 ### FairBet Data Models
 
@@ -64,6 +69,20 @@ ScrollDown/Sources/
 | `FairOddsResult` | Fair odds calculation result per selection |
 | `BookEVResult` | EV calculation result per book |
 | `SelectionEVResult` | Complete EV analysis for a selection |
+
+## What the Server Provides
+
+The backend pre-computes all derived data. The app does not compute these client-side:
+
+| Data | Source | Used By |
+|------|--------|---------|
+| Period labels (`Q1`, `P2`, `H1`, `OT`) | `period_label` on each play | `UnifiedTimelineEvent.periodLabel` |
+| Time labels (`Q4 2:35`) | `time_label` on each play | `UnifiedTimelineEvent.timeLabel` |
+| Play tiers (1, 2, 3) | `tier` on each play | `PlayTier`, `TieredPlayGrouper` |
+| Odds labels (`BOS -5.5`, `O/U 221.5`) | `derivedMetrics` on game detail | `DerivedMetrics` → `pregameOddsLines` |
+| Odds outcomes (covered, went over, etc.) | `derivedMetrics` on game detail | `DerivedMetrics` → `oddsResult` |
+| Team colors (light/dark hex) | `GET /teams` → `TeamColorCache` | `DesignSystem.TeamColors` |
+| Merged timeline (PBP + tweets + odds) | `GET /games/{id}/timeline` | `unifiedTimelineEvents` |
 
 ## Flow Architecture
 
@@ -83,7 +102,7 @@ The app renders completed games using a **blocks-based** flow system:
    - `FlowBlockCardView` — Single block with mini box at bottom
    - `MiniBoxScoreView` — Compact player stats per block
 
-4. **PBP Timeline** — When flow data isn't available, PBP events render chronologically grouped by period.
+4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically grouped by period, tiered by server-provided `tier` values.
 
 ## FairBet Module
 
@@ -136,9 +155,11 @@ App uses authenticated endpoints (X-API-Key header):
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/admin/sports/games` | List games (with startDate, endDate, league filters) |
-| `GET /api/admin/sports/games/{id}` | Game detail (full stats, plays) |
+| `GET /api/admin/sports/games/{id}` | Game detail (stats, plays, derivedMetrics, groupedPlays) |
 | `GET /api/admin/sports/games/{id}/flow` | Game flow (blocks + plays) |
-| `GET /api/admin/sports/pbp/game/{id}` | Play-by-play |
+| `GET /api/admin/sports/games/{id}/timeline` | Unified timeline (merged PBP + tweets + odds) |
+| `GET /api/admin/sports/pbp/game/{id}` | Play-by-play events |
+| `GET /api/admin/sports/teams` | Team colors (name, light hex, dark hex) |
 | `GET /api/social/posts/game/{id}` | Social posts |
 | `GET /api/fairbet/odds` | Betting odds across sportsbooks |
 
@@ -174,3 +195,4 @@ xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPh
 - Add dependencies without justification
 - Use `print()` in production (use `Logger`)
 - Call `Date()` directly for time logic (use `AppDate.now()`)
+- Add client-side computation for data the server already provides

@@ -235,12 +235,10 @@ final class MockGameService: GameService {
     }
 
     func fetchTeamColors() async throws -> [TeamSummary] {
-        // Mock: return empty — client falls back to hardcoded colors
         return []
     }
 
     func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
-        // Mock: return empty — client falls back to existing 3-source merging
         return []
     }
 

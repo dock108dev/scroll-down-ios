@@ -12,11 +12,8 @@ struct PlayEntry: Codable, Identifiable, Equatable {
     let homeScore: Int?
     let awayScore: Int?
 
-    // Server-provided labels (Phase 3)
     let periodLabel: String?
     let timeLabel: String?
-
-    // Server-provided tier (Phase 4)
     let tier: Int?
 
     var id: Int { playIndex }

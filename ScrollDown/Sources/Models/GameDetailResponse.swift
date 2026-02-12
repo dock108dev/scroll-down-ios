@@ -11,7 +11,6 @@ struct GameDetailResponse: Codable {
     let derivedMetrics: [String: AnyCodable]
     let rawPayloads: [String: AnyCodable]
 
-    // Server-provided play groups (Phase 4)
     let groupedPlays: [ServerTieredPlayGroup]?
 
     // NHL-specific fields

@@ -5,59 +5,9 @@ import Foundation
 extension GameDetailViewModel {
     // MARK: - Unified Timeline
 
-    /// Unified timeline events — prefers server unified timeline (Phase 6),
-    /// falls back to 3-source client-side merging
+    /// Unified timeline events from server
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
-        // Phase 6: Use server unified timeline if available
-        if let serverTimeline = serverUnifiedTimeline, !serverTimeline.isEmpty {
-            return serverTimeline
-        }
-
-        // Fallback: build from separate sources
-        return buildTimelineFromSources()
-    }
-
-    /// Client-side 3-source merging (fallback when server timeline unavailable)
-    private func buildTimelineFromSources() -> [UnifiedTimelineEvent] {
-        var events: [UnifiedTimelineEvent] = []
-
-        // Get sport for period labeling (NBA, NHL, NCAAB, etc.)
-        let sport = detail?.game.leagueCode
-
-        // Priority: detail.plays > flowPlays > pbpEvents
-        let plays = detail?.plays ?? []
-        if !plays.isEmpty {
-            let playEvents = plays.enumerated().map { index, play in
-                UnifiedTimelineEvent(from: playToDictionary(play), index: index, sport: sport)
-            }
-            events.append(contentsOf: playEvents)
-        } else if !flowPlays.isEmpty {
-            // Use flow plays if available (when flow loaded but detail.plays is empty)
-            let playEvents = flowPlays.enumerated().map { index, play in
-                UnifiedTimelineEvent(from: flowPlayToDictionary(play), index: index, sport: sport)
-            }
-            events.append(contentsOf: playEvents)
-        } else if !pbpEvents.isEmpty {
-            // Use separately fetched PBP events
-            let playEvents = pbpEvents.enumerated().map { index, event in
-                UnifiedTimelineEvent(from: pbpEventToDictionary(event), index: index, sport: sport)
-            }
-            events.append(contentsOf: playEvents)
-        }
-
-        let totalPlays = plays.isEmpty ? pbpEvents.count : plays.count
-
-        if let timelineValue = timelineArtifact?.timelineJson?.value {
-            let rawEvents = extractTimelineEvents(from: timelineValue)
-            let tweetEvents = rawEvents.enumerated().compactMap { index, dict -> UnifiedTimelineEvent? in
-                let eventType = dict["event_type"] as? String
-                guard eventType == "tweet" else { return nil }
-                return UnifiedTimelineEvent(from: dict, index: totalPlays + index, sport: sport)
-            }
-            events.append(contentsOf: tweetEvents)
-        }
-
-        return events
+        serverUnifiedTimeline ?? []
     }
 
     /// Whether timeline/PBP data is available for "View All Plays"
@@ -241,59 +191,6 @@ extension GameDetailViewModel {
         return trimmed
     }
 
-    /// Convert PlayEntry to dictionary for UnifiedTimelineEvent parsing
-    func playToDictionary(_ play: PlayEntry) -> [String: Any] {
-        var dict: [String: Any] = [
-            "event_type": "pbp",
-            "play_index": play.playIndex
-        ]
-        if let quarter = play.quarter { dict["period"] = quarter }
-        if let clock = play.gameClock { dict["game_clock"] = clock }
-        if let desc = play.description { dict["description"] = desc }
-        if let team = play.teamAbbreviation { dict["team"] = team }
-        if let player = play.playerName { dict["player_name"] = player }
-        if let home = play.homeScore { dict["home_score"] = home }
-        if let away = play.awayScore { dict["away_score"] = away }
-        if let playType = play.playType { dict["play_type"] = playType.rawValue }
-        // Pass through server-provided fields
-        if let periodLabel = play.periodLabel { dict["period_label"] = periodLabel }
-        if let timeLabel = play.timeLabel { dict["time_label"] = timeLabel }
-        if let tier = play.tier { dict["tier"] = tier }
-        return dict
-    }
-
-    /// Convert PbpEvent to dictionary for UnifiedTimelineEvent parsing
-    func pbpEventToDictionary(_ event: PbpEvent) -> [String: Any] {
-        var dict: [String: Any] = [
-            "event_type": "pbp"
-        ]
-        if let period = event.period { dict["period"] = period }
-        if let clock = event.gameClock { dict["game_clock"] = clock }
-        if let desc = event.description { dict["description"] = desc }
-        if let team = event.team { dict["team"] = team }
-        if let player = event.playerName { dict["player_name"] = player }
-        if let home = event.homeScore { dict["home_score"] = home }
-        if let away = event.awayScore { dict["away_score"] = away }
-        if let eventType = event.eventType { dict["play_type"] = eventType }
-        return dict
-    }
-
-    /// Convert FlowPlay to dictionary for UnifiedTimelineEvent parsing
-    func flowPlayToDictionary(_ play: FlowPlay) -> [String: Any] {
-        var dict: [String: Any] = [
-            "event_type": "pbp",
-            "play_index": play.playIndex,
-            "period": play.period
-        ]
-        if let clock = play.clock { dict["game_clock"] = clock }
-        if let desc = play.description { dict["description"] = desc }
-        if let team = play.team { dict["team"] = team }
-        if let player = play.playerName { dict["player_name"] = player }
-        if let home = play.homeScore { dict["home_score"] = home }
-        if let away = play.awayScore { dict["away_score"] = away }
-        if let playType = play.playType { dict["play_type"] = playType }
-        return dict
-    }
 }
 
 // MARK: - Timeline Constants

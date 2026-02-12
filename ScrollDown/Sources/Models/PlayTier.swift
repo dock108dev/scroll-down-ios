@@ -13,9 +13,8 @@ enum PlayTier: Int, Comparable {
         lhs.rawValue < rhs.rawValue
     }
 
-    /// Convert server tier Int to PlayTier
-    init(serverTier: Int) {
-        switch serverTier {
+    init(rawTier: Int) {
+        switch rawTier {
         case 1: self = .primary
         case 3: self = .tertiary
         default: self = .secondary
@@ -55,25 +54,19 @@ struct TieredPlayGroup: Identifiable {
     }
 }
 
-/// Groups events into tiered display groups using server-provided tiers.
-/// When events have `serverTier`, groups by that value directly.
-/// When `serverTier` is nil, defaults all plays to tier 2 (visible, de-emphasized).
+/// Groups events into tiered display groups.
+/// Uses `tier` from each event (defaults to 2 when absent).
 enum TieredPlayGrouper {
 
-    static func group(
-        events: [UnifiedTimelineEvent],
-        sport: String?
-    ) -> [TieredPlayGroup] {
+    static func group(events: [UnifiedTimelineEvent]) -> [TieredPlayGroup] {
         var groups: [TieredPlayGroup] = []
         var currentTier3Group: [UnifiedTimelineEvent] = []
         var groupIndex = 0
 
         for event in events {
-            // Skip non-PBP events (odds, tweets don't belong in tiered PBP view)
             guard event.eventType == .pbp else { continue }
 
-            // Use server tier, defaulting to 2 (secondary) when absent
-            let tier = PlayTier(serverTier: event.serverTier ?? 2)
+            let tier = PlayTier(rawTier: event.tier ?? 2)
 
             if tier == .tertiary {
                 currentTier3Group.append(event)

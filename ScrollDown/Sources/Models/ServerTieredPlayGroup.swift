@@ -1,7 +1,6 @@
 import Foundation
 
-/// Model for server-provided play grouping (Phase 4)
-/// Maps to the `groupedPlays` array in the game detail response
+/// Play grouping from the game detail response
 struct ServerTieredPlayGroup: Codable {
     let startIndex: Int
     let endIndex: Int
