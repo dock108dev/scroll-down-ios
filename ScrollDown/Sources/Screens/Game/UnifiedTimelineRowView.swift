@@ -20,6 +20,8 @@ struct UnifiedTimelineRowView: View {
             pbpRow
         case .tweet:
             tweetRow
+        case .odds:
+            oddsRow
         case .unknown:
             unknownRow
         }
@@ -39,7 +41,11 @@ struct UnifiedTimelineRowView: View {
                             .foregroundColor(DesignSystem.TextColor.tertiary)
                             .monospacedDigit()
                     }
-                    if let period = event.period {
+                    if let label = event.effectivePeriodLabel {
+                        Text(label)
+                            .font(layout.periodFont)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                    } else if let period = event.period {
                         Text("Q\(period)")
                             .font(layout.periodFont)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
@@ -167,8 +173,45 @@ struct UnifiedTimelineRowView: View {
         .accessibilityValue(event.tweetText ?? "")
     }
     
+    // MARK: - Odds Row
+
+    private var oddsRow: some View {
+        HStack(spacing: layout.contentSpacing) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(layout.metaFont)
+                .foregroundColor(DesignSystem.Accent.primary)
+
+            VStack(alignment: .leading, spacing: layout.textSpacing) {
+                if let oddsType = event.oddsType {
+                    Text(oddsType)
+                        .font(layout.handleFont)
+                        .foregroundColor(DesignSystem.TextColor.secondary)
+                }
+                if let description = event.description {
+                    Text(description)
+                        .font(layout.descriptionFont)
+                        .foregroundColor(DesignSystem.TextColor.primary)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if let label = event.effectivePeriodLabel {
+                Text(label)
+                    .font(layout.periodFont)
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+            }
+        }
+        .padding(layout.rowPadding)
+        .background(DesignSystem.Colors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Odds update")
+        .accessibilityValue(event.description ?? "")
+    }
+
     // MARK: - Unknown Event Row
-    
+
     private var unknownRow: some View {
         HStack {
             Image(systemName: "questionmark.circle")

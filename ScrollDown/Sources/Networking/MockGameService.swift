@@ -234,6 +234,16 @@ final class MockGameService: GameService {
         throw GameServiceError.notFound
     }
 
+    func fetchTeamColors() async throws -> [TeamSummary] {
+        // Mock: return empty — client falls back to hardcoded colors
+        return []
+    }
+
+    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
+        // Mock: return empty — client falls back to existing 3-source merging
+        return []
+    }
+
     private func findAndCacheGame(_ gameId: Int) -> GameDetailResponse? {
         guard let gameSummary = findGameSummary(for: gameId) else {
             return nil

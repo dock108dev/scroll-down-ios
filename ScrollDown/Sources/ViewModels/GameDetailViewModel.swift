@@ -67,6 +67,17 @@ final class GameDetailViewModel: ObservableObject {
         case idle, loading, loaded, failed(String)
     }
 
+    // Server unified timeline (Phase 6) — pre-merged PBP + social + odds
+    @Published private(set) var serverUnifiedTimeline: [UnifiedTimelineEvent]?
+    @Published private(set) var unifiedTimelineState: UnifiedTimelineState = .idle
+
+    enum UnifiedTimelineState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
     // PBP data (fetched separately when not included in main detail)
     @Published private(set) var pbpEvents: [PbpEvent] = []
     @Published private(set) var pbpState: PbpState = .idle
@@ -176,6 +187,37 @@ final class GameDetailViewModel: ObservableObject {
         } catch {
             logger.error("📖 Flow fetch failed: \(error.localizedDescription, privacy: .public)")
             flowState = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Load unified timeline from server (Phase 6)
+    func loadUnifiedTimeline(gameId: Int, service: GameService) async {
+        switch unifiedTimelineState {
+        case .loaded, .loading:
+            return
+        case .idle, .failed:
+            break
+        }
+
+        unifiedTimelineState = .loading
+
+        do {
+            let rawEvents = try await service.fetchUnifiedTimeline(gameId: gameId)
+            guard !rawEvents.isEmpty else {
+                unifiedTimelineState = .failed("Empty timeline")
+                return
+            }
+
+            let sport = detail?.game.leagueCode
+            let events = rawEvents.enumerated().map { index, dict in
+                UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+            }
+            serverUnifiedTimeline = events
+            unifiedTimelineState = .loaded
+            logger.info("Loaded unified timeline: \(events.count) events")
+        } catch {
+            logger.error("Unified timeline fetch failed: \(error.localizedDescription, privacy: .public)")
+            unifiedTimelineState = .failed(error.localizedDescription)
         }
     }
 
@@ -461,6 +503,33 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     var pregameOddsLines: [PregameOddsLine] {
+        guard let detail else { return [] }
+
+        // Prefer server-provided derived metrics labels
+        let metrics = DerivedMetrics(detail.derivedMetrics)
+        if metrics.hasOddsData {
+            return pregameOddsLinesFromServer(metrics)
+        }
+
+        // Fall back to client-side computation
+        return computePregameOddsClientSide()
+    }
+
+    private func pregameOddsLinesFromServer(_ metrics: DerivedMetrics) -> [PregameOddsLine] {
+        var lines: [PregameOddsLine] = []
+        if let spread = metrics.pregameSpreadLabel {
+            lines.append(PregameOddsLine(id: "spread", label: "Spread", detail: spread))
+        }
+        if let total = metrics.pregameTotalLabel {
+            lines.append(PregameOddsLine(id: "total", label: "O/U", detail: total))
+        }
+        if let mlHome = metrics.pregameMLHomeLabel, let mlAway = metrics.pregameMLAwayLabel {
+            lines.append(PregameOddsLine(id: "ml", label: "ML", detail: "\(mlAway) / \(mlHome)"))
+        }
+        return lines
+    }
+
+    private func computePregameOddsClientSide() -> [PregameOddsLine] {
         guard let detail, let game = detail.game as Game? else { return [] }
         let odds = detail.odds
         guard !odds.isEmpty else { return [] }
@@ -524,6 +593,62 @@ final class GameDetailViewModel: ObservableObject {
     // MARK: - Odds Result
 
     var oddsResult: OddsResult? {
+        guard let detail else { return nil }
+
+        // Prefer server-provided derived metrics outcomes
+        let metrics = DerivedMetrics(detail.derivedMetrics)
+        if metrics.hasOutcomeData {
+            return oddsResultFromServer(metrics)
+        }
+
+        // Fall back to client-side computation
+        return computeOddsResultClientSide()
+    }
+
+    private func oddsResultFromServer(_ metrics: DerivedMetrics) -> OddsResult? {
+        var spreadResult: OddsResult.SpreadResult?
+        if let line = metrics.spreadLine, let team = metrics.spreadFavoredTeam {
+            spreadResult = OddsResult.SpreadResult(
+                favoredTeam: team,
+                line: line,
+                covered: metrics.spreadCovered ?? false,
+                push: metrics.spreadPush ?? false
+            )
+        }
+
+        var totalResult: OddsResult.TotalResult?
+        if let line = metrics.totalLine, let actual = metrics.actualTotal {
+            totalResult = OddsResult.TotalResult(
+                line: line,
+                actualTotal: actual,
+                wentOver: metrics.totalWentOver ?? false,
+                push: metrics.totalPush ?? false
+            )
+        }
+
+        var moneylineResult: OddsResult.MoneylineResult?
+        if let favTeam = metrics.mlFavoredTeam, let favPrice = metrics.mlFavoredPrice,
+           let undTeam = metrics.mlUnderdogTeam, let undPrice = metrics.mlUnderdogPrice {
+            moneylineResult = OddsResult.MoneylineResult(
+                favoredTeam: favTeam,
+                favoredPrice: favPrice,
+                underdogTeam: undTeam,
+                underdogPrice: undPrice,
+                favoriteWon: metrics.mlFavoriteWon ?? false
+            )
+        }
+
+        guard spreadResult != nil || totalResult != nil || moneylineResult != nil else { return nil }
+
+        return OddsResult(
+            bookName: metrics.bookName ?? "DraftKings",
+            spread: spreadResult,
+            total: totalResult,
+            moneyline: moneylineResult
+        )
+    }
+
+    private func computeOddsResultClientSide() -> OddsResult? {
         guard let detail, let game = detail.game as Game? else { return nil }
         guard game.status.isCompleted else { return nil }
         guard let homeScore = game.homeScore, let awayScore = game.awayScore else { return nil }

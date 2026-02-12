@@ -52,6 +52,14 @@ struct StubGameService: GameService {
         if let error = shouldThrow { throw error }
         return flowResponse ?? GameFlowResponse(gameId: gameId, sport: "NBA")
     }
+
+    func fetchTeamColors() async throws -> [TeamSummary] {
+        return []
+    }
+
+    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
+        return []
+    }
 }
 
 // MARK: - Test Factories

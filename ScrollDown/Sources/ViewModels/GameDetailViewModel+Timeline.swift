@@ -5,8 +5,20 @@ import Foundation
 extension GameDetailViewModel {
     // MARK: - Unified Timeline
 
-    /// Unified timeline events - merges plays (with scores) and social posts
+    /// Unified timeline events — prefers server unified timeline (Phase 6),
+    /// falls back to 3-source client-side merging
     var unifiedTimelineEvents: [UnifiedTimelineEvent] {
+        // Phase 6: Use server unified timeline if available
+        if let serverTimeline = serverUnifiedTimeline, !serverTimeline.isEmpty {
+            return serverTimeline
+        }
+
+        // Fallback: build from separate sources
+        return buildTimelineFromSources()
+    }
+
+    /// Client-side 3-source merging (fallback when server timeline unavailable)
+    private func buildTimelineFromSources() -> [UnifiedTimelineEvent] {
         var events: [UnifiedTimelineEvent] = []
 
         // Get sport for period labeling (NBA, NHL, NCAAB, etc.)
@@ -243,6 +255,10 @@ extension GameDetailViewModel {
         if let home = play.homeScore { dict["home_score"] = home }
         if let away = play.awayScore { dict["away_score"] = away }
         if let playType = play.playType { dict["play_type"] = playType.rawValue }
+        // Pass through server-provided fields
+        if let periodLabel = play.periodLabel { dict["period_label"] = periodLabel }
+        if let timeLabel = play.timeLabel { dict["time_label"] = timeLabel }
+        if let tier = play.tier { dict["tier"] = tier }
         return dict
     }
 

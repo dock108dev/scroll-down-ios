@@ -3,7 +3,7 @@ import Foundation
 /// Unified timeline event parsed from timeline_json
 /// Supports both play-by-play (pbp) and social (tweet) events
 /// Rendered in server-provided order — no client-side sorting
-struct UnifiedTimelineEvent: Identifiable, Equatable {
+struct UnifiedTimelineEvent: Identifiable {
     let id: String
     let eventType: EventType
     let syntheticTimestamp: String?
@@ -19,6 +19,17 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     let awayScore: Int?
     let playType: String?
 
+    // Server-provided labels (Phase 3)
+    let serverPeriodLabel: String?
+    let serverTimeLabel: String?
+
+    // Server-provided tier (Phase 4)
+    let serverTier: Int?
+
+    // Odds-specific fields (Phase 6)
+    let oddsType: String?
+    let oddsMarkets: [String: Any]?
+
     // Tweet-specific fields
     let tweetText: String?
     let tweetUrl: String?
@@ -30,6 +41,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
     enum EventType: String, Equatable {
         case pbp
         case tweet
+        case odds
         case unknown
     }
     
@@ -58,7 +70,20 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             ?? dict["quarter"] as? Int
         self.gameClock = dict["game_clock"] as? String
             ?? dict["clock"] as? String
-        
+
+        // Server-provided labels (Phase 3)
+        self.serverPeriodLabel = dict["period_label"] as? String
+            ?? dict["periodLabel"] as? String
+        self.serverTimeLabel = dict["time_label"] as? String
+            ?? dict["timeLabel"] as? String
+
+        // Server-provided tier (Phase 4)
+        self.serverTier = dict["tier"] as? Int
+
+        // Odds-specific fields (Phase 6)
+        self.oddsType = dict["odds_type"] as? String
+        self.oddsMarkets = dict["odds_markets"] as? [String: Any]
+
         // PBP fields
         let rawDescription = dict["description"] as? String
             ?? dict["play_description"] as? String
@@ -76,7 +101,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
         } else {
             self.playerName = nil
         }
-        
+
         // Score parsing - handle multiple formats
         // Format 1: separate home_score/away_score fields
         if let home = dict["home_score"] as? Int, let away = dict["away_score"] as? Int {
@@ -103,7 +128,7 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             self.homeScore = nil
             self.awayScore = nil
         }
-        
+
         // Tweet fields
         self.tweetText = dict["tweet_text"] as? String
             ?? dict["text"] as? String
@@ -123,13 +148,27 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             return description ?? "Play"
         case .tweet:
             return tweetText ?? "Tweet"
+        case .odds:
+            return description ?? "Odds Update"
         case .unknown:
             return description ?? tweetText ?? "Event"
         }
     }
     
-    /// Time label for display (sport-aware period labeling)
+    /// Effective period label: prefers server value, falls back to client computation
+    var effectivePeriodLabel: String? {
+        if let server = serverPeriodLabel, !server.isEmpty {
+            return server
+        }
+        guard let period = period else { return nil }
+        return Self.periodLabel(for: period, sport: sport)
+    }
+
+    /// Time label for display — prefers server value, falls back to client computation
     var timeLabel: String? {
+        if let server = serverTimeLabel, !server.isEmpty {
+            return server
+        }
         guard let clock = gameClock else { return nil }
         guard let period = period else { return clock }
 
@@ -170,5 +209,19 @@ struct UnifiedTimelineEvent: Identifiable, Equatable {
             // Default period label
             return "Q\(period)"
         }
+    }
+}
+
+// MARK: - Equatable
+
+extension UnifiedTimelineEvent: Equatable {
+    static func == (lhs: UnifiedTimelineEvent, rhs: UnifiedTimelineEvent) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.eventType == rhs.eventType &&
+        lhs.period == rhs.period &&
+        lhs.gameClock == rhs.gameClock &&
+        lhs.description == rhs.description &&
+        lhs.homeScore == rhs.homeScore &&
+        lhs.awayScore == rhs.awayScore
     }
 }

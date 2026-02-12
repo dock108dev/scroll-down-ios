@@ -119,17 +119,56 @@ final class RealGameService: GameService {
     }
 
     func fetchTimeline(gameId: Int) async throws -> TimelineArtifactResponse {
-        // Note: No GET endpoint exists for timelines per API docs.
-        // Timelines are generated via POST /timelines/generate/{gameId}.
-        // This will fail until a GET endpoint is added or we use POST.
-        try await request(path: "api/admin/sports/timelines/game/\(gameId)", queryItems: [])
+        try await request(path: "api/admin/sports/games/\(gameId)/timeline", queryItems: [])
     }
 
     func fetchFlow(gameId: Int) async throws -> GameFlowResponse {
         try await request(path: "api/admin/sports/games/\(gameId)/flow", queryItems: [])
     }
 
+    func fetchTeamColors() async throws -> [TeamSummary] {
+        try await request(path: "api/admin/sports/teams", queryItems: [])
+    }
+
+    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
+        let data: Data = try await requestRaw(path: "api/admin/sports/games/\(gameId)/timeline", queryItems: [])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return []
+        }
+        return json
+    }
+
     // MARK: - Networking
+
+    private func requestRaw(path: String, queryItems: [URLQueryItem]) async throws -> Data {
+        guard var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
+            throw GameServiceError.notFound
+        }
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+        guard let url = components.url else {
+            throw GameServiceError.notFound
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        if let apiKey = apiKey {
+            urlRequest.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
+        }
+
+        let (data, response) = try await session.data(for: urlRequest)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        if httpResponse.statusCode == 401 {
+            throw GameServiceError.unauthorized
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {
         guard var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {

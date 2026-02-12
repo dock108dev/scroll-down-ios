@@ -79,33 +79,13 @@ struct FullPlayByPlayView: View {
             sport: viewModel.game?.leagueCode
         )
 
-        // Compute scoring team for each event by tracking score changes
-        var scoringTeamMap: [String: Bool] = [:]
-        var prevHome: Int?
-        var prevAway: Int?
-        for event in group.events {
-            if let home = event.homeScore, let away = event.awayScore {
-                if let ph = prevHome, let pa = prevAway {
-                    let homeDelta = home - ph
-                    let awayDelta = away - pa
-                    if homeDelta > 0 && awayDelta == 0 {
-                        scoringTeamMap[event.id] = true   // home scored
-                    } else if awayDelta > 0 && homeDelta == 0 {
-                        scoringTeamMap[event.id] = false  // away scored
-                    }
-                }
-                prevHome = home
-                prevAway = away
-            }
-        }
-
         // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
         let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
         let tier3GroupCount = tieredGroups.filter { $0.tier == .tertiary }.count
 
         return CollapsibleQuarterCard(
-            title: periodTitle(group.period),
+            title: periodTitle(group.period, events: group.events),
             subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
             isExpanded: Binding(
                 get: { !collapsedPeriods.contains(group.period) },
@@ -125,8 +105,7 @@ struct FullPlayByPlayView: View {
                     TieredPlayGroupView(
                         group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        scoringTeamMap: scoringTeamMap
+                        awayTeam: viewModel.game?.awayTeam ?? "Away"
                     )
                 }
             }
@@ -136,9 +115,21 @@ struct FullPlayByPlayView: View {
     // MARK: - Period Title
 
     /// Returns the appropriate period/quarter title based on sport
-    private func periodTitle(_ period: Int) -> String {
+    /// Prefers server-provided period label from first event in the group
+    private func periodTitle(_ period: Int, events: [UnifiedTimelineEvent] = []) -> String {
         if period == 0 {
             return "Additional"
+        }
+
+        // Prefer server-provided label from first event in the period
+        if let firstLabel = events.first?.serverPeriodLabel, !firstLabel.isEmpty {
+            // Expand abbreviated labels for section headers
+            switch firstLabel {
+            case "P1": return "Period 1"
+            case "P2": return "Period 2"
+            case "P3": return "Period 3"
+            default: return firstLabel
+            }
         }
 
         // NHL uses "Period" terminology

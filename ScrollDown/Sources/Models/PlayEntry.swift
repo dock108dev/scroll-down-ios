@@ -12,6 +12,13 @@ struct PlayEntry: Codable, Identifiable, Equatable {
     let homeScore: Int?
     let awayScore: Int?
 
+    // Server-provided labels (Phase 3)
+    let periodLabel: String?
+    let timeLabel: String?
+
+    // Server-provided tier (Phase 4)
+    let tier: Int?
+
     var id: Int { playIndex }
 
     init(
@@ -23,7 +30,10 @@ struct PlayEntry: Codable, Identifiable, Equatable {
         playerName: String? = nil,
         description: String? = nil,
         homeScore: Int? = nil,
-        awayScore: Int? = nil
+        awayScore: Int? = nil,
+        periodLabel: String? = nil,
+        timeLabel: String? = nil,
+        tier: Int? = nil
     ) {
         self.playIndex = playIndex
         self.quarter = quarter
@@ -34,5 +44,8 @@ struct PlayEntry: Codable, Identifiable, Equatable {
         self.description = description
         self.homeScore = homeScore
         self.awayScore = awayScore
+        self.periodLabel = periodLabel
+        self.timeLabel = timeLabel
+        self.tier = tier
     }
 }

@@ -11,6 +11,9 @@ struct GameDetailResponse: Codable {
     let derivedMetrics: [String: AnyCodable]
     let rawPayloads: [String: AnyCodable]
 
+    // Server-provided play groups (Phase 4)
+    let groupedPlays: [ServerTieredPlayGroup]?
+
     // NHL-specific fields
     let nhlSkaters: [NHLSkaterStat]?
     let nhlGoalies: [NHLGoalieStat]?
@@ -25,6 +28,7 @@ struct GameDetailResponse: Codable {
         case plays
         case derivedMetrics
         case rawPayloads
+        case groupedPlays
         case nhlSkaters
         case nhlGoalies
         case dataHealth
@@ -41,6 +45,7 @@ struct GameDetailResponse: Codable {
         plays = try container.decodeIfPresent([PlayEntry].self, forKey: .plays) ?? []
         derivedMetrics = try container.decodeIfPresent([String: AnyCodable].self, forKey: .derivedMetrics) ?? [:]
         rawPayloads = try container.decodeIfPresent([String: AnyCodable].self, forKey: .rawPayloads) ?? [:]
+        groupedPlays = try container.decodeIfPresent([ServerTieredPlayGroup].self, forKey: .groupedPlays)
         nhlSkaters = try container.decodeIfPresent([NHLSkaterStat].self, forKey: .nhlSkaters)
         nhlGoalies = try container.decodeIfPresent([NHLGoalieStat].self, forKey: .nhlGoalies)
         dataHealth = try container.decodeIfPresent(NHLDataHealth.self, forKey: .dataHealth)
@@ -55,6 +60,7 @@ struct GameDetailResponse: Codable {
         plays: [PlayEntry] = [],
         derivedMetrics: [String: AnyCodable] = [:],
         rawPayloads: [String: AnyCodable] = [:],
+        groupedPlays: [ServerTieredPlayGroup]? = nil,
         nhlSkaters: [NHLSkaterStat]? = nil,
         nhlGoalies: [NHLGoalieStat]? = nil,
         dataHealth: NHLDataHealth? = nil
@@ -67,6 +73,7 @@ struct GameDetailResponse: Codable {
         self.plays = plays
         self.derivedMetrics = derivedMetrics
         self.rawPayloads = rawPayloads
+        self.groupedPlays = groupedPlays
         self.nhlSkaters = nhlSkaters
         self.nhlGoalies = nhlGoalies
         self.dataHealth = dataHealth

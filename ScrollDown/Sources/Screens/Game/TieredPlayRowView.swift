@@ -51,8 +51,8 @@ struct Tier1PlayRowView: View {
                             .font(.caption.weight(.medium).monospacedDigit())
                             .foregroundColor(DesignSystem.TextColor.secondary)
                     }
-                    if let period = event.period {
-                        Text(UnifiedTimelineEvent.periodLabel(for: period, sport: event.sport))
+                    if let label = event.effectivePeriodLabel {
+                        Text(label)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
                     }
@@ -121,8 +121,8 @@ struct Tier2PlayRowView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundColor(DesignSystem.TextColor.tertiary)
                 }
-                if let period = event.period {
-                    Text(UnifiedTimelineEvent.periodLabel(for: period, sport: event.sport))
+                if let label = event.effectivePeriodLabel {
+                    Text(label)
                         .font(.caption2)
                         .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.7))
                 }
