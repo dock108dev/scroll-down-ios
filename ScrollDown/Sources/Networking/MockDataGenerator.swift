@@ -210,7 +210,13 @@ enum MockDataGenerator {
             playCount: summary.playCount,
             socialPostCount: summary.socialPostCount,
             homeTeamXHandle: nil,
-            awayTeamXHandle: nil
+            awayTeamXHandle: nil,
+            homeTeamAbbr: nil,
+            awayTeamAbbr: nil,
+            homeTeamColorLight: nil,
+            homeTeamColorDark: nil,
+            awayTeamColorLight: nil,
+            awayTeamColorDark: nil
         )
 
         let isNHL = summary.league == "NHL"

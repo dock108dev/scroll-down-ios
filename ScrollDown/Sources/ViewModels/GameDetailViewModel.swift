@@ -116,10 +116,21 @@ final class GameDetailViewModel: ObservableObject {
                 return
             }
             detail = response
+            injectTeamColors(from: response.game)
             loadState = .loaded
         } catch {
             errorMessage = error.localizedDescription
             loadState = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Push API-provided team colors into the shared cache so all UI picks them up.
+    private func injectTeamColors(from game: Game) {
+        if let light = game.homeTeamColorLight, let dark = game.homeTeamColorDark {
+            TeamColorCache.shared.inject(teamName: game.homeTeam, lightHex: light, darkHex: dark)
+        }
+        if let light = game.awayTeamColorLight, let dark = game.awayTeamColorDark {
+            TeamColorCache.shared.inject(teamName: game.awayTeam, lightHex: light, darkHex: dark)
         }
     }
 

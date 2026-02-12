@@ -23,6 +23,12 @@ struct Game: Codable, Identifiable, Hashable {
     let socialPostCount: Int?
     let homeTeamXHandle: String?
     let awayTeamXHandle: String?
+    let homeTeamAbbr: String?
+    let awayTeamAbbr: String?
+    let homeTeamColorLight: String?
+    let homeTeamColorDark: String?
+    let awayTeamColorLight: String?
+    let awayTeamColorDark: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -46,6 +52,12 @@ struct Game: Codable, Identifiable, Hashable {
         case socialPostCount
         case homeTeamXHandle
         case awayTeamXHandle
+        case homeTeamAbbr
+        case awayTeamAbbr
+        case homeTeamColorLight
+        case homeTeamColorDark
+        case awayTeamColorLight
+        case awayTeamColorDark
     }
 
     func hash(into hasher: inout Hasher) {

@@ -40,6 +40,12 @@ final class TeamColorCache {
         await fetchFromServer(service: service)
     }
 
+    /// Inject a color pair directly (e.g., from game detail response).
+    /// Overwrites any existing entry for the given team name.
+    func inject(teamName: String, lightHex: String, darkHex: String) {
+        colorStore[teamName] = (lightHex: lightHex, darkHex: darkHex)
+    }
+
     /// Get color pair for a team name (synchronous, safe from any context)
     func color(for teamName: String) -> (light: UIColor, dark: UIColor)? {
         // Exact match
