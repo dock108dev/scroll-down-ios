@@ -193,6 +193,8 @@ final class AppConfig: ObservableObject {
                 return true // Safe for snapshot mode
             case .inProgress:
                 return false // Exclude live games
+            case .unknown:
+                return false
             }
         }
 

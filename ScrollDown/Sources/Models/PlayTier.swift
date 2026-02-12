@@ -55,7 +55,8 @@ enum PlayTierClassifier {
         periodInfo: PeriodContext
     ) -> Bool {
         // Made shots (2PT, 3PT, FT)
-        if isScoringPlay(desc: desc) {
+        let playType = event.playType?.lowercased()
+        if isScoringPlay(desc: desc, playType: playType) {
             // Check for lead change or tie
             if let prev = previousScore,
                let home = event.homeScore,
@@ -107,9 +108,16 @@ enum PlayTierClassifier {
         return false
     }
 
-    private static func isScoringPlay(desc: String) -> Bool {
+    private static func isScoringPlay(desc: String, playType: String? = nil) -> Bool {
         // Exclude missed shots first
         if desc.contains("miss") { return false }
+
+        // Check structured play type (catches NCAAB and other non-standard descriptions)
+        if let pt = playType {
+            if pt == "made_shot" || pt == "2pt" || pt == "3pt" || pt.contains("made") {
+                return true
+            }
+        }
 
         // Basketball made shots
         if desc.contains("makes") { return true }

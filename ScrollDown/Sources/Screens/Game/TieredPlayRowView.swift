@@ -6,13 +6,42 @@ struct Tier1PlayRowView: View {
     let event: UnifiedTimelineEvent
     let homeTeam: String
     let awayTeam: String
+    /// Which team scored — inferred from score delta when event.team is nil
+    var scoringTeamIsHome: Bool?
+
+    /// Resolve accent bar color to the scoring team's brand color
+    private var accentColor: Color {
+        // Try event.team first (NBA provides this)
+        if let team = event.team {
+            let teamLower = team.lowercased()
+            let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
+            let awayAbbrev = TeamAbbreviations.abbreviation(for: awayTeam).lowercased()
+
+            if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
+                return DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
+            } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
+                return DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
+            }
+        }
+
+        // Fall back to score-delta inference
+        if let isHome = scoringTeamIsHome {
+            if isHome {
+                return DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
+            } else {
+                return DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
+            }
+        }
+
+        return DesignSystem.Colors.accent
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
-                // Accent bar for high-impact plays
+                // Accent bar colored by scoring team
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(DesignSystem.Colors.accent)
+                    .fill(accentColor)
                     .frame(width: 3)
 
                 // Time column
@@ -70,7 +99,7 @@ struct Tier1PlayRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
         .overlay(
             RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
-                .stroke(DesignSystem.Colors.accent.opacity(0.3), lineWidth: 1)
+                .stroke(accentColor.opacity(0.3), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Scoring play")
@@ -163,84 +192,13 @@ struct Tier3PlayRowView: View {
     }
 }
 
-/// Collapsed group view for Tier 3 events
-/// Shows summary with tap to expand
-struct Tier3CollapsedGroupView: View {
-    let group: TieredPlayGroup
-    @Binding var isExpanded: Bool
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Collapsed header - tap to expand
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .frame(width: 12)
-
-                    Text(group.collapsedSummary)
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-
-                    Spacer()
-
-                    // Time range if available
-                    if let firstClock = group.events.first?.gameClock,
-                       let lastClock = group.events.last?.gameClock,
-                       firstClock != lastClock {
-                        Text("\(firstClock) – \(lastClock)")
-                            .font(.caption2.monospacedDigit())
-                            .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.7))
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(DesignSystem.Colors.rowBackground.opacity(0.3))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Collapsed group of \(group.events.count) plays")
-            .accessibilityHint("Double tap to expand")
-
-            // Expanded content
-            if isExpanded {
-                VStack(spacing: 2) {
-                    ForEach(group.events) { event in
-                        Tier3PlayRowView(event: event)
-                    }
-                }
-                .padding(.top, 4)
-                .padding(.leading, 20) // Indent expanded content
-            }
-        }
-    }
-}
-
 /// Container view that renders a TieredPlayGroup appropriately based on tier
 struct TieredPlayGroupView: View {
     let group: TieredPlayGroup
     let homeTeam: String
     let awayTeam: String
-    @Binding var expandedGroups: Set<String>
-
-    private var isExpanded: Binding<Bool> {
-        Binding(
-            get: { expandedGroups.contains(group.id) },
-            set: { newValue in
-                if newValue {
-                    expandedGroups.insert(group.id)
-                } else {
-                    expandedGroups.remove(group.id)
-                }
-            }
-        )
-    }
+    /// Maps event ID → whether home team scored (for accent bar color)
+    var scoringTeamMap: [String: Bool] = [:]
 
     var body: some View {
         switch group.tier {
@@ -250,7 +208,8 @@ struct TieredPlayGroupView: View {
                 Tier1PlayRowView(
                     event: event,
                     homeTeam: homeTeam,
-                    awayTeam: awayTeam
+                    awayTeam: awayTeam,
+                    scoringTeamIsHome: scoringTeamMap[event.id]
                 )
             }
 
@@ -261,16 +220,9 @@ struct TieredPlayGroupView: View {
             }
 
         case .tertiary:
-            // Tier 3: Collapsible group
-            if group.events.count == 1 {
-                // Single event - show as minimal row
-                Tier3PlayRowView(event: group.events[0])
-            } else {
-                // Multiple events - show as collapsible group
-                Tier3CollapsedGroupView(
-                    group: group,
-                    isExpanded: isExpanded
-                )
+            // Tier 3: Always expanded inline
+            ForEach(group.events) { event in
+                Tier3PlayRowView(event: event)
             }
         }
     }
@@ -314,56 +266,33 @@ struct TieredPlayGroupView: View {
     .padding()
 }
 
-#Preview("Tier 3 - Collapsed Group") {
-    Tier3CollapsedGroupView(
-        group: TieredPlayGroup(
-            id: "test",
-            events: [
-                UnifiedTimelineEvent(
-                    from: [
-                        "event_type": "pbp",
-                        "period": 1,
-                        "game_clock": "8:45",
-                        "description": "MISS A. Davis 16' Jump Shot"
-                    ],
-                    index: 0,
-                    sport: "NBA"
-                ),
-                UnifiedTimelineEvent(
-                    from: [
-                        "event_type": "pbp",
-                        "period": 1,
-                        "game_clock": "8:42",
-                        "description": "D. Green defensive rebound"
-                    ],
-                    index: 1,
-                    sport: "NBA"
-                ),
-                UnifiedTimelineEvent(
-                    from: [
-                        "event_type": "pbp",
-                        "period": 1,
-                        "game_clock": "8:30",
-                        "description": "MISS S. Curry 3-pt shot"
-                    ],
-                    index: 2,
-                    sport: "NBA"
-                ),
-                UnifiedTimelineEvent(
-                    from: [
-                        "event_type": "pbp",
-                        "period": 1,
-                        "game_clock": "8:28",
-                        "description": "A. Davis offensive rebound"
-                    ],
-                    index: 3,
-                    sport: "NBA"
-                )
-            ],
-            tier: .tertiary
-        ),
-        isExpanded: .constant(false)
-    )
+#Preview("Tier 3 - Inline") {
+    VStack(spacing: 2) {
+        Tier3PlayRowView(
+            event: UnifiedTimelineEvent(
+                from: [
+                    "event_type": "pbp",
+                    "period": 1,
+                    "game_clock": "8:45",
+                    "description": "MISS A. Davis 16' Jump Shot"
+                ],
+                index: 0,
+                sport: "NBA"
+            )
+        )
+        Tier3PlayRowView(
+            event: UnifiedTimelineEvent(
+                from: [
+                    "event_type": "pbp",
+                    "period": 1,
+                    "game_clock": "8:42",
+                    "description": "D. Green defensive rebound"
+                ],
+                index: 1,
+                sport: "NBA"
+            )
+        )
+    }
     .padding()
 }
 
@@ -400,34 +329,17 @@ struct TieredPlayGroupView: View {
                 )
             )
 
-            Tier3CollapsedGroupView(
-                group: TieredPlayGroup(
-                    id: "test",
-                    events: [
-                        UnifiedTimelineEvent(
-                            from: [
-                                "event_type": "pbp",
-                                "period": 1,
-                                "game_clock": "8:45",
-                                "description": "MISS A. Davis 16' Jump Shot"
-                            ],
-                            index: 0,
-                            sport: "NBA"
-                        ),
-                        UnifiedTimelineEvent(
-                            from: [
-                                "event_type": "pbp",
-                                "period": 1,
-                                "game_clock": "8:42",
-                                "description": "D. Green defensive rebound"
-                            ],
-                            index: 1,
-                            sport: "NBA"
-                        )
+            Tier3PlayRowView(
+                event: UnifiedTimelineEvent(
+                    from: [
+                        "event_type": "pbp",
+                        "period": 1,
+                        "game_clock": "8:45",
+                        "description": "MISS A. Davis 16' Jump Shot"
                     ],
-                    tier: .tertiary
-                ),
-                isExpanded: .constant(false)
+                    index: 0,
+                    sport: "NBA"
+                )
             )
         }
         .padding()

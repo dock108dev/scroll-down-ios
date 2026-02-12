@@ -13,13 +13,53 @@ enum LeagueCode: String, Codable, CaseIterable {
 
 // MARK: - Game Status
 /// Game status as defined in the OpenAPI spec
-enum GameStatus: String, Codable {
+enum GameStatus: RawRepresentable, Codable, Equatable {
     case scheduled
-    case inProgress = "in_progress"
+    case inProgress
     case completed
-    case final = "final"
+    case `final`
     case postponed
     case canceled
+    case unknown(String)
+
+    var rawValue: String {
+        switch self {
+        case .scheduled: return "scheduled"
+        case .inProgress: return "in_progress"
+        case .completed: return "completed"
+        case .final: return "final"
+        case .postponed: return "postponed"
+        case .canceled: return "canceled"
+        case .unknown(let value): return value
+        }
+    }
+
+    init?(rawValue: String) {
+        switch rawValue {
+        case "scheduled": self = .scheduled
+        case "in_progress": self = .inProgress
+        case "completed": self = .completed
+        case "final": self = .final
+        case "postponed": self = .postponed
+        case "canceled": self = .canceled
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = GameStatus(rawValue: rawValue) ?? .unknown(rawValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    static func == (lhs: GameStatus, rhs: GameStatus) -> Bool {
+        lhs.rawValue == rhs.rawValue
+    }
 
     var isCompleted: Bool {
         self == .completed || self == .final

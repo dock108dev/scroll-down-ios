@@ -4,7 +4,7 @@ import Foundation
 struct Game: Codable, Identifiable, Hashable {
     let id: Int
     let leagueCode: String
-    let season: Int
+    let season: Int?
     let seasonType: String?
     let gameDate: String
     let homeTeam: String

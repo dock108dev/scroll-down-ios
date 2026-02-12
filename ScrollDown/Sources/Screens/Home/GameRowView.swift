@@ -37,7 +37,7 @@ struct GameRowView: View {
             return .available
         case .scheduled:
             return .pregame
-        case .inProgress, .postponed, .canceled:
+        case .inProgress, .postponed, .canceled, .unknown:
             return .upcoming
         }
     }

@@ -8,7 +8,6 @@ struct FullPlayByPlayView: View {
     @ObservedObject var viewModel: GameDetailViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var collapsedPeriods: Set<Int> = []
-    @State private var expandedTier3Groups: Set<String> = []
 
     var body: some View {
         NavigationStack {
@@ -46,7 +45,6 @@ struct FullPlayByPlayView: View {
                 // All periods collapsed by default - user expands what they want
                 let allPeriods = Set(groupedPeriods.map { $0.period })
                 collapsedPeriods = allPeriods
-                expandedTier3Groups = []
             }
         }
     }
@@ -81,6 +79,26 @@ struct FullPlayByPlayView: View {
             sport: viewModel.game?.leagueCode
         )
 
+        // Compute scoring team for each event by tracking score changes
+        var scoringTeamMap: [String: Bool] = [:]
+        var prevHome: Int?
+        var prevAway: Int?
+        for event in group.events {
+            if let home = event.homeScore, let away = event.awayScore {
+                if let ph = prevHome, let pa = prevAway {
+                    let homeDelta = home - ph
+                    let awayDelta = away - pa
+                    if homeDelta > 0 && awayDelta == 0 {
+                        scoringTeamMap[event.id] = true   // home scored
+                    } else if awayDelta > 0 && homeDelta == 0 {
+                        scoringTeamMap[event.id] = false  // away scored
+                    }
+                }
+                prevHome = home
+                prevAway = away
+            }
+        }
+
         // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
         let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
@@ -108,7 +126,7 @@ struct FullPlayByPlayView: View {
                         group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
                         awayTeam: viewModel.game?.awayTeam ?? "Away",
-                        expandedGroups: $expandedTier3Groups
+                        scoringTeamMap: scoringTeamMap
                     )
                 }
             }

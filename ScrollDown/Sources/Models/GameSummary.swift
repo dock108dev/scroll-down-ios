@@ -184,6 +184,8 @@ extension GameSummary {
             return Formatting.postponedText
         case .canceled:
             return Formatting.canceledText
+        case .unknown:
+            return formattedDate
         }
     }
 

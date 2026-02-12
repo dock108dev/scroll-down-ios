@@ -121,6 +121,8 @@ struct GameHeaderView: View {
             return .blue
         case .postponed, .canceled:
             return .orange
+        case .unknown:
+            return .gray
         }
     }
 
@@ -144,6 +146,8 @@ struct GameHeaderView: View {
             return "Postponed"
         case .canceled:
             return "Canceled"
+        case .unknown:
+            return "Unknown"
         }
     }
 
@@ -168,6 +172,8 @@ struct GameHeaderView: View {
             return "Game postponed"
         case .canceled:
             return "Game canceled"
+        case .unknown:
+            return "Game status unknown"
         }
     }
 }
@@ -333,11 +339,7 @@ enum TeamAbbreviations {
         if let known = abbreviations[teamName] {
             return known
         }
-        // Default: use first 3 letters of last word (team nickname)
-        let words = teamName.split(separator: " ")
-        if let lastWord = words.last {
-            return String(lastWord.prefix(3)).uppercased()
-        }
+        // Default: first 3 characters of the team name (e.g. "George Mason Patriots" → "GEO")
         return String(teamName.prefix(3)).uppercased()
     }
 }
