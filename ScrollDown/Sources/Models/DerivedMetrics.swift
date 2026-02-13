@@ -13,18 +13,39 @@ struct DerivedMetrics {
         self.dict = raw
     }
 
-    // MARK: - Pregame Odds Labels
+    // MARK: - Closing (Pregame) Odds Labels
 
     var pregameSpreadLabel: String? { string("pregame_spread_label") }
     var pregameTotalLabel: String? { string("pregame_total_label") }
     var pregameMLHomeLabel: String? { string("pregame_ml_home_label") }
     var pregameMLAwayLabel: String? { string("pregame_ml_away_label") }
 
-    // MARK: - Outcome Labels
+    // MARK: - Opening Odds Labels
+
+    var openingSpreadLabel: String? { string("opening_spread_label") }
+    var openingTotalLabel: String? { string("opening_total_label") }
+    var openingMLHomeLabel: String? { string("opening_ml_home_label") }
+    var openingMLAwayLabel: String? { string("opening_ml_away_label") }
+
+    // MARK: - Closing Outcome Labels
 
     var spreadOutcomeLabel: String? { string("spread_outcome_label") }
     var totalOutcomeLabel: String? { string("total_outcome_label") }
     var mlOutcomeLabel: String? { string("ml_outcome_label") }
+
+    // MARK: - Opening Outcome Labels
+
+    var openingSpreadOutcomeLabel: String? { string("opening_spread_outcome_label") }
+    var openingTotalOutcomeLabel: String? { string("opening_total_outcome_label") }
+    var openingMlOutcomeLabel: String? { string("opening_ml_outcome_label") }
+
+    // MARK: - Opening Outcome Booleans
+
+    var openingSpreadCovered: Bool? { bool("opening_spread_covered") }
+    var openingSpreadPush: Bool? { bool("opening_spread_push") }
+    var openingTotalWentOver: Bool? { bool("opening_total_went_over") }
+    var openingTotalPush: Bool? { bool("opening_total_push") }
+    var openingMlFavoriteWon: Bool? { bool("opening_ml_favorite_won") }
 
     // MARK: - Outcome Booleans
 

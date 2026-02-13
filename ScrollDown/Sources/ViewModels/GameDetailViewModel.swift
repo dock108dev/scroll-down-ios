@@ -117,6 +117,14 @@ final class GameDetailViewModel: ObservableObject {
             }
             detail = response
             injectTeamColors(from: response.game)
+            logger.info("📊 Game \(gameId): teamStats count=\(response.teamStats.count), playerStats count=\(response.playerStats.count)")
+            if response.teamStats.isEmpty {
+                logger.info("📊 Game \(gameId): No teamStats returned by API")
+            } else {
+                for ts in response.teamStats {
+                    logger.info("📊 Game \(gameId): TeamStat team=\(ts.team, privacy: .public) isHome=\(ts.isHome) statKeys=[\(Array(ts.stats.keys).sorted().joined(separator: ", "), privacy: .public)]")
+                }
+            }
             loadState = .loaded
         } catch {
             errorMessage = error.localizedDescription
@@ -569,14 +577,116 @@ final class GameDetailViewModel: ObservableObject {
         )
     }
 
+    // MARK: - Wrap-up Odds Summary
+
+    /// Odds line + outcome for display in the wrap-up section.
+    struct WrapUpOddsLine: Identifiable {
+        let id: String
+        let label: String
+        let lineType: String  // "Open" or "Close"
+        let line: String
+        let outcome: String?
+    }
+
+    /// Build wrap-up odds: opening + closing row for spread, O/U, ML (6 rows).
+    var wrapUpOddsLines: [WrapUpOddsLine] {
+        guard let detail else { return [] }
+        let m = DerivedMetrics(detail.derivedMetrics)
+        var lines: [WrapUpOddsLine] = []
+
+        // Spread – opening then closing
+        if let openSpread = m.openingSpreadLabel {
+            lines.append(WrapUpOddsLine(
+                id: "spread-open", label: "Spread", lineType: "Open", line: openSpread,
+                outcome: m.openingSpreadOutcomeLabel ?? m.spreadOutcomeLabel
+            ))
+        }
+        if let closeSpread = m.pregameSpreadLabel {
+            lines.append(WrapUpOddsLine(
+                id: "spread-close", label: "Spread", lineType: "Close", line: closeSpread,
+                outcome: m.spreadOutcomeLabel
+            ))
+        }
+
+        // O/U – opening then closing
+        if let openTotal = m.openingTotalLabel {
+            lines.append(WrapUpOddsLine(
+                id: "total-open", label: "O/U", lineType: "Open", line: openTotal,
+                outcome: m.openingTotalOutcomeLabel ?? m.totalOutcomeLabel
+            ))
+        }
+        if let closeTotal = m.pregameTotalLabel {
+            lines.append(WrapUpOddsLine(
+                id: "total-close", label: "O/U", lineType: "Close", line: closeTotal,
+                outcome: m.totalOutcomeLabel
+            ))
+        }
+
+        // ML – opening then closing
+        if let openMLHome = m.openingMLHomeLabel, let openMLAway = m.openingMLAwayLabel {
+            lines.append(WrapUpOddsLine(
+                id: "ml-open", label: "ML", lineType: "Open", line: "\(openMLAway) / \(openMLHome)",
+                outcome: m.openingMlOutcomeLabel ?? m.mlOutcomeLabel
+            ))
+        }
+        if let mlHome = m.pregameMLHomeLabel, let mlAway = m.pregameMLAwayLabel {
+            lines.append(WrapUpOddsLine(
+                id: "ml-close", label: "ML", lineType: "Close", line: "\(mlAway) / \(mlHome)",
+                outcome: m.mlOutcomeLabel
+            ))
+        }
+
+        return lines
+    }
+
     // MARK: - Private Helpers
 
     private func timelineGameId(for gameId: Int) -> Int {
         gameId > 0 ? gameId : ViewModelConstants.defaultTimelineGameId
     }
 
+    /// Key aliases: maps our canonical key → alternative names the API might use
+    private static let statKeyAliases: [String: [String]] = [
+        "fg_pct": ["fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"],
+        "fg": ["fgm", "fieldGoalsMade", "field_goals_made"],
+        "fga": ["fieldGoalsAttempted", "field_goals_attempted"],
+        "fg3_pct": ["fg3Pct", "threePtPct", "three_pt_pct", "fg3_percentage"],
+        "fg3": ["fg3m", "threePointersMade", "three_pointers_made"],
+        "fg3a": ["threePointersAttempted", "three_pointers_attempted"],
+        "ft_pct": ["ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"],
+        "ft": ["ftm", "freeThrowsMade", "free_throws_made"],
+        "fta": ["freeThrowsAttempted", "free_throws_attempted"],
+        "trb": ["reb", "rebounds", "totalRebounds", "total_rebounds"],
+        "orb": ["offReb", "offensiveRebounds", "offensive_rebounds"],
+        "drb": ["defReb", "defensiveRebounds", "defensive_rebounds"],
+        "ast": ["assists"],
+        "stl": ["steals"],
+        "blk": ["blocks"],
+        "tov": ["turnovers", "to"],
+        "pf": ["personalFouls", "personal_fouls", "fouls"],
+        "shots_on_goal": ["shotsOnGoal", "sog"],
+        "points": ["pts"],
+        "penalty_minutes": ["penaltyMinutes", "pim"],
+    ]
+
     private func statValue(for key: String, in stats: [String: AnyCodable]) -> Double? {
-        guard let value = stats[key]?.value else { return nil }
+        // Try canonical key first
+        if let result = extractDouble(from: stats[key]) {
+            return result
+        }
+        // Try aliases
+        if let aliases = Self.statKeyAliases[key] {
+            for alias in aliases {
+                if let result = extractDouble(from: stats[alias]) {
+                    return result
+                }
+            }
+        }
+        return nil
+    }
+
+    private func extractDouble(from anyCodable: AnyCodable?) -> Double? {
+        guard let value = anyCodable?.value else { return nil }
         if let number = value as? NSNumber {
             return number.doubleValue
         }

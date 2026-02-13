@@ -128,13 +128,12 @@ struct MiniBoxScoreView: View {
             .frame(width: 70, alignment: .leading)
 
             // Players
-            HStack(spacing: 20) {
+            HStack(spacing: 12) {
                 ForEach(players.prefix(2), id: \.name) { player in
                     playerCell(player: player)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
-            Spacer(minLength: 0)
         }
     }
 
@@ -161,7 +160,7 @@ struct MiniBoxScoreView: View {
                     .lineLimit(1)
             }
         }
-        .frame(width: 80, alignment: .leading)
+        .frame(alignment: .leading)
     }
 
     private func teamAbbreviation(_ fullName: String) -> String {

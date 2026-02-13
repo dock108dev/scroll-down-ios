@@ -122,7 +122,7 @@ extension GameDetailView {
             HStack(spacing: 8) {
                 teamFilterButton(title: "All", team: nil)
                 ForEach(teams, id: \.self) { team in
-                    teamFilterButton(title: shortTeamName(team), team: team)
+                    teamFilterButton(title: TeamAbbreviations.abbreviation(for: team), team: team)
                 }
             }
         }
@@ -161,7 +161,7 @@ extension GameDetailView {
             Text("Player")
                 .frame(width: 100, alignment: .leading)
             Text("")
-                .frame(width: 36)
+                .frame(width: 40)
         }
         .font(DesignSystem.Typography.statLabel)
         .foregroundColor(DesignSystem.TextColor.secondary)
@@ -189,7 +189,7 @@ extension GameDetailView {
                 .padding(.vertical, 2)
                 .background(teamColor.opacity(0.15))
                 .clipShape(Capsule())
-                .frame(width: 36)
+                .frame(width: 40)
         }
         .frame(height: 36)
         .padding(.leading, DesignSystem.Spacing.elementPadding)

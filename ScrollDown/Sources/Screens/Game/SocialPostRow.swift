@@ -20,7 +20,7 @@ struct SocialPostRow: View {
         post.imageUrl != nil || post.videoUrl != nil || post.hasVideo
     }
 
-    private var thumbnailSize: CGFloat { 120 }
+    private var thumbnailSize: CGFloat { 240 }
 
     var body: some View {
         Button {

@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
     let completedGameIds: [Int]
+    @AppStorage("appTheme") private var appTheme = "system"
     @AppStorage("preferredSportsbook") private var preferredSportsbook = "DraftKings"
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
@@ -33,6 +34,15 @@ struct SettingsView: View {
 
     var body: some View {
         List {
+            Section("Appearance") {
+                Picker("Theme", selection: $appTheme) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .pickerStyle(.segmented)
+            }
+
             Section("Recaps — Default Expanded") {
                 ForEach(homeSectionItems, id: \.key) { item in
                     Button {
