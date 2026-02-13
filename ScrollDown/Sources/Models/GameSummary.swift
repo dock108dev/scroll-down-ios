@@ -16,6 +16,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
         case hasBoxscore, hasPlayerStats, hasOdds, hasSocial, hasPbp, hasFlow
         case playCount, socialPostCount, hasRequiredData, scrapeVersion
         case lastScrapedAt, lastIngestedAt, lastPbpAt, lastSocialAt
+        case homeTeamColorLight, homeTeamColorDark, awayTeamColorLight, awayTeamColorDark
     }
     let awayTeam: String
     let homeScore: Int?
@@ -34,6 +35,10 @@ struct GameSummary: Codable, Identifiable, Hashable {
     let lastIngestedAt: String?
     let lastPbpAt: String?
     let lastSocialAt: String?
+    let homeTeamColorLight: String?
+    let homeTeamColorDark: String?
+    let awayTeamColorLight: String?
+    let awayTeamColorDark: String?
 
     // Convenience init for mock data generation
     init(
@@ -55,7 +60,11 @@ struct GameSummary: Codable, Identifiable, Hashable {
         socialPostCount: Int?,
         hasRequiredData: Bool?,
         scrapeVersion: Int?,
-        lastScrapedAt: String?
+        lastScrapedAt: String?,
+        homeTeamColorLight: String? = nil,
+        homeTeamColorDark: String? = nil,
+        awayTeamColorLight: String? = nil,
+        awayTeamColorDark: String? = nil
     ) {
         self.id = id
         self.leagueCode = leagueCode
@@ -79,6 +88,10 @@ struct GameSummary: Codable, Identifiable, Hashable {
         self.lastIngestedAt = nil
         self.lastPbpAt = nil
         self.lastSocialAt = nil
+        self.homeTeamColorLight = homeTeamColorLight
+        self.homeTeamColorDark = homeTeamColorDark
+        self.awayTeamColorLight = awayTeamColorLight
+        self.awayTeamColorDark = awayTeamColorDark
     }
 
     func hash(into hasher: inout Hasher) {

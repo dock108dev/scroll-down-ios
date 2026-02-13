@@ -223,9 +223,17 @@ struct GameFlowResponse: Decodable {
     let blocks: [FlowBlock]
     let validationPassed: Bool
     let validationErrors: [String]
+    let homeTeam: String?
+    let awayTeam: String?
+    let homeTeamColorLight: String?
+    let homeTeamColorDark: String?
+    let awayTeamColorLight: String?
+    let awayTeamColorDark: String?
 
     enum CodingKeys: String, CodingKey {
         case gameId, sport, plays, blocks, validationPassed, validationErrors
+        case homeTeam, awayTeam
+        case homeTeamColorLight, homeTeamColorDark, awayTeamColorLight, awayTeamColorDark
     }
 
     init(from decoder: Decoder) throws {
@@ -236,16 +244,31 @@ struct GameFlowResponse: Decodable {
         validationPassed = try container.decodeIfPresent(Bool.self, forKey: .validationPassed) ?? true
         validationErrors = try container.decodeIfPresent([String].self, forKey: .validationErrors) ?? []
         blocks = try container.decodeIfPresent([FlowBlock].self, forKey: .blocks) ?? []
+        homeTeam = try container.decodeIfPresent(String.self, forKey: .homeTeam)
+        awayTeam = try container.decodeIfPresent(String.self, forKey: .awayTeam)
+        homeTeamColorLight = try container.decodeIfPresent(String.self, forKey: .homeTeamColorLight)
+        homeTeamColorDark = try container.decodeIfPresent(String.self, forKey: .homeTeamColorDark)
+        awayTeamColorLight = try container.decodeIfPresent(String.self, forKey: .awayTeamColorLight)
+        awayTeamColorDark = try container.decodeIfPresent(String.self, forKey: .awayTeamColorDark)
     }
 
     init(gameId: Int, sport: String? = nil, plays: [FlowPlay] = [], blocks: [FlowBlock] = [],
-         validationPassed: Bool = true, validationErrors: [String] = []) {
+         validationPassed: Bool = true, validationErrors: [String] = [],
+         homeTeam: String? = nil, awayTeam: String? = nil,
+         homeTeamColorLight: String? = nil, homeTeamColorDark: String? = nil,
+         awayTeamColorLight: String? = nil, awayTeamColorDark: String? = nil) {
         self.gameId = gameId
         self.sport = sport
         self.plays = plays
         self.blocks = blocks
         self.validationPassed = validationPassed
         self.validationErrors = validationErrors
+        self.homeTeam = homeTeam
+        self.awayTeam = awayTeam
+        self.homeTeamColorLight = homeTeamColorLight
+        self.homeTeamColorDark = homeTeamColorDark
+        self.awayTeamColorLight = awayTeamColorLight
+        self.awayTeamColorDark = awayTeamColorDark
     }
 }
 

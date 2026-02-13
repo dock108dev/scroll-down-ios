@@ -36,6 +36,7 @@ extension HomeView {
 
         // 4. Silent swap — apply results + save to cache
         applyHomeSectionResults(results)
+        injectTeamColorsFromSummaries(results)
         updateLastUpdatedAt(from: results)
         saveSectionsToCache(results, cache: cache)
 
@@ -155,6 +156,21 @@ extension HomeView {
         for result in results where result.errorMessage == nil {
             cache.save(games: result.games, lastUpdatedAt: result.lastUpdatedAt,
                        range: result.range, league: selectedLeague)
+        }
+    }
+
+    /// Push API-provided team colors from game summaries into the shared cache.
+    private func injectTeamColorsFromSummaries(_ results: [HomeSectionResult]) {
+        let cache = TeamColorCache.shared
+        for result in results {
+            for game in result.games {
+                if let light = game.homeTeamColorLight, let dark = game.homeTeamColorDark {
+                    cache.inject(teamName: game.homeTeam, lightHex: light, darkHex: dark)
+                }
+                if let light = game.awayTeamColorLight, let dark = game.awayTeamColorDark {
+                    cache.inject(teamName: game.awayTeam, lightHex: light, darkHex: dark)
+                }
+            }
         }
     }
 }
