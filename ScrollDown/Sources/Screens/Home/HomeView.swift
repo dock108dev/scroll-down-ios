@@ -7,6 +7,7 @@ import UIKit
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State var earlierSection: HomeSectionState
     @State var yesterdaySection: HomeSectionState
     @State var todaySection: HomeSectionState
@@ -17,7 +18,7 @@ struct HomeView: View {
     @State private var showingAdminSettings = false // Beta admin access
     @State private var hasLoadedInitialData = false // Prevents reload on back navigation
     @State private var viewMode: HomeViewMode = .recaps
-    @State private var refreshId = UUID()
+    @State var searchText = ""
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
     private let refreshTimer = Timer.publish(every: 900, on: .main, in: .common).autoconnect()
@@ -74,6 +75,14 @@ struct HomeView: View {
             guard hasLoadedInitialData, viewMode == .recaps else { return }
             Task { await loadGames(scrollToToday: false) }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active, hasLoadedInitialData else { return }
+            let cache = HomeGameCache.shared
+            let dayChanged = !cache.isSameCalendarDay(range: .current, league: selectedLeague)
+            let cacheStale = !cache.isFresh(range: .current, league: selectedLeague, maxAge: 900)
+            guard dayChanged || cacheStale else { return }
+            Task { await loadGames(scrollToToday: dayChanged) }
+        }
     }
 
     // MARK: - Subviews
@@ -123,6 +132,32 @@ struct HomeView: View {
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
                 }
                 .background(HomeTheme.background)
+
+                // Search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                    TextField("Search teams…", text: $searchText)
+                        .font(.subheadline)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 4)
             } else if viewMode == .odds {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: HomeLayout.filterSpacing) {
@@ -254,13 +289,11 @@ struct HomeView: View {
                         sectionContent(for: tomorrowSection)
                     }
                 }
-                .id(refreshId)
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
             }
             .refreshable {
                 await loadGames(scrollToToday: false)
             }
-            .onAppear { refreshId = UUID() }
             .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
                 withAnimation(.easeOut(duration: 0.3)) {
                     proxy.scrollTo(HomeStrings.sectionYesterday, anchor: .top)

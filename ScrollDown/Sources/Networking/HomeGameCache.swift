@@ -64,6 +64,21 @@ final class HomeGameCache {
         }
     }
 
+    /// Whether the cached section was written on the same calendar day (US/Eastern).
+    /// If the day rolled over, time-relative sections like "today" are stale.
+    func isSameCalendarDay(range: GameRange, league: LeagueCode?) -> Bool {
+        guard let cached = load(range: range, league: league) else { return false }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "US/Eastern") ?? .current
+        return cal.isDateInToday(cached.cachedAt)
+    }
+
+    /// Whether the cached section is younger than `maxAge` seconds.
+    func isFresh(range: GameRange, league: LeagueCode?, maxAge: TimeInterval = 900) -> Bool {
+        guard let cached = load(range: range, league: league) else { return false }
+        return Date().timeIntervalSince(cached.cachedAt) < maxAge
+    }
+
     private func fileURL(for range: GameRange, league: LeagueCode?) -> URL {
         let key = "\(range.rawValue)-\(league?.rawValue ?? "all")"
         return cacheDir.appendingPathComponent("\(key).json")

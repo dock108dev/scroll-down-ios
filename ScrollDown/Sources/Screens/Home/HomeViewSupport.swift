@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Toggle between Recaps (game feed) and Odds (FairBet) in HomeView
 enum HomeViewMode: String, CaseIterable, Identifiable {
-    case recaps = "Schedule & Results"
+    case recaps = "Games"
     case odds = "Current Odds"
     case settings = "Settings"
 

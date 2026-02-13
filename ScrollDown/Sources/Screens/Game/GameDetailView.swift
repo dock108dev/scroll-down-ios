@@ -233,12 +233,14 @@ struct GameDetailView: View {
                                     SectionSpacer(.medium)
                                 }
 
-                                // Flow section (flow blocks or PBP)
-                                VStack(spacing: 0) {
-                                    sectionAnchor(for: .timeline)
-                                    timelineSection(using: proxy)
+                                // Game Flow section - only when flow data exists
+                                if viewModel.hasFlowData {
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .timeline)
+                                        timelineSection(using: proxy)
+                                    }
+                                    .background(sectionFrameTracker(for: .timeline))
                                 }
-                                .background(sectionFrameTracker(for: .timeline))
 
                                 // Player Stats - only if data exists
                                 if !viewModel.playerStats.isEmpty {

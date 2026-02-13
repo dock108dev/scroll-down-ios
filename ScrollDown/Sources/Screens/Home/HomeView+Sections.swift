@@ -26,10 +26,20 @@ extension HomeView {
                         .tracking(0.8)
 
                     if !isExpanded.wrappedValue && !section.isLoading && !section.games.isEmpty {
+                        let filteredCount: Int = {
+                            let query = searchText.trimmingCharacters(in: .whitespaces)
+                            guard !query.isEmpty else { return section.games.count }
+                            return section.games.filter { game in
+                                game.homeTeam.localizedCaseInsensitiveContains(query)
+                                || game.awayTeam.localizedCaseInsensitiveContains(query)
+                                || (game.homeTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+                                || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+                            }.count
+                        }()
                         let readCount = section.readCount
                         Text(readCount > 0
-                             ? "\(section.games.count) games \u{00B7} \(readCount) read"
-                             : "\(section.games.count) games")
+                             ? "\(filteredCount) games \u{00B7} \(readCount) read"
+                             : "\(filteredCount) games")
                             .font(.caption2)
                             .foregroundColor(Color(.tertiaryLabel))
                     }
@@ -51,7 +61,17 @@ extension HomeView {
 
     @ViewBuilder
     func sectionContent(for section: HomeSectionState, completedOnly: Bool = false) -> some View {
-        let gamesToShow = completedOnly ? section.completedGames : section.games
+        let gamesToShow: [GameSummary] = {
+            let base = completedOnly ? section.completedGames : section.games
+            let query = searchText.trimmingCharacters(in: .whitespaces)
+            guard !query.isEmpty else { return base }
+            return base.filter { game in
+                game.homeTeam.localizedCaseInsensitiveContains(query)
+                || game.awayTeam.localizedCaseInsensitiveContains(query)
+                || (game.homeTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+                || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+            }
+        }()
 
         if section.isLoading {
             // Minimal loading indicator - just a subtle spinner

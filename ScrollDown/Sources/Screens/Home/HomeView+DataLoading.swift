@@ -127,25 +127,31 @@ extension HomeView {
     }
 
     /// Load cached sections. Returns true if at least one section had cached data.
+    /// Skips sections whose cache was written on a different calendar day (US/Eastern),
+    /// since time-relative labels like "today" would be wrong.
     func loadCachedSections(from cache: HomeGameCache) -> Bool {
         var hasCachedData = false
 
-        if let cached = cache.load(range: .earlier, league: selectedLeague) {
+        if cache.isSameCalendarDay(range: .earlier, league: selectedLeague),
+           let cached = cache.load(range: .earlier, league: selectedLeague) {
             earlierSection.games = cached.games
             earlierSection.isLoading = false
             hasCachedData = true
         }
-        if let cached = cache.load(range: .yesterday, league: selectedLeague) {
+        if cache.isSameCalendarDay(range: .yesterday, league: selectedLeague),
+           let cached = cache.load(range: .yesterday, league: selectedLeague) {
             yesterdaySection.games = cached.games
             yesterdaySection.isLoading = false
             hasCachedData = true
         }
-        if let cached = cache.load(range: .current, league: selectedLeague) {
+        if cache.isSameCalendarDay(range: .current, league: selectedLeague),
+           let cached = cache.load(range: .current, league: selectedLeague) {
             todaySection.games = cached.games
             todaySection.isLoading = false
             hasCachedData = true
         }
-        if let cached = cache.load(range: .tomorrow, league: selectedLeague) {
+        if cache.isSameCalendarDay(range: .tomorrow, league: selectedLeague),
+           let cached = cache.load(range: .tomorrow, league: selectedLeague) {
             tomorrowSection.games = cached.games
             tomorrowSection.isLoading = false
             hasCachedData = true

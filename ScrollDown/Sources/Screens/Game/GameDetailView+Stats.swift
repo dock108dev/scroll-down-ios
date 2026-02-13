@@ -421,8 +421,18 @@ extension GameDetailView {
         return "\(m)-\(a)"
     }
 
+    private func resolveRawStat(_ stat: PlayerStat, _ key: String) -> AnyCodable? {
+        if let value = stat.rawStats[key] { return value }
+        if let aliases = GameDetailViewModel.statKeyAliases[key] {
+            for alias in aliases {
+                if let value = stat.rawStats[alias] { return value }
+            }
+        }
+        return nil
+    }
+
     private func rawStatInt(_ stat: PlayerStat, _ key: String) -> Int? {
-        guard let value = stat.rawStats[key] else { return nil }
+        guard let value = resolveRawStat(stat, key) else { return nil }
         if let intVal = value.value as? Int { return intVal }
         if let doubleVal = value.value as? Double { return Int(doubleVal) }
         if let strVal = value.value as? String, let parsed = Int(strVal) { return parsed }
@@ -430,7 +440,7 @@ extension GameDetailView {
     }
 
     private func rawStatString(_ stat: PlayerStat, _ key: String) -> String? {
-        guard let value = stat.rawStats[key] else { return nil }
+        guard let value = resolveRawStat(stat, key) else { return nil }
         if let strVal = value.value as? String { return strVal }
         if let intVal = value.value as? Int { return String(intVal) }
         if let doubleVal = value.value as? Double { return String(Int(doubleVal)) }

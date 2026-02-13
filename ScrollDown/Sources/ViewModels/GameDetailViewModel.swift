@@ -255,10 +255,11 @@ final class GameDetailViewModel: ObservableObject {
             let isKeyPlay = keyPlayIds.contains(play.playId)
             var scoringTeam: String?
             let isScoringPlay: Bool = {
-                guard let home = play.homeScore, let away = play.awayScore, index > 0 else { return false }
-                let prev = flowPlays[index - 1]
-                let homeChanged = home != (prev.homeScore ?? 0)
-                let awayChanged = away != (prev.awayScore ?? 0)
+                guard let home = play.homeScore, let away = play.awayScore else { return false }
+                let prevHome = index > 0 ? (flowPlays[index - 1].homeScore ?? 0) : 0
+                let prevAway = index > 0 ? (flowPlays[index - 1].awayScore ?? 0) : 0
+                let homeChanged = home != prevHome
+                let awayChanged = away != prevAway
                 if homeChanged { scoringTeam = homeTeamName }
                 else if awayChanged { scoringTeam = awayTeamName }
                 return homeChanged || awayChanged
@@ -646,16 +647,16 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     /// Key aliases: maps our canonical key → alternative names the API might use
-    private static let statKeyAliases: [String: [String]] = [
+    static let statKeyAliases: [String: [String]] = [
         "fg_pct": ["fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"],
-        "fg": ["fgm", "fieldGoalsMade", "field_goals_made"],
-        "fga": ["fieldGoalsAttempted", "field_goals_attempted"],
-        "fg3_pct": ["fg3Pct", "threePtPct", "three_pt_pct", "fg3_percentage"],
-        "fg3": ["fg3m", "threePointersMade", "three_pointers_made"],
-        "fg3a": ["threePointersAttempted", "three_pointers_attempted"],
+        "fg": ["fgm", "fg_made", "fgMade", "fieldGoalsMade", "field_goals_made"],
+        "fga": ["fg_attempted", "fgAttempted", "fieldGoalsAttempted", "field_goals_attempted"],
+        "fg3_pct": ["fg3Pct", "threePtPct", "three_pct", "three_pt_pct", "fg3_percentage"],
+        "fg3": ["fg3m", "fg3Made", "three_made", "threePointersMade", "three_pointers_made", "threePointFieldGoalsMade"],
+        "fg3a": ["fg3Attempted", "three_attempted", "threePointersAttempted", "three_pointers_attempted", "threePointFieldGoalsAttempted"],
         "ft_pct": ["ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"],
-        "ft": ["ftm", "freeThrowsMade", "free_throws_made"],
-        "fta": ["freeThrowsAttempted", "free_throws_attempted"],
+        "ft": ["ftm", "ft_made", "ftMade", "freeThrowsMade", "free_throws_made"],
+        "fta": ["ft_attempted", "ftAttempted", "freeThrowsAttempted", "free_throws_attempted"],
         "trb": ["reb", "rebounds", "totalRebounds", "total_rebounds"],
         "orb": ["offReb", "offensiveRebounds", "offensive_rebounds"],
         "drb": ["defReb", "defensiveRebounds", "defensive_rebounds"],

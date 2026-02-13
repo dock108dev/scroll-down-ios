@@ -1,36 +1,14 @@
 import SwiftUI
 
 extension GameDetailView {
-    /// Timeline section implements content hierarchy:
-    /// - Game Flow: Card container for visual consistency with other sections
-    /// - PBP Timeline: Card container, collapsed by default
+    /// Game Flow section - only rendered when flow data exists.
+    /// PBP is accessible via the top-bar button instead.
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: TierLayout.Primary.momentSpacing) {
-            // Game Flow - wrapped in card for visual consistency
-            if viewModel.hasFlowData {
-                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
-                    GameFlowView(
-                        viewModel: viewModel,
-                        isCompactFlowExpanded: $isCompactFlowExpanded
-                    )
-                }
-            }
-            // PBP Timeline (Secondary - Card Container)
-            else if viewModel.hasPbpData {
-                Tier2Container(title: "Play-by-Play", isExpanded: $isTimelineExpanded) {
-                    unifiedTimelineView
-                }
-            }
-            // Loading/Empty states
-            else if viewModel.isLoadingAnyData {
-                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
-                    timelineLoadingView
-                }
-            } else {
-                FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
-                    comingSoonView
-                }
-            }
+        FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
+            GameFlowView(
+                viewModel: viewModel,
+                isCompactFlowExpanded: $isCompactFlowExpanded
+            )
         }
         .background(
             GeometryReader { proxy in

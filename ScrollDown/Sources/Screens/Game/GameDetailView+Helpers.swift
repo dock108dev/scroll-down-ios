@@ -263,8 +263,10 @@ extension GameDetailView {
             sections.append(.overview)
         }
 
-        // Flow - always show (flow blocks or PBP)
-        sections.append(.timeline)
+        // Game Flow - only show when flow data exists
+        if viewModel.hasFlowData {
+            sections.append(.timeline)
+        }
 
         // Player Stats - if we have player stats data
         if !viewModel.playerStats.isEmpty {
@@ -320,7 +322,7 @@ extension GameDetailView {
                 .accessibilityLabel("Section navigation")
             }
 
-            if viewModel.hasUnifiedTimeline {
+            if viewModel.hasPbpData || viewModel.hasUnifiedTimeline {
                 Spacer(minLength: 8)
 
                 Button {

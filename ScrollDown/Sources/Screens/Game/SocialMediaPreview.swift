@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 
 // MARK: - Shared Social Media Preview
@@ -52,31 +53,10 @@ struct SocialMediaPreview: View {
                 } else {
                     mediaContent
                 }
-            } else if videoUrl != nil {
-                let videoContent = HStack(spacing: 6) {
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.title3)
-                    Text("Watch video")
-                        .font(.subheadline.weight(.medium))
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption)
-                }
-                .foregroundColor(.secondary)
-                .padding(12)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-
-                if tappable {
-                    Button {
-                        showingSafari = true
-                    } label: {
-                        videoContent
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    videoContent
-                }
+            } else if let videoUrlString = videoUrl, let url = URL(string: videoUrlString) {
+                InlineVideoPlayer(url: url)
+            } else if videoUrl != nil, let postUrl {
+                WatchOnXButton(postUrl: postUrl)
             }
         }
         .sheet(isPresented: $showingSafari) {

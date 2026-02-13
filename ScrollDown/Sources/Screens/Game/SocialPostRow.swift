@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 
 // MARK: - Social Post Display Mode
@@ -16,8 +17,12 @@ struct SocialPostRow: View {
 
     @State private var showingSafari = false
 
-    private var hasMedia: Bool {
-        post.imageUrl != nil || post.videoUrl != nil || post.hasVideo
+    private var hasImageMedia: Bool {
+        post.imageUrl != nil
+    }
+
+    private var hasVideoOnly: Bool {
+        !hasImageMedia && (post.videoUrl != nil || post.hasVideo)
     }
 
     private var thumbnailSize: CGFloat { 240 }
@@ -30,10 +35,9 @@ struct SocialPostRow: View {
                 // Attribution header
                 attributionHeader
 
-                // Two-column layout: text left, media thumbnail right
-                if hasMedia {
+                // Two-column layout for image posts: text left, image right
+                if hasImageMedia {
                     HStack(alignment: .top, spacing: 10) {
-                        // Text column
                         if let text = post.tweetText {
                             Text(Self.sanitizeTweetText(text))
                                 .font(.subheadline)
@@ -45,7 +49,6 @@ struct SocialPostRow: View {
                             Spacer()
                         }
 
-                        // Thumbnail column
                         mediaThumbnail
                     }
                 } else if let text = post.tweetText {
@@ -54,6 +57,11 @@ struct SocialPostRow: View {
                         .foregroundColor(DesignSystem.TextColor.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
+                }
+
+                // Video below text (full width) when no image thumbnail
+                if hasVideoOnly {
+                    videoContent
                 }
 
                 // Engagement metrics (standard mode only)
@@ -80,7 +88,7 @@ struct SocialPostRow: View {
         }
     }
 
-    // MARK: - Media Thumbnail
+    // MARK: - Media Thumbnail (image posts only)
 
     @ViewBuilder
     private var mediaThumbnail: some View {
@@ -110,21 +118,17 @@ struct SocialPostRow: View {
                         }
                 }
             }
-        } else if post.videoUrl != nil || post.hasVideo {
-            // Video without thumbnail image — styled as a tappable video card
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray5))
-                    .frame(width: thumbnailSize, height: thumbnailSize)
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Image(systemName: "play.fill")
-                            .foregroundColor(.white)
-                            .font(.system(size: 16))
-                    }
-            }
+        }
+    }
+
+    // MARK: - Video Content (video-only posts, full width)
+
+    @ViewBuilder
+    private var videoContent: some View {
+        if let videoUrlString = post.videoUrl, let url = URL(string: videoUrlString) {
+            InlineVideoPlayer(url: url)
+        } else {
+            WatchOnXButton(postUrl: post.postUrl)
         }
     }
 
