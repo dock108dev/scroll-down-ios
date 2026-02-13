@@ -31,7 +31,7 @@ struct HighlightCardView: View {
                 mediaView
 
                 if let text = post.tweetText {
-                    Text(text)
+                    Text(SocialPostRow.sanitizeTweetText(text))
                         .font(.subheadline)
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)

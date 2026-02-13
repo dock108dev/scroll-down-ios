@@ -16,9 +16,11 @@ struct SocialPostRow: View {
 
     @State private var showingSafari = false
 
-    private var mediaHeight: CGFloat {
-        displayMode == .standard ? 200 : 140
+    private var hasMedia: Bool {
+        post.imageUrl != nil || post.videoUrl != nil || post.hasVideo
     }
+
+    private var thumbnailSize: CGFloat { 120 }
 
     var body: some View {
         Button {
@@ -28,26 +30,30 @@ struct SocialPostRow: View {
                 // Attribution header
                 attributionHeader
 
-                // Tweet text (secondary to narrative — reacts to the game, doesn't explain it)
-                if let text = post.tweetText {
+                // Two-column layout: text left, media thumbnail right
+                if hasMedia {
+                    HStack(alignment: .top, spacing: 10) {
+                        // Text column
+                        if let text = post.tweetText {
+                            Text(Self.sanitizeTweetText(text))
+                                .font(.subheadline)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            Spacer()
+                        }
+
+                        // Thumbnail column
+                        mediaThumbnail
+                    }
+                } else if let text = post.tweetText {
                     Text(Self.sanitizeTweetText(text))
                         .font(.subheadline)
                         .foregroundColor(DesignSystem.TextColor.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
-                }
-
-                // Media preview
-                if post.imageUrl != nil || post.videoUrl != nil {
-                    SocialMediaPreview(
-                        imageUrl: post.imageUrl,
-                        videoUrl: post.videoUrl,
-                        postUrl: post.postUrl,
-                        height: mediaHeight,
-                        tappable: false
-                    )
-                } else if post.hasVideo {
-                    WatchOnXButton(postUrl: post.postUrl)
                 }
 
                 // Engagement metrics (standard mode only)
@@ -70,6 +76,54 @@ struct SocialPostRow: View {
             if let url = URL(string: post.postUrl) {
                 SafariView(url: url)
                     .ignoresSafeArea()
+            }
+        }
+    }
+
+    // MARK: - Media Thumbnail
+
+    @ViewBuilder
+    private var mediaThumbnail: some View {
+        if let imageUrlString = post.imageUrl, let url = URL(string: imageUrlString) {
+            ZStack {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color(.systemGray6))
+                        .overlay { ProgressView().scaleEffect(0.7) }
+                }
+                .frame(width: thumbnailSize, height: thumbnailSize)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                if post.videoUrl != nil {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            Image(systemName: "play.fill")
+                                .foregroundColor(.white)
+                                .font(.system(size: 11))
+                        }
+                }
+            }
+        } else if post.videoUrl != nil || post.hasVideo {
+            // Video without thumbnail image — styled as a tappable video card
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(.systemGray5))
+                    .frame(width: thumbnailSize, height: thumbnailSize)
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 40, height: 40)
+                    .overlay {
+                        Image(systemName: "play.fill")
+                            .foregroundColor(.white)
+                            .font(.system(size: 16))
+                    }
             }
         }
     }
