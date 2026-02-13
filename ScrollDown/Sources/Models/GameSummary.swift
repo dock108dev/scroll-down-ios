@@ -17,6 +17,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
         case playCount, socialPostCount, hasRequiredData, scrapeVersion
         case lastScrapedAt, lastIngestedAt, lastPbpAt, lastSocialAt
         case homeTeamColorLight, homeTeamColorDark, awayTeamColorLight, awayTeamColorDark
+        case homeTeamAbbr, awayTeamAbbr
     }
     let awayTeam: String
     let homeScore: Int?
@@ -39,6 +40,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
     let homeTeamColorDark: String?
     let awayTeamColorLight: String?
     let awayTeamColorDark: String?
+    let homeTeamAbbr: String?
+    let awayTeamAbbr: String?
 
     // Convenience init for mock data generation
     init(
@@ -64,7 +67,9 @@ struct GameSummary: Codable, Identifiable, Hashable {
         homeTeamColorLight: String? = nil,
         homeTeamColorDark: String? = nil,
         awayTeamColorLight: String? = nil,
-        awayTeamColorDark: String? = nil
+        awayTeamColorDark: String? = nil,
+        homeTeamAbbr: String? = nil,
+        awayTeamAbbr: String? = nil
     ) {
         self.id = id
         self.leagueCode = leagueCode
@@ -92,6 +97,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         self.homeTeamColorDark = homeTeamColorDark
         self.awayTeamColorLight = awayTeamColorLight
         self.awayTeamColorDark = awayTeamColorDark
+        self.homeTeamAbbr = homeTeamAbbr
+        self.awayTeamAbbr = awayTeamAbbr
     }
 
     func hash(into hasher: inout Hasher) {
@@ -132,8 +139,8 @@ extension GameSummary {
     /// Convenience accessors for team names
     var homeTeamName: String { homeTeam }
     var awayTeamName: String { awayTeam }
-    var homeTeamAbbreviation: String { String(homeTeam.prefix(3)).uppercased() }
-    var awayTeamAbbreviation: String { String(awayTeam.prefix(3)).uppercased() }
+    var homeTeamAbbreviation: String { homeTeamAbbr ?? TeamAbbreviations.abbreviation(for: homeTeam) }
+    var awayTeamAbbreviation: String { awayTeamAbbr ?? TeamAbbreviations.abbreviation(for: awayTeam) }
 
     /// League code shorthand
     var league: String { leagueCode }

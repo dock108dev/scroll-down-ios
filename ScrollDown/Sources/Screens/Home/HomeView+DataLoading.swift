@@ -36,7 +36,7 @@ extension HomeView {
 
         // 4. Silent swap — apply results + save to cache
         applyHomeSectionResults(results)
-        injectTeamColorsFromSummaries(results)
+        injectTeamMetadataFromSummaries(results)
         updateLastUpdatedAt(from: results)
         saveSectionsToCache(results, cache: cache)
 
@@ -70,13 +70,16 @@ extension HomeView {
 
     func applyHomeSectionResults(_ results: [HomeSectionResult]) {
         for result in results {
-            // Sort games by date (chronologically) within each section
+            // Sort games by start time, then league, then away team name
             let sortedGames = result.games.sorted { lhs, rhs in
-                guard let lhsDate = lhs.parsedGameDate,
-                      let rhsDate = rhs.parsedGameDate else {
-                    return false
-                }
-                return lhsDate < rhsDate
+                // 1. Start time (tip time / puck drop)
+                let lhsDate = lhs.parsedGameDate ?? .distantFuture
+                let rhsDate = rhs.parsedGameDate ?? .distantFuture
+                if lhsDate != rhsDate { return lhsDate < rhsDate }
+                // 2. League code
+                if lhs.leagueCode != rhs.leagueCode { return lhs.leagueCode < rhs.leagueCode }
+                // 3. Away team name
+                return lhs.awayTeam < rhs.awayTeam
             }
 
             switch result.range {
@@ -159,16 +162,22 @@ extension HomeView {
         }
     }
 
-    /// Push API-provided team colors from game summaries into the shared cache.
-    private func injectTeamColorsFromSummaries(_ results: [HomeSectionResult]) {
-        let cache = TeamColorCache.shared
+    /// Push API-provided team colors and abbreviations from game summaries into shared caches.
+    private func injectTeamMetadataFromSummaries(_ results: [HomeSectionResult]) {
+        let colorCache = TeamColorCache.shared
         for result in results {
             for game in result.games {
                 if let light = game.homeTeamColorLight, let dark = game.homeTeamColorDark {
-                    cache.inject(teamName: game.homeTeam, lightHex: light, darkHex: dark)
+                    colorCache.inject(teamName: game.homeTeam, lightHex: light, darkHex: dark)
                 }
                 if let light = game.awayTeamColorLight, let dark = game.awayTeamColorDark {
-                    cache.inject(teamName: game.awayTeam, lightHex: light, darkHex: dark)
+                    colorCache.inject(teamName: game.awayTeam, lightHex: light, darkHex: dark)
+                }
+                if let abbr = game.homeTeamAbbr {
+                    TeamAbbreviations.inject(teamName: game.homeTeam, abbreviation: abbr)
+                }
+                if let abbr = game.awayTeamAbbr {
+                    TeamAbbreviations.inject(teamName: game.awayTeam, abbreviation: abbr)
                 }
             }
         }

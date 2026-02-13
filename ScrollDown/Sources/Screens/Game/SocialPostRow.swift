@@ -30,7 +30,7 @@ struct SocialPostRow: View {
 
                 // Tweet text (secondary to narrative — reacts to the game, doesn't explain it)
                 if let text = post.tweetText {
-                    Text(text)
+                    Text(Self.sanitizeTweetText(text))
                         .font(.subheadline)
                         .foregroundColor(DesignSystem.TextColor.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -177,6 +177,18 @@ struct SocialPostRow: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    /// Normalize Unicode line/paragraph separators and other invisible whitespace
+    /// that cause unexpected line breaks in tweet text.
+    static func sanitizeTweetText(_ text: String) -> String {
+        text.replacingOccurrences(of: "\u{2028}", with: " ")  // Line Separator
+            .replacingOccurrences(of: "\u{2029}", with: "\n") // Paragraph Separator
+            .replacingOccurrences(of: "\u{0085}", with: "\n") // Next Line
+            .replacingOccurrences(of: "\u{000B}", with: " ")  // Vertical Tab
+            .replacingOccurrences(of: "\u{000C}", with: " ")  // Form Feed
+            .replacingOccurrences(of: "\u{200B}", with: "")   // Zero Width Space
+            .replacingOccurrences(of: "\u{FEFF}", with: "")   // BOM / Zero Width No-Break Space
     }
 
     private func compactNumber(_ value: Int) -> String {

@@ -154,7 +154,7 @@ struct UnifiedTimelineRowView: View {
 
             // Tweet text — NEUTRAL primary
             if let text = event.tweetText {
-                Text(text)
+                Text(SocialPostRow.sanitizeTweetText(text))
                     .font(layout.tweetTextFont)
                     .foregroundColor(DesignSystem.TextColor.primary)
             }

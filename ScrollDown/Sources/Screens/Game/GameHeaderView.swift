@@ -33,11 +33,27 @@ struct GameHeaderView: View {
 
                 Spacer()
 
-                // Center: "vs" styled element
-                VStack(spacing: 2) {
-                    Text("vs")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                // Center: score if revealed, otherwise "vs"
+                if scoreRevealed, let away = game.awayScore, let home = game.homeScore {
+                    VStack(spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text("\(away)")
+                                .font(.title2.weight(.bold).monospacedDigit())
+                                .foregroundColor(awayColor)
+                            Text("–")
+                                .font(.title3.weight(.medium))
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                            Text("\(home)")
+                                .font(.title2.weight(.bold).monospacedDigit())
+                                .foregroundColor(homeColor)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 2) {
+                        Text("vs")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                    }
                 }
 
                 Spacer()
@@ -236,6 +252,14 @@ private struct TappableTeamBlock: View {
 /// Shared utility for generating team abbreviations
 
 enum TeamAbbreviations {
+    /// API-injected abbreviations (overrides hardcoded dict)
+    nonisolated(unsafe) private static var injected: [String: String] = [:]
+
+    /// Inject an abbreviation from an API response (e.g. Game.homeTeamAbbr).
+    static func inject(teamName: String, abbreviation: String) {
+        injected[teamName] = abbreviation
+    }
+
     private static let abbreviations: [String: String] = [
         // NBA
         "Atlanta Hawks": "ATL",
@@ -336,11 +360,26 @@ enum TeamAbbreviations {
     ]
 
     static func abbreviation(for teamName: String) -> String {
+        // 1. API-injected abbreviation (highest priority)
+        if let api = injected[teamName] {
+            return api
+        }
+        // 2. Hardcoded lookup
         if let known = abbreviations[teamName] {
             return known
         }
-        // Default: first 3 characters of the team name (e.g. "George Mason Patriots" → "GEO")
-        return String(teamName.prefix(3)).uppercased()
+        // 3. Smart fallback: use the last word (mascot) if short enough,
+        //    otherwise the first word — avoids ugly 3-char truncations for NCAAB teams.
+        let words = teamName.split(separator: " ")
+        if let last = words.last {
+            let mascot = String(last).uppercased()
+            if mascot.count <= 4 { return mascot }
+        }
+        if let first = words.first {
+            let school = String(first).uppercased()
+            if school.count <= 4 { return school }
+        }
+        return String(teamName.prefix(4)).uppercased()
     }
 }
 

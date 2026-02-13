@@ -124,13 +124,19 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Push API-provided team colors into the shared cache so all UI picks them up.
+    /// Push API-provided team colors and abbreviations into the shared caches.
     private func injectTeamColors(from game: Game) {
         if let light = game.homeTeamColorLight, let dark = game.homeTeamColorDark {
             TeamColorCache.shared.inject(teamName: game.homeTeam, lightHex: light, darkHex: dark)
         }
         if let light = game.awayTeamColorLight, let dark = game.awayTeamColorDark {
             TeamColorCache.shared.inject(teamName: game.awayTeam, lightHex: light, darkHex: dark)
+        }
+        if let abbr = game.homeTeamAbbr {
+            TeamAbbreviations.inject(teamName: game.homeTeam, abbreviation: abbr)
+        }
+        if let abbr = game.awayTeamAbbr {
+            TeamAbbreviations.inject(teamName: game.awayTeam, abbreviation: abbr)
         }
     }
 
@@ -221,6 +227,8 @@ final class GameDetailViewModel: ObservableObject {
 
         let sport = detail?.game.leagueCode
         let keyPlayIds = allKeyPlayIds
+        let homeTeamName = detail?.game.homeTeam
+        let awayTeamName = detail?.game.awayTeam
 
         let events = flowPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
             var dict: [String: Any] = [
@@ -229,19 +237,33 @@ final class GameDetailViewModel: ObservableObject {
                 "period": play.period,
                 "game_clock": play.clock as Any,
                 "description": play.description as Any,
-                "team": play.team as Any,
                 "player_name": play.playerName as Any,
                 "home_score": play.homeScore as Any,
                 "away_score": play.awayScore as Any,
                 "play_type": play.playType as Any
             ]
-            // Tier 1: key plays or actual scoring plays (score changed from previous play)
+
+            // Populate team — use play.team if present, otherwise derive from score change
             let isKeyPlay = keyPlayIds.contains(play.playId)
+            var scoringTeam: String?
             let isScoringPlay: Bool = {
                 guard let home = play.homeScore, let away = play.awayScore, index > 0 else { return false }
                 let prev = flowPlays[index - 1]
-                return home != prev.homeScore || away != prev.awayScore
+                let homeChanged = home != (prev.homeScore ?? 0)
+                let awayChanged = away != (prev.awayScore ?? 0)
+                if homeChanged { scoringTeam = homeTeamName }
+                else if awayChanged { scoringTeam = awayTeamName }
+                return homeChanged || awayChanged
             }()
+
+            // Set team: prefer play.team from API, fall back to derived scoring team
+            if let team = play.team {
+                dict["team"] = team
+            } else if let derived = scoringTeam {
+                dict["team"] = derived
+            }
+
+            // Tier 1: key plays or actual scoring plays (score changed from previous play)
             if isKeyPlay || isScoringPlay {
                 dict["tier"] = 1
             }

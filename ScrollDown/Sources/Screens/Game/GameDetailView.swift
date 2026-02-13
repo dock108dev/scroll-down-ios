@@ -111,6 +111,11 @@ struct GameDetailView: View {
         gameId > 0
     }
 
+    /// Whether the user has already read this game (wrap-up opened now or previously)
+    private var isGameRead: Bool {
+        isWrapUpExpanded || UserDefaults.standard.bool(forKey: "game.read.\(gameId)")
+    }
+
     private func loadSocialIfEnabled() async {
         if viewModel.isSocialTabEnabled {
             await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
@@ -199,7 +204,7 @@ struct GameDetailView: View {
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             // Header - constrained to max-width on iPad
                             if let game = viewModel.game {
-                                GameHeaderView(game: game)
+                                GameHeaderView(game: game, scoreRevealed: isGameRead)
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)

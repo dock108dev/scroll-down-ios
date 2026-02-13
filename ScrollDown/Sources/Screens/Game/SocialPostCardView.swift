@@ -38,7 +38,7 @@ struct SocialPostCardView: View {
 
             // Post content
             if let text = post.tweetText {
-                Text(text)
+                Text(SocialPostRow.sanitizeTweetText(text))
                     .font(.subheadline)
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
