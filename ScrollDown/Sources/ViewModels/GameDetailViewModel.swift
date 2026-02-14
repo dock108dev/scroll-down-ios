@@ -531,54 +531,6 @@ final class GameDetailViewModel: ObservableObject {
         return lines
     }
 
-    // MARK: - Odds Result
-
-    var oddsResult: OddsResult? {
-        guard let detail else { return nil }
-        let metrics = DerivedMetrics(detail.derivedMetrics)
-
-        var spreadResult: OddsResult.SpreadResult?
-        if let line = metrics.spreadLine, let team = metrics.spreadFavoredTeam {
-            spreadResult = OddsResult.SpreadResult(
-                favoredTeam: team,
-                line: line,
-                covered: metrics.spreadCovered ?? false,
-                push: metrics.spreadPush ?? false
-            )
-        }
-
-        var totalResult: OddsResult.TotalResult?
-        if let line = metrics.totalLine, let actual = metrics.actualTotal {
-            totalResult = OddsResult.TotalResult(
-                line: line,
-                actualTotal: actual,
-                wentOver: metrics.totalWentOver ?? false,
-                push: metrics.totalPush ?? false
-            )
-        }
-
-        var moneylineResult: OddsResult.MoneylineResult?
-        if let favTeam = metrics.mlFavoredTeam, let favPrice = metrics.mlFavoredPrice,
-           let undTeam = metrics.mlUnderdogTeam, let undPrice = metrics.mlUnderdogPrice {
-            moneylineResult = OddsResult.MoneylineResult(
-                favoredTeam: favTeam,
-                favoredPrice: favPrice,
-                underdogTeam: undTeam,
-                underdogPrice: undPrice,
-                favoriteWon: metrics.mlFavoriteWon ?? false
-            )
-        }
-
-        guard spreadResult != nil || totalResult != nil || moneylineResult != nil else { return nil }
-
-        return OddsResult(
-            bookName: metrics.bookName ?? "DraftKings",
-            spread: spreadResult,
-            total: totalResult,
-            moneyline: moneylineResult
-        )
-    }
-
     // MARK: - Wrap-up Odds Summary
 
     /// Odds line + outcome for display in the wrap-up section.
@@ -647,30 +599,6 @@ final class GameDetailViewModel: ObservableObject {
         gameId > 0 ? gameId : ViewModelConstants.defaultTimelineGameId
     }
 
-    /// Key aliases: maps our canonical key → alternative names the API might use
-    static let statKeyAliases: [String: [String]] = [
-        "fg_pct": ["fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"],
-        "fg": ["fgm", "fg_made", "fgMade", "fieldGoalsMade", "field_goals_made"],
-        "fga": ["fg_attempted", "fgAttempted", "fieldGoalsAttempted", "field_goals_attempted"],
-        "fg3_pct": ["fg3Pct", "threePtPct", "three_pct", "three_pt_pct", "fg3_percentage"],
-        "fg3": ["fg3m", "fg3Made", "three_made", "threePointersMade", "three_pointers_made", "threePointFieldGoalsMade"],
-        "fg3a": ["fg3Attempted", "three_attempted", "threePointersAttempted", "three_pointers_attempted", "threePointFieldGoalsAttempted"],
-        "ft_pct": ["ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"],
-        "ft": ["ftm", "ft_made", "ftMade", "freeThrowsMade", "free_throws_made"],
-        "fta": ["ft_attempted", "ftAttempted", "freeThrowsAttempted", "free_throws_attempted"],
-        "trb": ["reb", "rebounds", "totalRebounds", "total_rebounds"],
-        "orb": ["offReb", "offensiveRebounds", "offensive_rebounds"],
-        "drb": ["defReb", "defensiveRebounds", "defensive_rebounds"],
-        "ast": ["assists"],
-        "stl": ["steals"],
-        "blk": ["blocks"],
-        "tov": ["turnovers", "to"],
-        "pf": ["personalFouls", "personal_fouls", "fouls"],
-        "shots_on_goal": ["shotsOnGoal", "sog"],
-        "points": ["pts"],
-        "penalty_minutes": ["penaltyMinutes", "pim"],
-    ]
-
     /// Try each key in order, return the first value found as a Double.
     private func resolveValue(keys: [String], in stats: [String: AnyCodable]) -> Double? {
         for key in keys {
@@ -709,37 +637,6 @@ final class GameDetailViewModel: ObservableObject {
     private func scoreDisplay(home: Int?, away: Int?) -> String? {
         guard let home, let away else { return nil }
         return "\(away) - \(home)"
-    }
-}
-
-// MARK: - Odds Result Types
-
-struct OddsResult {
-    let bookName: String
-    let spread: SpreadResult?
-    let total: TotalResult?
-    let moneyline: MoneylineResult?
-
-    struct SpreadResult {
-        let favoredTeam: String
-        let line: Double
-        let covered: Bool
-        let push: Bool
-    }
-
-    struct TotalResult {
-        let line: Double
-        let actualTotal: Int
-        let wentOver: Bool
-        let push: Bool
-    }
-
-    struct MoneylineResult {
-        let favoredTeam: String
-        let favoredPrice: Int
-        let underdogTeam: String
-        let underdogPrice: Int
-        let favoriteWon: Bool
     }
 }
 

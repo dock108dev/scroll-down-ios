@@ -67,7 +67,13 @@ final class GameDetailViewModelTests: XCTestCase {
             playCount: nil,
             socialPostCount: nil,
             homeTeamXHandle: nil,
-            awayTeamXHandle: nil
+            awayTeamXHandle: nil,
+            homeTeamAbbr: nil,
+            awayTeamAbbr: nil,
+            homeTeamColorLight: nil,
+            homeTeamColorDark: nil,
+            awayTeamColorLight: nil,
+            awayTeamColorDark: nil
         )
         let plays = [
             PlayEntry(
@@ -134,7 +140,13 @@ final class GameDetailViewModelTests: XCTestCase {
             playCount: nil,
             socialPostCount: nil,
             homeTeamXHandle: nil,
-            awayTeamXHandle: nil
+            awayTeamXHandle: nil,
+            homeTeamAbbr: nil,
+            awayTeamAbbr: nil,
+            homeTeamColorLight: nil,
+            homeTeamColorDark: nil,
+            awayTeamColorLight: nil,
+            awayTeamColorDark: nil
         )
         let detail = GameDetailResponse(
             game: game,

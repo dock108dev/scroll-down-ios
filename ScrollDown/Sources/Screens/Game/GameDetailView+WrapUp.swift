@@ -27,8 +27,6 @@ extension GameDetailView {
             // Odds results
             if !viewModel.wrapUpOddsLines.isEmpty {
                 wrapUpOddsCard(viewModel.wrapUpOddsLines)
-            } else if let oddsResult = viewModel.oddsResult {
-                oddsResultsCard(oddsResult)
             }
 
             // Post-game social posts
@@ -134,7 +132,7 @@ extension GameDetailView {
             // High scorer with stats
             if let scorer = highScorer {
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(abbreviatedPlayerName(scorer.playerName))
+                    Text(abbreviatedName(scorer.playerName))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(DesignSystem.TextColor.primary)
                     HStack(spacing: 6) {
@@ -166,14 +164,6 @@ extension GameDetailView {
         .background(isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
     }
 
-    private func abbreviatedPlayerName(_ fullName: String) -> String {
-        let parts = fullName.split(separator: " ")
-        guard parts.count >= 2 else { return fullName }
-        let firstInitial = parts[0].prefix(1)
-        let lastName = parts.dropFirst().joined(separator: " ")
-        return "\(firstInitial). \(lastName)"
-    }
-
     // MARK: - Post-Game Social Content
 
     @ViewBuilder
@@ -197,108 +187,7 @@ extension GameDetailView {
         SocialPostRow(post: post, displayMode: .standard)
     }
 
-    // MARK: - Odds Results Card (fallback)
-
-    private struct OddsRowData {
-        let label: String
-        let detail: String
-        let resultText: String
-    }
-
-    private func oddsResultsCard(_ result: OddsResult) -> some View {
-        let rows = buildOddsRows(result)
-        return VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("ODDS")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                Spacer()
-                Text("RESULT")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(DesignSystem.Colors.elevatedBackground)
-
-            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                oddsRow(row, isAlternate: index % 2 != 0)
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.element)
-                .stroke(DesignSystem.borderColor, lineWidth: DesignSystem.borderWidth)
-        )
-    }
-
-    private func buildOddsRows(_ result: OddsResult) -> [OddsRowData] {
-        var rows: [OddsRowData] = []
-
-        if let spread = result.spread {
-            let resultText = spread.push ? "Push" : (spread.covered ? "Covered" : "Missed")
-            rows.append(OddsRowData(
-                label: "Spread",
-                detail: "\(spread.favoredTeam) \(formatLine(spread.line))",
-                resultText: resultText
-            ))
-        }
-
-        if let total = result.total {
-            let resultText = total.push ? "Push" : (total.wentOver ? "Over \(total.actualTotal)" : "Under \(total.actualTotal)")
-            rows.append(OddsRowData(
-                label: "O/U",
-                detail: "O/U \(formatLine(total.line))",
-                resultText: resultText
-            ))
-        }
-
-        if let ml = result.moneyline {
-            let winnerTeam = ml.favoriteWon ? ml.favoredTeam : ml.underdogTeam
-            let resultText = "\(winnerTeam) Won"
-            let priceStr = ml.favoredPrice >= 0 ? "+\(ml.favoredPrice)" : "\(ml.favoredPrice)"
-            rows.append(OddsRowData(
-                label: "ML",
-                detail: "\(ml.favoredTeam) \(priceStr)",
-                resultText: resultText
-            ))
-        }
-
-        return rows
-    }
-
-    private func oddsRow(_ row: OddsRowData, isAlternate: Bool) -> some View {
-        HStack(spacing: 0) {
-            Text(row.label)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(DesignSystem.TextColor.primary)
-                .frame(width: 52, alignment: .leading)
-
-            Text(row.detail)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(DesignSystem.TextColor.secondary)
-
-            Spacer()
-
-            Text(row.resultText)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(DesignSystem.TextColor.primary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(isAlternate ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
-    }
-
-    private func formatLine(_ value: Double) -> String {
-        if value == floor(value) {
-            let intVal = Int(value)
-            return intVal >= 0 ? "+\(intVal)" : "\(intVal)"
-        }
-        return value >= 0 ? String(format: "+%.1f", value) : String(format: "%.1f", value)
-    }
-
-    // MARK: - Wrap-up Odds Card (label-based)
+    // MARK: - Wrap-up Odds Card
 
     /// Strip verbose suffixes from server-generated outcome labels.
     /// "GW covered by 15.0" → "GW covered", "Under by 24.5" → "Under", "GW won (-180)" → "GW won"

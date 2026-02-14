@@ -149,11 +149,6 @@ extension GameDetailView {
         .buttonStyle(.plain)
     }
 
-    private func shortTeamName(_ fullName: String) -> String {
-        // Extract last word as team name (e.g., "Boston Celtics" -> "Celtics")
-        fullName.split(separator: " ").last.map(String.init) ?? fullName
-    }
-
     // MARK: - Frozen Column Cells (Player + Team)
 
     private var frozenHeaderCell: some View {
@@ -354,53 +349,6 @@ extension GameDetailView {
         return DesignSystem.TextColor.secondary
     }
 
-    func teamAbbreviation(_ fullName: String) -> String {
-        // Common NBA team abbreviations
-        let abbreviations: [String: String] = [
-            "Atlanta Hawks": "ATL",
-            "Boston Celtics": "BOS",
-            "Brooklyn Nets": "BKN",
-            "Charlotte Hornets": "CHA",
-            "Chicago Bulls": "CHI",
-            "Cleveland Cavaliers": "CLE",
-            "Dallas Mavericks": "DAL",
-            "Denver Nuggets": "DEN",
-            "Detroit Pistons": "DET",
-            "Golden State Warriors": "GSW",
-            "Houston Rockets": "HOU",
-            "Indiana Pacers": "IND",
-            "Los Angeles Clippers": "LAC",
-            "Los Angeles Lakers": "LAL",
-            "Memphis Grizzlies": "MEM",
-            "Miami Heat": "MIA",
-            "Milwaukee Bucks": "MIL",
-            "Minnesota Timberwolves": "MIN",
-            "New Orleans Pelicans": "NOP",
-            "New York Knicks": "NYK",
-            "Oklahoma City Thunder": "OKC",
-            "Orlando Magic": "ORL",
-            "Philadelphia 76ers": "PHI",
-            "Phoenix Suns": "PHX",
-            "Portland Trail Blazers": "POR",
-            "Sacramento Kings": "SAC",
-            "San Antonio Spurs": "SAS",
-            "Toronto Raptors": "TOR",
-            "Utah Jazz": "UTA",
-            "Washington Wizards": "WAS"
-        ]
-
-        if let abbrev = abbreviations[fullName] {
-            return abbrev
-        }
-
-        // Default: take first 3 letters of last word
-        let words = fullName.split(separator: " ")
-        if let lastWord = words.last {
-            return String(lastWord.prefix(3)).uppercased()
-        }
-        return String(fullName.prefix(3)).uppercased()
-    }
-
     func abbreviatedName(_ fullName: String) -> String {
         let parts = fullName.split(separator: " ")
         guard parts.count >= 2 else { return fullName }
@@ -422,13 +370,7 @@ extension GameDetailView {
     }
 
     private func resolveRawStat(_ stat: PlayerStat, _ key: String) -> AnyCodable? {
-        if let value = stat.rawStats[key] { return value }
-        if let aliases = GameDetailViewModel.statKeyAliases[key] {
-            for alias in aliases {
-                if let value = stat.rawStats[alias] { return value }
-            }
-        }
-        return nil
+        stat.rawStats[key]
     }
 
     private func rawStatInt(_ stat: PlayerStat, _ key: String) -> Int? {

@@ -129,7 +129,14 @@ struct HomeView: View {
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
+                    .padding(.trailing, 44)
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
+                }
+                .overlay(alignment: .trailing) {
+                    refreshButton {
+                        Task { await loadGames(scrollToToday: false) }
+                    }
+                    .padding(.trailing, horizontalPadding)
                 }
                 .background(HomeTheme.background)
 
@@ -167,7 +174,15 @@ struct HomeView: View {
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
+                    .padding(.trailing, 44)
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
+                }
+                .overlay(alignment: .trailing) {
+                    refreshButton {
+                        Task { await oddsViewModel.refresh() }
+                    }
+                    .disabled(oddsViewModel.isLoading)
+                    .padding(.trailing, horizontalPadding)
                 }
                 .background(HomeTheme.background)
             }
@@ -324,6 +339,22 @@ struct HomeView: View {
 
     var horizontalPadding: CGFloat {
         horizontalSizeClass == .regular ? 32 : HomeLayout.horizontalPadding
+    }
+
+    // MARK: - Refresh Button
+
+    private func refreshButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "arrow.clockwise")
+                .font(.caption.weight(.medium))
+                .foregroundColor(.secondary)
+                .padding(8)
+                .background(
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

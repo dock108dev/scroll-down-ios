@@ -104,7 +104,13 @@ enum TestFixtures {
             playCount: 200,
             socialPostCount: 5,
             homeTeamXHandle: nil,
-            awayTeamXHandle: nil
+            awayTeamXHandle: nil,
+            homeTeamAbbr: nil,
+            awayTeamAbbr: nil,
+            homeTeamColorLight: nil,
+            homeTeamColorDark: nil,
+            awayTeamColorLight: nil,
+            awayTeamColorDark: nil
         )
     }
 

@@ -24,16 +24,6 @@ enum AppEnvironment: String, CaseIterable {
     }
 }
 
-enum FeatureFlags {
-    /// Set to true to default to localhost on app launch (DEBUG only)
-    /// Useful for local development sessions—change this instead of using Admin Settings each time
-    /// NOTE: Requires local server running on port \(APIConfiguration.localhostPort)
-    static let defaultToLocalhost: Bool = false
-
-    /// Show play/moment counts on game cards (debug info)
-    static let showCardPlayCounts: Bool = true
-}
-
 // MARK: - Dev Clock
 
 /// Centralized date provider for consistent time handling

@@ -23,27 +23,6 @@ struct OddsComparisonView: View {
                 // Bets feed
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        // Refresh button (right-aligned)
-                        HStack {
-                            Spacer()
-                            Button {
-                                Task { await viewModel.refresh() }
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        Capsule()
-                                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(viewModel.isLoading)
-                        }
-                        .padding(.bottom, 4)
-
                         // Bet cards
                         ForEach(viewModel.displayedBets) { bet in
                             BetCard(
