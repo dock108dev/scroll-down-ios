@@ -7,20 +7,31 @@ struct Tier1PlayRowView: View {
     let homeTeam: String
     let awayTeam: String
 
-    /// Resolve accent bar color to the scoring team's brand color
-    private var accentColor: Color {
-        if let team = event.team {
-            let teamLower = team.lowercased()
-            let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
-            let awayAbbrev = TeamAbbreviations.abbreviation(for: awayTeam).lowercased()
+    /// Resolve which full team name this play belongs to (home or away)
+    private var resolvedTeamName: String? {
+        guard let team = event.team else { return nil }
+        let teamLower = team.lowercased()
+        let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
+        let awayAbbrev = TeamAbbreviations.abbreviation(for: awayTeam).lowercased()
 
-            if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
-                return DesignSystem.TeamColors.matchupColor(for: homeTeam, against: awayTeam, isHome: true)
-            } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
-                return DesignSystem.TeamColors.matchupColor(for: awayTeam, against: homeTeam, isHome: false)
-            }
+        if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
+            return homeTeam
+        } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
+            return awayTeam
         }
+        return nil
+    }
 
+    /// Accent bar color from resolved team
+    private var accentColor: Color {
+        if let teamName = resolvedTeamName {
+            let isHome = teamName == homeTeam
+            return DesignSystem.TeamColors.matchupColor(
+                for: teamName,
+                against: isHome ? awayTeam : homeTeam,
+                isHome: isHome
+            )
+        }
         return DesignSystem.Colors.accent
     }
 
@@ -50,10 +61,21 @@ struct Tier1PlayRowView: View {
                 // Content - bold treatment
                 VStack(alignment: .leading, spacing: 4) {
                     if let description = event.description {
-                        Text(description)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(DesignSystem.TextColor.primary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            if let teamName = resolvedTeamName {
+                                Text(TeamAbbreviations.abbreviation(for: teamName))
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundColor(accentColor)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(accentColor.opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+                            Text(description)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(DesignSystem.TextColor.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
                     // Score change emphasis with team colors
@@ -96,7 +118,7 @@ struct Tier1PlayRowView: View {
 }
 
 /// Row view for Tier 2 (Secondary) events
-/// Visible but de-emphasized - smaller font, muted color, no accent
+/// Visible but de-emphasized — medium-weight font, left accent line, subtle background
 struct Tier2PlayRowView: View {
     let event: UnifiedTimelineEvent
 
@@ -106,26 +128,21 @@ struct Tier2PlayRowView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 if let clock = event.gameClock {
                     Text(clock)
-                        .font(.caption2.monospacedDigit())
+                        .font(.caption.monospacedDigit())
                         .foregroundColor(DesignSystem.TextColor.tertiary)
-                }
-                if let label = event.periodLabel {
-                    Text(label)
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.7))
                 }
             }
             .frame(width: 44, alignment: .trailing)
 
-            // Subtle divider
+            // Left accent line — distinguishes T2 from T3's dot
             Rectangle()
-                .fill(DesignSystem.borderColor.opacity(0.5))
-                .frame(width: 1)
+                .fill(DesignSystem.TextColor.tertiary.opacity(0.35))
+                .frame(width: 2)
 
-            // Content - de-emphasized
+            // Content — medium weight, clearly above T3's caption2/tertiary
             if let description = event.description {
                 Text(description)
-                    .font(.caption)
+                    .font(.caption.weight(.medium))
                     .foregroundColor(DesignSystem.TextColor.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -134,8 +151,6 @@ struct Tier2PlayRowView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 10)
-        .background(DesignSystem.Colors.rowBackground.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Play")
         .accessibilityValue(event.description ?? "")
@@ -189,6 +204,7 @@ struct TieredPlayGroupView: View {
     var body: some View {
         switch group.tier {
         case .primary:
+            // T1: flush left — most prominent
             ForEach(group.events) { event in
                 Tier1PlayRowView(
                     event: event,
@@ -198,15 +214,17 @@ struct TieredPlayGroupView: View {
             }
 
         case .secondary:
-            // Tier 2: Individual rows with reduced visual weight
+            // T2: indented once
             ForEach(group.events) { event in
                 Tier2PlayRowView(event: event)
+                    .padding(.leading, 16)
             }
 
         case .tertiary:
-            // Tier 3: Always expanded inline
+            // T3: indented twice — least prominent
             ForEach(group.events) { event in
                 Tier3PlayRowView(event: event)
+                    .padding(.leading, 32)
             }
         }
     }

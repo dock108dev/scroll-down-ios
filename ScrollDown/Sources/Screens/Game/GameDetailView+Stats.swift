@@ -161,7 +161,7 @@ extension GameDetailView {
             Text("Player")
                 .frame(width: 100, alignment: .leading)
             Text("")
-                .frame(width: 40)
+                .frame(width: 48)
         }
         .font(DesignSystem.Typography.statLabel)
         .foregroundColor(DesignSystem.TextColor.secondary)
@@ -189,7 +189,7 @@ extension GameDetailView {
                 .padding(.vertical, 2)
                 .background(teamColor.opacity(0.15))
                 .clipShape(Capsule())
-                .frame(width: 40)
+                .frame(width: 48)
         }
         .frame(height: 36)
         .padding(.leading, DesignSystem.Spacing.elementPadding)

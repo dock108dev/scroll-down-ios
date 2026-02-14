@@ -237,16 +237,44 @@ struct SocialPostRow: View {
         return formatter.localizedString(for: date, relativeTo: Date())
     }
 
-    /// Normalize Unicode line/paragraph separators and other invisible whitespace
-    /// that cause unexpected line breaks in tweet text.
+    /// Normalize Unicode separators, strip URLs (they aren't tappable in Text),
+    /// and collapse leftover whitespace so the post reads cleanly.
     static func sanitizeTweetText(_ text: String) -> String {
-        text.replacingOccurrences(of: "\u{2028}", with: " ")  // Line Separator
+        var result = text
+            .replacingOccurrences(of: "\u{2028}", with: " ")  // Line Separator
             .replacingOccurrences(of: "\u{2029}", with: "\n") // Paragraph Separator
             .replacingOccurrences(of: "\u{0085}", with: "\n") // Next Line
             .replacingOccurrences(of: "\u{000B}", with: " ")  // Vertical Tab
             .replacingOccurrences(of: "\u{000C}", with: " ")  // Form Feed
             .replacingOccurrences(of: "\u{200B}", with: "")   // Zero Width Space
             .replacingOccurrences(of: "\u{FEFF}", with: "")   // BOM / Zero Width No-Break Space
+
+        // Strip URLs (http://, https://, and bare www. links)
+        result = result.replacingOccurrences(
+            of: #"https?://\S+"#,
+            with: "",
+            options: .regularExpression
+        )
+        result = result.replacingOccurrences(
+            of: #"www\.\S+"#,
+            with: "",
+            options: .regularExpression
+        )
+
+        // Clean up leftover punctuation that preceded URLs (e.g. ": " or "- ")
+        // and collapse runs of blank lines / whitespace-only lines
+        result = result.replacingOccurrences(
+            of: #"[:\-–—]\s*\n"#,
+            with: "\n",
+            options: .regularExpression
+        )
+        result = result.replacingOccurrences(
+            of: #"\n{3,}"#,
+            with: "\n\n",
+            options: .regularExpression
+        )
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func compactNumber(_ value: Int) -> String {

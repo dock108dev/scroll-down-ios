@@ -300,6 +300,19 @@ extension GameDetailView {
 
     // MARK: - Wrap-up Odds Card (label-based)
 
+    /// Strip verbose suffixes from server-generated outcome labels.
+    /// "GW covered by 15.0" → "GW covered", "Under by 24.5" → "Under", "GW won (-180)" → "GW won"
+    private func simplifiedOutcome(_ text: String) -> String {
+        var result = text
+        if let range = result.range(of: #" by [\d.]+"#, options: .regularExpression) {
+            result = String(result[result.startIndex..<range.lowerBound])
+        }
+        if let range = result.range(of: #" \([^)]+\)$"#, options: .regularExpression) {
+            result = String(result[result.startIndex..<range.lowerBound])
+        }
+        return result
+    }
+
     private func wrapUpOddsCard(_ lines: [GameDetailViewModel.WrapUpOddsLine]) -> some View {
         VStack(spacing: 0) {
             // Header
@@ -336,7 +349,7 @@ extension GameDetailView {
                     Spacer()
 
                     if let outcome = line.outcome {
-                        Text(outcome)
+                        Text(simplifiedOutcome(outcome))
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(DesignSystem.TextColor.primary)
                     }

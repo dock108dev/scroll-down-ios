@@ -461,16 +461,17 @@ final class GameDetailViewModel: ObservableObject {
             return []
         }
 
-        let keys = isNHL ? ViewModelConstants.nhlTeamComparisonKeys : ViewModelConstants.teamComparisonKeys
-        return keys.map { key in
-            let homeValue = statValue(for: key.key, in: home.stats)
-            let awayValue = statValue(for: key.key, in: away.stats)
+        let definitions = isNHL ? Self.nhlKnownStats : Self.basketballKnownStats
+        return definitions.compactMap { known in
+            let homeValue = resolveValue(keys: known.keys, in: home.stats)
+            let awayValue = resolveValue(keys: known.keys, in: away.stats)
+            guard homeValue != nil || awayValue != nil else { return nil }
             return TeamComparisonStat(
-                name: key.label,
+                name: known.label,
                 homeValue: homeValue,
                 awayValue: awayValue,
-                homeDisplay: formattedStat(homeValue, placeholder: ViewModelConstants.statPlaceholder),
-                awayDisplay: formattedStat(awayValue, placeholder: ViewModelConstants.statPlaceholder)
+                homeDisplay: formatStatValue(homeValue, isPercentage: known.isPercentage),
+                awayDisplay: formatStatValue(awayValue, isPercentage: known.isPercentage)
             )
         }
     }
@@ -670,43 +671,31 @@ final class GameDetailViewModel: ObservableObject {
         "penalty_minutes": ["penaltyMinutes", "pim"],
     ]
 
-    private func statValue(for key: String, in stats: [String: AnyCodable]) -> Double? {
-        // Try canonical key first
-        if let result = extractDouble(from: stats[key]) {
-            return result
-        }
-        // Try aliases
-        if let aliases = Self.statKeyAliases[key] {
-            for alias in aliases {
-                if let result = extractDouble(from: stats[alias]) {
-                    return result
+    /// Try each key in order, return the first value found as a Double.
+    private func resolveValue(keys: [String], in stats: [String: AnyCodable]) -> Double? {
+        for key in keys {
+            if let raw = stats[key]?.value {
+                if let number = raw as? NSNumber { return number.doubleValue }
+                if let string = raw as? String {
+                    return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
                 }
             }
         }
         return nil
     }
 
-    private func extractDouble(from anyCodable: AnyCodable?) -> Double? {
-        guard let value = anyCodable?.value else { return nil }
-        if let number = value as? NSNumber {
-            return number.doubleValue
-        }
-        if let string = value as? String {
-            return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
-        return nil
-    }
-
-    private func formattedStat(_ value: Double?, placeholder: String) -> String {
-        guard let value else { return placeholder }
-
-        if value >= ViewModelConstants.percentageFloor && value <= ViewModelConstants.percentageCeiling {
-            return String(format: ViewModelConstants.percentageFormat, value)
+    /// Format a stat value for display.
+    /// Percentages (0-1 range) are shown as "47.7%". Integers as "26".
+    private func formatStatValue(_ value: Double?, isPercentage: Bool) -> String {
+        guard let value else { return "--" }
+        if isPercentage {
+            let pct = value <= 1.0 ? value * 100 : value
+            return String(format: "%.1f%%", pct)
         }
         if value == floor(value) {
-            return String(format: ViewModelConstants.integerFormat, value)
+            return String(format: "%.0f", value)
         }
-        return String(format: ViewModelConstants.decimalFormat, value)
+        return String(format: "%.1f", value)
     }
 
     private func latestScoreDisplay() -> String? {
@@ -765,36 +754,60 @@ private enum ViewModelConstants {
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
-    static let percentageFloor = 0.0
-    static let percentageCeiling = 1.0
-    static let percentageFormat = "%.3f"
-    static let integerFormat = "%.0f"
-    static let decimalFormat = "%.1f"
-    static let statPlaceholder = "--"
-    static let teamComparisonKeys: [(key: String, label: String)] = [
-        ("fg_pct", "Field Goal %"),
-        ("fg", "Field Goals Made"),
-        ("fga", "Field Goals Attempted"),
-        ("fg3_pct", "3-Point %"),
-        ("fg3", "3-Pointers Made"),
-        ("fg3a", "3-Pointers Attempted"),
-        ("ft_pct", "Free Throw %"),
-        ("ft", "Free Throws Made"),
-        ("fta", "Free Throws Attempted"),
-        ("trb", "Total Rebounds"),
-        ("orb", "Offensive Rebounds"),
-        ("drb", "Defensive Rebounds"),
-        ("ast", "Assists"),
-        ("stl", "Steals"),
-        ("blk", "Blocks"),
-        ("tov", "Turnovers"),
-        ("pf", "Personal Fouls")
-    ]
-    static let nhlTeamComparisonKeys: [(key: String, label: String)] = [
-        ("shots_on_goal", "Shots on Goal"),
-        ("points", "Points"),
-        ("assists", "Assists"),
-        ("penalty_minutes", "Penalty Minutes")
-    ]
     static let defaultTimelineGameId = 401585601
+}
+
+// MARK: - Known Stat Definitions
+
+/// A stat the app knows how to display. Keys are tried in order against the API response.
+private struct KnownStat {
+    let keys: [String]       // All possible API key names for this stat
+    let label: String        // Human-readable display label
+    let group: String        // Grouping: "Overview", "Shooting", "Extra"
+    let isPercentage: Bool   // If true, value is 0-1 → format as "47.7%"
+}
+
+extension GameDetailViewModel {
+    /// Ordered definitions for basketball (NBA + NCAAB) team stats.
+    fileprivate static let basketballKnownStats: [KnownStat] = [
+        // Overview
+        KnownStat(keys: ["points", "pts"], label: "Points", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["trb", "reb", "rebounds", "totalRebounds", "total_rebounds"], label: "Rebounds", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["orb", "offReb", "offensiveRebounds", "offensive_rebounds"], label: "Off Reb", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["drb", "defReb", "defensiveRebounds", "defensive_rebounds"], label: "Def Reb", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["ast", "assists"], label: "Assists", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["stl", "steals"], label: "Steals", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["blk", "blocks"], label: "Blocks", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["tov", "turnovers", "to"], label: "Turnovers", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["pf", "personalFouls", "personal_fouls", "fouls"], label: "Fouls", group: "Overview", isPercentage: false),
+
+        // Shooting
+        KnownStat(keys: ["fg", "fgm", "fg_made", "fgMade", "fieldGoalsMade", "field_goals_made"], label: "FG Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fga", "fg_attempted", "fgAttempted", "fieldGoalsAttempted", "field_goals_attempted"], label: "FG Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fg_pct", "fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"], label: "FG%", group: "Shooting", isPercentage: true),
+        KnownStat(keys: ["fg3", "fg3m", "fg3Made", "three_made", "threePointersMade", "three_pointers_made", "threePointFieldGoalsMade"], label: "3PT Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fg3a", "fg3Attempted", "three_attempted", "threePointersAttempted", "three_pointers_attempted", "threePointFieldGoalsAttempted"], label: "3PT Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fg3_pct", "fg3Pct", "threePtPct", "three_pct", "three_pt_pct", "fg3_percentage"], label: "3PT%", group: "Shooting", isPercentage: true),
+        KnownStat(keys: ["ft", "ftm", "ft_made", "ftMade", "freeThrowsMade", "free_throws_made"], label: "FT Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fta", "ft_attempted", "ftAttempted", "freeThrowsAttempted", "free_throws_attempted"], label: "FT Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["ft_pct", "ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"], label: "FT%", group: "Shooting", isPercentage: true),
+
+        // Extra (NBA-only fields — only appear if API returns them)
+        KnownStat(keys: ["fast_break_points", "fastBreakPoints"], label: "Fast Break Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["points_in_paint", "pointsInPaint", "paint_points", "paintPoints"], label: "Paint Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["points_off_turnovers", "pointsOffTurnovers"], label: "Pts off TO", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["second_chance_points", "secondChancePoints"], label: "2nd Chance Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["bench_points", "benchPoints"], label: "Bench Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["biggest_lead", "biggestLead", "largest_lead", "largestLead"], label: "Biggest Lead", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["lead_changes", "leadChanges"], label: "Lead Changes", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["times_tied", "timesTied"], label: "Times Tied", group: "Extra", isPercentage: false),
+    ]
+
+    /// Ordered definitions for NHL team stats.
+    fileprivate static let nhlKnownStats: [KnownStat] = [
+        KnownStat(keys: ["shots_on_goal", "shotsOnGoal", "sog"], label: "Shots on Goal", group: "Offense", isPercentage: false),
+        KnownStat(keys: ["points", "pts"], label: "Points", group: "Offense", isPercentage: false),
+        KnownStat(keys: ["ast", "assists"], label: "Assists", group: "Offense", isPercentage: false),
+        KnownStat(keys: ["penalty_minutes", "penaltyMinutes", "pim"], label: "Penalty Minutes", group: "Discipline", isPercentage: false),
+    ]
 }

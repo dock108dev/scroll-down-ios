@@ -140,41 +140,30 @@ struct TeamStatsContainer: View {
         stats.contains { $0.name == "Shots on Goal" }
     }
 
+    private static let overviewNames: Set<String> = [
+        "Points", "Rebounds", "Off Reb", "Def Reb", "Assists", "Steals", "Blocks", "Turnovers", "Fouls"
+    ]
+    private static let shootingNames: Set<String> = [
+        "FG Made", "FG Att", "FG%", "3PT Made", "3PT Att", "3PT%", "FT Made", "FT Att", "FT%"
+    ]
+
     private var statGroups: [(title: String, stats: [TeamComparisonStat])] {
         if isHockey {
             return [
                 ("Offense", stats.filter { ["Shots on Goal", "Points", "Assists"].contains($0.name) }),
                 ("Discipline", stats.filter { $0.name == "Penalty Minutes" })
             ].filter { !$0.stats.isEmpty }
-        } else {
-            return [
-                ("Shooting", shootingStats),
-                ("Volume", volumeStats),
-                ("Discipline", disciplineStats)
-            ].filter { !$0.stats.isEmpty }
         }
-    }
 
-    private var shootingStats: [TeamComparisonStat] {
-        stats.filter { stat in
-            ["Field Goal %", "3-Point %", "Free Throw %"].contains(stat.name)
-                && (stat.homeValue != nil || stat.awayValue != nil)
-        }
-    }
+        let overview = stats.filter { Self.overviewNames.contains($0.name) }
+        let shooting = stats.filter { Self.shootingNames.contains($0.name) }
+        let extra = stats.filter { !Self.overviewNames.contains($0.name) && !Self.shootingNames.contains($0.name) }
 
-    private var volumeStats: [TeamComparisonStat] {
-        stats.filter { stat in
-            ["Field Goals Made", "3-Pointers Made", "Free Throws Made",
-             "Total Rebounds", "Offensive Rebounds", "Defensive Rebounds", "Assists"].contains(stat.name)
-                && (stat.homeValue != nil || stat.awayValue != nil)
-        }
-    }
-
-    private var disciplineStats: [TeamComparisonStat] {
-        stats.filter { stat in
-            ["Steals", "Blocks", "Turnovers", "Personal Fouls"].contains(stat.name)
-                && (stat.homeValue != nil || stat.awayValue != nil)
-        }
+        return [
+            ("Overview", overview),
+            ("Shooting", shooting),
+            ("Extra", extra)
+        ].filter { !$0.stats.isEmpty }
     }
     
     // MARK: - Abbreviation Helpers
@@ -379,22 +368,37 @@ private struct SimplifiedStatRow: View {
     /// Shortened stat labels for cleaner display
     private var shortLabel: String {
         let shorts: [String: String] = [
-            "Field Goal %": "FG%",
-            "3-Point %": "3P%",
-            "Free Throw %": "FT%",
-            "Field Goals Made": "FGM",
-            "3-Pointers Made": "3PM",
-            "Free Throws Made": "FTM",
-            "Total Rebounds": "REB",
-            "Offensive Rebounds": "OREB",
-            "Defensive Rebounds": "DREB",
+            // Overview
+            "Points": "PTS",
+            "Rebounds": "REB",
+            "Off Reb": "OREB",
+            "Def Reb": "DREB",
             "Assists": "AST",
             "Steals": "STL",
             "Blocks": "BLK",
             "Turnovers": "TO",
-            "Personal Fouls": "PF",
+            "Fouls": "PF",
+            // Shooting
+            "FG Made": "FGM",
+            "FG Att": "FGA",
+            "FG%": "FG%",
+            "3PT Made": "3PM",
+            "3PT Att": "3PA",
+            "3PT%": "3P%",
+            "FT Made": "FTM",
+            "FT Att": "FTA",
+            "FT%": "FT%",
+            // Extra
+            "Fast Break Pts": "FBPTS",
+            "Paint Pts": "PITP",
+            "Pts off TO": "POTO",
+            "2nd Chance Pts": "2CP",
+            "Bench Pts": "BNCH",
+            "Biggest Lead": "BL",
+            "Lead Changes": "LC",
+            "Times Tied": "TT",
+            // NHL
             "Shots on Goal": "SOG",
-            "Points": "PTS",
             "Penalty Minutes": "PIM"
         ]
         return shorts[stat.name] ?? stat.name
@@ -420,13 +424,14 @@ struct TeamComparisonRowView: View {
 #Preview("Team Stats Container") {
     TeamStatsContainer(
         stats: [
-            TeamComparisonStat(name: "Field Goal %", homeValue: 0.52, awayValue: 0.44, homeDisplay: "52.0%", awayDisplay: "44.0%"),
-            TeamComparisonStat(name: "3-Point %", homeValue: 0.38, awayValue: 0.35, homeDisplay: "38.0%", awayDisplay: "35.0%"),
-            TeamComparisonStat(name: "Free Throw %", homeValue: 0.85, awayValue: 0.78, homeDisplay: "85.0%", awayDisplay: "78.0%"),
-            TeamComparisonStat(name: "Total Rebounds", homeValue: 48, awayValue: 42, homeDisplay: "48", awayDisplay: "42"),
+            TeamComparisonStat(name: "Points", homeValue: 112, awayValue: 104, homeDisplay: "112", awayDisplay: "104"),
+            TeamComparisonStat(name: "Rebounds", homeValue: 48, awayValue: 42, homeDisplay: "48", awayDisplay: "42"),
             TeamComparisonStat(name: "Assists", homeValue: 28, awayValue: 22, homeDisplay: "28", awayDisplay: "22"),
+            TeamComparisonStat(name: "Steals", homeValue: 8, awayValue: 6, homeDisplay: "8", awayDisplay: "6"),
             TeamComparisonStat(name: "Turnovers", homeValue: 12, awayValue: 18, homeDisplay: "12", awayDisplay: "18"),
-            TeamComparisonStat(name: "Steals", homeValue: 8, awayValue: 6, homeDisplay: "8", awayDisplay: "6")
+            TeamComparisonStat(name: "FG%", homeValue: 0.52, awayValue: 0.44, homeDisplay: "52.0%", awayDisplay: "44.0%"),
+            TeamComparisonStat(name: "3PT%", homeValue: 0.38, awayValue: 0.35, homeDisplay: "38.0%", awayDisplay: "35.0%"),
+            TeamComparisonStat(name: "FT%", homeValue: 0.85, awayValue: 0.78, homeDisplay: "85.0%", awayDisplay: "78.0%")
         ],
         homeTeam: "Cleveland Cavaliers",
         awayTeam: "Minnesota Timberwolves"
@@ -438,7 +443,7 @@ struct TeamComparisonRowView: View {
 #Preview("Single Row") {
     TeamComparisonRowView(
         stat: TeamComparisonStat(
-            name: "Field Goal %",
+            name: "FG%",
             homeValue: 0.52,
             awayValue: 0.44,
             homeDisplay: "52.0%",

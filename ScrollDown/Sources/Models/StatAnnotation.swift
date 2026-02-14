@@ -13,7 +13,7 @@ enum StatAnnotationGenerator {
         awayAbbrev: String
     ) -> String? {
         switch stat.name {
-        case "Offensive Rebounds":
+        case "Off Reb":
             return offensiveReboundsAnnotation(stat, allStats: allStats, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
         case "Turnovers":
@@ -22,7 +22,7 @@ enum StatAnnotationGenerator {
         case "Assists":
             return assistsAnnotation(stat, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
-        case "Total Rebounds", "Defensive Rebounds":
+        case "Rebounds", "Def Reb":
             return reboundsAnnotation(stat, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
         case "Steals":
@@ -31,16 +31,16 @@ enum StatAnnotationGenerator {
         case "Blocks":
             return blocksAnnotation(stat, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
-        case "Personal Fouls":
+        case "Fouls":
             return foulsAnnotation(stat, allStats: allStats, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
-        case "Free Throws Made":
+        case "FT Made":
             return freeThrowsAnnotation(stat, allStats: allStats, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
-        case "Field Goal %":
+        case "FG%":
             return fieldGoalAnnotation(stat, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
-        case "3-Point %":
+        case "3PT%":
             return threePointAnnotation(stat, allStats: allStats, homeAbbrev: homeAbbrev, awayAbbrev: awayAbbrev)
 
         default:
@@ -170,7 +170,7 @@ enum StatAnnotationGenerator {
         awayAbbrev: String
     ) -> String? {
         // Check for FT attempt differential
-        guard let ftStat = allStats.first(where: { $0.name == "Free Throws Made" }),
+        guard let ftStat = allStats.first(where: { $0.name == "FT Made" }),
               let homeFT = ftStat.homeValue, let awayFT = ftStat.awayValue else {
             return nil
         }
@@ -242,7 +242,7 @@ enum StatAnnotationGenerator {
         guard diff >= 10 else { return nil }
 
         // Check 3PM for volume context
-        if let threePM = allStats.first(where: { $0.name == "3-Pointers Made" }),
+        if let threePM = allStats.first(where: { $0.name == "3PT Made" }),
            let home3PM = threePM.homeValue, let away3PM = threePM.awayValue {
             let leader = homePct > awayPct ? homeAbbrev : awayAbbrev
             let leaderMakes = homePct > awayPct ? Int(home3PM) : Int(away3PM)
