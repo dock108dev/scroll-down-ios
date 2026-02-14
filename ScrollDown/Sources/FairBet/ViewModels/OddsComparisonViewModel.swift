@@ -47,6 +47,9 @@ final class OddsComparisonViewModel: ObservableObject {
     @Published var sortOption: SortOption = .bestEV {
         didSet { applyFilters() }
     }
+    @Published var searchText: String = "" {
+        didSet { applyFilters() }
+    }
 
     @Published var oddsFormat: OddsFormat = .american {
         didSet { saveOddsFormat() }
@@ -278,6 +281,16 @@ final class OddsComparisonViewModel: ObservableObject {
         // Market filter
         if let market = selectedMarket {
             filtered = filtered.filter { $0.market == market }
+        }
+
+        // Search filter
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            filtered = filtered.filter {
+                $0.homeTeam.lowercased().contains(query) ||
+                $0.awayTeam.lowercased().contains(query) ||
+                $0.selection.lowercased().contains(query)
+            }
         }
 
         // +EV only filter

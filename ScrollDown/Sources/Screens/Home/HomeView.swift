@@ -21,6 +21,7 @@ struct HomeView: View {
     @State var searchText = ""
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
+    @State private var selectedOddsMarket: MarketKey?
     private let refreshTimer = Timer.publish(every: 900, on: .main, in: .common).autoconnect()
 
     init() {
@@ -166,6 +167,7 @@ struct HomeView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.bottom, 4)
             } else if viewMode == .odds {
+                // League filter row
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: HomeLayout.filterSpacing) {
                         oddsLeagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
@@ -185,6 +187,73 @@ struct HomeView: View {
                     .padding(.trailing, horizontalPadding)
                 }
                 .background(HomeTheme.background)
+
+                // Market filter row + sort menu
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: HomeLayout.filterSpacing) {
+                        oddsMarketFilterButton(nil, label: HomeStrings.allLeaguesLabel)
+                        ForEach(MarketKey.allCases) { market in
+                            oddsMarketFilterButton(market, label: market.displayName)
+                        }
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.trailing, 90)
+                    .padding(.vertical, HomeLayout.filterVerticalPadding)
+                }
+                .overlay(alignment: .trailing) {
+                    Menu {
+                        ForEach(OddsComparisonViewModel.SortOption.allCases, id: \.self) { option in
+                            Button {
+                                oddsViewModel.sortOption = option
+                            } label: {
+                                if oddsViewModel.sortOption == option {
+                                    Label(option.rawValue, systemImage: "checkmark")
+                                } else {
+                                    Text(option.rawValue)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.arrow.down")
+                            Text(oddsViewModel.sortOption.rawValue)
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray5))
+                        .clipShape(Capsule())
+                    }
+                    .padding(.trailing, horizontalPadding)
+                }
+                .background(HomeTheme.background)
+
+                // Odds search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                    TextField("Search teams…", text: $oddsViewModel.searchText)
+                        .font(.subheadline)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    if !oddsViewModel.searchText.isEmpty {
+                        Button {
+                            oddsViewModel.searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 4)
             }
         }
     }
@@ -215,6 +284,21 @@ struct HomeView: View {
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
                 .background(selectedOddsLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedOddsLeague == league ? .white : .primary)
+                .clipShape(Capsule())
+        }
+    }
+
+    private func oddsMarketFilterButton(_ market: MarketKey?, label: String) -> some View {
+        Button(action: {
+            selectedOddsMarket = market
+            oddsViewModel.selectedMarket = market
+        }) {
+            Text(label)
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, HomeLayout.filterHorizontalPadding)
+                .padding(.vertical, HomeLayout.filterVerticalPadding)
+                .background(selectedOddsMarket == market ? HomeTheme.accentColor : Color(.systemGray5))
+                .foregroundColor(selectedOddsMarket == market ? .white : .primary)
                 .clipShape(Capsule())
         }
     }
