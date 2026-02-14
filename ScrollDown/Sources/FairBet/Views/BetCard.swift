@@ -123,6 +123,33 @@ struct BetCard: View {
 
     private var booksGrid: some View {
         HStack(alignment: .top, spacing: 6) {
+            // Fair Odds chip (leading position)
+            HStack(spacing: 4) {
+                Text(FairBetCopy.fairEstimateShort)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(FairBetTheme.info)
+                Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(.primary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(FairBetTheme.info.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(FairBetTheme.info.opacity(0.25), lineWidth: 1)
+            )
+
+            // Vertical divider
+            Rectangle()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 1, height: 16)
+                .padding(.vertical, 6)
+
+            // Book chips sorted by EV
             FlowLayout(spacing: 6) {
                 ForEach(sortedBooks) { book in
                     MiniBookChip(
@@ -132,24 +159,6 @@ struct BetCard: View {
                     )
                 }
             }
-
-            Spacer(minLength: 0)
-
-            // Fair Odds chip (right-justified)
-            HStack(spacing: 4) {
-                Text("Fair Odds")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(.secondary)
-                Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(FairBetTheme.surfaceSecondary.opacity(0.5))
-            )
         }
     }
 
