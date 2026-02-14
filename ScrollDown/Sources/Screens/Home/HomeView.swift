@@ -167,40 +167,58 @@ struct HomeView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.bottom, 4)
             } else if viewMode == .odds {
-                // League filter row
+                // Combined filter bar: league pills, separator, market pills
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: HomeLayout.filterSpacing) {
+                    HStack(spacing: 8) {
+                        // League filters
                         oddsLeagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
                         ForEach(FairBetLeague.allCases) { league in
                             oddsLeagueFilterButton(league, label: league.rawValue)
                         }
-                    }
-                    .padding(.horizontal, horizontalPadding)
-                    .padding(.trailing, 44)
-                    .padding(.vertical, HomeLayout.filterVerticalPadding)
-                }
-                .overlay(alignment: .trailing) {
-                    refreshButton {
-                        Task { await oddsViewModel.refresh() }
-                    }
-                    .disabled(oddsViewModel.isLoading)
-                    .padding(.trailing, horizontalPadding)
-                }
-                .background(HomeTheme.background)
 
-                // Market filter row + sort menu
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: HomeLayout.filterSpacing) {
-                        oddsMarketFilterButton(nil, label: HomeStrings.allLeaguesLabel)
+                        // Separator
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.3))
+                            .frame(width: 1, height: 20)
+
+                        // Market filters
+                        oddsMarketFilterButton(nil, label: "All")
                         ForEach(MarketKey.allCases) { market in
                             oddsMarketFilterButton(market, label: market.displayName)
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
-                    .padding(.trailing, 90)
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
                 }
-                .overlay(alignment: .trailing) {
+                .background(HomeTheme.background)
+
+                // Controls row: search + sort + parlay + refresh
+                HStack(spacing: 8) {
+                    // Search field
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        TextField("Search teams…", text: $oddsViewModel.searchText)
+                            .font(.subheadline)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                        if !oddsViewModel.searchText.isEmpty {
+                            Button {
+                                oddsViewModel.searchText = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    // Sort menu
                     Menu {
                         ForEach(OddsComparisonViewModel.SortOption.allCases, id: \.self) { option in
                             Button {
@@ -214,46 +232,59 @@ struct HomeView: View {
                             }
                         }
                     } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.arrow.down")
-                            Text(oddsViewModel.sortOption.rawValue)
-                        }
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(.systemGray5))
-                        .clipShape(Capsule())
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 32, height: 32)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.trailing, horizontalPadding)
-                }
-                .background(HomeTheme.background)
 
-                // Odds search bar
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                        .font(.subheadline)
-                    TextField("Search teams…", text: $oddsViewModel.searchText)
-                        .font(.subheadline)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                    if !oddsViewModel.searchText.isEmpty {
+                    // Parlay badge
+                    if oddsViewModel.parlayCount > 0 {
                         Button {
-                            oddsViewModel.searchText = ""
+                            if oddsViewModel.canShowParlay {
+                                oddsViewModel.showParlaySheet = true
+                            }
                         } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                                .font(.subheadline)
+                            HStack(spacing: 4) {
+                                Image(systemName: "list.bullet.rectangle")
+                                    .font(.caption2)
+                                Text("\(oddsViewModel.parlayCount)")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .foregroundColor(oddsViewModel.canShowParlay ? FairBetTheme.info : .secondary)
+                            .frame(height: 32)
+                            .padding(.horizontal, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(oddsViewModel.canShowParlay ? FairBetTheme.info.opacity(0.12) : Color(.systemGray6))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(oddsViewModel.canShowParlay ? FairBetTheme.info.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                            )
                         }
+                        .buttonStyle(.plain)
+                        .disabled(!oddsViewModel.canShowParlay)
                     }
+
+                    // Refresh button
+                    Button {
+                        Task { await oddsViewModel.refresh() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 32, height: 32)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(oddsViewModel.isLoading)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, horizontalPadding)
-                .padding(.bottom, 4)
+                .padding(.bottom, 6)
             }
         }
     }

@@ -11,6 +11,8 @@ struct BetCard: View {
     let bet: APIBet
     let oddsFormat: OddsFormat
     let evResult: OddsComparisonViewModel.EVResult?
+    var isInParlay: Bool = false
+    var onToggleParlay: (() -> Void)?
 
     // MARK: - Computed Properties
 
@@ -39,6 +41,12 @@ struct BetCard: View {
     private var isHighValueBet: Bool {
         guard let ev = bestBookEV else { return false }
         return ev >= 5.0 && (confidence == .high || confidence == .medium)
+    }
+
+    private var parlayBorderColor: Color {
+        if isInParlay { return FairBetTheme.info.opacity(0.6) }
+        if isHighValueBet { return FairBetTheme.positive.opacity(0.4) }
+        return FairBetTheme.cardBorder
     }
 
     private var sortedBooks: [BookPrice] {
@@ -96,7 +104,7 @@ struct BetCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(isHighValueBet ? FairBetTheme.positive.opacity(0.4) : FairBetTheme.cardBorder, lineWidth: isHighValueBet ? 1.5 : 1)
+                .stroke(parlayBorderColor, lineWidth: isInParlay ? 1.5 : (isHighValueBet ? 1.5 : 1))
         )
     }
 
@@ -122,44 +130,77 @@ struct BetCard: View {
     // MARK: - Books Grid
 
     private var booksGrid: some View {
-        HStack(alignment: .top, spacing: 6) {
-            // Fair Odds chip (leading position)
-            HStack(spacing: 4) {
-                Text(FairBetCopy.fairEstimateShort)
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(FairBetTheme.info)
-                Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(FairBetTheme.info.opacity(0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(FairBetTheme.info.opacity(0.25), lineWidth: 1)
-            )
+        HStack(alignment: .center, spacing: 6) {
+            // Fair Odds chip (pinned left)
+            fairOddsChip
 
             // Vertical divider
             Rectangle()
                 .fill(Color.secondary.opacity(0.3))
                 .frame(width: 1, height: 16)
-                .padding(.vertical, 6)
 
-            // Book chips sorted by EV
-            FlowLayout(spacing: 6) {
-                ForEach(sortedBooks) { book in
-                    MiniBookChip(
-                        book: book,
-                        isBest: book.price == bestBook?.price,
-                        ev: computeEV(for: book)
-                    )
+            // Book chips (scrollable middle)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(sortedBooks) { book in
+                        MiniBookChip(
+                            book: book,
+                            isBest: book.price == bestBook?.price,
+                            ev: computeEV(for: book)
+                        )
+                    }
                 }
             }
+
+            // Parlay toggle (pinned right)
+            if let onToggleParlay {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.3))
+                    .frame(width: 1, height: 16)
+
+                Button {
+                    onToggleParlay()
+                } label: {
+                    Text(isInParlay ? "\u{2713} Parlay" : "\u{FF0B} Parlay")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(isInParlay ? FairBetTheme.info : .secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(isInParlay ? FairBetTheme.info.opacity(0.10) : Color(.systemGray6))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(isInParlay ? FairBetTheme.info.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                        )
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+            }
         }
+    }
+
+    private var fairOddsChip: some View {
+        HStack(spacing: 4) {
+            Text(FairBetCopy.fairEstimateShort)
+                .font(.caption.weight(.medium))
+                .foregroundColor(FairBetTheme.info)
+            Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(.primary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(FairBetTheme.info.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(FairBetTheme.info.opacity(0.25), lineWidth: 1)
+        )
+        .fixedSize()
     }
 
     private func computeEV(for book: BookPrice) -> Double {

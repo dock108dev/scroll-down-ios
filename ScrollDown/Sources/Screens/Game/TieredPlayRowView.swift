@@ -121,6 +121,32 @@ struct Tier1PlayRowView: View {
 /// Visible but de-emphasized — medium-weight font, left accent line, subtle background
 struct Tier2PlayRowView: View {
     let event: UnifiedTimelineEvent
+    var homeTeam: String = ""
+    var awayTeam: String = ""
+
+    private var resolvedTeamName: String? {
+        guard let team = event.team else { return nil }
+        let teamLower = team.lowercased()
+        let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
+        let awayAbbrev = TeamAbbreviations.abbreviation(for: awayTeam).lowercased()
+        if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
+            return homeTeam
+        } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
+            return awayTeam
+        }
+        return nil
+    }
+
+    private var grayscaleColor: Color {
+        guard let teamName = resolvedTeamName else { return .secondary }
+        let isHome = teamName == homeTeam
+        let teamColor = DesignSystem.TeamColors.matchupColor(
+            for: teamName,
+            against: isHome ? awayTeam : homeTeam,
+            isHome: isHome
+        )
+        return teamColor.opacity(0.5)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -141,10 +167,21 @@ struct Tier2PlayRowView: View {
 
             // Content — medium weight, clearly above T3's caption2/tertiary
             if let description = event.description {
-                Text(description)
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(DesignSystem.TextColor.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    if let teamName = resolvedTeamName {
+                        Text(TeamAbbreviations.abbreviation(for: teamName))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(grayscaleColor)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(grayscaleColor.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    Text(description)
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(DesignSystem.TextColor.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 0)
@@ -161,6 +198,32 @@ struct Tier2PlayRowView: View {
 /// Minimal visual weight - smallest font, lightest color
 struct Tier3PlayRowView: View {
     let event: UnifiedTimelineEvent
+    var homeTeam: String = ""
+    var awayTeam: String = ""
+
+    private var resolvedTeamName: String? {
+        guard let team = event.team else { return nil }
+        let teamLower = team.lowercased()
+        let homeAbbrev = TeamAbbreviations.abbreviation(for: homeTeam).lowercased()
+        let awayAbbrev = TeamAbbreviations.abbreviation(for: awayTeam).lowercased()
+        if teamLower == homeAbbrev || homeTeam.lowercased().contains(teamLower) {
+            return homeTeam
+        } else if teamLower == awayAbbrev || awayTeam.lowercased().contains(teamLower) {
+            return awayTeam
+        }
+        return nil
+    }
+
+    private var grayscaleColor: Color {
+        guard let teamName = resolvedTeamName else { return .secondary }
+        let isHome = teamName == homeTeam
+        let teamColor = DesignSystem.TeamColors.matchupColor(
+            for: teamName,
+            against: isHome ? awayTeam : homeTeam,
+            isHome: isHome
+        )
+        return teamColor.opacity(0.35)
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -177,12 +240,23 @@ struct Tier3PlayRowView: View {
                 .fill(DesignSystem.TextColor.tertiary.opacity(0.4))
                 .frame(width: 4, height: 4)
 
-            // Minimal description
+            // Minimal description with team badge
             if let description = event.description {
-                Text(description)
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                    .lineLimit(1)
+                HStack(alignment: .center, spacing: 4) {
+                    if let teamName = resolvedTeamName {
+                        Text(TeamAbbreviations.abbreviation(for: teamName))
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(grayscaleColor)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(grayscaleColor.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    Text(description)
+                        .font(.caption2)
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
@@ -216,14 +290,14 @@ struct TieredPlayGroupView: View {
         case .secondary:
             // T2: indented once
             ForEach(group.events) { event in
-                Tier2PlayRowView(event: event)
+                Tier2PlayRowView(event: event, homeTeam: homeTeam, awayTeam: awayTeam)
                     .padding(.leading, 16)
             }
 
         case .tertiary:
             // T3: indented twice — least prominent
             ForEach(group.events) { event in
-                Tier3PlayRowView(event: event)
+                Tier3PlayRowView(event: event, homeTeam: homeTeam, awayTeam: awayTeam)
                     .padding(.leading, 32)
             }
         }

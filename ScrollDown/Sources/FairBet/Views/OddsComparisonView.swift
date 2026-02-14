@@ -28,7 +28,9 @@ struct OddsComparisonView: View {
                             BetCard(
                                 bet: bet,
                                 oddsFormat: viewModel.oddsFormat,
-                                evResult: viewModel.evResult(for: bet)
+                                evResult: viewModel.evResult(for: bet),
+                                isInParlay: viewModel.isInParlay(bet),
+                                onToggleParlay: { viewModel.toggleParlay(bet) }
                             )
                         }
 
@@ -41,6 +43,9 @@ struct OddsComparisonView: View {
                     await viewModel.refresh()
                 }
             }
+        }
+        .sheet(isPresented: $viewModel.showParlaySheet) {
+            ParlaySheetView(viewModel: viewModel)
         }
         .task {
             if viewModel.allBets.isEmpty {

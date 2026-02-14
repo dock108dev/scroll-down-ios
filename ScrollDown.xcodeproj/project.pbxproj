@@ -33,6 +33,7 @@
 		3A0BF70809513A6DFBBE7BE8 /* GameDetailView+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD12859B949FE45C68980D98 /* GameDetailView+Timeline.swift */; };
 		3BCFAFA9043F5EA53ADC6039 /* FairBetCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA4D175D08915D573090FB9 /* FairBetCopy.swift */; };
 		3C90F32307B0AD2CC71781DB /* GameSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6551D325AD70A2B0FEEE3D98 /* GameSummary.swift */; };
+		PARLAY000002000000000002 /* ParlaySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PARLAY000001000000000001 /* ParlaySheetView.swift */; };
 		3F0B911114E84E91FC0B60FA /* GameDetailView+WrapUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63756D613F557AE4F72A61C7 /* GameDetailView+WrapUp.swift */; };
 		411CAF7BC51C99DD28A21B53 /* social-posts.json in Resources */ = {isa = PBXBuildFile; fileRef = C85573005E610E4D7897BC31 /* social-posts.json */; };
 		42C6EFE97E483463F4DEAEBB /* APIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6B4901C3D2397DF2D9B369 /* APIConfiguration.swift */; };
@@ -166,6 +167,7 @@
 		391A429C1EA5120D35ADF38B /* ContentHierarchy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentHierarchy.swift; sourceTree = "<group>"; };
 		40D0549B86E4D275566F0FC7 /* BetCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetCard.swift; sourceTree = "<group>"; };
 		4388D761310256CAA8B9F768 /* TimeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeService.swift; sourceTree = "<group>"; };
+		PARLAY000001000000000001 /* ParlaySheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParlaySheetView.swift; sourceTree = "<group>"; };
 		465650A590867756F99ECA3B /* ServerPlayGroupAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServerPlayGroupAdapter.swift; sourceTree = "<group>"; };
 		468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairOddsCalculator.swift; sourceTree = "<group>"; };
 		48EA8126B015E4B4AF86450D /* GameDetailDisplayModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailDisplayModels.swift; sourceTree = "<group>"; };
@@ -389,6 +391,7 @@
 				59AF227F2395599E6C613BBB /* OddsComparisonView.swift */,
 				40D0549B86E4D275566F0FC7 /* BetCard.swift */,
 				AFA4D175D08915D573090FB9 /* FairBetCopy.swift */,
+				PARLAY000001000000000001 /* ParlaySheetView.swift */,
 			);
 			name = Views;
 			path = Views;
@@ -842,6 +845,7 @@
 				00080852C85019B7FEEAC962 /* OddsComparisonView.swift in Sources */,
 				43082696385ACD228BBAFB90 /* BetCard.swift in Sources */,
 				3BCFAFA9043F5EA53ADC6039 /* FairBetCopy.swift in Sources */,
+				PARLAY000002000000000002 /* ParlaySheetView.swift in Sources */,
 				9C67DF5667E4FDEFE835975D /* FairBetTheme.swift in Sources */,
 				C3C221A6E6F7DBF6853E1594 /* RealityAndFeedbackView.swift in Sources */,
 				197296BE28BC540FDF47276B /* TeamColorCache.swift in Sources */,

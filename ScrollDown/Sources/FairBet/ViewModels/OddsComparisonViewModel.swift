@@ -51,6 +51,10 @@ final class OddsComparisonViewModel: ObservableObject {
         didSet { applyFilters() }
     }
 
+    // Parlay
+    @Published var parlayBetIDs: Set<String> = []
+    @Published var showParlaySheet: Bool = false
+
     @Published var oddsFormat: OddsFormat = .american {
         didSet { saveOddsFormat() }
     }
@@ -147,6 +151,39 @@ final class OddsComparisonViewModel: ObservableObject {
         displayedBets.filter { betHasReliablePositiveEV($0) }.count
     }
 
+    // MARK: - Parlay Computed Properties
+
+    var parlayCount: Int { parlayBetIDs.count }
+
+    /// Resolved from allBets so filter changes don't lose selections
+    var parlayBets: [APIBet] {
+        allBets.filter { parlayBetIDs.contains($0.id) }
+    }
+
+    var canShowParlay: Bool { parlayCount >= 2 }
+
+    var parlayFairProbability: Double {
+        let bets = parlayBets
+        guard !bets.isEmpty else { return 0 }
+        return bets.reduce(1.0) { result, bet in
+            let prob = cachedEVResults[bet.id]?.fairProbability ?? 0.5
+            return result * prob
+        }
+    }
+
+    var parlayFairAmericanOdds: Int {
+        let prob = parlayFairProbability
+        guard prob > 0 && prob < 1 else { return 100 }
+        return OddsCalculator.probToAmerican(prob)
+    }
+
+    var parlayConfidence: FairOddsConfidence {
+        let confidences = parlayBets.compactMap { cachedEVResults[$0.id]?.confidence }
+        guard !confidences.isEmpty else { return .none }
+        let order: [FairOddsConfidence] = [.none, .low, .medium, .high]
+        return confidences.min(by: { order.firstIndex(of: $0)! < order.firstIndex(of: $1)! }) ?? .none
+    }
+
     // MARK: - Initialization
 
     init(apiClient: FairBetAPIClient = .shared, mockDataProvider: FairBetMockDataProvider = .shared) {
@@ -238,6 +275,24 @@ final class OddsComparisonViewModel: ObservableObject {
     /// Toggle +EV only filter
     func togglePositiveEVOnly() {
         showOnlyPositiveEV.toggle()
+    }
+
+    // MARK: - Parlay
+
+    func toggleParlay(_ bet: APIBet) {
+        if parlayBetIDs.contains(bet.id) {
+            parlayBetIDs.remove(bet.id)
+        } else {
+            parlayBetIDs.insert(bet.id)
+        }
+    }
+
+    func isInParlay(_ bet: APIBet) -> Bool {
+        parlayBetIDs.contains(bet.id)
+    }
+
+    func clearParlay() {
+        parlayBetIDs.removeAll()
     }
 
     /// Load mock data for previews and testing
