@@ -15,14 +15,15 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 
 | Feature | Status |
 |---------|--------|
-| Home feed (Earlier/Yesterday/Today/Upcoming) | Live |
+| Home feed (Earlier/Yesterday/Today/Tomorrow) | Live |
+| Game search by team name | Live |
 | Game detail with collapsible sections | Live |
 | Flow-based timeline with narrative blocks | Live |
-| Play-by-play grouped by quarter/period | Live |
+| Tiered play-by-play with team badges | Live |
 | FairBet odds comparison with EV analysis | Live |
 | NHL skater/goalie stats | Live |
 | Team page navigation | Live |
-| Dark mode | Live |
+| Theme selection (system/light/dark) | Live |
 | iPad adaptive layout | Live |
 | Snapshot mode (beta time override) | Live |
 
@@ -40,10 +41,11 @@ xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 1
 
 | Mode | Description |
 |------|-------------|
-| `.live` | Production API at `sports-data-admin.dock108.ai` |
+| `.live` | Production API at `sports-data-admin.dock108.ai` (default) |
 | `.localhost` | Local server at `localhost:8000` |
+| `.mock` | Offline with generated data via `MockGameService` |
 
-Default is live mode. Set via `AppConfig.shared.environment`.
+Set via `AppConfig.shared.environment` or Admin Settings (debug builds).
 
 ## Documentation
 

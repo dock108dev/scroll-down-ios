@@ -23,7 +23,7 @@ Format: ISO8601 with timezone. App reads this on launch (debug builds only).
 
 ### Admin Settings UI
 
-Long-press (2 seconds) on "Updated X ago" in the home feed. Quick presets available:
+**Note:** The long-press trigger on the freshness text is not currently rendered in the home layout. Set `showingAdminSettings = true` in code to access. Quick presets available:
 - NBA Opening Night 2024
 - Super Bowl LVIII
 - March Madness 2024 Final

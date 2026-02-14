@@ -132,7 +132,7 @@ extension GameDetailView {
             // High scorer with stats
             if let scorer = highScorer {
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(abbreviatedName(scorer.playerName))
+                    Text(scorer.playerName.abbreviatedPlayerName)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(DesignSystem.TextColor.primary)
                     HStack(spacing: 6) {

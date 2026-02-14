@@ -108,7 +108,7 @@ extension GameDetailView {
 
         return HStack(spacing: 6) {
             // Player name
-            Text(abbreviatedName(skater.playerName))
+            Text(skater.playerName.abbreviatedPlayerName)
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
                 .frame(width: 120, alignment: .leading)
@@ -210,7 +210,7 @@ extension GameDetailView {
 
         return HStack(spacing: 6) {
             // Player name
-            Text(abbreviatedName(goalie.playerName))
+            Text(goalie.playerName.abbreviatedPlayerName)
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.primary)
                 .frame(width: 120, alignment: .leading)

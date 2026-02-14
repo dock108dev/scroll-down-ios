@@ -4,26 +4,24 @@ Guide for local development, testing, and debugging.
 
 ## Environments
 
-The app supports two runtime environments via `AppConfig.shared.environment`:
+The app supports three runtime environments via `AppConfig.shared.environment`:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
 | `.live` | Production backend API | Default, real data |
 | `.localhost` | Local dev server (port 8000) | Backend development |
+| `.mock` | Generated local data via `MockGameService` | Offline development |
 
-**Default:** Live mode.
-
-A `.mock` environment also exists in code (uses `MockGameService` with generated data) but is not the standard development path.
+**Default:** Live mode. Mock mode does not provide flow data, team colors, or unified timelines.
 
 ### Switching Modes
 
 ```swift
 // In code
 AppConfig.shared.environment = .localhost
-
-// Or via Admin Settings (debug builds only)
-// Long-press "Updated X ago" in Home feed
 ```
+
+**Note:** The Admin Settings UI (`AdminSettingsView`) exists but the long-press trigger on the freshness text is not currently rendered in the home layout. Access admin settings by setting `showingAdminSettings = true` in code.
 
 ## Mock Data
 
@@ -62,27 +60,29 @@ Freeze the app to a specific date to test historical data. **Debug builds only.*
 export IOS_BETA_ASSUME_NOW=2024-10-23T04:00:00Z
 ```
 
-Or use Admin Settings (long-press "Updated X ago" in Home feed).
+Or use Admin Settings (see note above about current access).
 
 See [beta-time-override.md](beta-time-override.md) for full documentation.
 
 ## QA Checklist
 
 ### UI
-- [ ] Dark and light mode
-- [ ] Long team names truncate gracefully
-- [ ] iPad adaptive layout (4-column grid, constrained width)
+- [ ] System, light, and dark themes
+- [ ] Long team names and 4-char abbreviations display correctly
+- [ ] iPad adaptive layout (4-column grid, constrained content width)
+- [ ] PBP tiers visually distinct (T1 badges, T2 accent lines, T3 dots)
 
 ### Data
 - [ ] Empty states show contextual messages
 - [ ] Loading skeletons appear
-- [ ] Outcomes stay hidden until revealed
+- [ ] Team stats show all API-returned fields (not just a fixed subset)
 - [ ] Section collapse states persist within session
+- [ ] Search filters games by team name
 
 ### Navigation
 - [ ] Scrolling stable when expanding sections
 - [ ] Back navigation preserves state
-- [ ] Tab bar scrolls to section reliably
+- [ ] Games/Current Odds/Settings tabs work
 - [ ] Team headers are tappable
 
 ## Debugging

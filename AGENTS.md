@@ -80,8 +80,9 @@ The backend pre-computes all derived data. The app does not compute these client
 | Time labels (`Q4 2:35`) | `time_label` on each play | `UnifiedTimelineEvent.timeLabel` |
 | Play tiers (1, 2, 3) | `tier` on each play | `PlayTier`, `TieredPlayGrouper` |
 | Odds labels (`BOS -5.5`, `O/U 221.5`) | `derivedMetrics` on game detail | `DerivedMetrics` → `pregameOddsLines` |
-| Odds outcomes (covered, went over, etc.) | `derivedMetrics` on game detail | `DerivedMetrics` → `oddsResult` |
-| Team colors (light/dark hex) | `GET /teams` → `TeamColorCache` | `DesignSystem.TeamColors` |
+| Odds outcomes (covered, went over, etc.) | `derivedMetrics` on game detail | `DerivedMetrics` → `wrapUpOddsLines` |
+| Team colors (light/dark hex) | `GET /teams` + per-game API fields → `TeamColorCache` | `DesignSystem.TeamColors` |
+| Team abbreviations | Per-game API fields → `TeamAbbreviations` | `TeamAbbreviations.abbreviation(for:)` |
 | Merged timeline (PBP + tweets + odds) | `GET /games/{id}/timeline` | `unifiedTimelineEvents` |
 
 ## Flow Architecture
@@ -102,7 +103,22 @@ The app renders completed games using a **blocks-based** flow system:
    - `FlowBlockCardView` — Single block with mini box at bottom
    - `MiniBoxScoreView` — Compact player stats per block
 
-4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically grouped by period, tiered by server-provided `tier` values.
+4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically grouped by period, tiered by server-provided `tier` values:
+   - **Tier 1** — Scoring plays: accent bar, team badge, bold text, score line
+   - **Tier 2** — Notable plays: indented, medium-weight, left accent line
+   - **Tier 3** — Routine plays: double-indented, minimal dot indicator
+
+## Team Stats
+
+Team stats use a `KnownStat` definition list in `GameDetailViewModel`. Each stat defines:
+- `keys` — All possible API key names (NBA snake_case, NCAAB camelCase, legacy variants)
+- `label` — Display name
+- `group` — Grouping: Overview, Shooting, or Extra
+- `isPercentage` — Format as percentage if true
+
+The app iterates definitions, checks if any key exists in the API response, and displays whatever is found. No client-side computation of derived stats. Groups only appear if they contain at least one stat with data.
+
+Player stats use direct key lookup against `PlayerStat.rawStats`.
 
 ## FairBet Module
 
@@ -121,6 +137,18 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 - Row 2: Opponent + date/time
 - Divider
 - Row 3: Books grid (sorted by EV, FlowLayout with MiniBookChip) + Fair Odds (right-justified)
+
+## Home View
+
+The home screen has three modes via a segmented control (`HomeViewMode`):
+
+| Tab | Content |
+|-----|---------|
+| Games | Game feed with Earlier/Yesterday/Today/Tomorrow sections, league filter, search bar |
+| Current Odds | FairBet odds comparison with league filter |
+| Settings | Theme selection, odds format, completed game tracking |
+
+The Games tab includes a search bar that filters by team name and a league filter (All, NBA, NCAAB, NHL). Both the Games and Current Odds tabs have a refresh button overlaid on the league filter row.
 
 ## View Architecture
 
@@ -145,6 +173,7 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 |------|----------|----------|
 | `.live` | `sports-data-admin.dock108.ai` | Production (default) |
 | `.localhost` | `localhost:8000` | Local backend development |
+| `.mock` | N/A (local data) | Offline development with `MockGameService` |
 
 **Testing:** All testing should use the live API with non-proprietary sports data. The production database is active and ready.
 

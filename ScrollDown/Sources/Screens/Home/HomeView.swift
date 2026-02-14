@@ -219,23 +219,6 @@ struct HomeView: View {
         }
     }
 
-    private var dataFreshnessView: some View {
-        HStack {
-            Text(dataFreshnessText)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, HomeLayout.horizontalPadding)
-        .padding(.bottom, HomeLayout.freshnessBottomPadding)
-        .onLongPressGesture(minimumDuration: 2.0) {
-            // Beta admin: long press to access admin settings
-            #if DEBUG
-            showingAdminSettings = true
-            #endif
-        }
-    }
-
     private var contentView: some View {
         Group {
             if viewMode == .recaps {
@@ -315,16 +298,6 @@ struct HomeView: View {
                 }
             }
         }
-    }
-
-    private var dataFreshnessText: String {
-        guard let lastUpdatedAt else {
-            return HomeStrings.updateUnavailable
-        }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        let relative = formatter.localizedString(for: lastUpdatedAt, relativeTo: Date())
-        return String(format: HomeStrings.updatedTemplate, relative)
     }
 
     private var sectionsInOrder: [HomeSectionState] {

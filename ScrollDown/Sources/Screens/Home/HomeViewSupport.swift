@@ -83,7 +83,6 @@ enum HomeLayout {
     static let sectionStatePadding: CGFloat = 12
     static let skeletonSpacing: CGFloat = 12
     static let bottomPadding: CGFloat = 32
-    static let freshnessBottomPadding: CGFloat = 8
 }
 
 // MARK: - Button Styles
@@ -110,7 +109,6 @@ enum HomeStrings {
     static let sectionEarlier = "Earlier"
     static let sectionYesterday = "Yesterday"
     static let sectionToday = "Today"
-    static let sectionUpcoming = "Coming Up"
     static let sectionTomorrow = "Tomorrow"
     static let sectionLoading = "Loading section..."
     static let earlierEmpty = "No games from earlier."
@@ -118,8 +116,6 @@ enum HomeStrings {
     static let todayEmpty = "No games scheduled for today."
     static let tomorrowEmpty = "No games scheduled for tomorrow."
     static let upcomingEmpty = "No games scheduled in the next 24 hours."
-    static let updatedTemplate = "Updated %@"
-    static let updateUnavailable = "Update time unavailable"
     static let globalErrorMessage = "We couldn't reach the latest game feeds."
     static let earlierError = "Earlier games unavailable. %@"
     static let yesterdayError = "Yesterday's games unavailable. %@"

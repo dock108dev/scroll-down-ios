@@ -70,24 +70,6 @@ extension GameDetailViewModel {
         return nil
     }
 
-    var highlightByPlayIndex: [Int: [SocialPostEntry]] {
-        let plays = detail?.plays ?? []
-        let highlightPosts = highlights
-        guard !plays.isEmpty, !highlightPosts.isEmpty else {
-            return [:]
-        }
-
-        let spacing = max(TimelineConstants.minimumHighlightSpacing, plays.count / max(TimelineConstants.minimumHighlightSpacing, highlightPosts.count))
-        var mapping: [Int: [SocialPostEntry]] = [:]
-
-        for (index, highlight) in highlightPosts.enumerated() {
-            let playIndex = highlightPlayIndex(for: index, spacing: spacing, plays: plays)
-            mapping[playIndex, default: []].append(highlight)
-        }
-
-        return mapping
-    }
-
     // MARK: - Pre/Post Game Tweet Helpers
 
     /// Pre-game tweets (tweets before the first PBP event)
@@ -200,11 +182,6 @@ extension GameDetailViewModel {
         return nil
     }
 
-    func highlightPlayIndex(for index: Int, spacing: Int, plays: [PlayEntry]) -> Int {
-        let targetIndex = min(index * spacing, plays.count - 1)
-        return plays[targetIndex].playIndex
-    }
-
     func sanitizeSummary(_ summary: String) -> String? {
         let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -226,7 +203,6 @@ extension GameDetailViewModel {
 // MARK: - Timeline Constants
 
 enum TimelineConstants {
-    static let minimumHighlightSpacing = 1
     static let eventsKey = "events"
     static let timestampKey = "timestamp"
     static let eventTimestampKey = "event_timestamp"

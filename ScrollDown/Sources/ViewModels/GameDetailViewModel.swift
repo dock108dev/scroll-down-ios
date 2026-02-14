@@ -329,36 +329,6 @@ final class GameDetailViewModel: ObservableObject {
         !hasFlowData && !hasPbpData
     }
 
-    /// Get plays for a specific block
-    func playsForBlock(_ block: BlockDisplayModel) -> [FlowPlay] {
-        let ids = Set(block.playIds)
-        return flowPlays.filter { ids.contains($0.playId) }
-    }
-
-    /// Check if a play is a key play within a block
-    func isKeyPlay(_ playId: Int, in block: BlockDisplayModel) -> Bool {
-        block.keyPlayIds.contains(playId)
-    }
-
-    /// Whether to show the Flow View (completed games with flow data)
-    var shouldShowFlowView: Bool {
-        guard let game = game else { return false }
-        let isCompleted = game.status == .completed || game.status == .final
-        return isCompleted && hasFlowData
-    }
-
-    /// Get social posts filtered by reveal level
-    var filteredSocialPosts: [SocialPostResponse] {
-        socialPosts.filter { $0.isSafeToShow(outcomeRevealed: isOutcomeRevealed) }
-    }
-
-    /// Enable social tab and load posts
-    func enableSocialTab(gameId: Int, service: GameService) async {
-        isSocialTabEnabled = true
-        UserDefaults.standard.set(true, forKey: socialTabEnabledKey(for: gameId))
-        await loadSocialPosts(gameId: gameId, service: service)
-    }
-
     /// Load social tab preference
     func loadSocialTabPreference(for gameId: Int) {
         isSocialTabEnabled = UserDefaults.standard.bool(forKey: socialTabEnabledKey(for: gameId))
@@ -372,56 +342,6 @@ final class GameDetailViewModel: ObservableObject {
 
     var game: Game? {
         detail?.game
-    }
-
-    var gameContext: String? {
-        guard let game = detail?.game else { return nil }
-        let context = generateBasicContext(for: game)
-        return context.isEmpty ? nil : context
-    }
-
-    private func generateBasicContext(for game: Game) -> String {
-        var contextParts: [String] = []
-
-        switch game.leagueCode {
-        case "NBA":
-            contextParts.append("NBA matchup")
-        case "NCAAB":
-            contextParts.append("College basketball")
-        case "NHL":
-            contextParts.append("NHL game")
-        default:
-            contextParts.append("\(game.leagueCode) game")
-        }
-
-        contextParts.append("featuring \(game.awayTeam) at \(game.homeTeam)")
-
-        switch game.status {
-        case .scheduled:
-            if let date = game.parsedGameDate {
-                let formatter = DateFormatter()
-                formatter.dateStyle = .medium
-                contextParts.append("scheduled for \(formatter.string(from: date))")
-            }
-        case .inProgress:
-            contextParts.append("currently in progress")
-        case .completed, .final:
-            contextParts.append("played on \(game.formattedDate)")
-        default:
-            break
-        }
-
-        return contextParts.joined(separator: ", ") + "."
-    }
-
-    var recapBullets: [String] {
-        guard let game = detail?.game else { return [] }
-        let statusText = game.status.rawValue.capitalized
-        return [
-            String(format: ViewModelConstants.recapTeamsTemplate, game.awayTeam, game.homeTeam),
-            String(format: ViewModelConstants.recapStatusTemplate, statusText),
-            ViewModelConstants.recapHighlightsTemplate
-        ]
     }
 
     var highlights: [SocialPostEntry] {
@@ -643,9 +563,6 @@ final class GameDetailViewModel: ObservableObject {
 // MARK: - Constants
 
 private enum ViewModelConstants {
-    static let recapTeamsTemplate = "Matchup: %@ at %@."
-    static let recapStatusTemplate = "Status: %@."
-    static let recapHighlightsTemplate = "Key moments and highlights below."
     static let halftimeQuarter = 2
     static let halftimeLabel = "Halftime"
     static let periodEndLabel = "Period End"

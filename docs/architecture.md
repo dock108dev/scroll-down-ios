@@ -56,21 +56,26 @@ The backend provides all derived values. The app does not compute these:
 - **Time labels** — `timeLabel` on each event (e.g., "Q4 2:35")
 - **Play tiers** — `tier` (1=primary, 2=secondary, 3=tertiary) for visual hierarchy
 - **Odds labels** — `derivedMetrics` dictionary with display-ready spread/total/moneyline labels
-- **Odds outcomes** — `derivedMetrics` with spread covered, total over/under, moneyline result
-- **Team colors** — Fetched from `/teams` endpoint, cached in `TeamColorCache` (7-day TTL)
+- **Odds outcomes** — `derivedMetrics` with spread covered, total over/under, moneyline result (displayed via `wrapUpOddsLines` with open + close rows)
+- **Team colors** — Fetched from `/teams` endpoint (cached in `TeamColorCache`, 7-day TTL) and also injected from per-game API fields (`homeTeamColorLight`, etc.)
+- **Team abbreviations** — Injected from per-game API fields (`homeTeamAbbr`, etc.) into `TeamAbbreviations` cache
 - **Unified timeline** — Merged PBP + social + odds events from `/games/{id}/timeline`
 
 ### Team Color System
 
-`TeamColorCache` fetches team colors on app launch and caches in UserDefaults:
+Team colors come from two sources:
+1. **Bulk fetch** — `TeamColorCache.loadCachedOrFetch()` on app launch, cached in UserDefaults (7-day TTL)
+2. **Per-game injection** — API responses include `homeTeamColorLight`/`homeTeamColorDark` fields, injected into `TeamColorCache` on load
 
 ```
 App Launch → TeamColorCache.loadCachedOrFetch()
                     │
                     ├─ Disk cache valid? → Use cached colors
                     └─ Expired/empty?    → GET /api/admin/sports/teams → cache
-                                                                          │
-DesignSystem.TeamColors.color(for:) → TeamColorCache.color(for:) ← ─ ─ ─┘
+
+Game Detail / Flow / Home Feed → inject(teamName:lightHex:darkHex:)
+                                     │
+DesignSystem.TeamColors.color(for:) → TeamColorCache.color(for:)
                                          │
                                          ├─ Exact match? → (light, dark) UIColor pair
                                          ├─ Prefix match? → (light, dark) UIColor pair
@@ -98,7 +103,10 @@ The flow system uses **blocks** as the primary display unit:
    - `FlowBlockCardView` — Single block with narrative + mini box
    - `MiniBoxScoreView` — Per-block player stats
 
-4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically, grouped by period and tiered by server-provided `tier` values.
+4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically, grouped by period and tiered by server-provided `tier` values:
+   - **Tier 1** (primary) — Scoring plays with accent bar, team badge, score line
+   - **Tier 2** (secondary) — Notable plays, indented with left accent line
+   - **Tier 3** (tertiary) — Routine plays, double-indented with dot indicator
 
 ### Block Structure
 
@@ -117,6 +125,27 @@ Each `FlowBlock` contains:
 |-------|-------------|
 | `NHLSkaterStat` | Skater stats (TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM) |
 | `NHLGoalieStat` | Goalie stats (TOI, SA, SV, GA, SV%) |
+
+## Team Stats
+
+Team stats use a `KnownStat` definition pattern in `GameDetailViewModel`:
+
+```
+API Response (JSONB stats dict)
+     │
+     ▼
+KnownStat definitions (ordered list)
+     │ For each: try keys[0], keys[1], ... against stats dict
+     ▼
+TeamComparisonStat (name, homeValue, awayValue, formatted display)
+     │
+     ▼
+TeamStatsContainer → grouped by Overview / Shooting / Extra
+```
+
+Each `KnownStat` lists all possible API key variants for a stat, a display label, a group, and whether it's a percentage. Stats only appear if the API returned data for at least one key variant. No client-side derived stats.
+
+Player stats use direct key lookup against `PlayerStat.rawStats`.
 
 ## FairBet Architecture
 
@@ -146,7 +175,7 @@ OddsComparisonView → BetCard (always-visible card layout)
 The app uses `AppConfig` to manage runtime behavior:
 
 ```swift
-AppConfig.shared.environment  // .localhost or .live
+AppConfig.shared.environment  // .live (default), .localhost, or .mock
 AppConfig.shared.gameService  // Returns appropriate service implementation
 ```
 

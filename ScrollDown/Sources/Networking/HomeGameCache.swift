@@ -1,10 +1,12 @@
 import Foundation
+import OSLog
 
 /// Disk-based cache for home screen game sections.
 /// Persists game data to the Caches directory so the home screen can show
 /// cached data instantly on app open (stale-while-revalidate pattern).
 final class HomeGameCache {
     static let shared = HomeGameCache()
+    private let logger = Logger(subsystem: "com.scrolldown.app", category: "cache")
 
     struct CachedSection: Codable {
         let games: [GameSummary]
@@ -22,7 +24,7 @@ final class HomeGameCache {
         do {
             try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
         } catch {
-            print("[HomeGameCache] Failed to create cache directory: \(error.localizedDescription)")
+            logger.error("Failed to create cache directory: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -34,7 +36,7 @@ final class HomeGameCache {
             let data = try encoder.encode(section)
             try data.write(to: url, options: .atomic)
         } catch {
-            print("[HomeGameCache] Save failed for \(range.rawValue): \(error.localizedDescription)")
+            logger.error("Save failed for \(range.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -45,7 +47,7 @@ final class HomeGameCache {
         do {
             return try decoder.decode(CachedSection.self, from: data)
         } catch {
-            print("[HomeGameCache] Decode failed for \(range.rawValue): \(error.localizedDescription)")
+            logger.error("Decode failed for \(range.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -55,12 +57,12 @@ final class HomeGameCache {
         do {
             try FileManager.default.removeItem(at: cacheDir)
         } catch {
-            print("[HomeGameCache] Failed to remove cache directory: \(error.localizedDescription)")
+            logger.error("Failed to remove cache directory: \(error.localizedDescription, privacy: .public)")
         }
         do {
             try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
         } catch {
-            print("[HomeGameCache] Failed to recreate cache directory: \(error.localizedDescription)")
+            logger.error("Failed to recreate cache directory: \(error.localizedDescription, privacy: .public)")
         }
     }
 

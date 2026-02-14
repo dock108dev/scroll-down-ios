@@ -349,14 +349,6 @@ extension GameDetailView {
         return DesignSystem.TextColor.secondary
     }
 
-    func abbreviatedName(_ fullName: String) -> String {
-        let parts = fullName.split(separator: " ")
-        guard parts.count >= 2 else { return fullName }
-        let firstInitial = parts[0].prefix(1)
-        let lastName = parts.dropFirst().joined(separator: " ")
-        return "\(firstInitial). \(lastName)"
-    }
-
     private func formatMinutes(_ minutes: Double?) -> String {
         guard let mins = minutes else { return "--" }
         let whole = Int(mins)
@@ -415,59 +407,3 @@ extension GameDetailView {
     }
 }
 
-// MARK: - Player Name Cell with Tap to Expand
-
-struct PlayerNameCell: View {
-    let fullName: String
-
-    @State private var showingFullName = false
-
-    var body: some View {
-        Text(abbreviatedName)
-            .font(.subheadline.weight(.medium))
-            .foregroundColor(.primary)
-            .lineLimit(1)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.easeOut(duration: 0.15)) {
-                    showingFullName = true
-                }
-                // Auto-dismiss after delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(.easeIn(duration: 0.15)) {
-                        showingFullName = false
-                    }
-                }
-            }
-            .overlay(alignment: .top) {
-                if showingFullName {
-                    fullNameTooltip
-                        .offset(y: -36)
-                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .bottom)))
-                }
-            }
-    }
-
-    private var fullNameTooltip: some View {
-        Text(fullName)
-            .font(DesignSystem.Typography.rowMeta.weight(.medium))
-            .foregroundColor(.white)
-            .fixedSize()
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(.darkGray))
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.small))
-            .shadow(color: .black.opacity(0.2), radius: DesignSystem.Shadow.subtleRadius, y: DesignSystem.Shadow.subtleY)
-            .zIndex(100)
-    }
-
-    /// Convert "Jayson Tatum" to "J. Tatum"
-    private var abbreviatedName: String {
-        let parts = fullName.split(separator: " ")
-        guard parts.count >= 2 else { return fullName }
-
-        let firstInitial = parts[0].prefix(1)
-        let lastName = parts.dropFirst().joined(separator: " ")
-        return "\(firstInitial). \(lastName)"
-    }
-}
