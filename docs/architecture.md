@@ -152,9 +152,9 @@ Player stats use direct key lookup against `PlayerStat.rawStats`.
 The FairBet module computes fair odds and expected value across sportsbooks:
 
 ```
-FairBetAPIClient → [APIBet] → BetPairing → FairOddsCalculator → EVCalculator
-                                                                       │
-OddsComparisonViewModel ← caches EV results ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+FairBetAPIClient → [APIBet] → BetPairing → EVCalculator
+                                                    │
+OddsComparisonViewModel ← caches EV results ← ─ ─ ┘
        │
        ▼
 OddsComparisonView → BetCard (always-visible card layout)

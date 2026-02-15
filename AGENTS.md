@@ -30,7 +30,7 @@ ScrollDown/Sources/
 ├── FairBet/             # Betting odds comparison module
 │   ├── Models/          # Bet, EVCalculator, OddsCalculator, BetPairing
 │   ├── ViewModels/      # OddsComparisonViewModel
-│   ├── Views/           # OddsComparisonView, BetCard, FairBetCopy
+│   ├── Views/           # OddsComparisonView, BetCard, ParlaySheetView, FairBetCopy
 │   ├── Services/        # FairBetAPIClient, FairBetMockDataProvider
 │   └── Theme/           # FairBetTheme
 └── Mock/games/          # Static mock JSON for development
@@ -125,8 +125,8 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 1. `FairBetAPIClient` fetches odds from `/api/fairbet/odds`
 2. `BetPairing` pairs opposite sides of each market for fair odds computation
 3. `EVCalculator` computes expected value per book using fair probabilities and book-specific fee models
-5. `OddsComparisonViewModel` orchestrates filtering, sorting, and EV caching
-6. `BetCard` renders each bet as an always-visible card with EV, fair odds, and book chips
+4. `OddsComparisonViewModel` orchestrates filtering, sorting, and EV caching
+5. `BetCard` renders each bet as an always-visible card with EV, fair odds, and book chips
 
 **Card layout (BetCard):**
 - Row 1: Selection name + league badge + market type
