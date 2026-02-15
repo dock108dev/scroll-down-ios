@@ -44,12 +44,9 @@ struct BlockPlayerStat: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case name, pts, reb, ast
         case threePm = "3pm"
-        case deltaPts = "delta_pts"
-        case deltaReb = "delta_reb"
-        case deltaAst = "delta_ast"
+        case deltaPts, deltaReb, deltaAst
         case goals, assists, sog, plusMinus
-        case deltaGoals = "delta_goals"
-        case deltaAssists = "delta_assists"
+        case deltaGoals, deltaAssists
     }
 
     /// Formatted stat line for basketball: "15p/4r/6a (+7p/+2r)"
@@ -225,15 +222,20 @@ struct GameFlowResponse: Decodable {
     let validationErrors: [String]
     let homeTeam: String?
     let awayTeam: String?
+    let homeTeamAbbr: String?
+    let awayTeamAbbr: String?
+    let leagueCode: String?
     let homeTeamColorLight: String?
     let homeTeamColorDark: String?
     let awayTeamColorLight: String?
     let awayTeamColorDark: String?
+    let moments: [FlowMoment]
 
     enum CodingKeys: String, CodingKey {
         case gameId, sport, plays, blocks, validationPassed, validationErrors
-        case homeTeam, awayTeam
+        case homeTeam, awayTeam, homeTeamAbbr, awayTeamAbbr, leagueCode
         case homeTeamColorLight, homeTeamColorDark, awayTeamColorLight, awayTeamColorDark
+        case moments
     }
 
     init(from decoder: Decoder) throws {
@@ -246,17 +248,23 @@ struct GameFlowResponse: Decodable {
         blocks = try container.decodeIfPresent([FlowBlock].self, forKey: .blocks) ?? []
         homeTeam = try container.decodeIfPresent(String.self, forKey: .homeTeam)
         awayTeam = try container.decodeIfPresent(String.self, forKey: .awayTeam)
+        homeTeamAbbr = try container.decodeIfPresent(String.self, forKey: .homeTeamAbbr)
+        awayTeamAbbr = try container.decodeIfPresent(String.self, forKey: .awayTeamAbbr)
+        leagueCode = try container.decodeIfPresent(String.self, forKey: .leagueCode)
         homeTeamColorLight = try container.decodeIfPresent(String.self, forKey: .homeTeamColorLight)
         homeTeamColorDark = try container.decodeIfPresent(String.self, forKey: .homeTeamColorDark)
         awayTeamColorLight = try container.decodeIfPresent(String.self, forKey: .awayTeamColorLight)
         awayTeamColorDark = try container.decodeIfPresent(String.self, forKey: .awayTeamColorDark)
+        moments = try container.decodeIfPresent([FlowMoment].self, forKey: .moments) ?? []
     }
 
     init(gameId: Int, sport: String? = nil, plays: [FlowPlay] = [], blocks: [FlowBlock] = [],
          validationPassed: Bool = true, validationErrors: [String] = [],
          homeTeam: String? = nil, awayTeam: String? = nil,
+         homeTeamAbbr: String? = nil, awayTeamAbbr: String? = nil, leagueCode: String? = nil,
          homeTeamColorLight: String? = nil, homeTeamColorDark: String? = nil,
-         awayTeamColorLight: String? = nil, awayTeamColorDark: String? = nil) {
+         awayTeamColorLight: String? = nil, awayTeamColorDark: String? = nil,
+         moments: [FlowMoment] = []) {
         self.gameId = gameId
         self.sport = sport
         self.plays = plays
@@ -265,11 +273,28 @@ struct GameFlowResponse: Decodable {
         self.validationErrors = validationErrors
         self.homeTeam = homeTeam
         self.awayTeam = awayTeam
+        self.homeTeamAbbr = homeTeamAbbr
+        self.awayTeamAbbr = awayTeamAbbr
+        self.leagueCode = leagueCode
         self.homeTeamColorLight = homeTeamColorLight
         self.homeTeamColorDark = homeTeamColorDark
         self.awayTeamColorLight = awayTeamColorLight
         self.awayTeamColorDark = awayTeamColorDark
+        self.moments = moments
     }
+}
+
+// MARK: - Flow Moment
+
+/// A moment in the game flow linking blocks to plays for traceability
+struct FlowMoment: Codable, Equatable {
+    let playIds: [Int]
+    let explicitlyNarratedPlayIds: [Int]
+    let period: Int
+    let startClock: String?
+    let endClock: String?
+    let scoreBefore: [Int]
+    let scoreAfter: [Int]
 }
 
 // MARK: - Score Snapshot

@@ -301,6 +301,7 @@ struct GameDetailView: View {
                 }
             }
             .background(GameTheme.background)
+            .clipped()
             .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
                 playRowFrames = value
                 updateResumeMarkerIfNeeded()

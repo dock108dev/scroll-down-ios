@@ -148,13 +148,19 @@ final class GameDetailViewModel: ObservableObject {
         }
     }
 
-    /// Push API-provided team colors from a flow response into the shared cache.
+    /// Push API-provided team colors and abbreviations from a flow response into the shared caches.
     private func injectTeamColors(from flow: GameFlowResponse) {
         if let team = flow.homeTeam, let light = flow.homeTeamColorLight, let dark = flow.homeTeamColorDark {
             TeamColorCache.shared.inject(teamName: team, lightHex: light, darkHex: dark)
         }
         if let team = flow.awayTeam, let light = flow.awayTeamColorLight, let dark = flow.awayTeamColorDark {
             TeamColorCache.shared.inject(teamName: team, lightHex: light, darkHex: dark)
+        }
+        if let team = flow.homeTeam, let abbr = flow.homeTeamAbbr {
+            TeamAbbreviations.inject(teamName: team, abbreviation: abbr)
+        }
+        if let team = flow.awayTeam, let abbr = flow.awayTeamAbbr {
+            TeamAbbreviations.inject(teamName: team, abbreviation: abbr)
         }
     }
 

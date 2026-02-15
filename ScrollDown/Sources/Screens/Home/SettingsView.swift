@@ -9,13 +9,10 @@ struct SettingsView: View {
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
     @State private var readStateRefreshId = UUID()
 
-    private let sportsbooks = [
-        "DraftKings",
-        "FanDuel",
-        "BetMGM",
-        "Caesars",
-        "bet365"
-    ]
+    private var sportsbooks: [String] {
+        let available = oddsViewModel.booksAvailable
+        return available.isEmpty ? ["DraftKings", "FanDuel", "BetMGM", "Caesars", "bet365"] : available
+    }
 
     private let homeSectionItems: [(key: String, label: String)] = [
         ("earlier", "Earlier"),

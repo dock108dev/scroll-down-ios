@@ -27,19 +27,80 @@ enum FairBetLeague: String, CaseIterable, Identifiable, Codable {
 }
 
 /// Market types from the API
-enum MarketKey: String, CaseIterable, Identifiable, Codable {
-    case h2h = "h2h"
-    case spreads = "spreads"
-    case totals = "totals"
+/// Supports known mainline markets and decodes unknown values gracefully
+enum MarketKey: Identifiable, Codable, Equatable, Hashable {
+    case h2h
+    case spreads
+    case totals
+    case playerPoints
+    case playerRebounds
+    case playerAssists
+    case playerThrees
+    case playerBlocks
+    case playerSteals
+    case unknown(String)
 
     var id: String { rawValue }
+
+    var rawValue: String {
+        switch self {
+        case .h2h: return "h2h"
+        case .spreads: return "spreads"
+        case .totals: return "totals"
+        case .playerPoints: return "player_points"
+        case .playerRebounds: return "player_rebounds"
+        case .playerAssists: return "player_assists"
+        case .playerThrees: return "player_threes"
+        case .playerBlocks: return "player_blocks"
+        case .playerSteals: return "player_steals"
+        case .unknown(let val): return val
+        }
+    }
 
     var displayName: String {
         switch self {
         case .h2h: return "Moneyline"
         case .spreads: return "Spread"
         case .totals: return "Total"
+        case .playerPoints: return "Player Points"
+        case .playerRebounds: return "Player Rebounds"
+        case .playerAssists: return "Player Assists"
+        case .playerThrees: return "Player Threes"
+        case .playerBlocks: return "Player Blocks"
+        case .playerSteals: return "Player Steals"
+        case .unknown(let val): return val.replacingOccurrences(of: "_", with: " ").capitalized
         }
+    }
+
+    /// Known mainline markets for filtering UI
+    static var mainlineMarkets: [MarketKey] {
+        [.h2h, .spreads, .totals]
+    }
+
+    init(rawValue: String) {
+        switch rawValue {
+        case "h2h": self = .h2h
+        case "spreads": self = .spreads
+        case "totals": self = .totals
+        case "player_points": self = .playerPoints
+        case "player_rebounds": self = .playerRebounds
+        case "player_assists": self = .playerAssists
+        case "player_threes": self = .playerThrees
+        case "player_blocks": self = .playerBlocks
+        case "player_steals": self = .playerSteals
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self.init(rawValue: rawValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 
@@ -68,6 +129,13 @@ struct APIBet: Identifiable, Codable, Equatable {
     let selectionKey: String
     let lineValue: Double?
     let books: [BookPrice]
+    // Server-side EV annotations
+    var marketCategory: String? = nil
+    var hasFair: Bool? = nil
+    var playerName: String? = nil
+    var evMethod: String? = nil
+    var evConfidenceTier: String? = nil
+    var evDisabledReason: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
@@ -79,6 +147,12 @@ struct APIBet: Identifiable, Codable, Equatable {
         case selectionKey = "selection_key"
         case lineValue = "line_value"
         case books
+        case marketCategory = "market_category"
+        case hasFair = "has_fair"
+        case playerName = "player_name"
+        case evMethod = "ev_method"
+        case evConfidenceTier = "ev_confidence_tier"
+        case evDisabledReason = "ev_disabled_reason"
     }
 
     /// Unique identifier for the bet
@@ -93,7 +167,7 @@ struct APIBet: Identifiable, Codable, Equatable {
 
     /// Parsed market enum
     var market: MarketKey {
-        MarketKey(rawValue: marketKey) ?? .h2h
+        MarketKey(rawValue: marketKey)
     }
 
     /// Parse selection from selection_key (e.g., "team:los_angeles_lakers" -> "Los Angeles Lakers")
@@ -144,26 +218,17 @@ struct APIBet: Identifiable, Codable, Equatable {
     }
 }
 
-// MARK: - Book Filtering
-
-extension APIBet {
-    /// Returns a copy of this bet with books filtered to only the allowed set.
-    func filteringBooks(to allowedBooks: Set<String>) -> APIBet {
-        APIBet(
-            gameId: gameId, leagueCode: leagueCode,
-            homeTeam: homeTeam, awayTeam: awayTeam,
-            gameDate: gameDate, marketKey: marketKey,
-            selectionKey: selectionKey, lineValue: lineValue,
-            books: books.filter { allowedBooks.contains($0.name) }
-        )
-    }
-}
 
 /// Sportsbook price from the API
 struct BookPrice: Identifiable, Codable, Equatable {
     let book: String
     let priceValue: Double
     let observedAt: Date
+    // Server-side EV annotations
+    var evPercent: Double? = nil
+    var impliedProb: Double? = nil
+    var trueProb: Double? = nil
+    var isSharp: Bool? = nil
 
     var id: String { book }
 
@@ -177,6 +242,10 @@ struct BookPrice: Identifiable, Codable, Equatable {
         case book
         case priceValue = "price"
         case observedAt = "observed_at"
+        case evPercent = "ev_percent"
+        case impliedProb = "implied_prob"
+        case trueProb = "true_prob"
+        case isSharp = "is_sharp"
     }
 
     /// Convert American odds to AmericanOdds struct

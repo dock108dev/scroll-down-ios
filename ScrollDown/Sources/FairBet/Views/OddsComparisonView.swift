@@ -57,13 +57,19 @@ struct OddsComparisonView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
-            ProgressView()
-                .scaleEffect(1.5)
+
             Text(viewModel.loadingProgress)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+
+            ProgressView(value: viewModel.loadingFraction)
+                .progressViewStyle(.linear)
+                .tint(.accentColor)
+                .frame(maxWidth: 200)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.loadingFraction)
+
             Spacer()
         }
     }

@@ -26,6 +26,8 @@ struct UnifiedTimelineEvent: Identifiable {
     // Odds-specific fields
     let oddsType: String?
     let oddsMarkets: [String: Any]?
+    let oddsBook: String?
+    let oddsMovements: [[String: Any]]?
 
     // Tweet-specific fields
     let tweetText: String?
@@ -77,7 +79,9 @@ struct UnifiedTimelineEvent: Identifiable {
         self.tier = dict["tier"] as? Int
 
         self.oddsType = dict["odds_type"] as? String
-        self.oddsMarkets = dict["odds_markets"] as? [String: Any]
+        self.oddsMarkets = dict["markets"] as? [String: Any] ?? dict["odds_markets"] as? [String: Any]
+        self.oddsBook = dict["book"] as? String
+        self.oddsMovements = dict["movements"] as? [[String: Any]]
 
         let rawDescription = dict["description"] as? String
             ?? dict["play_description"] as? String
@@ -159,6 +163,7 @@ extension UnifiedTimelineEvent: Equatable {
         lhs.description == rhs.description &&
         lhs.homeScore == rhs.homeScore &&
         lhs.awayScore == rhs.awayScore &&
+        lhs.oddsBook == rhs.oddsBook &&
         lhs.likesCount == rhs.likesCount &&
         lhs.retweetsCount == rhs.retweetsCount &&
         lhs.repliesCount == rhs.repliesCount

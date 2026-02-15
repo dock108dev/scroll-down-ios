@@ -71,6 +71,10 @@ struct BetPairingService {
                 return "Over"
             }
             return nil
+
+        default:
+            // Props, alternates, and unknown markets: no automatic pairing
+            return nil
         }
     }
 
