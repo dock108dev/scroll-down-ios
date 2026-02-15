@@ -6,7 +6,7 @@ extension GameDetailView {
     // MARK: - Player Stats Section (Tier 3: Supporting)
 
     func playerStatsSection(_ stats: [PlayerStat]) -> some View {
-        Tier3Container(
+        CollapsibleSectionCard(
             title: "Player Stats",
             isExpanded: $isPlayerStatsExpanded
         ) {
@@ -384,7 +384,7 @@ extension GameDetailView {
     // MARK: - Team Stats Section (Tier 3: Supporting)
 
     func teamStatsSection(_ stats: [TeamStat]) -> some View {
-        Tier3Container(
+        CollapsibleSectionCard(
             title: "Team Stats",
             isExpanded: $isTeamStatsExpanded
         ) {

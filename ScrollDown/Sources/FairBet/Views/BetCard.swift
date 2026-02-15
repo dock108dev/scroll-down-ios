@@ -14,6 +14,9 @@ struct BetCard: View {
     var isInParlay: Bool = false
     var onToggleParlay: (() -> Void)?
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isCompact: Bool { horizontalSizeClass == .compact }
+
     // MARK: - Computed Properties
 
     /// Fair probability from evResult (pre-computed with proper pairing)
@@ -130,16 +133,68 @@ struct BetCard: View {
     // MARK: - Books Grid
 
     private var booksGrid: some View {
+        Group {
+            if isCompact {
+                compactBooksGrid
+            } else {
+                regularBooksGrid
+            }
+        }
+    }
+
+    /// iPhone: wrapping flow layout, top 3 books with expand
+    @State private var isExpanded = false
+
+    private var compactBooksGrid: some View {
+        let visibleBooks = isExpanded ? sortedBooks : Array(sortedBooks.prefix(3))
+        let hasMore = sortedBooks.count > 3
+
+        return HStack(alignment: .bottom) {
+            FlowLayout(spacing: 6) {
+                fairOddsChip
+
+                ForEach(visibleBooks) { book in
+                    MiniBookChip(
+                        book: book,
+                        isBest: book.price == bestBook?.price,
+                        ev: computeEV(for: book)
+                    )
+                }
+
+                if hasMore {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
+                    } label: {
+                        Text(isExpanded ? "Less" : "+\(sortedBooks.count - 3)")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(.systemGray6))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if let onToggleParlay {
+                Spacer(minLength: 4)
+                parlayButton(action: onToggleParlay)
+            }
+        }
+    }
+
+    /// iPad: single-row horizontal scroll
+    private var regularBooksGrid: some View {
         HStack(alignment: .center, spacing: 6) {
-            // Fair Odds chip (pinned left)
             fairOddsChip
 
-            // Vertical divider
             Rectangle()
                 .fill(Color.secondary.opacity(0.3))
                 .frame(width: 1, height: 16)
 
-            // Book chips (scrollable middle)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(sortedBooks) { book in
@@ -152,33 +207,36 @@ struct BetCard: View {
                 }
             }
 
-            // Parlay toggle (pinned right)
             if let onToggleParlay {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.3))
                     .frame(width: 1, height: 16)
 
-                Button {
-                    onToggleParlay()
-                } label: {
-                    Text(isInParlay ? "\u{2713} Parlay" : "\u{FF0B} Parlay")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(isInParlay ? FairBetTheme.info : .secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(isInParlay ? FairBetTheme.info.opacity(0.10) : Color(.systemGray6))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(isInParlay ? FairBetTheme.info.opacity(0.6) : Color.clear, lineWidth: 1.5)
-                        )
-                }
-                .buttonStyle(.plain)
-                .fixedSize()
+                parlayButton(action: onToggleParlay)
             }
         }
+    }
+
+    private func parlayButton(action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+        } label: {
+            Text(isInParlay ? "\u{2713} Parlay" : "\u{FF0B} Parlay")
+                .font(.caption.weight(.medium))
+                .foregroundColor(isInParlay ? FairBetTheme.info : .secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isInParlay ? FairBetTheme.info.opacity(0.10) : Color(.systemGray6))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isInParlay ? FairBetTheme.info.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                )
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
     }
 
     private var fairOddsChip: some View {

@@ -28,9 +28,9 @@ ScrollDown/Sources/
 ├── Logging/             # Structured logging (GameRoutingLogger, GameStatusLogger)
 ├── Theme/               # Typography system
 ├── FairBet/             # Betting odds comparison module
-│   ├── Models/          # Bet, BetGroup, EVCalculator, FairOddsCalculator, OddsCalculator
+│   ├── Models/          # Bet, EVCalculator, OddsCalculator, BetPairing
 │   ├── ViewModels/      # OddsComparisonViewModel
-│   ├── Views/           # OddsComparisonView, BetCard, FairBetCopy
+│   ├── Views/           # OddsComparisonView, BetCard, ParlaySheetView, FairBetCopy
 │   ├── Services/        # FairBetAPIClient, FairBetMockDataProvider
 │   └── Theme/           # FairBetTheme
 └── Mock/games/          # Static mock JSON for development
@@ -65,10 +65,7 @@ ScrollDown/Sources/
 |-------|---------|
 | `APIBet` | Individual bet from the FairBet API |
 | `BookPrice` | Sportsbook price with book name and observed time |
-| `BetGroup` | Paired bet group for fair odds computation |
-| `FairOddsResult` | Fair odds calculation result per selection |
 | `BookEVResult` | EV calculation result per book |
-| `SelectionEVResult` | Complete EV analysis for a selection |
 
 ## What the Server Provides
 
@@ -111,7 +108,7 @@ The app renders completed games using a **blocks-based** flow system:
 ## Team Stats
 
 Team stats use a `KnownStat` definition list in `GameDetailViewModel`. Each stat defines:
-- `keys` — All possible API key names (NBA snake_case, NCAAB camelCase, legacy variants)
+- `keys` — All possible API key names (NBA snake_case, NCAAB camelCase)
 - `label` — Display name
 - `group` — Grouping: Overview, Shooting, or Extra
 - `isPercentage` — Format as percentage if true
@@ -127,10 +124,9 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 **How it works:**
 1. `FairBetAPIClient` fetches odds from `/api/fairbet/odds`
 2. `BetPairing` pairs opposite sides of each market for fair odds computation
-3. `FairOddsCalculator` computes vig-free fair odds using sharp book median aggregation
-4. `EVCalculator` computes expected value per book using fair probabilities and book-specific fee models
-5. `OddsComparisonViewModel` orchestrates filtering, sorting, and EV caching
-6. `BetCard` renders each bet as an always-visible card with EV, fair odds, and book chips
+3. `EVCalculator` computes expected value per book using fair probabilities and book-specific fee models
+4. `OddsComparisonViewModel` orchestrates filtering, sorting, and EV caching
+5. `BetCard` renders each bet as an always-visible card with EV, fair odds, and book chips
 
 **Card layout (BetCard):**
 - Row 1: Selection name + league badge + market type

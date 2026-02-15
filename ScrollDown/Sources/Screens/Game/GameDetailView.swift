@@ -230,7 +230,7 @@ struct GameDetailView: View {
                                     }
                                     .background(sectionFrameTracker(for: .overview))
 
-                                    SectionSpacer(.medium)
+                                    Color.clear.frame(height: 8)
                                 }
 
                                 // Game Flow section - only when flow data exists
@@ -244,7 +244,7 @@ struct GameDetailView: View {
 
                                 // Player Stats - only if data exists
                                 if !viewModel.playerStats.isEmpty {
-                                    SectionSpacer(.medium)
+                                    Color.clear.frame(height: 8)
 
                                     VStack(spacing: 0) {
                                         sectionAnchor(for: .playerStats)
@@ -255,7 +255,7 @@ struct GameDetailView: View {
 
                                 // Team Stats - only if data exists
                                 if !viewModel.teamStats.isEmpty {
-                                    SectionSpacer(.medium)
+                                    Color.clear.frame(height: 8)
 
                                     VStack(spacing: 0) {
                                         sectionAnchor(for: .teamStats)
@@ -266,7 +266,7 @@ struct GameDetailView: View {
 
                                 // Wrap-up - for completed games
                                 if viewModel.game?.status == .completed || viewModel.game?.status == .final {
-                                    SectionSpacer(.medium)
+                                    Color.clear.frame(height: 8)
 
                                     VStack(spacing: 0) {
                                         sectionAnchor(for: .final)
@@ -301,6 +301,7 @@ struct GameDetailView: View {
                 }
             }
             .background(GameTheme.background)
+            .clipped()
             .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
                 playRowFrames = value
                 updateResumeMarkerIfNeeded()

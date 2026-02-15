@@ -4,6 +4,30 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Documentation & Import Cleanup (Feb 2025)
+
+- Deduplicated `architecture.md` — replaced duplicated sections with cross-references to `AGENTS.md`
+- Removed unnecessary `import AVKit` from `SocialMediaPreview.swift` and `SocialPostRow.swift`
+- Added clarifying "why" comments at 3 non-obvious code sites
+
+### Changed — Codebase Cleanup (Feb 2025)
+
+**Legacy file deletion (11 files):**
+- Deleted dead design-system docs: `ContentHierarchy.swift`, `VisualRhythm.swift`, `CardDiscipline.swift`, `UIPolishChecklist.swift`
+- Deleted unused container types: `ThemedSection.swift`, `CollapsibleSection.swift`, `ExpansionCard.swift` (consolidated into `CollapsibleSectionCard`)
+- Deleted stale models: `BetGroup.swift`, `SelectionEVResult.swift`
+- Deleted unused utilities: `OddsDataService.swift`, `ScrollDownTests.swift`
+
+**FairBet module streamlined:**
+- Removed `BetGroup` and `SelectionEVResult` types
+- `FairOddsCalculator` reduced to `FairOddsConfidence` enum (computation moved to `BetPairing`)
+- Server-side EV annotations added to `APIBet` and `BookPrice`
+
+**Other changes:**
+- BetCard parlay button repositioned (right-aligned)
+- Games API limit reduced from 500 to 200 for faster loading
+- Container types consolidated to `CollapsibleSectionCard`
+
 ### Changed — Display & Data Cleanup (Feb 14, 2025)
 
 **Team Stats overhaul:**
@@ -68,9 +92,8 @@ Moved all derived computation to the backend. The app is now a thin display laye
 ### Added - FairBet Odds Comparison
 - `OddsComparisonView` with filterable bet list
 - `BetCard` always-visible card layout (selection, opponent, EV, fair odds, books grid)
-- `FairOddsCalculator` using sharp book vig-removal and median aggregation
+- `BetPairing` for matching opposite sides and computing fair odds via sharp book vig-removal
 - `EVCalculator` with per-book fee models (P2P, exchange, traditional)
-- `BetPairing` for matching opposite sides of markets
 - `FairBetAPIClient` fetching from `/api/fairbet/odds`
 
 ### Changed - Blocks-Based Flow System (Feb 2025)

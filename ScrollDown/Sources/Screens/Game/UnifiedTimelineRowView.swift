@@ -284,8 +284,9 @@ struct UnifiedTimelineRowView: View {
 
     // MARK: - Helpers
 
-    /// Detects if this play resulted in points scored
-    /// Based on description patterns in real PBP data
+    /// Detects if this play resulted in points scored.
+    /// Uses hardcoded string matching because the event model lacks a `isScoring` flag —
+    /// the server PBP data only provides free-text descriptions, not structured scoring metadata.
     private var isScoringPlay: Bool {
         guard let desc = event.description?.lowercased() else { return false }
 

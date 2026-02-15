@@ -4,7 +4,7 @@ extension GameDetailView {
     // MARK: - Pregame Buzz Section (Tier 4: Reference)
 
     var pregameSection: some View {
-        Tier4Container(
+        CollapsibleSectionCard(
             title: "Pregame Buzz",
             isExpanded: $isOverviewExpanded
         ) {

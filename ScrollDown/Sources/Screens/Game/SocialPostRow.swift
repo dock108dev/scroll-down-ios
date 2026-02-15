@@ -1,4 +1,3 @@
-import AVKit
 import SwiftUI
 
 // MARK: - Social Post Display Mode
@@ -15,6 +14,7 @@ struct SocialPostRow: View {
     let post: SocialPostEntry
     var displayMode: SocialPostDisplayMode = .standard
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingSafari = false
 
     private var hasImageMedia: Bool {
@@ -25,7 +25,8 @@ struct SocialPostRow: View {
         !hasImageMedia && (post.videoUrl != nil || post.hasVideo)
     }
 
-    private var thumbnailSize: CGFloat { 240 }
+    private var isCompact: Bool { horizontalSizeClass == .compact }
+    private var thumbnailSize: CGFloat { isCompact ? 120 : 240 }
 
     var body: some View {
         Button {
@@ -35,9 +36,10 @@ struct SocialPostRow: View {
                 // Attribution header
                 attributionHeader
 
-                // Two-column layout for image posts: text left, image right
+                // Image posts: side-by-side on iPad, stacked on iPhone
                 if hasImageMedia {
-                    HStack(alignment: .top, spacing: 10) {
+                    if isCompact {
+                        // iPhone: text above, image below (full width)
                         if let text = post.tweetText {
                             Text(Self.sanitizeTweetText(text))
                                 .font(.subheadline)
@@ -45,11 +47,24 @@ struct SocialPostRow: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                        } else {
-                            Spacer()
                         }
+                        mediaFullWidth
+                    } else {
+                        // iPad: two-column layout, text left, image right
+                        HStack(alignment: .top, spacing: 10) {
+                            if let text = post.tweetText {
+                                Text(Self.sanitizeTweetText(text))
+                                    .font(.subheadline)
+                                    .foregroundColor(DesignSystem.TextColor.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            } else {
+                                Spacer()
+                            }
 
-                        mediaThumbnail
+                            mediaThumbnail
+                        }
                     }
                 } else if let text = post.tweetText {
                     Text(Self.sanitizeTweetText(text))
@@ -105,6 +120,39 @@ struct SocialPostRow: View {
                 }
                 .frame(width: thumbnailSize, height: thumbnailSize)
                 .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                if post.videoUrl != nil {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            Image(systemName: "play.fill")
+                                .foregroundColor(.white)
+                                .font(.system(size: 11))
+                        }
+                }
+            }
+        }
+    }
+
+    // MARK: - Full-Width Media (iPhone image posts)
+
+    @ViewBuilder
+    private var mediaFullWidth: some View {
+        if let imageUrlString = post.imageUrl, let url = URL(string: imageUrlString) {
+            ZStack {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color(.systemGray6))
+                        .frame(height: 200)
+                        .overlay { ProgressView().scaleEffect(0.7) }
+                }
+                .frame(maxWidth: .infinity)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 if post.videoUrl != nil {
@@ -237,10 +285,35 @@ struct SocialPostRow: View {
         return formatter.localizedString(for: date, relativeTo: Date())
     }
 
-    /// Normalize Unicode separators, strip URLs (they aren't tappable in Text),
-    /// and collapse leftover whitespace so the post reads cleanly.
+    /// Strip URLs, decode HTML entities, normalize Unicode separators,
+    /// and collapse whitespace so the post reads cleanly in a non-tappable Text view.
     static func sanitizeTweetText(_ text: String) -> String {
         var result = text
+
+        // 0. Decode HTML entities (emojis may arrive as &#x1F525; or &#128293; or &amp;)
+        result = decodeHTMLEntities(result)
+
+        // 1. Strip URLs FIRST — before unicode normalization can break them
+        //    Match http(s) URLs even if unicode separators split them
+        result = result.replacingOccurrences(
+            of: #"https?://[\S\u{2028}\u{2029}\u{0085}]+"#,
+            with: "",
+            options: .regularExpression
+        )
+        result = result.replacingOccurrences(
+            of: #"www\.[\S\u{2028}\u{2029}\u{0085}]+"#,
+            with: "",
+            options: .regularExpression
+        )
+        // Strip bare shortened URLs (bit.ly/xxx, t.co/xxx, etc.)
+        result = result.replacingOccurrences(
+            of: #"(?:bit\.ly|t\.co|tinyurl\.com|goo\.gl|ow\.ly|buff\.ly|dlvr\.it|is\.gd)/[\S\u{2028}\u{2029}\u{0085}]+"#,
+            with: "",
+            options: .regularExpression
+        )
+
+        // 2. Normalize unicode separators (preserve emoji variation selectors like \u{FE0F})
+        result = result
             .replacingOccurrences(of: "\u{2028}", with: " ")  // Line Separator
             .replacingOccurrences(of: "\u{2029}", with: "\n") // Paragraph Separator
             .replacingOccurrences(of: "\u{0085}", with: "\n") // Next Line
@@ -249,23 +322,16 @@ struct SocialPostRow: View {
             .replacingOccurrences(of: "\u{200B}", with: "")   // Zero Width Space
             .replacingOccurrences(of: "\u{FEFF}", with: "")   // BOM / Zero Width No-Break Space
 
-        // Strip URLs (http://, https://, and bare www. links)
-        result = result.replacingOccurrences(
-            of: #"https?://\S+"#,
-            with: "",
-            options: .regularExpression
-        )
-        result = result.replacingOccurrences(
-            of: #"www\.\S+"#,
-            with: "",
-            options: .regularExpression
-        )
-
-        // Clean up leftover punctuation that preceded URLs (e.g. ": " or "- ")
-        // and collapse runs of blank lines / whitespace-only lines
+        // 3. Clean up leftover punctuation and collapse whitespace
         result = result.replacingOccurrences(
             of: #"[:\-–—]\s*\n"#,
             with: "\n",
+            options: .regularExpression
+        )
+        // Collapse runs of whitespace-only lines
+        result = result.replacingOccurrences(
+            of: #"\n[ \t]*\n"#,
+            with: "\n\n",
             options: .regularExpression
         )
         result = result.replacingOccurrences(
@@ -275,6 +341,54 @@ struct SocialPostRow: View {
         )
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Decode HTML entities: &#x1F525; &#128293; &amp; &lt; etc.
+    private static func decodeHTMLEntities(_ text: String) -> String {
+        guard text.contains("&") else { return text }
+
+        var result = text
+
+        // Hex entities: &#x1F525;
+        let hexPattern = #"&#x([0-9A-Fa-f]+);"#
+        if let regex = try? NSRegularExpression(pattern: hexPattern) {
+            let range = NSRange(result.startIndex..., in: result)
+            let matches = regex.matches(in: result, range: range).reversed()
+            for match in matches {
+                if let hexRange = Range(match.range(at: 1), in: result),
+                   let codePoint = UInt32(result[hexRange], radix: 16),
+                   let scalar = Unicode.Scalar(codePoint) {
+                    let fullRange = Range(match.range, in: result)!
+                    result.replaceSubrange(fullRange, with: String(scalar))
+                }
+            }
+        }
+
+        // Decimal entities: &#128293;
+        let decPattern = #"&#([0-9]+);"#
+        if let regex = try? NSRegularExpression(pattern: decPattern) {
+            let range = NSRange(result.startIndex..., in: result)
+            let matches = regex.matches(in: result, range: range).reversed()
+            for match in matches {
+                if let decRange = Range(match.range(at: 1), in: result),
+                   let codePoint = UInt32(result[decRange]),
+                   let scalar = Unicode.Scalar(codePoint) {
+                    let fullRange = Range(match.range, in: result)!
+                    result.replaceSubrange(fullRange, with: String(scalar))
+                }
+            }
+        }
+
+        // Named entities
+        result = result
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&apos;", with: "'")
+            .replacingOccurrences(of: "&#39;", with: "'")
+
+        return result
     }
 
     private func compactNumber(_ value: Int) -> String {

@@ -87,6 +87,79 @@ final class GameFlowModelTests: XCTestCase {
         XCTAssertFalse(miniBox.isBlockStar("Unknown Player"))
     }
 
+    // MARK: - CamelCase Delta Decoding
+
+    func testCamelCaseDeltaDecodingBasketball() throws {
+        let json = """
+        {
+            "name": "Jayson Tatum",
+            "pts": 22, "reb": 6, "ast": 4, "3pm": 3,
+            "deltaPts": 8, "deltaReb": 2, "deltaAst": 1
+        }
+        """.data(using: .utf8)!
+        let stat = try JSONDecoder().decode(BlockPlayerStat.self, from: json)
+        XCTAssertEqual(stat.name, "Jayson Tatum")
+        XCTAssertEqual(stat.pts, 22)
+        XCTAssertEqual(stat.threePm, 3)
+        XCTAssertEqual(stat.deltaPts, 8)
+        XCTAssertEqual(stat.deltaReb, 2)
+        XCTAssertEqual(stat.deltaAst, 1)
+    }
+
+    func testCamelCaseDeltaDecodingHockey() throws {
+        let json = """
+        {
+            "name": "Connor McDavid",
+            "goals": 2, "assists": 1, "sog": 5, "plusMinus": 2,
+            "deltaGoals": 1, "deltaAssists": 1
+        }
+        """.data(using: .utf8)!
+        let stat = try JSONDecoder().decode(BlockPlayerStat.self, from: json)
+        XCTAssertEqual(stat.name, "Connor McDavid")
+        XCTAssertEqual(stat.goals, 2)
+        XCTAssertEqual(stat.deltaGoals, 1)
+        XCTAssertEqual(stat.deltaAssists, 1)
+    }
+
+    func testDeltaFieldsMissingDecodeAsNil() throws {
+        let json = """
+        {
+            "name": "Role Player",
+            "pts": 5, "reb": 2, "ast": 0
+        }
+        """.data(using: .utf8)!
+        let stat = try JSONDecoder().decode(BlockPlayerStat.self, from: json)
+        XCTAssertEqual(stat.name, "Role Player")
+        XCTAssertEqual(stat.pts, 5)
+        XCTAssertNil(stat.deltaPts)
+        XCTAssertNil(stat.deltaReb)
+        XCTAssertNil(stat.deltaAst)
+    }
+
+    // MARK: - FlowMoment Decoding
+
+    func testFlowMomentDecoding() throws {
+        let json = """
+        {
+            "playIds": [101, 102, 103],
+            "explicitlyNarratedPlayIds": [101],
+            "period": 2,
+            "startClock": "8:45",
+            "endClock": "6:12",
+            "scoreBefore": [45, 50],
+            "scoreAfter": [52, 55]
+        }
+        """.data(using: .utf8)!
+        let moment = try JSONDecoder().decode(FlowMoment.self, from: json)
+        XCTAssertEqual(moment.playIds, [101, 102, 103])
+        XCTAssertEqual(moment.explicitlyNarratedPlayIds, [101])
+        XCTAssertEqual(moment.period, 2)
+        XCTAssertEqual(moment.startClock, "8:45")
+        XCTAssertEqual(moment.endClock, "6:12")
+        XCTAssertEqual(moment.scoreBefore, [45, 50])
+        XCTAssertEqual(moment.scoreAfter, [52, 55])
+    }
+
     // MARK: - Helpers
 
     private func makeFlowBlock(

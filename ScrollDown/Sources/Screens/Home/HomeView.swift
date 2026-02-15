@@ -134,10 +134,19 @@ struct HomeView: View {
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
                 }
                 .overlay(alignment: .trailing) {
-                    refreshButton {
-                        Task { await loadGames(scrollToToday: false) }
+                    HStack(spacing: 0) {
+                        LinearGradient(
+                            colors: [HomeTheme.background.opacity(0), HomeTheme.background],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 20)
+                        refreshButton {
+                            Task { await loadGames(scrollToToday: false) }
+                        }
+                        .padding(.trailing, horizontalPadding)
+                        .background(HomeTheme.background)
                     }
-                    .padding(.trailing, horizontalPadding)
                 }
                 .background(HomeTheme.background)
 
@@ -183,7 +192,7 @@ struct HomeView: View {
 
                         // Market filters
                         oddsMarketFilterButton(nil, label: "All")
-                        ForEach(MarketKey.allCases) { market in
+                        ForEach(MarketKey.mainlineMarkets) { market in
                             oddsMarketFilterButton(market, label: market.displayName)
                         }
                     }

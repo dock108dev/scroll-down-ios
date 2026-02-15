@@ -19,6 +19,7 @@ struct Game: Codable, Identifiable, Hashable {
     let hasOdds: Bool?
     let hasSocial: Bool?
     let hasPbp: Bool?
+    var hasFlow: Bool? = nil
     let playCount: Int?
     let socialPostCount: Int?
     let homeTeamXHandle: String?
@@ -29,6 +30,9 @@ struct Game: Codable, Identifiable, Hashable {
     let homeTeamColorDark: String?
     let awayTeamColorLight: String?
     let awayTeamColorDark: String?
+    var lastIngestedAt: String? = nil
+    var lastPbpAt: String? = nil
+    var lastSocialAt: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -48,6 +52,7 @@ struct Game: Codable, Identifiable, Hashable {
         case hasOdds
         case hasSocial
         case hasPbp
+        case hasFlow
         case playCount
         case socialPostCount
         case homeTeamXHandle
@@ -58,6 +63,9 @@ struct Game: Codable, Identifiable, Hashable {
         case homeTeamColorDark
         case awayTeamColorLight
         case awayTeamColorDark
+        case lastIngestedAt
+        case lastPbpAt
+        case lastSocialAt
     }
 
     func hash(into hasher: inout Hasher) {

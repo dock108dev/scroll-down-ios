@@ -6,7 +6,7 @@ extension GameDetailView {
     // MARK: - Wrap-up Section (Tier 4: Reference)
 
     var wrapUpSection: some View {
-        Tier3Container(
+        CollapsibleSectionCard(
             title: "Wrap-up",
             isExpanded: $isWrapUpExpanded
         ) {

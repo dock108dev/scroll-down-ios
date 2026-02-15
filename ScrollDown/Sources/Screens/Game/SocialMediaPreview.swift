@@ -1,4 +1,3 @@
-import AVKit
 import SwiftUI
 
 // MARK: - Shared Social Media Preview

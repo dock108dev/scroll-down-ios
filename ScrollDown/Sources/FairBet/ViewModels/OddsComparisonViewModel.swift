@@ -11,11 +11,6 @@ import SwiftUI
 
 @MainActor
 final class OddsComparisonViewModel: ObservableObject {
-    /// Only include odds from these 5 sportsbooks
-    static let allowedBooks: Set<String> = [
-        "DraftKings", "FanDuel", "BetMGM", "Caesars", "bet365"
-    ]
-
     private enum StorageKeys {
         static let oddsFormat = "oddsFormatPreference"
         static let hideLimitedData = "hideLimitedData"
@@ -32,6 +27,7 @@ final class OddsComparisonViewModel: ObservableObject {
     @Published var booksAvailable: [String] = []
     @Published var isLoading: Bool = false
     @Published var loadingProgress: String = ""
+    @Published var loadingFraction: Double = 0
     @Published var errorMessage: String?
 
     // Filters
@@ -201,9 +197,10 @@ final class OddsComparisonViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // Only clear data and show progress on initial load — preserve existing data during refresh
+        // Only show progress on initial load — preserve existing data during refresh
         if isInitialLoad {
-            loadingProgress = "Loading odds..."
+            loadingProgress = "Loading bets…"
+            loadingFraction = 0
         }
 
         do {
@@ -211,12 +208,9 @@ final class OddsComparisonViewModel: ObservableObject {
             var offset = 0
             let limit = 500 // Max per request
             var hasMore = true
+            var totalExpected = 0
 
             while hasMore {
-                if isInitialLoad {
-                    loadingProgress = "Loading \(allFetchedBets.count)+ bets..."
-                }
-
                 let response = try await apiClient.fetchOdds(
                     league: nil, // Fetch all leagues
                     limit: limit,
@@ -225,6 +219,12 @@ final class OddsComparisonViewModel: ObservableObject {
 
                 allFetchedBets.append(contentsOf: response.bets)
                 booksAvailable = response.booksAvailable
+                totalExpected = max(totalExpected, response.total)
+
+                // Update progress fraction
+                if isInitialLoad && totalExpected > 0 {
+                    loadingFraction = min(Double(allFetchedBets.count) / Double(totalExpected), 0.9)
+                }
 
                 // Check if we got all data
                 if response.bets.count < limit || allFetchedBets.count >= response.total {
@@ -235,12 +235,9 @@ final class OddsComparisonViewModel: ObservableObject {
             }
 
             allBets = allFetchedBets
-                .map { $0.filteringBooks(to: Self.allowedBooks) }
-                .filter { !$0.books.isEmpty }
-            booksAvailable = booksAvailable.filter { Self.allowedBooks.contains($0) }
 
             if isInitialLoad {
-                loadingProgress = "Calculating EV for \(allBets.count) bets..."
+                loadingFraction = 0.95
             }
 
             // Pre-compute pairs once (O(n) instead of O(n²))
@@ -251,6 +248,10 @@ final class OddsComparisonViewModel: ObservableObject {
 
             applyFilters()
 
+            if isInitialLoad {
+                loadingFraction = 1.0
+            }
+
         } catch {
             errorMessage = error.localizedDescription
             if allBets.isEmpty {
@@ -260,6 +261,7 @@ final class OddsComparisonViewModel: ObservableObject {
 
         isLoading = false
         loadingProgress = ""
+        loadingFraction = 0
     }
 
     /// Refresh all data
@@ -299,9 +301,7 @@ final class OddsComparisonViewModel: ObservableObject {
     func loadMockData() {
         let response = mockDataProvider.getMockBetsResponse()
         allBets = response.bets
-            .map { $0.filteringBooks(to: Self.allowedBooks) }
-            .filter { !$0.books.isEmpty }
-        booksAvailable = response.booksAvailable.filter { Self.allowedBooks.contains($0) }
+        booksAvailable = response.booksAvailable
         cachedPairs = BetPairingService.pairBets(allBets)
         computeAllEVs()
         applyFilters()
@@ -405,8 +405,34 @@ final class OddsComparisonViewModel: ObservableObject {
         }
     }
 
-    /// Calculate best EV for a single bet using cached pairs
+    /// Calculate best EV for a single bet using cached pairs.
+    /// Prefers server-side EV annotations when available (respects server book exclusion,
+    /// eligibility gating, and freshness checks). Falls back to client-side computation.
     private func computeEVResult(for bet: APIBet) -> EVResult {
+        // Server-side EV: use when confidence tier is present and at least one book has evPercent
+        if let serverTier = bet.evConfidenceTier,
+           let bestServerBook = bet.books.compactMap({ book -> (book: BookPrice, ev: Double)? in
+               guard let ev = book.evPercent else { return nil }
+               return (book, ev)
+           }).max(by: { $0.ev < $1.ev }) {
+            let confidence: FairOddsConfidence
+            switch serverTier {
+            case "high": confidence = .high
+            case "medium": confidence = .medium
+            case "low": confidence = .low
+            default: confidence = .none
+            }
+            let fairProb = bestServerBook.book.trueProb ?? 0.5
+            let fairOdds = OddsCalculator.probToAmerican(fairProb)
+            return EVResult(
+                ev: bestServerBook.ev,
+                confidence: confidence,
+                fairProbability: fairProb,
+                fairAmericanOdds: fairOdds
+            )
+        }
+
+        // Fallback: client-side EV computation
         let fairResult = bet.fairProbability(pairs: cachedPairs)
         let pFair = fairResult.fairProbability
 
