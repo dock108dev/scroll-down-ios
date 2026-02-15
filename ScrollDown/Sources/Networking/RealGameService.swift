@@ -95,7 +95,7 @@ final class RealGameService: GameService {
             queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
         }
 
-        queryItems.append(URLQueryItem(name: "limit", value: "500"))
+        queryItems.append(URLQueryItem(name: "limit", value: "200"))
 
         logger.info("📡 Fetching games: range=\(range.rawValue, privacy: .public) league=\(league?.rawValue ?? "all", privacy: .public)")
         let response: GameListResponse = try await request(path: "api/admin/sports/games", queryItems: queryItems)

@@ -149,35 +149,38 @@ struct BetCard: View {
         let visibleBooks = isExpanded ? sortedBooks : Array(sortedBooks.prefix(3))
         let hasMore = sortedBooks.count > 3
 
-        return FlowLayout(spacing: 6) {
-            fairOddsChip
+        return HStack(alignment: .bottom) {
+            FlowLayout(spacing: 6) {
+                fairOddsChip
 
-            ForEach(visibleBooks) { book in
-                MiniBookChip(
-                    book: book,
-                    isBest: book.price == bestBook?.price,
-                    ev: computeEV(for: book)
-                )
-            }
-
-            if hasMore {
-                Button {
-                    withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
-                } label: {
-                    Text(isExpanded ? "Less" : "+\(sortedBooks.count - 3)")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color(.systemGray6))
-                        )
+                ForEach(visibleBooks) { book in
+                    MiniBookChip(
+                        book: book,
+                        isBest: book.price == bestBook?.price,
+                        ev: computeEV(for: book)
+                    )
                 }
-                .buttonStyle(.plain)
+
+                if hasMore {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
+                    } label: {
+                        Text(isExpanded ? "Less" : "+\(sortedBooks.count - 3)")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(.systemGray6))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if let onToggleParlay {
+                Spacer(minLength: 4)
                 parlayButton(action: onToggleParlay)
             }
         }

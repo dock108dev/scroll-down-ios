@@ -4,7 +4,7 @@ extension GameDetailView {
     /// Game Flow section - only rendered when flow data exists.
     /// PBP is accessible via the top-bar button instead.
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
-        FlowCardContainer(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
+        CollapsibleSectionCard(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
             GameFlowView(
                 viewModel: viewModel,
                 isCompactFlowExpanded: $isCompactFlowExpanded

@@ -9,14 +9,14 @@ final class EVCalculatorTests: XCTestCase {
         // Fair prob 0.55, odds +100 → positive EV
         let result = EVCalculator.computeBookEV(bookKey: "draftkings", americanOdds: 100, pFair: 0.55)
         XCTAssertGreaterThan(result.ev, 0)
-        XCTAssertTrue(result.hasPositiveEV)
+        XCTAssertGreaterThan(result.evPercent, 0)
     }
 
     func testComputeBookEVNegative() {
         // Fair prob 0.4, odds -200 → negative EV
         let result = EVCalculator.computeBookEV(bookKey: "draftkings", americanOdds: -200, pFair: 0.4)
         XCTAssertLessThan(result.ev, 0)
-        XCTAssertFalse(result.hasPositiveEV)
+        XCTAssertLessThanOrEqual(result.evPercent, 0)
     }
 
     func testComputeBookEVBreakEven() {

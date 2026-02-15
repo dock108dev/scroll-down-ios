@@ -10,14 +10,8 @@ import Foundation
 
 // MARK: - Bet Pairing Service
 
-/// Service that pairs APIBets and computes fair odds using FairOddsCalculator
+/// Service that pairs APIBets and computes fair odds
 struct BetPairingService {
-
-    /// Shared instance for caching paired results
-    static let shared = BetPairingService()
-
-    /// Cache of computed fair probabilities by bet ID
-    private var fairProbabilityCache: [String: FairProbabilityResult] = [:]
 
     // MARK: - Fair Probability Result
 
