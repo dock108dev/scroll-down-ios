@@ -118,10 +118,9 @@ See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 - Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
 
 **EV Computation:**
-- Per-book EV using fair probability and book-specific fee models
-- P2P platforms (Novig, ProphetX) have 2% fee on winnings
-- Exchanges (Betfair, Smarkets) have 1% fee on winnings
-- Traditional sportsbooks have no explicit fee
+- Per-book EV using fair probability
+- All included books (US-licensed and sharp) are traditional sportsbooks with no explicit fee
+- Fee model supports `percentOnWinnings` for future P2P/exchange integration
 
 ## Configuration
 

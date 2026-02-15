@@ -4,6 +4,46 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — iPhone BetCard Redesign & Market Expansion (Feb 15, 2025)
+
+**BetCard iPhone layout overhauled** — replaced cramped flow grid with a vertical decision stack:
+- Row B: Fair odds chip + Parlay button
+- Row C: Anchor book row (user's preferred sportsbook, or best available)
+- Row D: "Best available" disclosure (hidden when anchor = best)
+- Row E: Collapsible "Other books" with MiniBookChip flow layout
+- iPad layout unchanged (horizontal scroll)
+- Extracted `BookNameHelper` enum for consistent sportsbook abbreviations (DraftKings→DK, etc.)
+- Tightened card spacing on iPhone (6pt vs 8pt, 10pt vs 12pt padding)
+
+**Settings:**
+- "Best available price" added as first option in Default Book picker
+- Default sportsbook changed from DraftKings to best-available for new installs
+
+**MarketKey expanded** (7 new cases):
+- NHL: `playerGoals`, `playerShotsOnGoal`, `playerTotalSaves`
+- Cross-sport: `playerPRA` (points + rebounds + assists)
+- Alternate lines: `alternateSpreads`, `alternateTotals`
+- Game-level: `teamTotals`
+
+**MarketType expanded** — converted from plain `String` enum to `RawRepresentable` with `unknown(String)` fallback:
+- Added 14 new cases mirroring MarketKey (alternateSpread, alternateTotal, player props, etc.)
+- Aliases: `h2h` → `.moneyline`, `spreads` → `.spread`, `totals` → `.total`
+- Unknown API values no longer crash decoding
+
+**FairBetCopy:** Added display labels for all new market types (Blocks, Steals, Player Goals, Shots on Goal, Goalie Saves, PRA, Team Total, Alt Spread, Alt Total)
+
+**GameRowView simplified** — collapsed 4 card states (available/pregame/comingSoon/upcoming) into 2:
+- `.active` — has any data (odds, PBP, social, or required data); tappable
+- `.noData` — truly empty; greyed, non-tappable
+
+**OddsComparisonViewModel:** EV computation hardened — now requires a real `trueProb` from server; no longer falls back to a meaningless 0.5 probability
+
+**FairBetAPIClient:** Now sends `has_fair=true` query parameter to filter for bets with fair odds server-side
+
+**MiniBoxScoreView:** Delta stats hidden on first flow block (no prior block to delta against)
+
+**Tests:** Added 7 MarketKey tests to EnumsTests (init, decoding, unknown fallback, round-trip)
+
 ### Changed — Documentation & Import Cleanup (Feb 2025)
 
 - Deduplicated `architecture.md` — replaced duplicated sections with cross-references to `AGENTS.md`

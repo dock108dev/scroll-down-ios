@@ -37,29 +37,28 @@ struct BookFeeConfig: Codable, Equatable {
 /// Static fee configuration by book category
 struct FeeConfiguration {
 
-    /// Book fee profiles
+    /// Book fee profiles — matches INCLUDED_BOOKS in ev_config.py
     static let bookFees: [String: BookFeeConfig] = [
+        // US-licensed traditional sportsbooks
         "draftkings": .none,
         "fanduel": .none,
         "betmgm": .none,
         "caesars": .none,
+        "espnbet": .none,
+        "fanatics": .none,
+        "hard rock bet": .none,
         "pointsbet": .none,
+        "pointsbet (us)": .none,
         "bet365": .none,
-        "pinnacle": .none,
-        "circa": .none,
-        "betcris": .none,
-        "betrivers": .none,
+        "betway": .none,
+        "circa sports": .none,
+        "fliff": .none,
+        "si sportsbook": .none,
+        "thescore bet": .none,
+        "tipico": .none,
         "unibet": .none,
-        "wynnbet": .none,
-        "superbook": .none,
-
-        // P2P platforms - 2% fee on winnings
-        "novig": BookFeeConfig(feeType: .percentOnWinnings, rate: 0.02),
-        "prophetx": BookFeeConfig(feeType: .percentOnWinnings, rate: 0.02),
-
-        // Exchanges - 1% fee on winnings
-        "betfair": BookFeeConfig(feeType: .percentOnWinnings, rate: 0.01),
-        "smarkets": BookFeeConfig(feeType: .percentOnWinnings, rate: 0.01)
+        // Sharp reference book
+        "pinnacle": .none,
     ]
 
     /// Get fee config for a book, defaulting to no fee

@@ -450,18 +450,26 @@ struct LeagueBadgeSmall: View {
 // MARK: - Book Name Helper
 
 enum BookNameHelper {
+    /// Abbreviations for all INCLUDED_BOOKS in ev_config.py
     static func abbreviated(_ name: String) -> String {
         switch name {
         case "DraftKings": return "DK"
         case "FanDuel": return "FD"
         case "BetMGM": return "MGM"
         case "Caesars": return "CZR"
-        case "PointsBet": return "PB"
-        case "BetRivers": return "BR"
-        case "Fanatics": return "FAN"
         case "ESPNBet", "ESPN BET": return "ESPN"
+        case "Fanatics": return "FAN"
         case "Hard Rock Bet": return "HR"
+        case "Pinnacle": return "PIN"
+        case "PointsBet", "PointsBet (US)": return "PB"
         case "bet365": return "365"
+        case "Betway": return "BWY"
+        case "Circa Sports": return "CIR"
+        case "Fliff": return "FLF"
+        case "SI Sportsbook": return "SI"
+        case "theScore Bet": return "SCR"
+        case "Tipico": return "TIP"
+        case "Unibet": return "UNI"
         default: return String(name.prefix(3)).uppercased()
         }
     }

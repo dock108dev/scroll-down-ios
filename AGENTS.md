@@ -23,6 +23,7 @@ ScrollDown/Sources/
 │   ├── Game/            # Game detail view (split into extensions)
 │   └── Team/            # Team page
 ├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView)
+├── Extensions/          # Swift extensions (String+Abbreviation)
 ├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
 ├── Services/            # TimeService (snapshot mode)
 ├── Logging/             # Structured logging (GameRoutingLogger, GameStatusLogger)
@@ -132,7 +133,10 @@ Betting odds comparison system that computes fair odds and expected value (EV) a
 - Row 1: Selection name + league badge + market type
 - Row 2: Opponent + date/time
 - Divider
-- Row 3: Books grid (sorted by EV, FlowLayout with MiniBookChip) + Fair Odds (right-justified)
+- **iPhone (compact):** Vertical decision stack — Fair odds chip + Parlay button, anchor book row (preferred sportsbook or best available), optional best-available disclosure, collapsible "Other books" with MiniBookChips
+- **iPad (regular):** Horizontal scroll — Fair odds chip, separator, scrollable MiniBookChip row sorted by EV, Parlay button
+
+`BookNameHelper` provides consistent sportsbook abbreviations (DraftKings→DK, FanDuel→FD, etc.) shared across anchor row and MiniBookChip.
 
 ## Home View
 
