@@ -63,6 +63,42 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(odds.marketType, .total)
     }
 
+    func testMarketTypeAlternateSpreads() throws {
+        let json = """
+        {"book":"FanDuel","marketType":"alternate_spreads","isClosingLine":false}
+        """.data(using: .utf8)!
+        let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
+        XCTAssertEqual(odds.marketType, .alternateSpread)
+    }
+
+    func testMarketTypeUnknownFallback() throws {
+        let json = """
+        {"book":"FanDuel","marketType":"some_future_market","isClosingLine":false}
+        """.data(using: .utf8)!
+        let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
+        XCTAssertEqual(odds.marketType, .unknown("some_future_market"))
+    }
+
+    func testMarketTypeAliasH2H() {
+        XCTAssertEqual(MarketType(rawValue: "h2h"), .moneyline)
+    }
+
+    func testMarketTypeAliasSpreads() {
+        XCTAssertEqual(MarketType(rawValue: "spreads"), .spread)
+    }
+
+    func testMarketTypeAliasTotals() {
+        XCTAssertEqual(MarketType(rawValue: "totals"), .total)
+    }
+
+    func testMarketTypeRoundTrip() throws {
+        let original = MarketType.alternateSpread
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+        let decoded = try JSONDecoder().decode(MarketType.self, from: data)
+        XCTAssertEqual(decoded, original)
+    }
+
     // MARK: - MediaType
 
     func testMediaTypeDecoding() throws {

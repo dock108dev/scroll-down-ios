@@ -58,7 +58,8 @@ struct FlowBlockCardView: View {
                     endScore: block.endScore,
                     homeTeam: homeTeam,
                     awayTeam: awayTeam,
-                    sport: sport
+                    sport: sport,
+                    isFirstBlock: block.blockIndex == 0
                 )
             }
 
@@ -81,6 +82,7 @@ struct MiniBoxScoreView: View {
     let homeTeam: String
     let awayTeam: String
     let sport: String
+    var isFirstBlock: Bool = false
 
     private var isHockey: Bool { sport == "NHL" }
     private var awayAbbrev: String { teamAbbreviation(awayTeam) }
@@ -140,7 +142,7 @@ struct MiniBoxScoreView: View {
     private func playerCell(player: BlockPlayerStat) -> some View {
         let isBlockStar = miniBox.isBlockStar(player.name)
         let statLine = isHockey ? player.compactHockeyStats : player.compactBasketballStats
-        let deltaLine = isHockey ? player.hockeyDeltaLine : player.basketballDeltaLine
+        let deltaLine: String? = isFirstBlock ? nil : (isHockey ? player.hockeyDeltaLine : player.basketballDeltaLine)
 
         return VStack(alignment: .leading, spacing: 1) {
             Text(player.name)

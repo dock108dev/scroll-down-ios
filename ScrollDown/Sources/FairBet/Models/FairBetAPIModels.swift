@@ -38,6 +38,13 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
     case playerThrees
     case playerBlocks
     case playerSteals
+    case playerGoals
+    case playerShotsOnGoal
+    case playerTotalSaves
+    case playerPRA
+    case teamTotals
+    case alternateSpreads
+    case alternateTotals
     case unknown(String)
 
     var id: String { rawValue }
@@ -53,6 +60,13 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         case .playerThrees: return "player_threes"
         case .playerBlocks: return "player_blocks"
         case .playerSteals: return "player_steals"
+        case .playerGoals: return "player_goals"
+        case .playerShotsOnGoal: return "player_shots_on_goal"
+        case .playerTotalSaves: return "player_total_saves"
+        case .playerPRA: return "player_points_rebounds_assists"
+        case .teamTotals: return "team_totals"
+        case .alternateSpreads: return "alternate_spreads"
+        case .alternateTotals: return "alternate_totals"
         case .unknown(let val): return val
         }
     }
@@ -68,6 +82,13 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         case .playerThrees: return "Player Threes"
         case .playerBlocks: return "Player Blocks"
         case .playerSteals: return "Player Steals"
+        case .playerGoals: return "Player Goals"
+        case .playerShotsOnGoal: return "Shots on Goal"
+        case .playerTotalSaves: return "Goalie Saves"
+        case .playerPRA: return "PRA"
+        case .teamTotals: return "Team Total"
+        case .alternateSpreads: return "Alt Spread"
+        case .alternateTotals: return "Alt Total"
         case .unknown(let val): return val.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
@@ -88,6 +109,13 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         case "player_threes": self = .playerThrees
         case "player_blocks": self = .playerBlocks
         case "player_steals": self = .playerSteals
+        case "player_goals": self = .playerGoals
+        case "player_shots_on_goal": self = .playerShotsOnGoal
+        case "player_total_saves": self = .playerTotalSaves
+        case "player_points_rebounds_assists": self = .playerPRA
+        case "team_totals": self = .teamTotals
+        case "alternate_spreads": self = .alternateSpreads
+        case "alternate_totals": self = .alternateTotals
         default: self = .unknown(rawValue)
         }
     }

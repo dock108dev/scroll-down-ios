@@ -2,19 +2,15 @@ import SwiftUI
 
 /// Display state for game cards on home screen
 enum GameCardState {
-    case available   // Has PBP data - tappable, prominent
-    case pregame     // Scheduled but has odds/pregame data - tappable
-    case comingSoon  // Completed but hasPbp == false - greyed, non-tappable
-    case upcoming    // Upcoming/scheduled game - non-tappable, muted appearance
+    case active    // Has some data (odds, PBP, social, etc.) — tappable, full styling
+    case noData    // Truly zero data — greyed, non-tappable (should rarely happen)
 
-    var isTappable: Bool {
-        self == .available || self == .pregame
-    }
+    var isTappable: Bool { self == .active }
 }
 
 
 /// Row view for displaying a game summary in a list
-/// Supports three visual states: flow available, flow pending, and upcoming
+/// Two visual states: active (tappable, full styling) and noData (greyed, non-tappable)
 struct GameRowView: View {
     let game: GameSummary
 
@@ -24,22 +20,13 @@ struct GameRowView: View {
         return UserDefaults.standard.bool(forKey: "game.read.\(game.id)")
     }
 
-    /// Computed card state based on game status and data availability
+    /// Computed card state based on data availability — active unless truly empty
     var cardState: GameCardState {
-        guard let status = game.status else { return .upcoming }
-
-        switch status {
-        case .completed, .final:
-            // Use hasPbp from API to determine if content is available
-            if game.hasPbp != true {
-                return .comingSoon
-            }
-            return .available
-        case .scheduled:
-            return .pregame
-        case .inProgress, .postponed, .canceled, .unknown:
-            return .upcoming
-        }
+        let hasAnyData = game.hasOdds == true
+            || game.hasPbp == true
+            || game.hasSocial == true
+            || game.hasRequiredData == true
+        return hasAnyData ? .active : .noData
     }
 
     var body: some View {
@@ -50,7 +37,7 @@ struct GameRowView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(leagueColor.opacity(cardState == .available || cardState == .pregame ? 1.0 : 0.4))
+                .background(leagueColor.opacity(cardState == .active ? 1.0 : 0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             // Matchup title - the headline
@@ -106,18 +93,17 @@ struct GameRowView: View {
 
     private var matchupTextColor: Color {
         switch cardState {
-        case .available, .pregame: return .primary
-        case .comingSoon, .upcoming: return Color(.secondaryLabel)
+        case .active: return .primary
+        case .noData: return Color(.secondaryLabel)
         }
     }
 
     private var cardBackground: some View {
         Group {
             switch cardState {
-            case .available, .pregame:
+            case .active:
                 HomeTheme.cardBackground
-            case .comingSoon, .upcoming:
-                // Muted background - lighter in dark mode to avoid blending
+            case .noData:
                 Color(.systemGray5)
             }
         }
@@ -125,21 +111,21 @@ struct GameRowView: View {
 
     private var shadowColor: Color {
         switch cardState {
-        case .available, .pregame: return HomeTheme.cardShadow
-        case .comingSoon, .upcoming: return .clear
+        case .active: return HomeTheme.cardShadow
+        case .noData: return .clear
         }
     }
 
     private var shadowRadius: CGFloat {
         switch cardState {
-        case .available, .pregame: return HomeTheme.cardShadowRadius
-        case .comingSoon, .upcoming: return 0
+        case .active: return HomeTheme.cardShadowRadius
+        case .noData: return 0
         }
     }
 
     @ViewBuilder
     private var rightElement: some View {
-        if cardState == .available && isRead {
+        if cardState == .active && isRead {
             Image(systemName: "checkmark.circle.fill")
                 .font(.caption)
                 .foregroundColor(Color(.tertiaryLabel))
@@ -155,15 +141,7 @@ struct GameRowView: View {
     }
 
     private var dateDisplay: String {
-        // For upcoming games, emphasize the scheduled time
-        if cardState == .upcoming, let date = game.parsedGameDate {
-            let formatter = DateFormatter()
-            if Calendar.current.isDateInTomorrow(date) {
-                formatter.timeStyle = .short
-                return "Tomorrow · \(formatter.string(from: date))"
-            }
-        }
-        return game.shortFormattedDate
+        game.shortFormattedDate
     }
 
     private var leagueColor: Color {
@@ -187,14 +165,10 @@ struct GameRowView: View {
     private var accessibilityLabel: String {
         let stateDescription: String
         switch cardState {
-        case .available:
-            stateDescription = "Tap to view game flow"
-        case .pregame:
-            stateDescription = "Tap to view pregame buzz"
-        case .comingSoon:
-            stateDescription = "Coming soon, play-by-play data is being processed"
-        case .upcoming:
-            stateDescription = "Upcoming game, not yet available"
+        case .active:
+            stateDescription = "Tap to view game"
+        case .noData:
+            stateDescription = "Game data not yet available"
         }
         return "\(game.awayTeamName) at \(game.homeTeamName). \(stateDescription)."
     }
@@ -212,7 +186,7 @@ private enum Layout {
 
 #Preview("Card States") {
     VStack(spacing: 16) {
-        // Available - Completed game (with moments)
+        // Active - Completed game with full data
         GameRowView(game: GameSummary(
             id: 12345,
             leagueCode: "NBA",
@@ -234,16 +208,16 @@ private enum Layout {
             lastScrapedAt: "2026-01-24T03:15:00Z"
         ))
 
-        // Available - Completed game (no moments yet)
+        // Active - Scheduled game with odds only
         GameRowView(game: GameSummary(
             id: 12346,
             leagueCode: "NFL",
-            gameDate: "2026-01-23T21:00:00-05:00",
-            status: .completed,
+            gameDate: "2026-01-25T21:00:00-05:00",
+            status: .scheduled,
             homeTeam: "Miami Heat",
             awayTeam: "New York Knicks",
-            homeScore: 98,
-            awayScore: 102,
+            homeScore: nil,
+            awayScore: nil,
             hasBoxscore: false,
             hasPlayerStats: false,
             hasOdds: true,
@@ -256,7 +230,7 @@ private enum Layout {
             lastScrapedAt: nil
         ))
 
-        // Locked - Scheduled/Upcoming
+        // noData - Truly empty game (rare)
         GameRowView(game: GameSummary(
             id: 12347,
             leagueCode: "MLB",
@@ -268,7 +242,7 @@ private enum Layout {
             awayScore: nil,
             hasBoxscore: false,
             hasPlayerStats: false,
-            hasOdds: true,
+            hasOdds: false,
             hasSocial: false,
             hasPbp: false,
             playCount: 0,
@@ -284,7 +258,7 @@ private enum Layout {
 
 #Preview("Dark Mode") {
     VStack(spacing: 16) {
-        // Available - Completed
+        // Active - Completed
         GameRowView(game: GameSummary(
             id: 12345,
             leagueCode: "NBA",
@@ -306,7 +280,7 @@ private enum Layout {
             lastScrapedAt: "2026-01-24T03:15:00Z"
         ))
 
-        // Locked - Scheduled
+        // Active - Scheduled with odds
         GameRowView(game: GameSummary(
             id: 12347,
             leagueCode: "MLB",

@@ -120,6 +120,15 @@ enum FairBetCopy {
         case "player_rebounds": return "Rebounds"
         case "player_assists": return "Assists"
         case "player_threes": return "3-Pointers"
+        case "player_blocks": return "Blocks"
+        case "player_steals": return "Steals"
+        case "player_goals": return "Player Goals"
+        case "player_shots_on_goal": return "Shots on Goal"
+        case "player_total_saves": return "Goalie Saves"
+        case "player_points_rebounds_assists": return "PRA"
+        case "team_totals": return "Team Total"
+        case "alternate_spreads": return "Alt Spread"
+        case "alternate_totals": return "Alt Total"
         default:
             return marketKey.replacingOccurrences(of: "_", with: " ").capitalized
         }

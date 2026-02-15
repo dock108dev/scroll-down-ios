@@ -72,7 +72,8 @@ actor FairBetAPIClient {
 
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(limit)),
-            URLQueryItem(name: "offset", value: String(offset))
+            URLQueryItem(name: "offset", value: String(offset)),
+            URLQueryItem(name: "has_fair", value: "true")
         ]
 
         if let league = league {
