@@ -17,7 +17,8 @@ final class GameDetailViewModel: ObservableObject {
     var isLoading: Bool { loadState == .loading }
     @Published private(set) var isUnavailable: Bool = false
 
-    // Outcome is always hidden per progressive disclosure principles
+    // Intentionally hardcoded to false — progressive disclosure design means outcomes
+    // are never auto-revealed; users explicitly choose to uncover scores via the UI.
     var isOutcomeRevealed: Bool { false }
 
     // Social posts
@@ -574,6 +575,7 @@ private enum ViewModelConstants {
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
+    // ESPN game ID for a known-good NFL game, used as fallback when gameId is invalid (0 or negative)
     static let defaultTimelineGameId = 401585601
 }
 

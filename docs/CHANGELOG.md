@@ -4,6 +4,12 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Documentation & Import Cleanup (Feb 2025)
+
+- Deduplicated `architecture.md` — replaced duplicated sections with cross-references to `AGENTS.md`
+- Removed unnecessary `import AVKit` from `SocialMediaPreview.swift` and `SocialPostRow.swift`
+- Added clarifying "why" comments at 3 non-obvious code sites
+
 ### Changed — Codebase Cleanup (Feb 2025)
 
 **Legacy file deletion (11 files):**

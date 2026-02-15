@@ -37,29 +37,11 @@ The app is a **thin display layer**. The backend computes all derived data (peri
 
 ## Core Principles
 
-### 1. Progressive Disclosure
-The app reveals information in layers. Users see context, matchups, and game flow before outcomes.
-
-### 2. The Reveal Principle
-We talk about **Reveal** (making outcomes visible) and **Outcome Visibility**.
-- **Default:** Outcome-hidden
-- **User Choice:** Users explicitly choose to uncover scores
-
-### 3. User-Controlled Pacing
-Nothing is auto-revealed. Users move through timeline at their own pace.
+See [AGENTS.md — Core Principles](../AGENTS.md) for Progressive Disclosure, the Reveal Principle, and User-Controlled Pacing.
 
 ## Server-Driven Data
 
-The backend provides all derived values. The app does not compute these:
-
-- **Period labels** — `periodLabel` on each play/timeline event (e.g., "Q1", "P2", "H1", "OT")
-- **Time labels** — `timeLabel` on each event (e.g., "Q4 2:35")
-- **Play tiers** — `tier` (1=primary, 2=secondary, 3=tertiary) for visual hierarchy
-- **Odds labels** — `derivedMetrics` dictionary with display-ready spread/total/moneyline labels
-- **Odds outcomes** — `derivedMetrics` with spread covered, total over/under, moneyline result (displayed via `wrapUpOddsLines` with open + close rows)
-- **Team colors** — Fetched from `/teams` endpoint (cached in `TeamColorCache`, 7-day TTL) and also injected from per-game API fields (`homeTeamColorLight`, etc.)
-- **Team abbreviations** — Injected from per-game API fields (`homeTeamAbbr`, etc.) into `TeamAbbreviations` cache
-- **Unified timeline** — Merged PBP + social + odds events from `/games/{id}/timeline`
+See [AGENTS.md — Server-Driven Data](../AGENTS.md) for the full list of server-provided values.
 
 ### Team Color System
 
@@ -86,27 +68,7 @@ Color clash detection prevents two similar team colors in matchup views.
 
 ## Flow Rendering
 
-The flow system uses **blocks** as the primary display unit:
-
-1. **Blocks** — Consumer-facing narrative segments
-   - Server provides 4-7 blocks per game
-   - Each block has narrative text + mini box score at bottom
-   - Designed for ~2.5 blocks visible on screen at once
-   - `blockStars` highlights top performers per block
-
-2. **FlowAdapter** — Converts `GameFlowResponse` to `[BlockDisplayModel]`
-   - Simple mapping, no client-side derivation
-   - Server provides all semantic information
-
-3. **Views:**
-   - `FlowContainerView` — Renders block list with spine
-   - `FlowBlockCardView` — Single block with narrative + mini box
-   - `MiniBoxScoreView` — Per-block player stats
-
-4. **PBP Timeline** — When flow data isn't available, unified timeline events render chronologically, grouped by period and tiered by server-provided `tier` values:
-   - **Tier 1** (primary) — Scoring plays with accent bar, team badge, score line
-   - **Tier 2** (secondary) — Notable plays, indented with left accent line
-   - **Tier 3** (tertiary) — Routine plays, double-indented with dot indicator
+See [AGENTS.md — Flow Architecture](../AGENTS.md) for the blocks/FlowAdapter/views overview.
 
 ### Block Structure
 
@@ -128,7 +90,7 @@ Each `FlowBlock` contains:
 
 ## Team Stats
 
-Team stats use a `KnownStat` definition pattern in `GameDetailViewModel`:
+See [AGENTS.md — Team Stats](../AGENTS.md) for the KnownStat pattern overview.
 
 ```
 API Response (JSONB stats dict)
@@ -149,16 +111,7 @@ Player stats use direct key lookup against `PlayerStat.rawStats`.
 
 ## FairBet Architecture
 
-The FairBet module computes fair odds and expected value across sportsbooks:
-
-```
-FairBetAPIClient → [APIBet] → BetPairing → EVCalculator
-                                                    │
-OddsComparisonViewModel ← caches EV results ← ─ ─ ┘
-       │
-       ▼
-OddsComparisonView → BetCard (always-visible card layout)
-```
+See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 
 **Fair Odds Computation:**
 - Uses sharp book (Pinnacle, Circa, BetCris) vig-removal and median aggregation
@@ -207,16 +160,3 @@ All interactive elements use consistent patterns:
 | Chevron rotation | `chevron.right` with 0°→90° on expand |
 | Expand animation | `spring(response: 0.3, dampingFraction: 0.8)` |
 | Transitions | Asymmetric (opacity + move from top) |
-
-## Navigation
-
-Routes defined in `ContentView.swift`:
-
-```swift
-enum AppRoute: Hashable {
-    case game(id: Int, league: String)
-    case team(name: String, abbreviation: String, league: String)
-}
-```
-
-Navigation via `NavigationStack` with `navigationDestination(for: AppRoute.self)`.
