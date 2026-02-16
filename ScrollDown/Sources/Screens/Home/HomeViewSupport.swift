@@ -35,8 +35,8 @@ struct HomeSectionState: Identifiable {
     }
 
     /// Number of completed games the user has read (expanded the Wrap Up)
-    var readCount: Int {
-        games.filter { $0.status?.isCompleted == true && UserDefaults.standard.bool(forKey: "game.read.\($0.id)") }.count
+    func readCount(using store: ReadStateStore) -> Int {
+        games.filter { $0.status?.isCompleted == true && store.isRead(gameId: $0.id) }.count
     }
 }
 

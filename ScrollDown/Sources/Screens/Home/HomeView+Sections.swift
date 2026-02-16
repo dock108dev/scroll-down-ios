@@ -36,7 +36,7 @@ extension HomeView {
                                 || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
                             }.count
                         }()
-                        let readCount = section.readCount
+                        let readCount = section.readCount(using: readStateStore)
                         Text(readCount > 0
                              ? "\(filteredCount) games \u{00B7} \(readCount) read"
                              : "\(filteredCount) games")

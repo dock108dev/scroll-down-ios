@@ -3,6 +3,7 @@ import SwiftUI
 /// Game detail view showing full game information
 struct GameDetailView: View {
     @EnvironmentObject var appConfig: AppConfig
+    @EnvironmentObject var readStateStore: ReadStateStore
     let gameId: Int
     let leagueCode: String?
 
@@ -113,7 +114,7 @@ struct GameDetailView: View {
 
     /// Whether the user has already read this game (wrap-up opened now or previously)
     private var isGameRead: Bool {
-        isWrapUpExpanded || UserDefaults.standard.bool(forKey: "game.read.\(gameId)")
+        isWrapUpExpanded || readStateStore.isRead(gameId: gameId)
     }
 
     private func loadSocialIfEnabled() async {
@@ -325,7 +326,7 @@ struct GameDetailView: View {
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
                 if expanded {
-                    UserDefaults.standard.set(true, forKey: "game.read.\(gameId)")
+                    readStateStore.markRead(gameId: gameId)
                 }
             }
             .onChange(of: scrollToSection) { _, target in
@@ -353,21 +354,25 @@ struct GameDetailView: View {
         }
         .preferredColorScheme(.light)
         .environmentObject(AppConfig.shared)
+        .environmentObject(ReadStateStore.shared)
 
         NavigationStack {
             GameDetailView(gameId: 2, detail: PreviewFixtures.highlightsLightGame)
         }
         .preferredColorScheme(.dark)
         .environmentObject(AppConfig.shared)
+        .environmentObject(ReadStateStore.shared)
 
         NavigationStack {
             GameDetailView(gameId: 3, detail: PreviewFixtures.overtimeGame)
         }
         .environmentObject(AppConfig.shared)
+        .environmentObject(ReadStateStore.shared)
 
         NavigationStack {
             GameDetailView(gameId: 4, detail: PreviewFixtures.preGameOnlyGame)
         }
         .environmentObject(AppConfig.shared)
+        .environmentObject(ReadStateStore.shared)
     }
 }

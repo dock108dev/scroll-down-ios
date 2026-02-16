@@ -69,6 +69,7 @@
 		AE92945926AB3551DCF5C3CA /* TimelineScoreChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879FF16F095E482875F2E9FD /* TimelineScoreChipView.swift */; };
 		B23F900B963764515587B020 /* PlayTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A6C31E75DB79EE8DB2298F /* PlayTier.swift */; };
 		B46AADD785BC18C1FC3B928A /* TimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4388D761310256CAA8B9F768 /* TimeService.swift */; };
+		B46AADD785BC18C1FC3B929B /* ReadStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4388D761310256CAA8B9F769 /* ReadStateStore.swift */; };
 		B8FC23B6E7A9D2B76E9773CB /* Bet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A05DB5B0FA7DD921565A18 /* Bet.swift */; };
 		B9409337122EDCBDD1D21ACA /* FairBetAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFA802A8B2F8604244A8724 /* FairBetAPIClient.swift */; };
 		B9C89E17FE2E6E02A2217828 /* EmptySectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1759D46A67A3FE7908908B7 /* EmptySectionView.swift */; };
@@ -156,6 +157,7 @@
 		3872C5AE773FD5B767ED3235 /* GameDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameDetailViewModel.swift; sourceTree = "<group>"; };
 		40D0549B86E4D275566F0FC7 /* BetCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetCard.swift; sourceTree = "<group>"; };
 		4388D761310256CAA8B9F768 /* TimeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeService.swift; sourceTree = "<group>"; };
+		4388D761310256CAA8B9F769 /* ReadStateStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadStateStore.swift; sourceTree = "<group>"; };
 		PARLAY000001000000000001 /* ParlaySheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParlaySheetView.swift; sourceTree = "<group>"; };
 		465650A590867756F99ECA3B /* ServerPlayGroupAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServerPlayGroupAdapter.swift; sourceTree = "<group>"; };
 		468D9B5B382770F3B3C8C037 /* FairOddsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairOddsCalculator.swift; sourceTree = "<group>"; };
@@ -349,6 +351,7 @@
 		1014E322CBC71E794D4F62D4 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				4388D761310256CAA8B9F769 /* ReadStateStore.swift */,
 				4388D761310256CAA8B9F768 /* TimeService.swift */,
 			);
 			path = Services;
@@ -775,6 +778,7 @@
 				548E92D316546DB0C6C67CDB /* GameRoutingLogger.swift in Sources */,
 				77EF0BFA896CD62B68C098A9 /* GameStatusLogger.swift in Sources */,
 				B46AADD785BC18C1FC3B928A /* TimeService.swift in Sources */,
+				B46AADD785BC18C1FC3B929B /* ReadStateStore.swift in Sources */,
 				675B4AD1545E903D1B4408B0 /* AppConfig.swift in Sources */,
 				BCD3F6FA49CFAA122E7CA551 /* GameDetailDisplayModels.swift in Sources */,
 				00BA56A662081034AD386E10 /* GameDetailView+Overview.swift in Sources */,
