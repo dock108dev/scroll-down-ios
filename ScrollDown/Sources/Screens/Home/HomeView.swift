@@ -22,7 +22,7 @@ struct HomeView: View {
     @State var searchText = ""
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
-    @State private var selectedOddsMarket: MarketKey?
+    @State private var selectedMarketFilter: MarketFilter?
     @State private var loadTask: Task<Void, Never>?
     @State var isUpdating = false
     private let refreshTimer = Timer.publish(every: 900, on: .main, in: .common).autoconnect()
@@ -208,8 +208,10 @@ struct HomeView: View {
                         // Market filters
                         oddsMarketFilterButton(nil, label: "All")
                         ForEach(MarketKey.mainlineMarkets) { market in
-                            oddsMarketFilterButton(market, label: market.displayName)
+                            oddsMarketFilterButton(.single(market), label: market.displayName)
                         }
+                        oddsMarketFilterButton(.playerProps, label: "Player Props")
+                        oddsMarketFilterButton(.teamProps, label: "Team Props")
                     }
                     .padding(.horizontal, horizontalPadding)
                     .padding(.vertical, HomeLayout.filterVerticalPadding)
@@ -343,17 +345,17 @@ struct HomeView: View {
         }
     }
 
-    private func oddsMarketFilterButton(_ market: MarketKey?, label: String) -> some View {
+    private func oddsMarketFilterButton(_ filter: MarketFilter?, label: String) -> some View {
         Button(action: {
-            selectedOddsMarket = market
-            oddsViewModel.selectedMarket = market
+            selectedMarketFilter = filter
+            oddsViewModel.selectedMarketFilter = filter
         }) {
             Text(label)
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, HomeLayout.filterHorizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
-                .background(selectedOddsMarket == market ? HomeTheme.accentColor : Color(.systemGray5))
-                .foregroundColor(selectedOddsMarket == market ? .white : .primary)
+                .background(selectedMarketFilter == filter ? HomeTheme.accentColor : Color(.systemGray5))
+                .foregroundColor(selectedMarketFilter == filter ? .white : .primary)
                 .clipShape(Capsule())
         }
     }

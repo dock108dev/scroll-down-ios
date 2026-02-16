@@ -98,6 +98,28 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         [.h2h, .spreads, .totals]
     }
 
+    /// Player prop markets
+    static var playerPropMarkets: [MarketKey] {
+        [.playerPoints, .playerRebounds, .playerAssists, .playerThrees,
+         .playerBlocks, .playerSteals, .playerGoals, .playerShotsOnGoal,
+         .playerTotalSaves, .playerPRA]
+    }
+
+    /// Team prop markets
+    static var teamPropMarkets: [MarketKey] {
+        [.teamTotals]
+    }
+
+    /// Whether this market is a player prop
+    var isPlayerProp: Bool {
+        MarketKey.playerPropMarkets.contains(self)
+    }
+
+    /// Whether this market is a team prop
+    var isTeamProp: Bool {
+        MarketKey.teamPropMarkets.contains(self)
+    }
+
     init(rawValue: String) {
         switch rawValue {
         case "h2h": self = .h2h
@@ -279,5 +301,29 @@ struct BookPrice: Identifiable, Codable, Equatable {
     /// Convert American odds to AmericanOdds struct
     var americanOdds: AmericanOdds {
         AmericanOdds(price)
+    }
+}
+
+/// Filter for odds market pills — supports individual markets and grouped categories
+enum MarketFilter: Equatable, Hashable {
+    case single(MarketKey)
+    case playerProps
+    case teamProps
+
+    var label: String {
+        switch self {
+        case .single(let market): return market.displayName
+        case .playerProps: return "Player Props"
+        case .teamProps: return "Team Props"
+        }
+    }
+
+    /// Returns true if the given market matches this filter
+    func matches(_ market: MarketKey) -> Bool {
+        switch self {
+        case .single(let key): return market == key
+        case .playerProps: return market.isPlayerProp
+        case .teamProps: return market.isTeamProp
+        }
     }
 }
