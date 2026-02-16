@@ -54,7 +54,7 @@ jobs:
         run: |
           xcodebuild build \
             -scheme ScrollDown \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             -quiet

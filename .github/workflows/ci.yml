@@ -43,14 +43,14 @@ jobs:
         run: |
           xcodebuild build-for-testing \
             -scheme ScrollDown \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
             -quiet
 
       - name: Test
         run: |
           xcodebuild test-without-building \
             -scheme ScrollDown \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 

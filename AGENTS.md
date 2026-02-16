@@ -22,7 +22,7 @@ ScrollDown/Sources/
 │   ├── Home/            # Game list feed
 │   ├── Game/            # Game detail view (split into extensions)
 │   └── Team/            # Team page
-├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView)
+├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView, FlowLayout)
 ├── Extensions/          # Swift extensions (String+Abbreviation)
 ├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
 ├── Services/            # TimeService (snapshot mode)
