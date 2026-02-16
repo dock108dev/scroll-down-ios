@@ -26,11 +26,20 @@ final class EVCalculatorTests: XCTestCase {
     }
 
     func testComputeBookEVWithFee() {
-        // novig has 2% fee on winnings
-        let result = EVCalculator.computeBookEV(bookKey: "novig", americanOdds: 100, pFair: 0.55)
-        XCTAssertTrue(result.feeApplied)
-        XCTAssertEqual(result.feeRate, 0.02, accuracy: 0.001)
-        XCTAssertLessThan(result.netProfit, result.grossProfit)
+        // Verify fee mechanism works via BookFeeConfig directly
+        let feeConfig = BookFeeConfig(feeType: .percentOnWinnings, rate: 0.02)
+        let grossProfit = EVCalculator.americanToProfit(100)  // 1.0
+        let netProfit = feeConfig.applyFee(to: grossProfit)
+        XCTAssertEqual(netProfit, 0.98, accuracy: 0.001)
+        XCTAssertLessThan(netProfit, grossProfit)
+    }
+
+    func testIncludedBooksHaveNoFee() {
+        // All included books are traditional sportsbooks with no explicit fee
+        let result = EVCalculator.computeBookEV(bookKey: "draftkings", americanOdds: 100, pFair: 0.55)
+        XCTAssertFalse(result.feeApplied)
+        XCTAssertEqual(result.feeRate, 0, accuracy: 0.001)
+        XCTAssertEqual(result.netProfit, result.grossProfit, accuracy: 0.001)
     }
 
     // MARK: - americanToProfit

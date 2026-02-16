@@ -92,6 +92,7 @@
 		C3C221A6E6F7DBF6853E1594 /* RealityAndFeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA21BEB69518BAA2B993128 /* RealityAndFeedbackView.swift */; };
 		C7B67AF43E6DA6570E575B44 /* OddsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A773FEEE798C93E9FC2818C /* OddsCalculator.swift */; };
 		CA4010C61C616A2D6402EB72 /* CollapsibleCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */; };
+		CA4010C61C616A2D6402EB73 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D2B7297939B7F12CC4A672 /* FlowLayout.swift */; };
 		CC4EBE99A508A028BDF7CD25 /* GameListResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95D753106C9E23F1CCAF32F /* GameListResponse.swift */; };
 		CF6D668A9D1BDB615B8CE075 /* NarrativeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A7BE5EB9BFCDA634A45337 /* NarrativeLayout.swift */; };
 		D71839AB97AB362F4026F8F6 /* SocialPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D9E730F9256BAC5B12506 /* SocialPost.swift */; };
@@ -142,6 +143,7 @@
 		0200000000000019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		03CBB42D2772608C0E2EFA78 /* Game.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
 		03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollapsibleCards.swift; sourceTree = "<group>"; };
+		03D2B7297939B7F12CC4A672 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		06C420C1C804E6E294DD05A5 /* GameTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameTheme.swift; sourceTree = "<group>"; };
 		07A34BB0087856726AC92504 /* GameDetailView+Layout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Layout.swift"; sourceTree = "<group>"; };
 		0AADCA528A2C95E3311E6A78 /* HomeTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeTheme.swift; sourceTree = "<group>"; };
@@ -359,6 +361,7 @@
 				03D2B7297939B7F12CC4A671 /* CollapsibleCards.swift */,
 				AA01B2C3D4E5F6A7B8C90004 /* SafariView.swift */,
 				B78A1F81D17C25F050943DF3 /* PlayerNameCell.swift */,
+				03D2B7297939B7F12CC4A672 /* FlowLayout.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -766,6 +769,7 @@
 				57024D5CC2996DB7B200ED5D /* GameDetailView+Layout.swift in Sources */,
 				802094A3DAA3AD876DB1BFEA /* LoadingSkeletonView.swift in Sources */,
 				CA4010C61C616A2D6402EB72 /* CollapsibleCards.swift in Sources */,
+				CA4010C61C616A2D6402EB73 /* FlowLayout.swift in Sources */,
 				F565F95EAD2D1AB1CDC547AF /* ScrollDownApp.swift in Sources */,
 				D8B02FF93B79BD5E28F12034 /* ContentView.swift in Sources */,
 				548E92D316546DB0C6C67CDB /* GameRoutingLogger.swift in Sources */,

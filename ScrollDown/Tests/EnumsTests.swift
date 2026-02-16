@@ -63,6 +63,107 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(odds.marketType, .total)
     }
 
+    func testMarketTypeAlternateSpreads() throws {
+        let json = """
+        {"book":"FanDuel","marketType":"alternate_spreads","isClosingLine":false}
+        """.data(using: .utf8)!
+        let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
+        XCTAssertEqual(odds.marketType, .alternateSpread)
+    }
+
+    func testMarketTypeUnknownFallback() throws {
+        let json = """
+        {"book":"FanDuel","marketType":"some_future_market","isClosingLine":false}
+        """.data(using: .utf8)!
+        let odds = try JSONDecoder().decode(OddsEntry.self, from: json)
+        XCTAssertEqual(odds.marketType, .unknown("some_future_market"))
+    }
+
+    func testMarketTypeAliasH2H() {
+        XCTAssertEqual(MarketType(rawValue: "h2h"), .moneyline)
+    }
+
+    func testMarketTypeAliasSpreads() {
+        XCTAssertEqual(MarketType(rawValue: "spreads"), .spread)
+    }
+
+    func testMarketTypeAliasTotals() {
+        XCTAssertEqual(MarketType(rawValue: "totals"), .total)
+    }
+
+    func testMarketTypeRoundTrip() throws {
+        let original = MarketType.alternateSpread
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+        let decoded = try JSONDecoder().decode(MarketType.self, from: data)
+        XCTAssertEqual(decoded, original)
+    }
+
+    // MARK: - MarketKey
+
+    func testMarketKeyInitRawValueKnownCases() {
+        XCTAssertEqual(MarketKey(rawValue: "h2h"), .h2h)
+        XCTAssertEqual(MarketKey(rawValue: "spreads"), .spreads)
+        XCTAssertEqual(MarketKey(rawValue: "totals"), .totals)
+        XCTAssertEqual(MarketKey(rawValue: "player_points"), .playerPoints)
+        XCTAssertEqual(MarketKey(rawValue: "player_rebounds"), .playerRebounds)
+        XCTAssertEqual(MarketKey(rawValue: "player_assists"), .playerAssists)
+        XCTAssertEqual(MarketKey(rawValue: "player_threes"), .playerThrees)
+        XCTAssertEqual(MarketKey(rawValue: "player_blocks"), .playerBlocks)
+        XCTAssertEqual(MarketKey(rawValue: "player_steals"), .playerSteals)
+    }
+
+    func testMarketKeyInitRawValueNewCases() {
+        XCTAssertEqual(MarketKey(rawValue: "player_goals"), .playerGoals)
+        XCTAssertEqual(MarketKey(rawValue: "player_shots_on_goal"), .playerShotsOnGoal)
+        XCTAssertEqual(MarketKey(rawValue: "player_total_saves"), .playerTotalSaves)
+        XCTAssertEqual(MarketKey(rawValue: "player_points_rebounds_assists"), .playerPRA)
+        XCTAssertEqual(MarketKey(rawValue: "team_totals"), .teamTotals)
+        XCTAssertEqual(MarketKey(rawValue: "alternate_spreads"), .alternateSpreads)
+        XCTAssertEqual(MarketKey(rawValue: "alternate_totals"), .alternateTotals)
+    }
+
+    func testMarketKeyUnknownFallback() {
+        let key = MarketKey(rawValue: "some_future_market")
+        XCTAssertEqual(key, .unknown("some_future_market"))
+        XCTAssertEqual(key.rawValue, "some_future_market")
+    }
+
+    func testMarketKeyDecoding() throws {
+        let json = "\"player_goals\"".data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(MarketKey.self, from: json)
+        XCTAssertEqual(decoded, .playerGoals)
+    }
+
+    func testMarketKeyDecodingUnknown() throws {
+        let json = "\"xyz_market\"".data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(MarketKey.self, from: json)
+        XCTAssertEqual(decoded, .unknown("xyz_market"))
+    }
+
+    func testMarketKeyRoundTrip() throws {
+        let cases: [MarketKey] = [
+            .h2h, .spreads, .totals,
+            .playerGoals, .playerShotsOnGoal, .playerTotalSaves,
+            .playerPRA, .teamTotals, .alternateSpreads, .alternateTotals
+        ]
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        for original in cases {
+            let data = try encoder.encode(original)
+            let decoded = try decoder.decode(MarketKey.self, from: data)
+            XCTAssertEqual(decoded, original)
+        }
+    }
+
+    func testMarketKeyRoundTripUnknown() throws {
+        let original = MarketKey.unknown("brand_new_thing")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(MarketKey.self, from: data)
+        XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.rawValue, "brand_new_thing")
+    }
+
     // MARK: - MediaType
 
     func testMediaTypeDecoding() throws {

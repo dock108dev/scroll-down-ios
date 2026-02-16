@@ -15,6 +15,7 @@ struct BetCard: View {
     var onToggleParlay: (() -> Void)?
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     private var isCompact: Bool { horizontalSizeClass == .compact }
 
     // MARK: - Computed Properties
@@ -56,12 +57,33 @@ struct BetCard: View {
         bet.books.sorted { computeEV(for: $0) > computeEV(for: $1) }
     }
 
+    private var anchorBook: BookPrice? {
+        if !preferredSportsbook.isEmpty,
+           let preferred = bet.books.first(where: { $0.name == preferredSportsbook }) {
+            return preferred
+        }
+        return bestBook
+    }
+
+    private var anchorIsBestAvailable: Bool {
+        guard let anchor = anchorBook, let best = bestBook else { return true }
+        return anchor.name == best.name && anchor.price == best.price
+    }
+
+    private var otherBooks: [BookPrice] {
+        sortedBooks.filter { book in
+            if let anchor = anchorBook, book.name == anchor.name { return false }
+            if !anchorIsBestAvailable, let best = bestBook, book.name == best.name { return false }
+            return true
+        }
+    }
+
     private var opponentName: String {
         bet.selection == bet.homeTeam ? bet.awayTeam : bet.homeTeam
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
             // Row 1: Selection name + League badge & Market
             HStack(alignment: .top) {
                 Text(bet.selectionDisplay)
@@ -99,7 +121,7 @@ struct BetCard: View {
             booksGrid
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, isCompact ? 10 : 12)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(FairBetTheme.cardBackground)
@@ -142,46 +164,27 @@ struct BetCard: View {
         }
     }
 
-    /// iPhone: wrapping flow layout, top 3 books with expand
+    /// iPhone: vertical decision stack
     @State private var isExpanded = false
 
     private var compactBooksGrid: some View {
-        let visibleBooks = isExpanded ? sortedBooks : Array(sortedBooks.prefix(3))
-        let hasMore = sortedBooks.count > 3
+        VStack(alignment: .leading, spacing: 8) {
+            // Row B: Fair odds + Parlay button
+            primaryActionRow
 
-        return HStack(alignment: .bottom) {
-            FlowLayout(spacing: 6) {
-                fairOddsChip
-
-                ForEach(visibleBooks) { book in
-                    MiniBookChip(
-                        book: book,
-                        isBest: book.price == bestBook?.price,
-                        ev: computeEV(for: book)
-                    )
-                }
-
-                if hasMore {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
-                    } label: {
-                        Text(isExpanded ? "Less" : "+\(sortedBooks.count - 3)")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color(.systemGray6))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
+            // Row C: Anchor book
+            if let anchor = anchorBook {
+                anchorBookRow(anchor)
             }
 
-            if let onToggleParlay {
-                Spacer(minLength: 4)
-                parlayButton(action: onToggleParlay)
+            // Row D: Best available (if anchor isn't the best)
+            if let best = bestBook, !anchorIsBestAvailable {
+                bestAvailableRow(best)
+            }
+
+            // Row E: Other books disclosure
+            if !otherBooks.isEmpty {
+                otherBooksDisclosure
             }
         }
     }
@@ -269,6 +272,93 @@ struct BetCard: View {
         )
     }
 
+    private func evColor(for ev: Double) -> Color {
+        if ev >= 5 { return FairBetTheme.positive }
+        if ev > 0 { return FairBetTheme.positiveMuted }
+        if ev < -2 { return FairBetTheme.negative }
+        return .secondary
+    }
+
+    // MARK: - iPhone Subviews
+
+    private var primaryActionRow: some View {
+        HStack {
+            fairOddsChip
+            Spacer()
+            if let onToggleParlay {
+                parlayButton(action: onToggleParlay)
+            }
+        }
+    }
+
+    private func anchorBookRow(_ book: BookPrice) -> some View {
+        let ev = computeEV(for: book)
+        return HStack(spacing: 6) {
+            Text(BookNameHelper.abbreviated(book.name))
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.secondary)
+
+            Text(FairBetCopy.formatOdds(book.price))
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(.primary)
+
+            Text(FairBetCopy.formatEV(ev))
+                .font(.caption)
+                .foregroundColor(evColor(for: ev).opacity(0.8))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(FairBetTheme.surfaceSecondary)
+        )
+    }
+
+    private func bestAvailableRow(_ book: BookPrice) -> some View {
+        let ev = computeEV(for: book)
+        return HStack(spacing: 4) {
+            Text("Best available:")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text("\(BookNameHelper.abbreviated(book.name)) \(FairBetCopy.formatOdds(book.price))")
+                .font(.caption.weight(.medium))
+                .foregroundColor(.secondary)
+            Text(FairBetCopy.formatEV(ev))
+                .font(.caption)
+                .foregroundColor(evColor(for: ev).opacity(0.8))
+        }
+    }
+
+    private var otherBooksDisclosure: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(isExpanded ? "Other books \u{25B4}" : "Other books \u{25BE}")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.secondary)
+                    Text("(\(otherBooks.count))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                FlowLayout(spacing: 6) {
+                    ForEach(otherBooks) { book in
+                        MiniBookChip(
+                            book: book,
+                            isBest: book.price == bestBook?.price,
+                            ev: computeEV(for: book)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 // MARK: - Mini Book Chip
@@ -327,19 +417,7 @@ struct MiniBookChip: View {
     }
 
     private var abbreviatedName: String {
-        switch book.name {
-        case "DraftKings": return "DK"
-        case "FanDuel": return "FD"
-        case "BetMGM": return "MGM"
-        case "Caesars": return "CZR"
-        case "PointsBet": return "PB"
-        case "BetRivers": return "BR"
-        case "Fanatics": return "FAN"
-        case "ESPNBet", "ESPN BET": return "ESPN"
-        case "Hard Rock Bet": return "HR"
-        case "bet365": return "365"
-        default: return String(book.name.prefix(3)).uppercased()
-        }
+        BookNameHelper.abbreviated(book.name)
     }
 }
 
@@ -369,50 +447,31 @@ struct LeagueBadgeSmall: View {
     }
 }
 
-// MARK: - Flow Layout
+// MARK: - Book Name Helper
 
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x,
-                                       y: bounds.minY + result.positions[index].y),
-                          proposal: .unspecified)
-        }
-    }
-
-    struct FlowResult {
-        var size: CGSize = .zero
-        var positions: [CGPoint] = []
-
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var x: CGFloat = 0
-            var y: CGFloat = 0
-            var rowHeight: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-
-                if x + size.width > maxWidth && x > 0 {
-                    x = 0
-                    y += rowHeight + spacing
-                    rowHeight = 0
-                }
-
-                positions.append(CGPoint(x: x, y: y))
-                rowHeight = max(rowHeight, size.height)
-                x += size.width + spacing
-                self.size.width = max(self.size.width, x)
-            }
-
-            self.size.height = y + rowHeight
+enum BookNameHelper {
+    /// Abbreviations for all INCLUDED_BOOKS in ev_config.py
+    static func abbreviated(_ name: String) -> String {
+        switch name {
+        case "DraftKings": return "DK"
+        case "FanDuel": return "FD"
+        case "BetMGM": return "MGM"
+        case "Caesars": return "CZR"
+        case "ESPNBet", "ESPN BET": return "ESPN"
+        case "Fanatics": return "FAN"
+        case "Hard Rock Bet": return "HR"
+        case "Pinnacle": return "PIN"
+        case "PointsBet", "PointsBet (US)": return "PB"
+        case "bet365": return "365"
+        case "Betway": return "BWY"
+        case "Circa Sports": return "CIR"
+        case "Fliff": return "FLF"
+        case "SI Sportsbook": return "SI"
+        case "theScore Bet": return "SCR"
+        case "Tipico": return "TIP"
+        case "Unibet": return "UNI"
+        default: return String(name.prefix(3)).uppercased()
         }
     }
 }
+

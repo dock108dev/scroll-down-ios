@@ -409,12 +409,14 @@ final class OddsComparisonViewModel: ObservableObject {
     /// Prefers server-side EV annotations when available (respects server book exclusion,
     /// eligibility gating, and freshness checks). Falls back to client-side computation.
     private func computeEVResult(for bet: APIBet) -> EVResult {
-        // Server-side EV: use when confidence tier is present and at least one book has evPercent
+        // Server-side EV: use when confidence tier is present, at least one book has evPercent,
+        // AND we have a real trueProb so we don't fall back to a meaningless 0.5 (-100).
         if let serverTier = bet.evConfidenceTier,
            let bestServerBook = bet.books.compactMap({ book -> (book: BookPrice, ev: Double)? in
                guard let ev = book.evPercent else { return nil }
                return (book, ev)
-           }).max(by: { $0.ev < $1.ev }) {
+           }).max(by: { $0.ev < $1.ev }),
+           let fairProb = bestServerBook.book.trueProb ?? bet.books.compactMap(\.trueProb).first {
             let confidence: FairOddsConfidence
             switch serverTier {
             case "high": confidence = .high
@@ -422,7 +424,6 @@ final class OddsComparisonViewModel: ObservableObject {
             case "low": confidence = .low
             default: confidence = .none
             }
-            let fairProb = bestServerBook.book.trueProb ?? 0.5
             let fairOdds = OddsCalculator.probToAmerican(fairProb)
             return EVResult(
                 ev: bestServerBook.ev,

@@ -68,10 +68,84 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
 
 // MARK: - Market Type
 /// Betting market type as defined in the OpenAPI spec
-enum MarketType: String, Codable {
+/// Uses RawRepresentable with unknown(String) fallback so new API values never crash decoding.
+enum MarketType: RawRepresentable, Codable, Equatable {
     case spread
     case moneyline
     case total
+    case alternateSpread
+    case alternateTotal
+    case playerPoints
+    case playerRebounds
+    case playerAssists
+    case playerThrees
+    case playerBlocks
+    case playerSteals
+    case playerGoals
+    case playerShotsOnGoal
+    case playerTotalSaves
+    case playerPRA
+    case teamTotal
+    case unknown(String)
+
+    var rawValue: String {
+        switch self {
+        case .spread: return "spread"
+        case .moneyline: return "moneyline"
+        case .total: return "total"
+        case .alternateSpread: return "alternate_spreads"
+        case .alternateTotal: return "alternate_totals"
+        case .playerPoints: return "player_points"
+        case .playerRebounds: return "player_rebounds"
+        case .playerAssists: return "player_assists"
+        case .playerThrees: return "player_threes"
+        case .playerBlocks: return "player_blocks"
+        case .playerSteals: return "player_steals"
+        case .playerGoals: return "player_goals"
+        case .playerShotsOnGoal: return "player_shots_on_goal"
+        case .playerTotalSaves: return "player_total_saves"
+        case .playerPRA: return "player_points_rebounds_assists"
+        case .teamTotal: return "team_totals"
+        case .unknown(let value): return value
+        }
+    }
+
+    init?(rawValue: String) {
+        switch rawValue {
+        case "spread", "spreads": self = .spread
+        case "moneyline", "h2h": self = .moneyline
+        case "total", "totals": self = .total
+        case "alternate_spreads": self = .alternateSpread
+        case "alternate_totals": self = .alternateTotal
+        case "player_points": self = .playerPoints
+        case "player_rebounds": self = .playerRebounds
+        case "player_assists": self = .playerAssists
+        case "player_threes": self = .playerThrees
+        case "player_blocks": self = .playerBlocks
+        case "player_steals": self = .playerSteals
+        case "player_goals": self = .playerGoals
+        case "player_shots_on_goal": self = .playerShotsOnGoal
+        case "player_total_saves": self = .playerTotalSaves
+        case "player_points_rebounds_assists": self = .playerPRA
+        case "team_totals": self = .teamTotal
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = MarketType(rawValue: rawValue) ?? .unknown(rawValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    static func == (lhs: MarketType, rhs: MarketType) -> Bool {
+        lhs.rawValue == rhs.rawValue
+    }
 }
 
 // MARK: - Media Type

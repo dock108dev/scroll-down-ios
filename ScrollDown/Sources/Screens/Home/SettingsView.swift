@@ -4,7 +4,7 @@ struct SettingsView: View {
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
     let completedGameIds: [Int]
     @AppStorage("appTheme") private var appTheme = "system"
-    @AppStorage("preferredSportsbook") private var preferredSportsbook = "DraftKings"
+    @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
     @State private var readStateRefreshId = UUID()
@@ -78,6 +78,7 @@ struct SettingsView: View {
 
             Section("Odds") {
                 Picker("Default Book", selection: $preferredSportsbook) {
+                    Text("Best available price").tag("")
                     ForEach(sportsbooks, id: \.self) { book in
                         Text(book).tag(book)
                     }
