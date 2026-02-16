@@ -6,6 +6,7 @@ import UIKit
 /// iPad: Wider layout with constrained content width for optimal readability
 struct HomeView: View {
     @EnvironmentObject var appConfig: AppConfig
+    @EnvironmentObject var readStateStore: ReadStateStore
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State var earlierSection: HomeSectionState
@@ -22,6 +23,8 @@ struct HomeView: View {
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
     @State private var selectedOddsLeague: FairBetLeague?
     @State private var selectedOddsMarket: MarketKey?
+    @State private var loadTask: Task<Void, Never>?
+    @State var isUpdating = false
     private let refreshTimer = Timer.publish(every: 900, on: .main, in: .common).autoconnect()
 
     init() {
@@ -61,20 +64,18 @@ struct HomeView: View {
             // Only load on first appearance — preserve data on back navigation
             guard !hasLoadedInitialData else { return }
             hasLoadedInitialData = true
-            await loadGames()
+            startLoadGames()
         }
         .sheet(isPresented: $showingAdminSettings, onDismiss: {
             // Reload data after admin settings changed (e.g., snapshot mode)
-            Task {
-                await loadGames(scrollToToday: false)
-            }
+            startLoadGames(scrollToToday: false)
         }) {
             AdminSettingsView()
                 .environmentObject(appConfig)
         }
         .onReceive(refreshTimer) { _ in
             guard hasLoadedInitialData, viewMode == .recaps else { return }
-            Task { await loadGames(scrollToToday: false) }
+            startLoadGames(scrollToToday: false, priority: .background)
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, hasLoadedInitialData else { return }
@@ -82,7 +83,7 @@ struct HomeView: View {
             let dayChanged = !cache.isSameCalendarDay(range: .current, league: selectedLeague)
             let cacheStale = !cache.isFresh(range: .current, league: selectedLeague, maxAge: 900)
             guard dayChanged || cacheStale else { return }
-            Task { await loadGames(scrollToToday: dayChanged) }
+            startLoadGames(scrollToToday: dayChanged)
         }
     }
 
@@ -142,13 +143,27 @@ struct HomeView: View {
                         )
                         .frame(width: 20)
                         refreshButton {
-                            Task { await loadGames(scrollToToday: false) }
+                            startLoadGames(scrollToToday: false)
                         }
                         .padding(.trailing, horizontalPadding)
                         .background(HomeTheme.background)
                     }
                 }
                 .background(HomeTheme.background)
+
+                // Subtle updating indicator during stale-while-revalidate
+                if isUpdating {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Updating…")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.vertical, 2)
+                    .transition(.opacity)
+                }
 
                 // Search bar
                 HStack(spacing: 8) {
@@ -301,7 +316,7 @@ struct HomeView: View {
     private func leagueFilterButton(_ league: LeagueCode?, label: String) -> some View {
         Button(action: {
             selectedLeague = league
-            Task { await loadGames(scrollToToday: false) }
+            startLoadGames(scrollToToday: false)
         }) {
             Text(label)
                 .font(.subheadline.weight(.medium))
@@ -371,7 +386,7 @@ struct HomeView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button(HomeStrings.retryLabel) {
-                Task { await loadGames() }
+                startLoadGames()
             }
             .buttonStyle(.borderedProminent)
         }
@@ -414,6 +429,7 @@ struct HomeView: View {
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))
             }
             .refreshable {
+                loadTask?.cancel()
                 await loadGames(scrollToToday: false)
             }
             .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
@@ -453,6 +469,16 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: - Load Task Management
+
+    /// Cancels any in-flight load and starts a new one. All callers should go through this.
+    func startLoadGames(scrollToToday: Bool = true, priority: TaskPriority = .userInitiated) {
+        loadTask?.cancel()
+        loadTask = Task(priority: priority) {
+            await loadGames(scrollToToday: scrollToToday)
+        }
+    }
 }
 
 #Preview {
@@ -460,4 +486,5 @@ struct HomeView: View {
         HomeView()
     }
     .environmentObject(AppConfig.shared)
+    .environmentObject(ReadStateStore.shared)
 }

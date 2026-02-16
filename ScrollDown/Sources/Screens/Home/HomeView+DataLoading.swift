@@ -16,6 +16,11 @@ extension HomeView {
         let cache = HomeGameCache.shared
         let hasCachedData = loadCachedSections(from: cache)
 
+        // Show subtle updating indicator when we have cached data
+        if hasCachedData {
+            isUpdating = true
+        }
+
         // 2. Only show loading spinners if no cached data exists
         if !hasCachedData {
             earlierSection.isLoading = true
@@ -34,11 +39,19 @@ extension HomeView {
 
         let results = await [earlierResult, yesterdayResult, todayResult, tomorrowResult]
 
+        // Bail out if this load was superseded by a newer one
+        guard !Task.isCancelled else {
+            isUpdating = false
+            return
+        }
+
         // 4. Silent swap — apply results + save to cache
         applyHomeSectionResults(results)
         injectTeamMetadataFromSummaries(results)
         updateLastUpdatedAt(from: results)
         saveSectionsToCache(results, cache: cache)
+
+        isUpdating = false
 
         // 5. Only show global error if ALL sections failed AND no data to display
         let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty

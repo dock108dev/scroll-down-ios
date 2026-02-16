@@ -30,5 +30,6 @@ enum AppRoute: Hashable {
 #Preview {
     ContentView()
         .environmentObject(AppConfig.shared)
+        .environmentObject(ReadStateStore.shared)
 }
 

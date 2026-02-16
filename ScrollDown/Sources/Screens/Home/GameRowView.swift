@@ -12,12 +12,13 @@ enum GameCardState {
 /// Row view for displaying a game summary in a list
 /// Two visual states: active (tappable, full styling) and noData (greyed, non-tappable)
 struct GameRowView: View {
+    @EnvironmentObject var readStateStore: ReadStateStore
     let game: GameSummary
 
     /// Whether the user has read this game's wrap-up
     private var isRead: Bool {
         guard game.status?.isCompleted == true else { return false }
-        return UserDefaults.standard.bool(forKey: "game.read.\(game.id)")
+        return readStateStore.isRead(gameId: game.id)
     }
 
     /// Computed card state based on data availability — active unless truly empty
@@ -254,6 +255,7 @@ private enum Layout {
     }
     .padding()
     .background(HomeTheme.background)
+    .environmentObject(ReadStateStore.shared)
 }
 
 #Preview("Dark Mode") {
@@ -305,4 +307,5 @@ private enum Layout {
     .padding()
     .background(HomeTheme.background)
     .preferredColorScheme(.dark)
+    .environmentObject(ReadStateStore.shared)
 }

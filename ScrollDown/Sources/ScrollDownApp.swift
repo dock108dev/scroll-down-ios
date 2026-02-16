@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct ScrollDownApp: App {
     @StateObject private var appConfig = AppConfig.shared
+    @StateObject private var readStateStore = ReadStateStore.shared
     @AppStorage("appTheme") private var appTheme = "system"
 
     private var colorScheme: ColorScheme? {
@@ -17,6 +18,7 @@ struct ScrollDownApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appConfig)
+                .environmentObject(readStateStore)
                 .preferredColorScheme(colorScheme)
                 .tint(HomeTheme.accentColor)
                 .task {

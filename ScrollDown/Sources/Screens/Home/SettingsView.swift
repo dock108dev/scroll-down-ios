@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject var readStateStore: ReadStateStore
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
     let completedGameIds: [Int]
     @AppStorage("appTheme") private var appTheme = "system"
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
-    @State private var readStateRefreshId = UUID()
 
     private var sportsbooks: [String] {
         let available = oddsViewModel.booksAvailable
@@ -100,10 +100,7 @@ struct SettingsView: View {
             if !completedGameIds.isEmpty {
                 Section("Read Status") {
                     Button {
-                        for id in completedGameIds {
-                            UserDefaults.standard.set(true, forKey: "game.read.\(id)")
-                        }
-                        readStateRefreshId = UUID()
+                        readStateStore.markAllRead(gameIds: completedGameIds)
                     } label: {
                         HStack {
                             Image(systemName: "checkmark.circle")
@@ -112,10 +109,7 @@ struct SettingsView: View {
                     }
 
                     Button {
-                        for id in completedGameIds {
-                            UserDefaults.standard.removeObject(forKey: "game.read.\(id)")
-                        }
-                        readStateRefreshId = UUID()
+                        readStateStore.markAllUnread(gameIds: completedGameIds)
                     } label: {
                         HStack {
                             Image(systemName: "circle")
@@ -123,10 +117,9 @@ struct SettingsView: View {
                         }
                     }
 
-                    Text("\(readCount) of \(completedGameIds.count) final games marked as read.")
+                    Text("\(readStateStore.readCount(for: completedGameIds)) of \(completedGameIds.count) final games marked as read.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .id(readStateRefreshId)
                 }
             }
 
@@ -134,10 +127,6 @@ struct SettingsView: View {
                 RealityAndFeedbackView()
             }
         }
-    }
-
-    private var readCount: Int {
-        completedGameIds.filter { UserDefaults.standard.bool(forKey: "game.read.\($0)") }.count
     }
 
     private func expandedSet(from string: String) -> Set<String> {
