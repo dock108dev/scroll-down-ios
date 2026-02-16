@@ -34,7 +34,7 @@ final class OddsComparisonViewModel: ObservableObject {
     @Published var selectedLeague: FairBetLeague? {
         didSet { applyFilters() }
     }
-    @Published var selectedMarket: MarketKey? {
+    @Published var selectedMarketFilter: MarketFilter? {
         didSet { applyFilters() }
     }
     @Published var showOnlyPositiveEV: Bool = false {
@@ -334,8 +334,8 @@ final class OddsComparisonViewModel: ObservableObject {
         }
 
         // Market filter
-        if let market = selectedMarket {
-            filtered = filtered.filter { $0.market == market }
+        if let marketFilter = selectedMarketFilter {
+            filtered = filtered.filter { marketFilter.matches($0.market) }
         }
 
         // Search filter
@@ -344,7 +344,8 @@ final class OddsComparisonViewModel: ObservableObject {
             filtered = filtered.filter {
                 $0.homeTeam.lowercased().contains(query) ||
                 $0.awayTeam.lowercased().contains(query) ||
-                $0.selection.lowercased().contains(query)
+                $0.selection.lowercased().contains(query) ||
+                ($0.playerName?.lowercased().contains(query) ?? false)
             }
         }
 
