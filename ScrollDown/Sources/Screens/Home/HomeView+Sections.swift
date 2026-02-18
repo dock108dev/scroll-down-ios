@@ -5,6 +5,19 @@ import UIKit
 
 extension HomeView {
 
+    /// Shared search filter used by both section header (count) and section content (grid).
+    func filteredGames(for section: HomeSectionState, completedOnly: Bool = false) -> [GameSummary] {
+        let base = completedOnly ? section.completedGames : section.games
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return base }
+        return base.filter { game in
+            game.homeTeam.localizedCaseInsensitiveContains(query)
+            || game.awayTeam.localizedCaseInsensitiveContains(query)
+            || (game.homeTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+            || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
+        }
+    }
+
     @ViewBuilder
     func sectionHeader(for section: HomeSectionState, isExpanded: Binding<Bool>) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -26,16 +39,7 @@ extension HomeView {
                         .tracking(0.8)
 
                     if !isExpanded.wrappedValue && !section.isLoading && !section.games.isEmpty {
-                        let filteredCount: Int = {
-                            let query = searchText.trimmingCharacters(in: .whitespaces)
-                            guard !query.isEmpty else { return section.games.count }
-                            return section.games.filter { game in
-                                game.homeTeam.localizedCaseInsensitiveContains(query)
-                                || game.awayTeam.localizedCaseInsensitiveContains(query)
-                                || (game.homeTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
-                                || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
-                            }.count
-                        }()
+                        let filteredCount = filteredGames(for: section).count
                         let readCount = section.readCount(using: readStateStore)
                         Text(readCount > 0
                              ? "\(filteredCount) games \u{00B7} \(readCount) read"
@@ -61,17 +65,7 @@ extension HomeView {
 
     @ViewBuilder
     func sectionContent(for section: HomeSectionState, completedOnly: Bool = false) -> some View {
-        let gamesToShow: [GameSummary] = {
-            let base = completedOnly ? section.completedGames : section.games
-            let query = searchText.trimmingCharacters(in: .whitespaces)
-            guard !query.isEmpty else { return base }
-            return base.filter { game in
-                game.homeTeam.localizedCaseInsensitiveContains(query)
-                || game.awayTeam.localizedCaseInsensitiveContains(query)
-                || (game.homeTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
-                || (game.awayTeamAbbr?.localizedCaseInsensitiveContains(query) == true)
-            }
-        }()
+        let gamesToShow = filteredGames(for: section, completedOnly: completedOnly)
 
         if section.isLoading {
             // Minimal loading indicator - just a subtle spinner

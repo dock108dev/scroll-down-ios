@@ -79,13 +79,29 @@ struct Game: Codable, Identifiable, Hashable {
 
 // MARK: - Computed Properties
 extension Game {
+    private enum Formatting {
+        static let isoFormatterFractional: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }()
+        static let isoFormatter: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime]
+            return f
+        }()
+        static let mediumDateTimeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateStyle = .medium
+            f.timeStyle = .short
+            return f
+        }()
+    }
+
     /// Formatted date for display
     var formattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        return Formatting.mediumDateTimeFormatter.string(from: date)
     }
 
     /// Formatted score string (e.g., "112 - 108")
@@ -102,12 +118,7 @@ extension Game {
 
     /// Parsed game date
     var parsedGameDate: Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: gameDate) {
-            return date
-        }
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: gameDate)
+        Formatting.isoFormatterFractional.date(from: gameDate)
+            ?? Formatting.isoFormatter.date(from: gameDate)
     }
 }

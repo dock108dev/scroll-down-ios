@@ -318,6 +318,8 @@ struct HomeView: View {
     private func leagueFilterButton(_ league: LeagueCode?, label: String) -> some View {
         Button(action: {
             selectedLeague = league
+            // Show cached data immediately while network revalidates
+            let _ = loadCachedSections(from: HomeGameCache.shared)
             startLoadGames(scrollToToday: false)
         }) {
             Text(label)

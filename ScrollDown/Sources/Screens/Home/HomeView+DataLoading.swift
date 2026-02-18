@@ -29,41 +29,50 @@ extension HomeView {
             tomorrowSection.isLoading = true
         }
 
-        // 3. Fetch fresh data from network
+        // 3. Fetch fresh data — visible sections first (Yesterday + Today),
+        //    then background sections (Earlier + Tomorrow)
         let service = appConfig.gameService
 
-        async let earlierResult = loadSection(range: .earlier, service: service)
+        // Phase 1: Yesterday + Today (visible on launch)
         async let yesterdayResult = loadSection(range: .yesterday, service: service)
         async let todayResult = loadSection(range: .current, service: service)
-        async let tomorrowResult = loadSection(range: .tomorrow, service: service)
+        let primaryResults = await [yesterdayResult, todayResult]
 
-        let results = await [earlierResult, yesterdayResult, todayResult, tomorrowResult]
+        guard !Task.isCancelled else { isUpdating = false; return }
 
-        // Bail out if this load was superseded by a newer one
-        guard !Task.isCancelled else {
-            isUpdating = false
-            return
-        }
-
-        // 4. Silent swap — apply results + save to cache
-        applyHomeSectionResults(results)
-        injectTeamMetadataFromSummaries(results)
-        updateLastUpdatedAt(from: results)
-        saveSectionsToCache(results, cache: cache)
-
-        isUpdating = false
-
-        // 5. Only show global error if ALL sections failed AND no data to display
-        let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
-            || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
-        if results.allSatisfy({ $0.errorMessage != nil }) && !hasAnyData {
-            errorMessage = HomeStrings.globalErrorMessage
-        }
+        applyHomeSectionResults(primaryResults)
+        preloadReadState()
+        injectTeamMetadataFromSummaries(primaryResults)
+        saveSectionsToCache(primaryResults, cache: cache)
 
         if scrollToToday {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 NotificationCenter.default.post(name: .scrollToYesterday, object: nil)
             }
+        }
+
+        // Phase 2: Earlier + Tomorrow (off-screen)
+        async let earlierResult = loadSection(range: .earlier, service: service)
+        async let tomorrowResult = loadSection(range: .tomorrow, service: service)
+        let secondaryResults = await [earlierResult, tomorrowResult]
+
+        guard !Task.isCancelled else { isUpdating = false; return }
+
+        applyHomeSectionResults(secondaryResults)
+        preloadReadState()
+        injectTeamMetadataFromSummaries(secondaryResults)
+        saveSectionsToCache(secondaryResults, cache: cache)
+
+        let allResults = primaryResults + secondaryResults
+        updateLastUpdatedAt(from: allResults)
+
+        isUpdating = false
+
+        // 4. Only show global error if ALL sections failed AND no data to display
+        let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
+            || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
+        if allResults.allSatisfy({ $0.errorMessage != nil }) && !hasAnyData {
+            errorMessage = HomeStrings.globalErrorMessage
         }
     }
 
@@ -179,6 +188,13 @@ extension HomeView {
             cache.save(games: result.games, lastUpdatedAt: result.lastUpdatedAt,
                        range: result.range, league: selectedLeague)
         }
+    }
+
+    /// Bulk-load read state for all visible game IDs into the in-memory cache.
+    private func preloadReadState() {
+        let allIds = [earlierSection, yesterdaySection, todaySection, tomorrowSection]
+            .flatMap { $0.games.map(\.id) }
+        readStateStore.preload(gameIds: allIds)
     }
 
     /// Push API-provided team colors and abbreviations from game summaries into shared caches.

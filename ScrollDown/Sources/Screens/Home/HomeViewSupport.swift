@@ -18,7 +18,12 @@ struct HomeSectionState: Identifiable {
     let id = UUID()
     let range: GameRange
     let title: String
-    var games: [GameSummary] = []
+    var games: [GameSummary] = [] {
+        didSet {
+            _completedGames = games.filter { $0.status?.isCompleted == true }
+        }
+    }
+    private(set) var _completedGames: [GameSummary] = []
     var isLoading = true
     var errorMessage: String?
     var isExpanded: Bool
@@ -30,13 +35,11 @@ struct HomeSectionState: Identifiable {
     }
 
     /// Only completed/final games (excludes scheduled and in-progress)
-    var completedGames: [GameSummary] {
-        games.filter { $0.status?.isCompleted == true }
-    }
+    var completedGames: [GameSummary] { _completedGames }
 
     /// Number of completed games the user has read (expanded the Wrap Up)
     func readCount(using store: ReadStateStore) -> Int {
-        games.filter { $0.status?.isCompleted == true && store.isRead(gameId: $0.id) }.count
+        _completedGames.filter { store.isRead(gameId: $0.id) }.count
     }
 }
 
