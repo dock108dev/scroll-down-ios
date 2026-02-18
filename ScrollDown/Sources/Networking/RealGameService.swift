@@ -131,66 +131,7 @@ final class RealGameService: GameService {
         return response.teams
     }
 
-    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
-        let data: Data = try await requestRaw(path: "api/admin/sports/games/\(gameId)/timeline", queryItems: [])
-        let json = try JSONSerialization.jsonObject(with: data)
-
-        // Direct array format
-        if let array = json as? [[String: Any]] {
-            return array
-        }
-
-        // Wrapper format: extract from timelineJson field
-        if let wrapper = json as? [String: Any] {
-            if let timeline = wrapper["timelineJson"] as? [[String: Any]] {
-                return timeline
-            }
-            if let timeline = wrapper["timeline_json"] as? [[String: Any]] {
-                return timeline
-            }
-            // timelineJson might contain a nested array
-            if let timelineAny = wrapper["timelineJson"] as? [Any] {
-                return timelineAny.compactMap { $0 as? [String: Any] }
-            }
-            if let timelineAny = wrapper["timeline_json"] as? [Any] {
-                return timelineAny.compactMap { $0 as? [String: Any] }
-            }
-        }
-
-        return []
-    }
-
     // MARK: - Networking
-
-    private func requestRaw(path: String, queryItems: [URLQueryItem]) async throws -> Data {
-        guard var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
-            throw GameServiceError.notFound
-        }
-        if !queryItems.isEmpty {
-            components.queryItems = queryItems
-        }
-        guard let url = components.url else {
-            throw GameServiceError.notFound
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
-        if let apiKey = apiKey {
-            urlRequest.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
-        }
-
-        let (data, response) = try await session.data(for: urlRequest)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        if httpResponse.statusCode == 401 {
-            throw GameServiceError.unauthorized
-        }
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-        return data
-    }
 
     private func request<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {
         guard var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {

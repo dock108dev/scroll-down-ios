@@ -197,8 +197,7 @@ final class GameDetailViewModel: ObservableObject {
         timelineArtifactState = .loading
 
         do {
-            let resolvedGameId = timelineGameId(for: gameId)
-            let response = try await service.fetchTimeline(gameId: resolvedGameId)
+            let response = try await service.fetchTimeline(gameId: gameId)
             timelineArtifact = response
             timelineArtifactState = .loaded
         } catch {
@@ -617,10 +616,6 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func timelineGameId(for gameId: Int) -> Int {
-        gameId > 0 ? gameId : ViewModelConstants.defaultTimelineGameId
-    }
-
     /// Try each key in order, return the first value found as a Double.
     private func resolveValue(keys: [String], in stats: [String: AnyCodable]) -> Double? {
         for key in keys {
@@ -670,8 +665,6 @@ private enum ViewModelConstants {
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
-    // ESPN game ID for a known-good NFL game, used as fallback when gameId is invalid (0 or negative)
-    static let defaultTimelineGameId = 401585601
 }
 
 // MARK: - Known Stat Definitions

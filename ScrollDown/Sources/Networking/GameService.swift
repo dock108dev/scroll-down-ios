@@ -38,11 +38,6 @@ protocol GameService {
     /// Fetch team colors for all teams
     /// - Returns: Array of team summaries with color hex values
     func fetchTeamColors() async throws -> [TeamSummary]
-
-    /// Fetch unified timeline for a game (merged PBP + social + odds)
-    /// - Parameter gameId: The game ID
-    /// - Returns: Array of raw event dictionaries
-    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]]
 }
 
 // MARK: - Reveal Level

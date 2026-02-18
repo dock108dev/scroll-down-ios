@@ -112,9 +112,9 @@ enum MarketType: RawRepresentable, Codable, Equatable, Hashable {
 
     init?(rawValue: String) {
         switch rawValue {
-        case "spread", "spreads": self = .spread
-        case "moneyline", "h2h": self = .moneyline
-        case "total", "totals": self = .total
+        case "spread": self = .spread
+        case "moneyline": self = .moneyline
+        case "total": self = .total
         case "alternate_spreads": self = .alternateSpread
         case "alternate_totals": self = .alternateTotal
         case "player_points": self = .playerPoints
@@ -195,7 +195,8 @@ extension OddsEntry {
             return .teamProp
         case .alternateSpread, .alternateTotal:
             return .alternate
-        case .unknown:
+        case .unknown(let raw):
+            assertionFailure("Unknown MarketType '\(raw)' — add a case or update API")
             return .mainline
         }
     }
@@ -313,7 +314,6 @@ enum PlayType: RawRepresentable, Codable, Equatable {
         case "stoppage": self = .stoppage
         case "tip": self = .tip
         case "3pt": self = .threePointer
-        case "three_pointer": self = .threePointer
         case "assist": self = .assist
         case "timeout": self = .timeout
         case "substitution": self = .substitution
