@@ -37,6 +37,12 @@ extension GameDetailView {
                 // Cross-book comparison table
                 oddsCrossBookTable(books: books)
             }
+            .onAppear {
+                // Default to first available category if current selection has no data
+                if !categories.contains(selectedOddsCategory), let first = categories.first {
+                    selectedOddsCategory = first
+                }
+            }
         }
     }
 
