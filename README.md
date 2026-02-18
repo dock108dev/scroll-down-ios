@@ -21,6 +21,7 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 | Flow-based timeline with narrative blocks | Live |
 | Tiered play-by-play with team badges | Live |
 | FairBet odds comparison with EV analysis | Live |
+| Game detail cross-book odds table | Live |
 | NHL skater/goalie stats | Live |
 | Team page navigation | Live |
 | Theme selection (system/light/dark) | Live |

@@ -25,7 +25,7 @@ ScrollDown/Sources/
 ├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView, FlowLayout)
 ├── Extensions/          # Swift extensions (String+Abbreviation)
 ├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
-├── Services/            # TimeService (snapshot mode)
+├── Services/            # TimeService (snapshot mode), ReadStateStore
 ├── Logging/             # Structured logging (GameRoutingLogger, GameStatusLogger)
 ├── Theme/               # Typography system
 ├── FairBet/             # Betting odds comparison module
@@ -58,15 +58,22 @@ ScrollDown/Sources/
 | `BlockMiniBox` | Per-block player stats with `blockStars` |
 | `UnifiedTimelineEvent` | Single timeline entry (PBP, tweet, or odds event) |
 | `PlayEntry` | Individual play-by-play event with `periodLabel`, `timeLabel`, `tier` |
+| `OddsEntry` | Per-book odds with `marketType`, `marketCategory`, `playerName`, `description` |
+| `MarketCategory` | Category enum for grouping odds: mainline, playerProp, teamProp, alternate, period, gameProp |
 | `TeamSummary` | Team name + color hex values from `/teams` endpoint |
 
 ### FairBet Data Models
 
 | Model | Purpose |
 |-------|---------|
-| `APIBet` | Individual bet from the FairBet API |
-| `BookPrice` | Sportsbook price with book name and observed time |
-| `BookEVResult` | EV calculation result per book |
+| `APIBet` | Individual bet with server-side EV annotations (`trueProb`, `referencePrice`, `evConfidenceTier`, `evDisabledReason`) |
+| `BookPrice` | Sportsbook price with optional server-side `evPercent`, `trueProb`, `isSharp`, `evConfidenceTier` |
+| `BookEVResult` | Client-side EV calculation result per book |
+| `BetsResponse` | API wrapper with `bets`, `booksAvailable`, `gamesAvailable`, `marketCategoriesAvailable`, `evDiagnostics` |
+| `GameDropdown` | Game option for filter UI (gameId, matchup, gameDate) |
+| `EVDiagnostics` | Server-side EV computation stats (pairs, unpaired, eligible counts) |
+| `MarketFilter` | Filter enum: `.single(MarketKey)`, `.playerProps`, `.teamProps` |
+| `FairOddsConfidence` | Confidence tier: `.high`, `.medium`, `.low`, `.none` |
 
 ## What the Server Provides
 
@@ -81,7 +88,7 @@ The backend pre-computes all derived data. The app does not compute these client
 | Odds outcomes (covered, went over, etc.) | `derivedMetrics` on game detail | `DerivedMetrics` → `wrapUpOddsLines` |
 | Team colors (light/dark hex) | `GET /teams` + per-game API fields → `TeamColorCache` | `DesignSystem.TeamColors` |
 | Team abbreviations | Per-game API fields → `TeamAbbreviations` | `TeamAbbreviations.abbreviation(for:)` |
-| Merged timeline (PBP + tweets + odds) | `GET /games/{id}/timeline` | `unifiedTimelineEvents` |
+| Merged timeline (PBP + tweets + odds) | `GET /games/{id}/timeline` → `TimelineArtifactResponse` | `unifiedTimelineEvents` |
 
 ## Flow Architecture
 
@@ -106,6 +113,20 @@ The app renders completed games using a **blocks-based** flow system:
    - **Tier 2** — Notable plays: indented, medium-weight, left accent line
    - **Tier 3** — Routine plays: double-indented, minimal dot indicator
 
+## Game Detail Odds Section
+
+The game detail view includes a cross-book odds comparison section (`GameDetailView+Odds.swift`):
+
+- **Collapsed by default** — Uses `CollapsibleSectionCard` (Tier 3)
+- **Category tabs** — Horizontal scroll of capsule buttons; only categories with data are shown (`MarketCategory`)
+- **Player search** — TextField shown only on Player Props tab
+- **Cross-book table** — Frozen market label column + horizontally scrollable book columns
+- Book columns use `BookNameHelper` abbreviations (DK, FD, MGM, CZR, etc.)
+- Missing prices show `--`
+- Data comes from `OddsEntry` fields on `GameDetailResponse`
+
+ViewModel properties: `hasOddsData`, `availableOddsCategories`, `oddsBooks`, `oddsMarkets(for:)`, `oddsPrice(for:book:)`
+
 ## Team Stats
 
 Team stats use a `KnownStat` definition list in `GameDetailViewModel`. Each stat defines:
@@ -120,21 +141,35 @@ Player stats use direct key lookup against `PlayerStat.rawStats`.
 
 ## FairBet Module
 
-Betting odds comparison system that computes fair odds and expected value (EV) across sportsbooks.
+Betting odds comparison system that surfaces fair odds and expected value (EV) across sportsbooks.
 
 **How it works:**
-1. `FairBetAPIClient` fetches odds from `/api/fairbet/odds`
-2. `BetPairing` pairs opposite sides of each market for fair odds computation
-3. `EVCalculator` computes expected value per book using fair probabilities and book-specific fee models
-4. `OddsComparisonViewModel` orchestrates filtering, sorting, and EV caching
-5. `BetCard` renders each bet as an always-visible card with EV, fair odds, and book chips
+1. `FairBetAPIClient` fetches odds from `/api/fairbet/odds` (paginated, 500 per page, default `has_fair=true`)
+2. Server provides EV annotations per bet: `trueProb`, `referencePrice`, `evConfidenceTier`, `evDisabledReason`
+3. Server provides EV annotations per book: `evPercent`, `trueProb`, `isSharp`
+4. `OddsComparisonViewModel` prefers server-side EV. Falls back to client-side computation (`BetPairing` + `EVCalculator`) when server annotations are absent.
+5. `BetCard` renders each bet with EV, fair odds, confidence indicators, and book chips
+
+**Server-side EV (preferred path):**
+- The server computes `trueProb` via Pinnacle devig and provides confidence tiers (`high`, `medium`, `low`)
+- `referencePrice` shows the Pinnacle reference line when available
+- `evDisabledReason` explains why EV is unavailable (e.g., "Reference line unavailable")
+- The client checks `evConfidenceTier` + `trueProb` + per-book `evPercent` before using server values
+
+**Client-side EV (fallback path):**
+- `BetPairing` pairs opposite sides of each market for fair odds via sharp book vig-removal
+- `EVCalculator` computes EV per book using fair probabilities and book-specific fee models
+- Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
 
 **Card layout (BetCard):**
-- Row 1: Selection name + league badge + market type
-- Row 2: Opponent + date/time
+- Row 1: Selection name (market-aware: player props show "Name Stat O/U Line") + league badge + market type
+- Row 2: Context line (props/alts show "Away @ Home", mainlines show "vs Opponent") + date/time
 - Divider
+- Fair odds chip with confidence dot (green=high, yellow=medium, orange=low) + optional "PIN {price}" reference
+- Disabled reason text when confidence is `.none`
 - **iPhone (compact):** Vertical decision stack — Fair odds chip + Parlay button, anchor book row (preferred sportsbook or best available), optional best-available disclosure, collapsible "Other books" with MiniBookChips
 - **iPad (regular):** Horizontal scroll — Fair odds chip, separator, scrollable MiniBookChip row sorted by EV, Parlay button
+- Sharp book indicator (star icon) on MiniBookChips when `book.isSharp == true`
 
 `BookNameHelper` provides consistent sportsbook abbreviations (DraftKings→DK, FanDuel→FD, etc.) shared across anchor row and MiniBookChip.
 
@@ -145,10 +180,10 @@ The home screen has three modes via a segmented control (`HomeViewMode`):
 | Tab | Content |
 |-----|---------|
 | Games | Game feed with Earlier/Yesterday/Today/Tomorrow sections, league filter, search bar |
-| Current Odds | FairBet odds comparison with league filter |
+| FairBet | Odds comparison with league/market filters. One-line explainer above filters. Only shows bets with server-side fair estimates (`has_fair=true`). |
 | Settings | Theme selection, odds format, completed game tracking |
 
-The Games tab includes a search bar that filters by team name and a league filter (All, NBA, NCAAB, NHL). Both the Games and Current Odds tabs have a refresh button overlaid on the league filter row.
+The Games tab includes a search bar that filters by team name and a league filter (All, NBA, NCAAB, NHL). Both the Games and FairBet tabs have a refresh button overlaid on the league filter row.
 
 ## View Architecture
 
@@ -162,6 +197,7 @@ The Games tab includes a search bar that filters by team name and a league filte
 | `GameDetailView+Stats.swift` | Player and team stats |
 | `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
 | `GameDetailView+WrapUp.swift` | Post-game wrap-up |
+| `GameDetailView+Odds.swift` | Cross-book odds comparison table |
 | `GameDetailView+Helpers.swift` | Utility functions |
 | `GameDetailView+Layout.swift` | Layout constants, preference keys |
 
@@ -184,13 +220,13 @@ App uses authenticated endpoints (X-API-Key header):
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/admin/sports/games` | List games (with startDate, endDate, league filters) |
-| `GET /api/admin/sports/games/{id}` | Game detail (stats, plays, derivedMetrics, groupedPlays) |
+| `GET /api/admin/sports/games/{id}` | Game detail (stats, plays, odds, derivedMetrics, groupedPlays) |
 | `GET /api/admin/sports/games/{id}/flow` | Game flow (blocks + plays) |
-| `GET /api/admin/sports/games/{id}/timeline` | Unified timeline (merged PBP + tweets + odds) |
+| `GET /api/admin/sports/games/{id}/timeline` | Timeline artifact (summary, timeline JSON, game analysis) |
 | `GET /api/admin/sports/pbp/game/{id}` | Play-by-play events |
 | `GET /api/admin/sports/teams` | Team colors (name, light hex, dark hex) |
 | `GET /api/social/posts/game/{id}` | Social posts |
-| `GET /api/fairbet/odds` | Betting odds across sportsbooks |
+| `GET /api/fairbet/odds` | Betting odds with server-side EV annotations (paginated, filterable) |
 
 ## Navigation
 

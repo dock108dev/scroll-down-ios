@@ -113,13 +113,16 @@ Player stats use direct key lookup against `PlayerStat.rawStats`.
 
 See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 
-**Fair Odds Computation:**
-- Uses sharp book (Pinnacle, Circa, BetCris) vig-removal and median aggregation
-- Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
+**Server-side EV (preferred):**
+- The server computes `trueProb` via Pinnacle devig and provides per-bet `evConfidenceTier` (high/medium/low)
+- Per-book `evPercent` and `isSharp` annotations enable direct EV display without client computation
+- `referencePrice` and `evDisabledReason` provide transparency about the fair odds source
+- `OddsComparisonViewModel.computeEVResult()` checks for server annotations first
 
-**EV Computation:**
-- Per-book EV using fair probability
-- All included books (US-licensed and sharp) are traditional sportsbooks with no explicit fee
+**Client-side EV (fallback):**
+- `BetPairing` pairs opposite sides via sharp book (Pinnacle, Circa, BetCris) vig-removal and median aggregation
+- Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
+- Per-book EV using fair probability via `EVCalculator`
 - Fee model supports `percentOnWinnings` for future P2P/exchange integration
 
 ## Configuration
@@ -142,11 +145,12 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 
 `GameDetailView` is split into focused extensions. See [AGENTS.md](../AGENTS.md) for the full file table.
 
-Sections render conditionally based on game status:
+Sections render conditionally based on game status and data availability:
 - **Pregame (Overview):** Matchup context
 - **Timeline:** Flow blocks (primary) or PBP grouped by period
 - **Stats:** Player stats + team comparison
 - **NHL Stats:** Sport-specific skater/goalie tables
+- **Odds:** Cross-book comparison table with category tabs (mainline, player props, team props, alternates) — shown when `hasOddsData` is true
 - **Wrap-Up:** Post-game final score, highlights
 
 ## Interaction Patterns
