@@ -28,7 +28,13 @@ final class FairBetMockDataProvider: ObservableObject {
         return BetsResponse(
             bets: bets,
             total: bets.count,
-            booksAvailable: sportsbooks
+            booksAvailable: sportsbooks,
+            gamesAvailable: [
+                GameDropdown(gameId: 1001, matchup: "Celtics @ Lakers", gameDate: "2025-03-01T02:00:00Z"),
+                GameDropdown(gameId: 2001, matchup: "Bruins @ Maple Leafs", gameDate: "2025-03-01T03:00:00Z"),
+                GameDropdown(gameId: 3001, matchup: "Tar Heels @ Blue Devils", gameDate: "2025-03-02T00:00:00Z")
+            ],
+            marketCategoriesAvailable: ["mainline", "player_prop", "team_prop"]
         )
     }
 
@@ -39,7 +45,7 @@ final class FairBetMockDataProvider: ObservableObject {
 
         return [
             // NBA Games - Celtics @ Lakers
-            // Spread: Lakers -3.5 (paired with Celtics +3.5)
+            // Spread: Lakers -3.5 (paired with Celtics +3.5) — with server EV
             APIBet(
                 gameId: 1001,
                 leagueCode: "NBA",
@@ -50,13 +56,16 @@ final class FairBetMockDataProvider: ObservableObject {
                 selectionKey: "team:los_angeles_lakers",
                 lineValue: -3.5,
                 books: [
-                    BookPrice(book: "DraftKings", priceValue: -110, observedAt: now),
-                    BookPrice(book: "FanDuel", priceValue: -108, observedAt: now),
-                    BookPrice(book: "BetMGM", priceValue: -112, observedAt: now),
-                    BookPrice(book: "Caesars", priceValue: -105, observedAt: now),
+                    BookPrice(book: "DraftKings", priceValue: -110, observedAt: now, evPercent: 2.1, trueProb: 0.52),
+                    BookPrice(book: "FanDuel", priceValue: -108, observedAt: now, evPercent: 3.0, trueProb: 0.52),
+                    BookPrice(book: "BetMGM", priceValue: -112, observedAt: now, evPercent: 1.2),
+                    BookPrice(book: "Caesars", priceValue: -105, observedAt: now, evPercent: 4.5),
                     BookPrice(book: "PointsBet", priceValue: -115, observedAt: now),
                     BookPrice(book: "BetRivers", priceValue: -110, observedAt: now)
-                ]
+                ],
+                evConfidenceTier: "high",
+                trueProb: 0.52,
+                referencePrice: -108
             ),
             // Spread: Celtics +3.5 (opposite side)
             APIBet(
@@ -77,7 +86,7 @@ final class FairBetMockDataProvider: ObservableObject {
                     BookPrice(book: "BetRivers", priceValue: -110, observedAt: now)
                 ]
             ),
-            // Moneyline: Celtics (paired with Lakers)
+            // Moneyline: Celtics (paired with Lakers) — with server EV + sharp book
             APIBet(
                 gameId: 1001,
                 leagueCode: "NBA",
@@ -88,13 +97,16 @@ final class FairBetMockDataProvider: ObservableObject {
                 selectionKey: "team:boston_celtics",
                 lineValue: nil,
                 books: [
-                    BookPrice(book: "DraftKings", priceValue: -145, observedAt: now),
-                    BookPrice(book: "FanDuel", priceValue: -140, observedAt: now),
+                    BookPrice(book: "DraftKings", priceValue: -145, observedAt: now, evPercent: 1.5),
+                    BookPrice(book: "FanDuel", priceValue: -140, observedAt: now, evPercent: 3.2),
                     BookPrice(book: "BetMGM", priceValue: -150, observedAt: now),
                     BookPrice(book: "Caesars", priceValue: -142, observedAt: now),
-                    BookPrice(book: "PointsBet", priceValue: -138, observedAt: now),
+                    BookPrice(book: "Pinnacle", priceValue: -143, observedAt: now, isSharp: true),
                     BookPrice(book: "BetRivers", priceValue: -145, observedAt: now)
-                ]
+                ],
+                evConfidenceTier: "medium",
+                trueProb: 0.59,
+                referencePrice: -143
             ),
             // Moneyline: Lakers (opposite side)
             APIBet(

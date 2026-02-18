@@ -57,9 +57,6 @@ struct StubGameService: GameService {
         return []
     }
 
-    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
-        return []
-    }
 }
 
 // MARK: - Test Factories

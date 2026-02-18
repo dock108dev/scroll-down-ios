@@ -82,7 +82,7 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 ### Navigation
 - [ ] Scrolling stable when expanding sections
 - [ ] Back navigation preserves state
-- [ ] Games/Current Odds/Settings tabs work
+- [ ] Games/FairBet/Settings tabs work
 - [ ] Team headers are tappable
 
 ## Debugging
@@ -110,7 +110,8 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 - Verify `/api/admin/sports/teams` returns color hex values for the team
 - Cache expires after 7 days — force refresh by clearing UserDefaults
 
-**Unified timeline empty:**
-- Check `unifiedTimelineState` — should be `.loaded`
-- Verify `/api/admin/sports/games/{id}/timeline` returns events
-- Not all games have unified timelines generated
+**Timeline artifact empty:**
+- Check `timelineArtifactState` — should be `.loaded`
+- Verify `/api/admin/sports/games/{id}/timeline` returns a `TimelineArtifactResponse` with `timelineJson`
+- Not all games have timeline artifacts generated
+- Flow-based timeline (`buildUnifiedTimelineFromFlow`) is the primary PBP source for completed games

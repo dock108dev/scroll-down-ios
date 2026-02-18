@@ -197,8 +197,7 @@ final class GameDetailViewModel: ObservableObject {
         timelineArtifactState = .loading
 
         do {
-            let resolvedGameId = timelineGameId(for: gameId)
-            let response = try await service.fetchTimeline(gameId: resolvedGameId)
+            let response = try await service.fetchTimeline(gameId: gameId)
             timelineArtifact = response
             timelineArtifactState = .loaded
         } catch {
@@ -433,6 +432,101 @@ final class GameDetailViewModel: ObservableObject {
         detail?.dataHealth?.isHealthy ?? true
     }
 
+    // MARK: - Odds Section
+
+    /// All odds entries from the game detail
+    var oddsEntries: [OddsEntry] {
+        detail?.odds ?? []
+    }
+
+    /// Whether we have odds data to show
+    var hasOddsData: Bool {
+        !oddsEntries.isEmpty
+    }
+
+    /// Available categories that have data, in display order
+    var availableOddsCategories: [MarketCategory] {
+        let present = Set(oddsEntries.map { $0.resolvedCategory })
+        return MarketCategory.allCases.filter { present.contains($0) }
+    }
+
+    /// Unique sportsbooks sorted alphabetically
+    var oddsBooks: [String] {
+        Array(Set(oddsEntries.map { $0.book })).sorted()
+    }
+
+    /// Filter odds entries by category
+    func oddsEntries(for category: MarketCategory) -> [OddsEntry] {
+        oddsEntries.filter { $0.resolvedCategory == category }
+    }
+
+    /// Identifies a unique market row (marketType + side + line + playerName)
+    struct OddsMarketKey: Hashable, Identifiable {
+        let marketType: MarketType
+        let side: String?
+        let line: Double?
+        let playerName: String?
+
+        var id: String {
+            "\(marketType.rawValue)-\(side ?? "")-\(line ?? 0)-\(playerName ?? "")"
+        }
+
+        var displayLabel: String {
+            var parts: [String] = []
+            if let player = playerName {
+                parts.append(player)
+            }
+            // Market description
+            switch marketType {
+            case .spread:
+                if let side, let line {
+                    let sign = line >= 0 ? "+" : ""
+                    parts.append("\(side) \(sign)\(line)")
+                }
+            case .moneyline:
+                if let side { parts.append(side) }
+            case .total:
+                if let side, let line {
+                    parts.append("\(side) \(line)")
+                }
+            default:
+                if let side { parts.append(side) }
+                if let line { parts.append("O/U \(line)") }
+            }
+            return parts.isEmpty ? marketType.rawValue : parts.joined(separator: " ")
+        }
+    }
+
+    /// Distinct market rows for a given category
+    func oddsMarkets(for category: MarketCategory) -> [OddsMarketKey] {
+        let entries = oddsEntries(for: category)
+        var seen = Set<OddsMarketKey>()
+        var result: [OddsMarketKey] = []
+        for entry in entries {
+            let key = OddsMarketKey(
+                marketType: entry.marketType,
+                side: entry.side,
+                line: entry.line,
+                playerName: entry.playerName
+            )
+            if seen.insert(key).inserted {
+                result.append(key)
+            }
+        }
+        return result
+    }
+
+    /// Cross-book price lookup: returns the American odds price for a given market row + book
+    func oddsPrice(for market: OddsMarketKey, book: String) -> Double? {
+        oddsEntries.first { entry in
+            entry.book == book &&
+            entry.marketType == market.marketType &&
+            entry.side == market.side &&
+            entry.line == market.line &&
+            entry.playerName == market.playerName
+        }?.price
+    }
+
     // MARK: - Pregame Odds Lines
 
     /// Main betting lines for the pregame section — spread, total, moneyline without outcomes
@@ -522,10 +616,6 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func timelineGameId(for gameId: Int) -> Int {
-        gameId > 0 ? gameId : ViewModelConstants.defaultTimelineGameId
-    }
-
     /// Try each key in order, return the first value found as a Double.
     private func resolveValue(keys: [String], in stats: [String: AnyCodable]) -> Double? {
         for key in keys {
@@ -575,8 +665,6 @@ private enum ViewModelConstants {
     static let periodEndLabel = "Period End"
     static let liveScoreLabel = "Live Score"
     static let liveMarkerId = "live-score"
-    // ESPN game ID for a known-good NFL game, used as fallback when gameId is invalid (0 or negative)
-    static let defaultTimelineGameId = 401585601
 }
 
 // MARK: - Known Stat Definitions

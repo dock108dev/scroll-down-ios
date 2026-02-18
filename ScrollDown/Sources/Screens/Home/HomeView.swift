@@ -191,6 +191,13 @@ struct HomeView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.bottom, 4)
             } else if viewMode == .odds {
+                // Explainer
+                Text("Bets with a FairBet estimate — compare prices and find value across books.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 4)
+
                 // Combined filter bar: league pills, separator, market pills
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {

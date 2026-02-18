@@ -25,6 +25,9 @@ final class OddsComparisonViewModel: ObservableObject {
     @Published var displayedBets: [APIBet] = []
 
     @Published var booksAvailable: [String] = []
+    @Published var gamesAvailable: [GameDropdown] = []
+    @Published var marketCategoriesAvailable: [String] = []
+    @Published var evDiagnostics: EVDiagnostics?
     @Published var isLoading: Bool = false
     @Published var loadingProgress: String = ""
     @Published var loadingFraction: Double = 0
@@ -89,6 +92,8 @@ final class OddsComparisonViewModel: ObservableObject {
         let confidence: FairOddsConfidence
         let fairProbability: Double
         let fairAmericanOdds: Int
+        var referencePrice: Int? = nil
+        var evDisabledReason: String? = nil
 
         /// Only count as +EV if we have reliable data (medium+ confidence with vig removal)
         var isReliablyPositive: Bool {
@@ -220,6 +225,13 @@ final class OddsComparisonViewModel: ObservableObject {
                 allFetchedBets.append(contentsOf: response.bets)
                 booksAvailable = response.booksAvailable
                 totalExpected = max(totalExpected, response.total)
+
+                // Store metadata from first page
+                if offset == 0 {
+                    gamesAvailable = response.gamesAvailable ?? []
+                    marketCategoriesAvailable = response.marketCategoriesAvailable ?? []
+                    evDiagnostics = response.evDiagnostics
+                }
 
                 // Update progress fraction
                 if isInitialLoad && totalExpected > 0 {
@@ -412,12 +424,13 @@ final class OddsComparisonViewModel: ObservableObject {
     private func computeEVResult(for bet: APIBet) -> EVResult {
         // Server-side EV: use when confidence tier is present, at least one book has evPercent,
         // AND we have a real trueProb so we don't fall back to a meaningless 0.5 (-100).
+        // Prefer bet-level trueProb first, then book-level trueProb as fallback.
         if let serverTier = bet.evConfidenceTier,
            let bestServerBook = bet.books.compactMap({ book -> (book: BookPrice, ev: Double)? in
                guard let ev = book.evPercent else { return nil }
                return (book, ev)
            }).max(by: { $0.ev < $1.ev }),
-           let fairProb = bestServerBook.book.trueProb ?? bet.books.compactMap(\.trueProb).first {
+           let fairProb = bet.trueProb ?? bestServerBook.book.trueProb ?? bet.books.compactMap(\.trueProb).first {
             let confidence: FairOddsConfidence
             switch serverTier {
             case "high": confidence = .high
@@ -430,7 +443,9 @@ final class OddsComparisonViewModel: ObservableObject {
                 ev: bestServerBook.ev,
                 confidence: confidence,
                 fairProbability: fairProb,
-                fairAmericanOdds: fairOdds
+                fairAmericanOdds: fairOdds,
+                referencePrice: bet.referencePrice,
+                evDisabledReason: bet.evDisabledReason
             )
         }
 

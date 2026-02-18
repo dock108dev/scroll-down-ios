@@ -49,7 +49,7 @@ struct UnifiedTimelineEvent: Identifiable {
         case unknown
     }
 
-    /// Parse from raw dictionary
+    /// Parse from raw dictionary — expects canonical snake_case keys from server
     init(from dict: [String: Any], index: Int, sport: String? = nil) {
         if let eventId = dict["event_id"] as? String {
             self.id = eventId
@@ -62,35 +62,28 @@ struct UnifiedTimelineEvent: Identifiable {
         let rawType = dict["event_type"] as? String ?? ""
         self.eventType = EventType(rawValue: rawType) ?? .unknown
 
-        self.sport = sport ?? dict["sport"] as? String ?? dict["league"] as? String
+        self.sport = sport ?? dict["sport"] as? String
 
         self.syntheticTimestamp = dict["synthetic_timestamp"] as? String
-            ?? dict["timestamp"] as? String
         self.period = dict["period"] as? Int
-            ?? dict["quarter"] as? Int
         self.gameClock = dict["game_clock"] as? String
-            ?? dict["clock"] as? String
 
         self.periodLabel = dict["period_label"] as? String
-            ?? dict["periodLabel"] as? String
         self.timeLabel = dict["time_label"] as? String
-            ?? dict["timeLabel"] as? String
 
         self.tier = dict["tier"] as? Int
 
         self.oddsType = dict["odds_type"] as? String
-        self.oddsMarkets = dict["markets"] as? [String: Any] ?? dict["odds_markets"] as? [String: Any]
+        self.oddsMarkets = dict["odds_markets"] as? [String: Any]
         self.oddsBook = dict["book"] as? String
         self.oddsMovements = dict["movements"] as? [[String: Any]]
 
         let rawDescription = dict["description"] as? String
-            ?? dict["play_description"] as? String
         self.description = rawDescription
         self.team = dict["team"] as? String
-            ?? dict["team_abbreviation"] as? String
         self.playType = dict["play_type"] as? String
 
-        if let explicitName = dict["player_name"] as? String ?? dict["player"] as? String,
+        if let explicitName = dict["player_name"] as? String,
            !explicitName.isEmpty {
             self.playerName = explicitName
         } else if let desc = rawDescription {
@@ -102,39 +95,21 @@ struct UnifiedTimelineEvent: Identifiable {
         if let home = dict["home_score"] as? Int, let away = dict["away_score"] as? Int {
             self.homeScore = home
             self.awayScore = away
-        } else if let scoreStr = dict["score"] as? String {
-            let parts = scoreStr.split(separator: "-").map { String($0).trimmingCharacters(in: .whitespaces) }
-            if parts.count == 2, let away = Int(parts[0]), let home = Int(parts[1]) {
-                self.awayScore = away
-                self.homeScore = home
-            } else {
-                self.homeScore = nil
-                self.awayScore = nil
-            }
-        } else if let scoreDict = dict["score"] as? [String: Any] {
-            self.homeScore = scoreDict["home"] as? Int ?? scoreDict["home_score"] as? Int
-            self.awayScore = scoreDict["away"] as? Int ?? scoreDict["away_score"] as? Int
         } else {
             self.homeScore = nil
             self.awayScore = nil
         }
 
         self.tweetText = dict["tweet_text"] as? String
-            ?? dict["text"] as? String
         self.tweetUrl = dict["tweet_url"] as? String
-            ?? dict["post_url"] as? String
         self.sourceHandle = dict["source_handle"] as? String
-            ?? dict["handle"] as? String
         self.imageUrl = dict["image_url"] as? String
         self.videoUrl = dict["video_url"] as? String
         self.postedAt = dict["posted_at"] as? String
 
         self.likesCount = dict["likes_count"] as? Int
-            ?? dict["likesCount"] as? Int
         self.retweetsCount = dict["retweets_count"] as? Int
-            ?? dict["retweetsCount"] as? Int
         self.repliesCount = dict["replies_count"] as? Int
-            ?? dict["repliesCount"] as? Int
     }
 
     /// Display title for the event

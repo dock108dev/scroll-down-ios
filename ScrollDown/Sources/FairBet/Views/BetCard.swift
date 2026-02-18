@@ -82,6 +82,15 @@ struct BetCard: View {
         bet.selection == bet.homeTeam ? bet.awayTeam : bet.homeTeam
     }
 
+    /// Context line: matchup for props/alts, "vs opponent" for mainlines
+    private var contextLine: String {
+        if bet.market.isPlayerProp || bet.market.isTeamProp ||
+           bet.market == .alternateSpreads || bet.market == .alternateTotals {
+            return "\(bet.awayTeam) @ \(bet.homeTeam)"
+        }
+        return "vs \(opponentName)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
             // Row 1: Selection name + League badge & Market
@@ -101,9 +110,9 @@ struct BetCard: View {
                 }
             }
 
-            // Row 2: Opponent + Date/Time
+            // Row 2: Context line + Date/Time
             HStack {
-                Text("vs \(opponentName)")
+                Text(contextLine)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
@@ -171,6 +180,9 @@ struct BetCard: View {
         VStack(alignment: .leading, spacing: 8) {
             // Row B: Fair odds + Parlay button
             primaryActionRow
+
+            // Disabled reason
+            disabledReasonLabel
 
             // Row C: Anchor book
             if let anchor = anchorBook {
@@ -242,14 +254,37 @@ struct BetCard: View {
         .fixedSize()
     }
 
+    private var confidenceDotColor: Color? {
+        switch confidence {
+        case .high: return FairBetTheme.positive
+        case .medium: return .yellow
+        case .low: return .orange
+        case .none: return nil
+        }
+    }
+
     private var fairOddsChip: some View {
         HStack(spacing: 4) {
+            // Confidence dot
+            if let dotColor = confidenceDotColor {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 6, height: 6)
+            }
+
             Text(FairBetCopy.fairEstimateShort)
                 .font(.caption.weight(.medium))
                 .foregroundColor(FairBetTheme.info)
             Text(FairBetCopy.formatOdds(fairAmericanOdds))
                 .font(.subheadline.weight(.bold))
                 .foregroundColor(.primary)
+
+            // Reference price
+            if let refPrice = evResult?.referencePrice {
+                Text("PIN \(FairBetCopy.formatOdds(refPrice))")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
@@ -264,7 +299,22 @@ struct BetCard: View {
         .fixedSize()
     }
 
+    /// Disabled reason label when confidence is .none
+    @ViewBuilder
+    private var disabledReasonLabel: some View {
+        if confidence == .none, let reason = evResult?.evDisabledReason {
+            Text(reason)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .italic()
+        }
+    }
+
     private func computeEV(for book: BookPrice) -> Double {
+        // Prefer server-side EV when available
+        if let serverEV = book.evPercent {
+            return serverEV
+        }
         return EVCalculator.computeEV(
             americanOdds: book.price,
             marketProbability: fairProbability,
@@ -372,6 +422,13 @@ struct MiniBookChip: View {
 
     var body: some View {
         HStack(spacing: 4) {
+            // Sharp book indicator
+            if book.isSharp == true {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 8))
+                    .foregroundColor(.yellow.opacity(0.8))
+            }
+
             Text(abbreviatedName)
                 .font(.caption.weight(.medium))
                 .foregroundColor(isPositiveEV ? evColor : .secondary)

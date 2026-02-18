@@ -154,16 +154,56 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
+/// Game dropdown option from the API
+struct GameDropdown: Codable, Identifiable, Equatable {
+    let gameId: Int
+    let matchup: String
+    let gameDate: String
+
+    var id: Int { gameId }
+
+    enum CodingKeys: String, CodingKey {
+        case gameId = "game_id"
+        case matchup
+        case gameDate = "game_date"
+    }
+}
+
+/// EV diagnostics from the API
+struct EVDiagnostics: Codable, Equatable {
+    let totalPairs: Int?
+    let totalUnpaired: Int?
+    let eligible: Int?
+    let noPair: Int?
+    let referenceMissing: Int?
+    let extrapolated: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case totalPairs = "total_pairs"
+        case totalUnpaired = "total_unpaired"
+        case eligible
+        case noPair = "no_pair"
+        case referenceMissing = "reference_missing"
+        case extrapolated
+    }
+}
+
 /// API response wrapper from /api/fairbet/odds
 struct BetsResponse: Codable {
     let bets: [APIBet]
     let total: Int
     let booksAvailable: [String]
+    var gamesAvailable: [GameDropdown]? = nil
+    var marketCategoriesAvailable: [String]? = nil
+    var evDiagnostics: EVDiagnostics? = nil
 
     enum CodingKeys: String, CodingKey {
         case bets
         case total
         case booksAvailable = "books_available"
+        case gamesAvailable = "games_available"
+        case marketCategoriesAvailable = "market_categories_available"
+        case evDiagnostics = "ev_diagnostics"
     }
 }
 
@@ -186,6 +226,10 @@ struct APIBet: Identifiable, Codable, Equatable {
     var evMethod: String? = nil
     var evConfidenceTier: String? = nil
     var evDisabledReason: String? = nil
+    var trueProb: Double? = nil
+    var referencePrice: Int? = nil
+    var oppositeReferencePrice: Int? = nil
+    var betDescription: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
@@ -203,6 +247,10 @@ struct APIBet: Identifiable, Codable, Equatable {
         case evMethod = "ev_method"
         case evConfidenceTier = "ev_confidence_tier"
         case evDisabledReason = "ev_disabled_reason"
+        case trueProb = "true_prob"
+        case referencePrice = "reference_price"
+        case oppositeReferencePrice = "opposite_reference_price"
+        case betDescription = "bet_description"
     }
 
     /// Unique identifier for the bet
@@ -249,8 +297,40 @@ struct APIBet: Identifiable, Codable, Equatable {
         return normalized.capitalized
     }
 
-    /// Display string for the selection with line if applicable
+    /// Display string for the selection with line if applicable.
+    /// Enriched for player props, team props, and alternates.
     var selectionDisplay: String {
+        let marketLabel = FairBetCopy.marketLabel(for: marketKey)
+
+        // Player props: "Player Name Stat O/U Line"
+        if market.isPlayerProp {
+            let name = playerName ?? selection
+            let side = selection  // "Over" / "Under" from selection_key
+            if let line = lineValue {
+                return "\(name) \(marketLabel) \(side) \(line)"
+            }
+            return "\(name) \(marketLabel)"
+        }
+
+        // Team props: "Team Name Team Total O/U Line"
+        if market.isTeamProp {
+            let side = selection  // "Over" / "Under" or team name
+            if let line = lineValue {
+                return "\(selection) \(marketLabel) \(line)"
+            }
+            return "\(side) \(marketLabel)"
+        }
+
+        // Alternates: "Selection Alt Spread/Total Line"
+        if market == .alternateSpreads || market == .alternateTotals {
+            if let line = lineValue, line != 0 {
+                let formattedLine = line >= 0 ? "+\(line)" : "\(line)"
+                return "\(selection) \(marketLabel) \(formattedLine)"
+            }
+            return "\(selection) \(marketLabel)"
+        }
+
+        // Mainline: standard display
         if let line = lineValue, line != 0 {
             let formattedLine = line >= 0 ? "+\(line)" : "\(line)"
             return "\(selection) \(formattedLine)"
@@ -279,6 +359,8 @@ struct BookPrice: Identifiable, Codable, Equatable {
     var impliedProb: Double? = nil
     var trueProb: Double? = nil
     var isSharp: Bool? = nil
+    var evMethod: String? = nil
+    var evConfidenceTier: String? = nil
 
     var id: String { book }
 
@@ -296,6 +378,8 @@ struct BookPrice: Identifiable, Codable, Equatable {
         case impliedProb = "implied_prob"
         case trueProb = "true_prob"
         case isSharp = "is_sharp"
+        case evMethod = "ev_method"
+        case evConfidenceTier = "ev_confidence_tier"
     }
 
     /// Convert American odds to AmericanOdds struct

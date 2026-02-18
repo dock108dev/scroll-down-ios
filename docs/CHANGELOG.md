@@ -4,6 +4,44 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — API Alignment & Legacy Cleanup (Feb 18, 2025)
+
+**FairBet server-side EV integration:**
+- `APIBet` now consumes server-side EV annotations: `trueProb`, `referencePrice`, `evConfidenceTier`, `evDisabledReason`
+- `BookPrice` now consumes `evPercent`, `trueProb`, `isSharp`, `evMethod`, `evConfidenceTier`
+- `BetsResponse` expanded with `gamesAvailable`, `marketCategoriesAvailable`, `evDiagnostics`
+- New structs: `GameDropdown`, `EVDiagnostics`
+- `OddsComparisonViewModel` prefers server-side EV over client-side computation
+- `BetCard` shows confidence dots (green/yellow/orange), Pinnacle reference price, disabled reason text, sharp book indicators
+- `BetCard` enriched for player props (shows player name + stat type), team props, and alternates
+
+**Game detail odds section (new):**
+- `GameDetailView+Odds.swift` — cross-book odds comparison table with category tabs
+- `GameSection.odds` case added between `.teamStats` and `.final`
+- `OddsEntry` expanded with `marketCategory`, `playerName`, `description` fields
+- `MarketCategory` enum for grouping odds in the game detail view
+- `GameDetailViewModel` odds computed properties: `hasOddsData`, `availableOddsCategories`, `oddsMarkets(for:)`, `oddsPrice(for:book:)`
+
+**FairBetAPIClient expanded:**
+- `fetchOdds()` now accepts `marketCategory`, `gameId`, `minEV`, `sortBy`, `playerName`, `book`, `hasFair` params
+
+**Home view:**
+- FairBet tab renamed from "Current Odds" to "FairBet"
+- Added one-line explainer above FairBet filter bar
+
+**Legacy code eliminated:**
+- Deleted `fetchUnifiedTimeline` from `GameService` protocol and all implementations (dead code — never called)
+- Deleted `RealGameService.requestRaw` (only caller was `fetchUnifiedTimeline`)
+- Deleted `MockGameService.findAndCacheGame` (dead private method)
+- Deleted `ViewModelConstants.defaultTimelineGameId` (hardcoded ESPN game ID fallback)
+- Deleted `GameDetailViewModel.timelineGameId` wrapper method
+- `UnifiedTimelineEvent.init` collapsed from ~12 dual-key fallbacks to canonical snake_case keys only
+- `PbpEvent` decoder simplified — removed alias CodingKeys (`clock`/`index`/`playType`), removed silent `id = .int(0)` fallback
+- `PbpResponse` simplified — removed dual-format parsing (periods vs flat), now expects flat events array only
+- `MarketType` aliases removed: `"spreads"`, `"h2h"`, `"totals"` no longer resolve to known cases
+- `PlayType` alias removed: `"three_pointer"` no longer resolves (canonical is `"3pt"`)
+- 3 alias tests deleted from `EnumsTests`
+
 ### Changed — iPhone BetCard Redesign & Market Expansion (Feb 15, 2025)
 
 **BetCard iPhone layout overhauled** — replaced cramped flow grid with a vertical decision stack:
@@ -27,8 +65,7 @@ Notable changes to the Scroll Down iOS app.
 
 **MarketType expanded** — converted from plain `String` enum to `RawRepresentable` with `unknown(String)` fallback:
 - Added 14 new cases mirroring MarketKey (alternateSpread, alternateTotal, player props, etc.)
-- Aliases: `h2h` → `.moneyline`, `spreads` → `.spread`, `totals` → `.total`
-- Unknown API values no longer crash decoding
+- Unknown API values decode as `.unknown(String)` instead of crashing
 
 **FairBetCopy:** Added display labels for all new market types (Blocks, Steals, Player Goals, Shots on Goal, Goalie Saves, PRA, Team Total, Alt Spread, Alt Total)
 

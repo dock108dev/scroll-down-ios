@@ -61,8 +61,26 @@ actor FairBetAPIClient {
     ///   - league: Optional league filter (NBA, NHL, NCAAB)
     ///   - limit: Number of results per page (default 500, max 500)
     ///   - offset: Number of results to skip (default 0)
+    ///   - marketCategory: Optional market category filter
+    ///   - gameId: Optional game ID filter
+    ///   - minEV: Optional minimum EV threshold
+    ///   - sortBy: Optional sort field
+    ///   - playerName: Optional player name filter
+    ///   - book: Optional book filter
+    ///   - hasFair: Optional has_fair filter (defaults to true)
     /// - Returns: BetsResponse containing bets and metadata
-    func fetchOdds(league: FairBetLeague? = nil, limit: Int = 500, offset: Int = 0) async throws -> BetsResponse {
+    func fetchOdds(
+        league: FairBetLeague? = nil,
+        limit: Int = 500,
+        offset: Int = 0,
+        marketCategory: String? = nil,
+        gameId: Int? = nil,
+        minEV: Double? = nil,
+        sortBy: String? = nil,
+        playerName: String? = nil,
+        book: String? = nil,
+        hasFair: Bool? = true
+    ) async throws -> BetsResponse {
         // Use ScrollDown's existing infrastructure for base URL
         let baseURL = AppConfig.shared.apiBaseURL
 
@@ -72,12 +90,39 @@ actor FairBetAPIClient {
 
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "limit", value: String(limit)),
-            URLQueryItem(name: "offset", value: String(offset)),
-            URLQueryItem(name: "has_fair", value: "true")
+            URLQueryItem(name: "offset", value: String(offset))
         ]
 
-        if let league = league {
+        if let hasFair {
+            queryItems.append(URLQueryItem(name: "has_fair", value: String(hasFair)))
+        }
+
+        if let league {
             queryItems.append(URLQueryItem(name: "league", value: league.rawValue))
+        }
+
+        if let marketCategory {
+            queryItems.append(URLQueryItem(name: "market_category", value: marketCategory))
+        }
+
+        if let gameId {
+            queryItems.append(URLQueryItem(name: "game_id", value: String(gameId)))
+        }
+
+        if let minEV {
+            queryItems.append(URLQueryItem(name: "min_ev", value: String(minEV)))
+        }
+
+        if let sortBy {
+            queryItems.append(URLQueryItem(name: "sort_by", value: sortBy))
+        }
+
+        if let playerName {
+            queryItems.append(URLQueryItem(name: "player_name", value: playerName))
+        }
+
+        if let book {
+            queryItems.append(URLQueryItem(name: "book", value: book))
         }
 
         components.queryItems = queryItems

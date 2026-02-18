@@ -79,18 +79,6 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(odds.marketType, .unknown("some_future_market"))
     }
 
-    func testMarketTypeAliasH2H() {
-        XCTAssertEqual(MarketType(rawValue: "h2h"), .moneyline)
-    }
-
-    func testMarketTypeAliasSpreads() {
-        XCTAssertEqual(MarketType(rawValue: "spreads"), .spread)
-    }
-
-    func testMarketTypeAliasTotals() {
-        XCTAssertEqual(MarketType(rawValue: "totals"), .total)
-    }
-
     func testMarketTypeRoundTrip() throws {
         let original = MarketType.alternateSpread
         let encoder = JSONEncoder()

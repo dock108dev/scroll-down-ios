@@ -238,19 +238,6 @@ final class MockGameService: GameService {
         return []
     }
 
-    func fetchUnifiedTimeline(gameId: Int) async throws -> [[String: Any]] {
-        return []
-    }
-
-    private func findAndCacheGame(_ gameId: Int) -> GameDetailResponse? {
-        guard let gameSummary = findGameSummary(for: gameId) else {
-            return nil
-        }
-        let detail = MockDataGenerator.generateGameDetail(from: gameSummary)
-        gameCache[gameId] = detail
-        return detail
-    }
-
     // MARK: - Helpers
 
     func findGameSummary(for gameId: Int) -> GameSummary? {

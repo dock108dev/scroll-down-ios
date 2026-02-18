@@ -22,59 +22,6 @@ struct PbpEvent: Codable, Identifiable, Equatable {
     let homeScore: Int?
     let awayScore: Int?
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case index
-        case gameId
-        case period
-        case gameClock
-        case clock
-        case elapsedSeconds
-        case eventType
-        case playType
-        case description
-        case team
-        case teamId
-        case playerName
-        case playerId
-        case homeScore
-        case awayScore
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        // Handle id: can be "id" or "index"
-        if let idValue = try? container.decode(StringOrInt.self, forKey: .id) {
-            self.id = idValue
-        } else if let indexValue = try? container.decode(Int.self, forKey: .index) {
-            self.id = .int(indexValue)
-        } else {
-            self.id = .int(0)
-        }
-
-        self.gameId = try container.decodeIfPresent(StringOrInt.self, forKey: .gameId)
-        self.period = try container.decodeIfPresent(Int.self, forKey: .period)
-
-        // Handle clock: can be "gameClock" or "clock"
-        self.gameClock = try container.decodeIfPresent(String.self, forKey: .gameClock)
-            ?? container.decodeIfPresent(String.self, forKey: .clock)
-
-        self.elapsedSeconds = try container.decodeIfPresent(Double.self, forKey: .elapsedSeconds)
-
-        // Handle event type: can be "eventType" or "playType"
-        self.eventType = try container.decodeIfPresent(String.self, forKey: .eventType)
-            ?? container.decodeIfPresent(String.self, forKey: .playType)
-
-        self.description = try container.decodeIfPresent(String.self, forKey: .description)
-        self.team = try container.decodeIfPresent(String.self, forKey: .team)
-        self.teamId = try container.decodeIfPresent(String.self, forKey: .teamId)
-        self.playerName = try container.decodeIfPresent(String.self, forKey: .playerName)
-        self.playerId = try container.decodeIfPresent(StringOrInt.self, forKey: .playerId)
-        self.homeScore = try container.decodeIfPresent(Int.self, forKey: .homeScore)
-        self.awayScore = try container.decodeIfPresent(Int.self, forKey: .awayScore)
-    }
-
     init(
         id: StringOrInt,
         gameId: StringOrInt? = nil,
@@ -104,67 +51,15 @@ struct PbpEvent: Codable, Identifiable, Equatable {
         self.homeScore = homeScore
         self.awayScore = awayScore
     }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encodeIfPresent(gameId, forKey: .gameId)
-        try container.encodeIfPresent(period, forKey: .period)
-        try container.encodeIfPresent(gameClock, forKey: .gameClock)
-        try container.encodeIfPresent(elapsedSeconds, forKey: .elapsedSeconds)
-        try container.encodeIfPresent(eventType, forKey: .eventType)
-        try container.encodeIfPresent(description, forKey: .description)
-        try container.encodeIfPresent(team, forKey: .team)
-        try container.encodeIfPresent(teamId, forKey: .teamId)
-        try container.encodeIfPresent(playerName, forKey: .playerName)
-        try container.encodeIfPresent(playerId, forKey: .playerId)
-        try container.encodeIfPresent(homeScore, forKey: .homeScore)
-        try container.encodeIfPresent(awayScore, forKey: .awayScore)
-    }
 }
 
-/// PBP response
+/// PBP response — expects flat events array from API
 struct PbpResponse: Codable {
     let events: [PbpEvent]
-
-    enum CodingKeys: String, CodingKey {
-        case events
-        case periods
-    }
 
     init(events: [PbpEvent]) {
         self.events = events
     }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        // Try flat events array first
-        if let flatEvents = try? container.decode([PbpEvent].self, forKey: .events) {
-            self.events = flatEvents
-            return
-        }
-
-        // Try periods format: {"periods": [{"period": 1, "events": [...]}]}
-        if let periods = try? container.decode([PbpPeriod].self, forKey: .periods) {
-            self.events = periods.flatMap { $0.events }
-            return
-        }
-
-        // Default to empty if neither format works
-        self.events = []
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(events, forKey: .events)
-    }
-}
-
-/// Period wrapper for grouped PBP format
-private struct PbpPeriod: Codable {
-    let period: Int
-    let events: [PbpEvent]
 }
 
 // MARK: - StringOrInt for flexible ID types
