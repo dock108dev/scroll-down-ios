@@ -69,7 +69,7 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
 // MARK: - Market Type
 /// Betting market type as defined in the OpenAPI spec
 /// Uses RawRepresentable with unknown(String) fallback so new API values never crash decoding.
-enum MarketType: RawRepresentable, Codable, Equatable {
+enum MarketType: RawRepresentable, Codable, Equatable, Hashable {
     case spread
     case moneyline
     case total
@@ -145,6 +145,59 @@ enum MarketType: RawRepresentable, Codable, Equatable {
 
     static func == (lhs: MarketType, rhs: MarketType) -> Bool {
         lhs.rawValue == rhs.rawValue
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(rawValue)
+    }
+}
+
+// MARK: - Market Category
+
+/// Market category for grouping odds in the game detail view
+enum MarketCategory: String, CaseIterable, Identifiable, Equatable {
+    case mainline
+    case playerProp = "player_prop"
+    case teamProp = "team_prop"
+    case alternate
+    case period
+    case gameProp = "game_prop"
+
+    var id: String { rawValue }
+
+    var displayTitle: String {
+        switch self {
+        case .mainline: return "Main"
+        case .playerProp: return "Player Props"
+        case .teamProp: return "Team Props"
+        case .alternate: return "Alternates"
+        case .period: return "Period"
+        case .gameProp: return "Game Props"
+        }
+    }
+}
+
+extension OddsEntry {
+    /// Resolves the market category — prefers API-provided value, falls back to inference from marketType.
+    var resolvedCategory: MarketCategory {
+        if let cat = marketCategory, let resolved = MarketCategory(rawValue: cat) {
+            return resolved
+        }
+        // Infer from marketType
+        switch marketType {
+        case .spread, .moneyline, .total:
+            return .mainline
+        case .playerPoints, .playerRebounds, .playerAssists, .playerThrees,
+             .playerBlocks, .playerSteals, .playerGoals, .playerShotsOnGoal,
+             .playerTotalSaves, .playerPRA:
+            return .playerProp
+        case .teamTotal:
+            return .teamProp
+        case .alternateSpread, .alternateTotal:
+            return .alternate
+        case .unknown:
+            return .mainline
+        }
     }
 }
 

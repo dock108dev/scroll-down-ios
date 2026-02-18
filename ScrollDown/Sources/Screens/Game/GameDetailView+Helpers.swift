@@ -278,6 +278,11 @@ extension GameDetailView {
             sections.append(.teamStats)
         }
 
+        // Odds - if we have odds data
+        if viewModel.hasOddsData {
+            sections.append(.odds)
+        }
+
         // Wrap-up - always show for completed games (has boxscore)
         if viewModel.game?.status == .completed || viewModel.game?.status == .final {
             sections.append(.final)

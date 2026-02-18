@@ -26,6 +26,9 @@ struct GameDetailView: View {
     @State var isPlayerStatsExpanded = false  // Tier 3: Supporting
     @State var playerStatsTeamFilter: String? = nil
     @State var isTeamStatsExpanded = false  // Tier 3: Supporting
+    @State var isOddsExpanded = false  // Tier 3: Supporting
+    @State var selectedOddsCategory: MarketCategory = .mainline
+    @State var oddsPlayerSearch: String = ""
     @State var isWrapUpExpanded = false  // Tier 4: Reference
     @State var showingFullPlayByPlay = false
     @State var playRowFrames: [Int: CGRect] = [:]
@@ -263,6 +266,17 @@ struct GameDetailView: View {
                                         teamStatsSection(viewModel.teamStats)
                                     }
                                     .background(sectionFrameTracker(for: .teamStats))
+                                }
+
+                                // Odds - only if odds data exists
+                                if viewModel.hasOddsData {
+                                    Color.clear.frame(height: 8)
+
+                                    VStack(spacing: 0) {
+                                        sectionAnchor(for: .odds)
+                                        oddsSection
+                                    }
+                                    .background(sectionFrameTracker(for: .odds))
                                 }
 
                                 // Wrap-up - for completed games
