@@ -122,6 +122,33 @@ extension GameSummary {
         static let postponedText = "Postponed"
         static let canceledText = "Canceled"
         static let statusUnavailableText = "Status unavailable"
+
+        static let isoFormatterFractional: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }()
+        static let isoFormatter: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime]
+            return f
+        }()
+        static let mediumDateTimeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateStyle = .medium
+            f.timeStyle = .short
+            return f
+        }()
+        static let shortDateFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.setLocalizedDateFormatFromTemplate("MMM d")
+            return f
+        }()
+        static let timeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.timeStyle = .short
+            return f
+        }()
     }
 
     /// Status from API string, or derived from available data signals when the API omits it.
@@ -161,32 +188,20 @@ extension GameSummary {
 
     /// Parsed game date
     var parsedGameDate: Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: gameDate) {
-            return date
-        }
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: gameDate)
+        Formatting.isoFormatterFractional.date(from: gameDate)
+            ?? Formatting.isoFormatter.date(from: gameDate)
     }
 
     /// Formatted date for display
     var formattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        return Formatting.mediumDateTimeFormatter.string(from: date)
     }
 
     /// Short formatted date (e.g., "Jan 1 • 7:30 PM")
     var shortFormattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
-        let dateFormatter = DateFormatter()
-        dateFormatter.setLocalizedDateFormatFromTemplate("MMM d")
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-        return "\(dateFormatter.string(from: date)) • \(timeFormatter.string(from: date))"
+        return "\(Formatting.shortDateFormatter.string(from: date)) • \(Formatting.timeFormatter.string(from: date))"
     }
 
     var statusLine: String {
@@ -213,8 +228,6 @@ extension GameSummary {
     }
 
     private func formattedTime(date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        Formatting.timeFormatter.string(from: date)
     }
 }
