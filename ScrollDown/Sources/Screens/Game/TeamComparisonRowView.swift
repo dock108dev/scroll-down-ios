@@ -144,7 +144,8 @@ struct TeamStatsContainer: View {
         "Points", "Rebounds", "Off Reb", "Def Reb", "Assists", "Steals", "Blocks", "Turnovers", "Fouls"
     ]
     private static let shootingNames: Set<String> = [
-        "FG Made", "FG Att", "FG%", "3PT Made", "3PT Att", "3PT%", "FT Made", "FT Att", "FT%"
+        "FG Made", "FG Att", "FG%", "3PT Made", "3PT Att", "3PT%", "FT Made", "FT Att", "FT%",
+        "2PT Made", "2PT Att", "2PT%"
     ]
 
     private var statGroups: [(title: String, stats: [TeamComparisonStat])] {
@@ -388,6 +389,10 @@ private struct SimplifiedStatRow: View {
             "FT Made": "FTM",
             "FT Att": "FTA",
             "FT%": "FT%",
+            // 2PT Shooting
+            "2PT Made": "2PM",
+            "2PT Att": "2PA",
+            "2PT%": "2P%",
             // Extra
             "Fast Break Pts": "FBPTS",
             "Paint Pts": "PITP",
@@ -397,6 +402,8 @@ private struct SimplifiedStatRow: View {
             "Biggest Lead": "BL",
             "Lead Changes": "LC",
             "Times Tied": "TT",
+            "Possessions": "POSS",
+            "TS%": "TS%",
             // NHL
             "Shots on Goal": "SOG",
             "Penalty Minutes": "PIM"

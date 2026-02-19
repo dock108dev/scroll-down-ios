@@ -388,6 +388,17 @@ final class GameDetailViewModel: ObservableObject {
         }
 
         let definitions = isNHL ? Self.nhlKnownStats : Self.basketballKnownStats
+
+        #if DEBUG
+        // Log unmatched API keys to diagnose missing stat coverage
+        let allKnownKeys = Set(definitions.flatMap { $0.keys })
+        let allApiKeys = Set(home.stats.keys).union(Set(away.stats.keys))
+        let unmatched = allApiKeys.subtracting(allKnownKeys)
+        if !unmatched.isEmpty {
+            print("⚠️ Unmatched team stat keys: \(unmatched.sorted())")
+        }
+        #endif
+
         return definitions.compactMap { known in
             let homeValue = resolveValue(keys: known.keys, in: home.stats)
             let awayValue = resolveValue(keys: known.keys, in: away.stats)
@@ -408,6 +419,28 @@ final class GameDetailViewModel: ObservableObject {
 
     var teamStats: [TeamStat] {
         detail?.teamStats ?? []
+    }
+
+    /// Whether the game is truly completed — guards wrap-up from showing prematurely.
+    /// Requires status == completed/final AND at least one confirmation signal:
+    /// either derived-metric outcomes exist or 3+ hours have elapsed since game start.
+    var isGameTrulyCompleted: Bool {
+        guard game?.status.isCompleted == true else { return false }
+
+        // Signal 1: Derived metrics have outcome labels (backend only sets these after final)
+        if let detail {
+            let m = DerivedMetrics(detail.derivedMetrics)
+            if m.spreadOutcomeLabel != nil || m.totalOutcomeLabel != nil || m.mlOutcomeLabel != nil {
+                return true
+            }
+        }
+
+        // Signal 2: Game started 3+ hours ago (games last ~2.5-3 hours)
+        if let gameDate = game?.parsedGameDate {
+            if Date().timeIntervalSince(gameDate) / 3600 >= 3 { return true }
+        }
+
+        return false
     }
 
     // MARK: - NHL-Specific Stats
@@ -460,15 +493,16 @@ final class GameDetailViewModel: ObservableObject {
         oddsEntries.filter { $0.resolvedCategory == category }
     }
 
-    /// Identifies a unique market row (marketType + side + line + playerName)
+    /// Identifies a unique market row (marketType + side + line + playerName + description)
     struct OddsMarketKey: Hashable, Identifiable {
         let marketType: MarketType
         let side: String?
         let line: Double?
         let playerName: String?
+        let description: String?
 
         var id: String {
-            "\(marketType.rawValue)-\(side ?? "")-\(line ?? 0)-\(playerName ?? "")"
+            "\(marketType.rawValue)-\(side ?? "")-\(line ?? 0)-\(playerName ?? "")-\(description ?? "")"
         }
 
         var displayLabel: String {
@@ -489,9 +523,25 @@ final class GameDetailViewModel: ObservableObject {
                 if let side, let line {
                     parts.append("\(side) \(line)")
                 }
+            case .teamTotal:
+                // Show abbreviated team name from description (e.g., "AUB O 77.5")
+                if let desc = description {
+                    parts.append(TeamAbbreviations.abbreviation(for: desc))
+                }
+                if let side {
+                    let short = side.lowercased() == "over" ? "O" : (side.lowercased() == "under" ? "U" : side)
+                    parts.append(short)
+                }
+                if let line { parts.append(String(line)) }
             default:
-                if let side { parts.append(side) }
-                if let line { parts.append("O/U \(line)") }
+                if marketType.isPlayerProp {
+                    parts.append(marketType.displayName)
+                }
+                if let side {
+                    let short = side.lowercased() == "over" ? "O" : (side.lowercased() == "under" ? "U" : side)
+                    parts.append(short)
+                }
+                if let line { parts.append(String(line)) }
             }
             return parts.isEmpty ? marketType.rawValue : parts.joined(separator: " ")
         }
@@ -507,13 +557,42 @@ final class GameDetailViewModel: ObservableObject {
                 marketType: entry.marketType,
                 side: entry.side,
                 line: entry.line,
-                playerName: entry.playerName
+                playerName: entry.playerName,
+                description: entry.description
             )
             if seen.insert(key).inserted {
                 result.append(key)
             }
         }
         return result
+    }
+
+    /// Player prop markets grouped by player name, preserving order.
+    /// Each entry is (playerName, [(statType, [OddsMarketKey])]).
+    func groupedPlayerPropMarkets(filtered: [OddsMarketKey]) -> [(player: String, statGroups: [(statType: String, markets: [OddsMarketKey])])] {
+        var playerOrder: [String] = []
+        var playerGroups: [String: [(statType: String, markets: [OddsMarketKey])]] = [:]
+
+        for market in filtered {
+            let player = market.playerName ?? "Unknown"
+            let statType = market.marketType.displayName
+
+            if playerGroups[player] == nil {
+                playerOrder.append(player)
+                playerGroups[player] = []
+            }
+
+            // Find or create the stat group for this player
+            if let idx = playerGroups[player]!.firstIndex(where: { $0.statType == statType }) {
+                playerGroups[player]![idx].markets.append(market)
+            } else {
+                playerGroups[player]!.append((statType: statType, markets: [market]))
+            }
+        }
+
+        return playerOrder.map { player in
+            (player: player, statGroups: playerGroups[player]!)
+        }
     }
 
     /// Cross-book price lookup: returns the American odds price for a given market row + book
@@ -523,7 +602,8 @@ final class GameDetailViewModel: ObservableObject {
             entry.marketType == market.marketType &&
             entry.side == market.side &&
             entry.line == market.line &&
-            entry.playerName == market.playerName
+            entry.playerName == market.playerName &&
+            entry.description == market.description
         }?.price
     }
 
@@ -617,12 +697,25 @@ final class GameDetailViewModel: ObservableObject {
     // MARK: - Private Helpers
 
     /// Try each key in order, return the first value found as a Double.
+    /// Supports dot-path keys for nested dicts (e.g., "points.total", "fieldGoals.pct").
     private func resolveValue(keys: [String], in stats: [String: AnyCodable]) -> Double? {
         for key in keys {
-            if let raw = stats[key]?.value {
+            if key.contains(".") {
+                // Nested dot-path: "fieldGoals.pct" → stats["fieldGoals"]["pct"]
+                let parts = key.split(separator: ".", maxSplits: 1).map(String.init)
+                guard parts.count == 2,
+                      let parent = stats[parts[0]]?.value as? [String: Any],
+                      let raw = parent[parts[1]] else { continue }
                 if let number = raw as? NSNumber { return number.doubleValue }
                 if let string = raw as? String {
                     return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            } else {
+                if let raw = stats[key]?.value {
+                    if let number = raw as? NSNumber { return number.doubleValue }
+                    if let string = raw as? String {
+                        return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
                 }
             }
         }
@@ -681,36 +774,45 @@ extension GameDetailViewModel {
     /// Ordered definitions for basketball (NBA + NCAAB) team stats.
     fileprivate static let basketballKnownStats: [KnownStat] = [
         // Overview
-        KnownStat(keys: ["points", "pts"], label: "Points", group: "Overview", isPercentage: false),
-        KnownStat(keys: ["trb", "reb", "rebounds", "totalRebounds", "total_rebounds"], label: "Rebounds", group: "Overview", isPercentage: false),
-        KnownStat(keys: ["orb", "offReb", "offensiveRebounds", "offensive_rebounds"], label: "Off Reb", group: "Overview", isPercentage: false),
-        KnownStat(keys: ["drb", "defReb", "defensiveRebounds", "defensive_rebounds"], label: "Def Reb", group: "Overview", isPercentage: false),
+        // API returns: points.total (nested) or pts/points (flat)
+        KnownStat(keys: ["points.total", "points", "pts"], label: "Points", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["rebounds.total", "trb", "reb", "rebounds", "totalRebounds", "total_rebounds"], label: "Rebounds", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["rebounds.offensive", "orb", "offReb", "offensiveRebounds", "offensive_rebounds"], label: "Off Reb", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["rebounds.defensive", "drb", "defReb", "defensiveRebounds", "defensive_rebounds"], label: "Def Reb", group: "Overview", isPercentage: false),
         KnownStat(keys: ["ast", "assists"], label: "Assists", group: "Overview", isPercentage: false),
         KnownStat(keys: ["stl", "steals"], label: "Steals", group: "Overview", isPercentage: false),
         KnownStat(keys: ["blk", "blocks"], label: "Blocks", group: "Overview", isPercentage: false),
-        KnownStat(keys: ["tov", "turnovers", "to"], label: "Turnovers", group: "Overview", isPercentage: false),
-        KnownStat(keys: ["pf", "personalFouls", "personal_fouls", "fouls"], label: "Fouls", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["turnovers.total", "tov", "turnovers", "to"], label: "Turnovers", group: "Overview", isPercentage: false),
+        KnownStat(keys: ["fouls.total", "pf", "personalFouls", "personal_fouls", "fouls"], label: "Fouls", group: "Overview", isPercentage: false),
 
         // Shooting
-        KnownStat(keys: ["fg", "fgm", "fg_made", "fgMade", "fieldGoalsMade", "field_goals_made"], label: "FG Made", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["fga", "fg_attempted", "fgAttempted", "fieldGoalsAttempted", "field_goals_attempted"], label: "FG Att", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["fg_pct", "fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"], label: "FG%", group: "Shooting", isPercentage: true),
-        KnownStat(keys: ["fg3", "fg3m", "fg3Made", "three_made", "threePointersMade", "three_pointers_made", "threePointFieldGoalsMade"], label: "3PT Made", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["fg3a", "fg3Attempted", "three_attempted", "threePointersAttempted", "three_pointers_attempted", "threePointFieldGoalsAttempted"], label: "3PT Att", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["fg3_pct", "fg3Pct", "threePtPct", "three_pct", "three_pt_pct", "fg3_percentage"], label: "3PT%", group: "Shooting", isPercentage: true),
-        KnownStat(keys: ["ft", "ftm", "ft_made", "ftMade", "freeThrowsMade", "free_throws_made"], label: "FT Made", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["fta", "ft_attempted", "ftAttempted", "freeThrowsAttempted", "free_throws_attempted"], label: "FT Att", group: "Shooting", isPercentage: false),
-        KnownStat(keys: ["ft_pct", "ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"], label: "FT%", group: "Shooting", isPercentage: true),
+        // API returns nested: fieldGoals.made / fieldGoals.attempted / fieldGoals.pct
+        KnownStat(keys: ["fieldGoals.made", "fg", "fgm", "fg_made", "fgMade", "fieldGoalsMade", "field_goals_made"], label: "FG Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fieldGoals.attempted", "fga", "fg_attempted", "fgAttempted", "fieldGoalsAttempted", "field_goals_attempted"], label: "FG Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["fieldGoals.pct", "fg_pct", "fgPct", "fg_percentage", "fieldGoalPct", "field_goal_pct"], label: "FG%", group: "Shooting", isPercentage: true),
+        KnownStat(keys: ["threePointFieldGoals.made", "fg3", "fg3m", "fg3Made", "three_made", "threePointersMade", "three_pointers_made", "threePointFieldGoalsMade"], label: "3PT Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["threePointFieldGoals.attempted", "fg3a", "fg3Attempted", "three_attempted", "threePointersAttempted", "three_pointers_attempted", "threePointFieldGoalsAttempted"], label: "3PT Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["threePointFieldGoals.pct", "fg3_pct", "fg3Pct", "threePtPct", "three_pct", "three_pt_pct", "fg3_percentage"], label: "3PT%", group: "Shooting", isPercentage: true),
+        KnownStat(keys: ["freeThrows.made", "ft", "ftm", "ft_made", "ftMade", "freeThrowsMade", "free_throws_made"], label: "FT Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["freeThrows.attempted", "fta", "ft_attempted", "ftAttempted", "freeThrowsAttempted", "free_throws_attempted"], label: "FT Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["freeThrows.pct", "ft_pct", "ftPct", "freeThrowPct", "free_throw_pct", "ft_percentage"], label: "FT%", group: "Shooting", isPercentage: true),
 
-        // Extra (NBA-only fields — only appear if API returns them)
-        KnownStat(keys: ["fast_break_points", "fastBreakPoints"], label: "Fast Break Pts", group: "Extra", isPercentage: false),
-        KnownStat(keys: ["points_in_paint", "pointsInPaint", "paint_points", "paintPoints"], label: "Paint Pts", group: "Extra", isPercentage: false),
-        KnownStat(keys: ["points_off_turnovers", "pointsOffTurnovers"], label: "Pts off TO", group: "Extra", isPercentage: false),
+        // 2PT Shooting
+        KnownStat(keys: ["twoPointFieldGoals.made", "fg2", "fg2m", "fg2_made", "fg2Made", "twoPointFieldGoalsMade", "two_point_field_goals_made"], label: "2PT Made", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["twoPointFieldGoals.attempted", "fg2a", "fg2_attempted", "fg2Attempted", "twoPointFieldGoalsAttempted", "two_point_field_goals_attempted"], label: "2PT Att", group: "Shooting", isPercentage: false),
+        KnownStat(keys: ["twoPointFieldGoals.pct", "fg2_pct", "fg2Pct", "twoPtPct", "two_pt_pct", "fg2_percentage"], label: "2PT%", group: "Shooting", isPercentage: true),
+
+        // Extra
+        KnownStat(keys: ["points.fastBreak", "fast_break_points", "fastBreakPoints"], label: "Fast Break Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["points.inPaint", "points_in_paint", "pointsInPaint", "paint_points", "paintPoints"], label: "Paint Pts", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["points.offTurnovers", "points_off_turnovers", "pointsOffTurnovers"], label: "Pts off TO", group: "Extra", isPercentage: false),
         KnownStat(keys: ["second_chance_points", "secondChancePoints"], label: "2nd Chance Pts", group: "Extra", isPercentage: false),
         KnownStat(keys: ["bench_points", "benchPoints"], label: "Bench Pts", group: "Extra", isPercentage: false),
-        KnownStat(keys: ["biggest_lead", "biggestLead", "largest_lead", "largestLead"], label: "Biggest Lead", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["points.largestLead", "biggest_lead", "biggestLead", "largest_lead", "largestLead"], label: "Biggest Lead", group: "Extra", isPercentage: false),
         KnownStat(keys: ["lead_changes", "leadChanges"], label: "Lead Changes", group: "Extra", isPercentage: false),
         KnownStat(keys: ["times_tied", "timesTied"], label: "Times Tied", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["possessions", "poss"], label: "Possessions", group: "Extra", isPercentage: false),
+        KnownStat(keys: ["trueShooting", "true_shooting_pct", "trueShootingPct", "ts_pct", "tsPct"], label: "TS%", group: "Extra", isPercentage: true),
     ]
 
     /// Ordered definitions for NHL team stats.
