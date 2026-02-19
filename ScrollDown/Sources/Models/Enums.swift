@@ -150,6 +150,41 @@ enum MarketType: RawRepresentable, Codable, Equatable, Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(rawValue)
     }
+
+    /// Human-readable stat type name for display labels
+    var displayName: String {
+        switch self {
+        case .spread: return "Spread"
+        case .moneyline: return "Moneyline"
+        case .total: return "Total"
+        case .alternateSpread: return "Alt Spread"
+        case .alternateTotal: return "Alt Total"
+        case .playerPoints: return "Points"
+        case .playerRebounds: return "Rebounds"
+        case .playerAssists: return "Assists"
+        case .playerThrees: return "Threes"
+        case .playerBlocks: return "Blocks"
+        case .playerSteals: return "Steals"
+        case .playerGoals: return "Goals"
+        case .playerShotsOnGoal: return "Shots on Goal"
+        case .playerTotalSaves: return "Total Saves"
+        case .playerPRA: return "Pts+Reb+Ast"
+        case .teamTotal: return "Team Total"
+        case .unknown(let value): return value
+        }
+    }
+
+    /// Whether this market type is a player prop
+    var isPlayerProp: Bool {
+        switch self {
+        case .playerPoints, .playerRebounds, .playerAssists, .playerThrees,
+             .playerBlocks, .playerSteals, .playerGoals, .playerShotsOnGoal,
+             .playerTotalSaves, .playerPRA:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Market Category

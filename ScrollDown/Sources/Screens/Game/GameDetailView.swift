@@ -279,8 +279,8 @@ struct GameDetailView: View {
                                     .background(sectionFrameTracker(for: .odds))
                                 }
 
-                                // Wrap-up - for completed games
-                                if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+                                // Wrap-up - for completed games (with confirmation signals)
+                                if viewModel.isGameTrulyCompleted {
                                     Color.clear.frame(height: 8)
 
                                     VStack(spacing: 0) {

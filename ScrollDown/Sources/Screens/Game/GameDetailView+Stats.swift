@@ -78,20 +78,46 @@ extension GameDetailView {
         }
     }
 
+    // MARK: - Player Stat Key Aliases
+    // Multi-key aliases to handle varying API key names across NBA / NCAAB providers.
+    private enum PlayerStatKeys {
+        static let fg = ["fg", "fgm", "fg_made", "fgMade", "fieldGoalsMade"]
+        static let fga = ["fga", "fg_attempted", "fgAttempted", "fieldGoalsAttempted"]
+        static let fg3 = ["fg3", "fg3m", "fg3Made", "three_made", "threePointersMade"]
+        static let fg3a = ["fg3a", "fg3Attempted", "three_attempted", "threePointersAttempted"]
+        static let ft = ["ft", "ftm", "ft_made", "ftMade", "freeThrowsMade"]
+        static let fta = ["fta", "ft_attempted", "ftAttempted", "freeThrowsAttempted"]
+        static let stl = ["stl", "steals"]
+        static let blk = ["blk", "blocks"]
+        static let tov = ["tov", "turnovers", "to"]
+        static let pf = ["pf", "personalFouls", "personal_fouls", "fouls"]
+        static let plusMinus = ["plus_minus", "plusMinus", "+/-"]
+    }
+
     private func availableStatColumns(_ stats: [PlayerStat]) -> Set<String> {
         var available = Set<String>()
+
+        #if DEBUG
+        // Log first player's rawStats keys for diagnosing mismatches
+        if let first = stats.first {
+            let keys = Array(first.rawStats.keys).sorted()
+            print("🏀 PlayerStat sample rawStats keys: \(keys)")
+        }
+        #endif
+
         for stat in stats {
             if stat.minutes != nil { available.insert("min") }
             if stat.points != nil { available.insert("pts") }
             if stat.rebounds != nil { available.insert("reb") }
             if stat.assists != nil { available.insert("ast") }
-            if rawStatInt(stat, "fg") != nil { available.insert("fg") }
-            if rawStatInt(stat, "fg3") != nil { available.insert("3pt") }
-            if rawStatInt(stat, "ft") != nil { available.insert("ft") }
-            if rawStatInt(stat, "stl") != nil { available.insert("stl") }
-            if rawStatInt(stat, "blk") != nil { available.insert("blk") }
-            if rawStatInt(stat, "tov") != nil { available.insert("tov") }
-            if rawStatString(stat, "plus_minus") != nil { available.insert("+/-") }
+            if rawStatIntMulti(stat, PlayerStatKeys.fg) != nil { available.insert("fg") }
+            if rawStatIntMulti(stat, PlayerStatKeys.fg3) != nil { available.insert("3pt") }
+            if rawStatIntMulti(stat, PlayerStatKeys.ft) != nil { available.insert("ft") }
+            if rawStatIntMulti(stat, PlayerStatKeys.stl) != nil { available.insert("stl") }
+            if rawStatIntMulti(stat, PlayerStatKeys.blk) != nil { available.insert("blk") }
+            if rawStatIntMulti(stat, PlayerStatKeys.tov) != nil { available.insert("tov") }
+            if rawStatStringMulti(stat, PlayerStatKeys.plusMinus) != nil { available.insert("+/-") }
+            if rawStatIntMulti(stat, PlayerStatKeys.pf) != nil { available.insert("pf") }
         }
         return available
     }
@@ -223,6 +249,7 @@ extension GameDetailView {
             if columns.contains("blk") { statColumnFrame("BLK", width: 30, flexible: flexible) }
             if columns.contains("tov") { statColumnFrame("TO", width: 30, flexible: flexible) }
             if columns.contains("+/-") { statColumnFrame("+/-", width: 38, flexible: flexible) }
+            if columns.contains("pf") { statColumnFrame("PF", width: 30, flexible: flexible) }
         }
         .font(DesignSystem.Typography.statLabel)
         .foregroundColor(DesignSystem.TextColor.secondary)
@@ -277,51 +304,59 @@ extension GameDetailView {
 
             if columns.contains("fg") {
                 dataColumnFrame(
-                    Text(formatShotStat(made: rawStatInt(stat, "fg"), attempted: rawStatInt(stat, "fga"))),
+                    Text(formatShotStat(made: rawStatIntMulti(stat, PlayerStatKeys.fg), attempted: rawStatIntMulti(stat, PlayerStatKeys.fga))),
                     width: 48, flexible: flexible
                 )
             }
 
             if columns.contains("3pt") {
                 dataColumnFrame(
-                    Text(formatShotStat(made: rawStatInt(stat, "fg3"), attempted: rawStatInt(stat, "fg3a"))),
+                    Text(formatShotStat(made: rawStatIntMulti(stat, PlayerStatKeys.fg3), attempted: rawStatIntMulti(stat, PlayerStatKeys.fg3a))),
                     width: 48, flexible: flexible
                 )
             }
 
             if columns.contains("ft") {
                 dataColumnFrame(
-                    Text(formatShotStat(made: rawStatInt(stat, "ft"), attempted: rawStatInt(stat, "fta"))),
+                    Text(formatShotStat(made: rawStatIntMulti(stat, PlayerStatKeys.ft), attempted: rawStatIntMulti(stat, PlayerStatKeys.fta))),
                     width: 48, flexible: flexible
                 )
             }
 
             if columns.contains("stl") {
                 dataColumnFrame(
-                    Text(rawStatInt(stat, "stl").map(String.init) ?? "--"),
+                    Text(rawStatIntMulti(stat, PlayerStatKeys.stl).map(String.init) ?? "--"),
                     width: 30, flexible: flexible
                 )
             }
 
             if columns.contains("blk") {
                 dataColumnFrame(
-                    Text(rawStatInt(stat, "blk").map(String.init) ?? "--"),
+                    Text(rawStatIntMulti(stat, PlayerStatKeys.blk).map(String.init) ?? "--"),
                     width: 30, flexible: flexible
                 )
             }
 
             if columns.contains("tov") {
                 dataColumnFrame(
-                    Text(rawStatInt(stat, "tov").map(String.init) ?? "--"),
+                    Text(rawStatIntMulti(stat, PlayerStatKeys.tov).map(String.init) ?? "--"),
                     width: 30, flexible: flexible
                 )
             }
 
             if columns.contains("+/-") {
+                let pmValue = rawStatStringMulti(stat, PlayerStatKeys.plusMinus)
                 dataColumnFrame(
-                    Text(rawStatString(stat, "plus_minus") ?? "--")
-                        .foregroundColor(plusMinusColor(rawStatString(stat, "plus_minus"))),
+                    Text(pmValue ?? "--")
+                        .foregroundColor(plusMinusColor(pmValue)),
                     width: 38, flexible: flexible
+                )
+            }
+
+            if columns.contains("pf") {
+                dataColumnFrame(
+                    Text(rawStatIntMulti(stat, PlayerStatKeys.pf).map(String.init) ?? "--"),
+                    width: 30, flexible: flexible
                 )
             }
         }
@@ -378,6 +413,22 @@ extension GameDetailView {
         if let strVal = value.value as? String { return strVal }
         if let intVal = value.value as? Int { return String(intVal) }
         if let doubleVal = value.value as? Double { return String(Int(doubleVal)) }
+        return nil
+    }
+
+    /// Multi-key lookup: tries each key in order, returns first match as Int.
+    private func rawStatIntMulti(_ stat: PlayerStat, _ keys: [String]) -> Int? {
+        for key in keys {
+            if let val = rawStatInt(stat, key) { return val }
+        }
+        return nil
+    }
+
+    /// Multi-key lookup: tries each key in order, returns first match as String.
+    private func rawStatStringMulti(_ stat: PlayerStat, _ keys: [String]) -> String? {
+        for key in keys {
+            if let val = rawStatString(stat, key) { return val }
+        }
         return nil
     }
 
