@@ -129,22 +129,48 @@ struct FullPlayByPlayView: View {
 
     // MARK: - Period Title
 
-    /// Returns the period title
+    /// Returns the period title, sport-aware with server label override
     private func periodTitle(_ period: Int, events: [UnifiedTimelineEvent] = []) -> String {
         if period == 0 {
             return "Additional"
         }
 
-        guard let label = events.first?.periodLabel, !label.isEmpty else {
-            return "Q\(period)"
+        // Use server-provided label if available
+        if let label = events.first?.periodLabel, !label.isEmpty {
+            // Expand abbreviated labels for section headers
+            switch label {
+            case "P1": return "Period 1"
+            case "P2": return "Period 2"
+            case "P3": return "Period 3"
+            case "H1": return "1st Half"
+            case "H2": return "2nd Half"
+            default: return label
+            }
         }
 
-        // Expand abbreviated labels for section headers
-        switch label {
-        case "P1": return "Period 1"
-        case "P2": return "Period 2"
-        case "P3": return "Period 3"
-        default: return label
+        // Fallback: sport-aware period naming
+        let sport = viewModel.game?.leagueCode ?? "NBA"
+        switch sport {
+        case "NCAAB":
+            switch period {
+            case 1: return "1st Half"
+            case 2: return "2nd Half"
+            case 3: return "OT"
+            default: return "\(period - 2)OT"
+            }
+        case "NHL":
+            switch period {
+            case 1...3: return "Period \(period)"
+            case 4: return "OT"
+            case 5: return "SO"
+            default: return "\(period - 3)OT"
+            }
+        default:
+            switch period {
+            case 1...4: return "Q\(period)"
+            case 5: return "OT"
+            default: return "\(period - 4)OT"
+            }
         }
     }
 }

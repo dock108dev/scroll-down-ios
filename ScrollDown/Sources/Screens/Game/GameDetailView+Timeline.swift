@@ -159,7 +159,7 @@ extension GameDetailView {
     /// Collapsible card for a single quarter
     private func unifiedQuarterCard(_ group: QuarterGroup) -> some View {
         CollapsibleQuarterCard(
-            title: "\(quarterTitle(group.quarter)) (\(group.events.count) plays)",
+            title: "\(quarterTitle(group.quarter, serverLabel: group.events.first?.periodLabel)) (\(group.events.count) plays)",
             isExpanded: Binding(
                 get: { !collapsedQuarters.contains(group.quarter) },
                 set: { isExpanded in
