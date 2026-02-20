@@ -101,21 +101,7 @@ struct BetPairingService {
 
     // MARK: - Fair Probability Computation
 
-    /// Compute fair probability for a bet using paired data when available
-    static func computeFairProbability(
-        for bet: APIBet,
-        allBets: [APIBet]
-    ) -> FairProbabilityResult {
-        let pairs = pairBets(allBets)
-
-        if let pairedBet = pairs[bet.id] {
-            return computeWithVigRemoval(bet: bet, pairedBet: pairedBet)
-        } else {
-            return computeWithMedianConsensus(bet: bet)
-        }
-    }
-
-    /// Compute fair probability using pre-computed pairs (much faster for bulk operations)
+    /// Compute fair probability using pre-computed pairs
     static func computeFairProbability(
         for bet: APIBet,
         pairs: [String: APIBet]
@@ -243,12 +229,7 @@ struct BetPairingService {
 
 extension APIBet {
 
-    /// Compute fair probability using paired data when available
-    func fairProbability(allBets: [APIBet]) -> BetPairingService.FairProbabilityResult {
-        BetPairingService.computeFairProbability(for: self, allBets: allBets)
-    }
-
-    /// Compute fair probability using pre-computed pairs (faster for bulk operations)
+    /// Compute fair probability using pre-computed pairs
     func fairProbability(pairs: [String: APIBet]) -> BetPairingService.FairProbabilityResult {
         BetPairingService.computeFairProbability(for: self, pairs: pairs)
     }

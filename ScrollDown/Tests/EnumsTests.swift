@@ -71,7 +71,7 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(odds.marketType, .alternateSpread)
     }
 
-    func testMarketTypeUnknownFallback() throws {
+    func testMarketTypeUnknownCase() throws {
         let json = """
         {"book":"FanDuel","marketType":"some_future_market","isClosingLine":false}
         """.data(using: .utf8)!
@@ -111,7 +111,7 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(MarketKey(rawValue: "alternate_totals"), .alternateTotals)
     }
 
-    func testMarketKeyUnknownFallback() {
+    func testMarketKeyUnknownCase() {
         let key = MarketKey(rawValue: "some_future_market")
         XCTAssertEqual(key, .unknown("some_future_market"))
         XCTAssertEqual(key.rawValue, "some_future_market")

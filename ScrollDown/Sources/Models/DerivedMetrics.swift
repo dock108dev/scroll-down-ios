@@ -9,10 +9,6 @@ struct DerivedMetrics {
         self.dict = dict.mapValues { $0.value }
     }
 
-    init(raw: [String: Any]) {
-        self.dict = raw
-    }
-
     // MARK: - Closing (Pregame) Odds Labels
 
     var pregameSpreadLabel: String? { string("pregame_spread_label") }

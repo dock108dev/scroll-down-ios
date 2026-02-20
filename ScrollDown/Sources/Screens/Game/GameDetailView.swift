@@ -29,6 +29,7 @@ struct GameDetailView: View {
     @State var isOddsExpanded = false  // Tier 3: Supporting
     @State var selectedOddsCategory: MarketCategory = .mainline
     @State var oddsPlayerSearch: String = ""
+    @State var collapsedOddsGroups: Set<String> = []
     @State var isWrapUpExpanded = false  // Tier 4: Reference
     @State var showingFullPlayByPlay = false
     @State var playRowFrames: [Int: CGRect] = [:]
@@ -208,7 +209,9 @@ struct GameDetailView: View {
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             // Header - constrained to max-width on iPad
                             if let game = viewModel.game {
-                                GameHeaderView(game: game, scoreRevealed: isGameRead)
+                                GameHeaderView(game: game, scoreRevealed: isGameRead, onRevealScore: {
+                                    readStateStore.markRead(gameId: gameId)
+                                })
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)

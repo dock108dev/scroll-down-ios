@@ -3,7 +3,7 @@
 //  ScrollDown
 //
 //  ViewModel for odds comparison - fetches and displays betting odds
-//  Loads ALL data for accurate stats and client-side filtering
+//  Loads ALL data for accurate stats and filtering
 //
 
 import Foundation
@@ -76,7 +76,6 @@ final class OddsComparisonViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let apiClient: FairBetAPIClient
-    private let mockDataProvider: FairBetMockDataProvider
 
     // MARK: - Cached Computations (for performance)
 
@@ -187,9 +186,8 @@ final class OddsComparisonViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    init(apiClient: FairBetAPIClient = .shared, mockDataProvider: FairBetMockDataProvider = .shared) {
+    init(apiClient: FairBetAPIClient = .shared) {
         self.apiClient = apiClient
-        self.mockDataProvider = mockDataProvider
         loadOddsFormat()
         loadLimitedDataPref()
     }
@@ -266,9 +264,6 @@ final class OddsComparisonViewModel: ObservableObject {
 
         } catch {
             errorMessage = error.localizedDescription
-            if allBets.isEmpty {
-                loadMockData()
-            }
         }
 
         isLoading = false
@@ -309,9 +304,9 @@ final class OddsComparisonViewModel: ObservableObject {
         parlayBetIDs.removeAll()
     }
 
-    /// Load mock data for previews and testing
+    /// Load mock data for previews
     func loadMockData() {
-        let response = mockDataProvider.getMockBetsResponse()
+        let response = FairBetMockDataProvider.shared.getMockBetsResponse()
         allBets = response.bets
         booksAvailable = response.booksAvailable
         cachedPairs = BetPairingService.pairBets(allBets)
@@ -419,12 +414,10 @@ final class OddsComparisonViewModel: ObservableObject {
     }
 
     /// Calculate best EV for a single bet using cached pairs.
-    /// Prefers server-side EV annotations when available (respects server book exclusion,
-    /// eligibility gating, and freshness checks). Falls back to client-side computation.
+    /// Uses server-side EV annotations when available, otherwise computes via paired vig removal.
     private func computeEVResult(for bet: APIBet) -> EVResult {
         // Server-side EV: use when confidence tier is present, at least one book has evPercent,
-        // AND we have a real trueProb so we don't fall back to a meaningless 0.5 (-100).
-        // Prefer bet-level trueProb first, then book-level trueProb as fallback.
+        // AND we have a real trueProb.
         if let serverTier = bet.evConfidenceTier,
            let bestServerBook = bet.books.compactMap({ book -> (book: BookPrice, ev: Double)? in
                guard let ev = book.evPercent else { return nil }
@@ -449,7 +442,7 @@ final class OddsComparisonViewModel: ObservableObject {
             )
         }
 
-        // Fallback: client-side EV computation
+        // Client-side EV via paired vig removal
         let fairResult = bet.fairProbability(pairs: cachedPairs)
         let pFair = fairResult.fairProbability
 

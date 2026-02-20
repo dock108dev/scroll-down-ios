@@ -1,15 +1,46 @@
 import SwiftUI
 
 extension GameDetailView {
-    /// Returns the period/quarter title
+    /// Returns the period/quarter title, sport-aware.
+    /// NCAAB: "1st Half", "2nd Half", "OT"; NHL: "Period 1", "Period 2", "Period 3", "OT"; NBA: "Q1"-"Q4", "OT"
     func quarterTitle(_ quarter: Int, serverLabel: String? = nil) -> String {
         if quarter == 0 {
             return "Additional"
         }
         if let label = serverLabel, !label.isEmpty {
-            return label
+            // Expand abbreviated server labels for readability
+            switch label {
+            case "H1": return "1st Half"
+            case "H2": return "2nd Half"
+            case "P1": return "Period 1"
+            case "P2": return "Period 2"
+            case "P3": return "Period 3"
+            default: return label
+            }
         }
-        return "Q\(quarter)"
+        let sport = viewModel.game?.leagueCode ?? "NBA"
+        switch sport {
+        case "NCAAB":
+            switch quarter {
+            case 1: return "1st Half"
+            case 2: return "2nd Half"
+            case 3: return "OT"
+            default: return "\(quarter - 2)OT"
+            }
+        case "NHL":
+            switch quarter {
+            case 1...3: return "Period \(quarter)"
+            case 4: return "OT"
+            case 5: return "SO"
+            default: return "\(quarter - 3)OT"
+            }
+        default: // NBA and others
+            switch quarter {
+            case 1...4: return "Q\(quarter)"
+            case 5: return "OT"
+            default: return "\(quarter - 4)OT"
+            }
+        }
     }
 
     var viewingPillText: String? {
@@ -80,19 +111,30 @@ extension GameDetailView {
     }
 
     func quarterOrdinal(_ quarter: Int) -> String {
-        switch quarter {
-        case 1:
-            return "1st"
-        case 2:
-            return "2nd"
-        case 3:
-            return "3rd"
-        case 4:
-            return "4th"
-        case 0:
-            return "OT"
+        let sport = viewModel.game?.leagueCode ?? "NBA"
+        switch sport {
+        case "NCAAB":
+            switch quarter {
+            case 1: return "1st Half"
+            case 2: return "2nd Half"
+            case 3: return "OT"
+            default: return "\(quarter - 2)OT"
+            }
+        case "NHL":
+            switch quarter {
+            case 1...3: return "P\(quarter)"
+            case 4: return "OT"
+            default: return "\(quarter - 3)OT"
+            }
         default:
-            return "\(quarter)th"
+            switch quarter {
+            case 1: return "1st"
+            case 2: return "2nd"
+            case 3: return "3rd"
+            case 4: return "4th"
+            case 0: return "OT"
+            default: return "\(quarter)th"
+            }
         }
     }
 
@@ -283,8 +325,8 @@ extension GameDetailView {
             sections.append(.odds)
         }
 
-        // Wrap-up - always show for completed games (has boxscore)
-        if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+        // Wrap-up - only for truly completed games (with confirmation signals)
+        if viewModel.isGameTrulyCompleted {
             sections.append(.final)
         }
 

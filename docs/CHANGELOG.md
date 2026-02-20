@@ -4,6 +4,39 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Odds Presentation & BetCard Redesign (Feb 20, 2025)
+
+**Game detail odds table overhauled** (`GameDetailView+Odds.swift`):
+- Mainline markets grouped into collapsible Moneyline / Spread / Total sections
+- Team props grouped by team name with collapsible headers
+- Player props grouped by player name with stat type sub-headers, using shared `oddsTableRows` renderer
+- Spreads sorted by absolute line; totals sorted by line with over before under
+- Alternates rendered as a sorted flat table
+- Fixed frozen/scrollable column alignment on player prop tables (matching "MARKET" header row)
+- Added `collapsedOddsGroups: Set<String>` state for per-group collapse
+
+**BetCard redesigned** — action-first layout (`BetCard.swift`):
+- iPhone: vertical decision stack — primary book (prominent) → best-available callout → fair estimate card → expandable other books
+- iPad: horizontal book scroll → fair estimate card below
+- FAIR displayed as tappable outlined card ("Est. fair +125" + info icon) — visually distinct from sportsbooks
+- Removed confidence dots and Pinnacle reference price from main card
+- New `FairExplainerSheet` with devig math: method, true probabilities, opposite side, vig removed %, best EV, per-book implied probabilities
+- New `BookAbbreviationButton` — tap to toggle abbreviated/full sportsbook name
+- Removed "Fair price"/"Good price"/"Great price" value indicator text
+
+**MarketType.displayName** added (`Enums.swift`):
+- Human-readable stat type names for all market types (Points, Rebounds, Assists, etc.)
+- Used in player prop display labels and grouped rendering
+
+**Period/quarter title handling** (`GameDetailView+Helpers.swift`, `FullPlayByPlayView.swift`):
+- Server-provided `periodLabel` expanded for readability (P1→Period 1, H1→1st Half, etc.)
+- Sport-aware fallbacks for NBA (Q1–Q4), NCAAB (1st Half/2nd Half), NHL (Period 1–3)
+- Shared logic between game detail and full play-by-play views
+
+**Wrap-up timing** (`GameDetailViewModel.swift`, `GameDetailView.swift`):
+- `isGameTrulyCompleted` requires status == completed/final AND confirmation signals (derived metric outcomes or 3+ hours elapsed)
+- Prevents wrap-up section from appearing on in-progress games marked completed prematurely
+
 ### Changed — API Alignment & Legacy Cleanup (Feb 18, 2025)
 
 **FairBet server-side EV integration:**

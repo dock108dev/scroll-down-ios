@@ -116,6 +116,23 @@ extension HomeView {
                 GameRoutingLogger.logTap(gameId: game.id, league: game.league)
                 triggerHapticIfNeeded(for: game)
             })
+            .contextMenu {
+                if game.status?.isCompleted == true {
+                    if readStateStore.isRead(gameId: game.id) {
+                        Button(role: .destructive) {
+                            readStateStore.markUnread(gameId: game.id)
+                        } label: {
+                            Label("Mark as Unread", systemImage: "eye.slash")
+                        }
+                    } else {
+                        Button {
+                            readStateStore.markRead(gameId: game.id)
+                        } label: {
+                            Label("Mark as Read", systemImage: "eye")
+                        }
+                    }
+                }
+            }
         } else {
             // Flow pending or upcoming - no navigation, static card
             rowView
