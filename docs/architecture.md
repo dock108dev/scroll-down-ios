@@ -150,7 +150,7 @@ Sections render conditionally based on game status and data availability:
 - **Timeline:** Flow blocks (primary) or PBP grouped by period
 - **Stats:** Player stats + team comparison
 - **NHL Stats:** Sport-specific skater/goalie tables
-- **Odds:** Cross-book comparison table with category tabs (mainline, player props, team props, alternates) — shown when `hasOddsData` is true
+- **Odds:** Cross-book comparison table with category tabs and collapsible grouped rendering (mainline grouped by Moneyline/Spread/Total, team props by team, player props by player+stat) — shown when `hasOddsData` is true
 - **Wrap-Up:** Post-game final score, highlights
 
 ## Interaction Patterns

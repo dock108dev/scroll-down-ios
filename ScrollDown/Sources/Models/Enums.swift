@@ -68,7 +68,7 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
 
 // MARK: - Market Type
 /// Betting market type as defined in the OpenAPI spec
-/// Uses RawRepresentable with unknown(String) fallback so new API values never crash decoding.
+/// Uses RawRepresentable with unknown(String) for forward-compatible decoding.
 enum MarketType: RawRepresentable, Codable, Equatable, Hashable {
     case spread
     case moneyline
@@ -213,27 +213,13 @@ enum MarketCategory: String, CaseIterable, Identifiable, Equatable {
 }
 
 extension OddsEntry {
-    /// Resolves the market category — prefers API-provided value, falls back to inference from marketType.
+    /// Market category from API. Asserts if missing — the API should always provide this.
     var resolvedCategory: MarketCategory {
         if let cat = marketCategory, let resolved = MarketCategory(rawValue: cat) {
             return resolved
         }
-        // Infer from marketType
-        switch marketType {
-        case .spread, .moneyline, .total:
-            return .mainline
-        case .playerPoints, .playerRebounds, .playerAssists, .playerThrees,
-             .playerBlocks, .playerSteals, .playerGoals, .playerShotsOnGoal,
-             .playerTotalSaves, .playerPRA:
-            return .playerProp
-        case .teamTotal:
-            return .teamProp
-        case .alternateSpread, .alternateTotal:
-            return .alternate
-        case .unknown(let raw):
-            assertionFailure("Unknown MarketType '\(raw)' — add a case or update API")
-            return .mainline
-        }
+        assertionFailure("OddsEntry missing marketCategory — API should always provide this")
+        return .mainline
     }
 }
 

@@ -325,8 +325,8 @@ extension GameDetailView {
             sections.append(.odds)
         }
 
-        // Wrap-up - always show for completed games (has boxscore)
-        if viewModel.game?.status == .completed || viewModel.game?.status == .final {
+        // Wrap-up - only for truly completed games (with confirmation signals)
+        if viewModel.isGameTrulyCompleted {
             sections.append(.final)
         }
 

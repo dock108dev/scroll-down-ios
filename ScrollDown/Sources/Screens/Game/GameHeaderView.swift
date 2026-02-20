@@ -7,6 +7,7 @@ import SwiftUI
 struct GameHeaderView: View {
     let game: Game
     var scoreRevealed: Bool = false
+    var onRevealScore: (() -> Void)? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -53,6 +54,19 @@ struct GameHeaderView: View {
                         Text("vs")
                             .font(.system(size: 14, weight: .medium, design: .rounded))
                             .foregroundColor(DesignSystem.TextColor.tertiary)
+                        if game.awayScore != nil && game.homeScore != nil {
+                            Text("Hold to reveal score")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.5) {
+                        guard game.awayScore != nil, game.homeScore != nil else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onRevealScore?()
                     }
                 }
 
@@ -368,7 +382,7 @@ enum TeamAbbreviations {
         if let known = abbreviations[teamName] {
             return known
         }
-        // 3. Smart fallback: use the last word (mascot) if short enough,
+        // 3. Derive from name: use the last word (mascot) if short enough,
         //    otherwise the first word — avoids ugly 3-char truncations for NCAAB teams.
         let words = teamName.split(separator: " ")
         if let last = words.last {

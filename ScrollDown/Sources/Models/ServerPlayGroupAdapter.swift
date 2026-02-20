@@ -2,7 +2,7 @@ import Foundation
 
 /// Converts server-provided `ServerTieredPlayGroup` data into `TieredPlayGroup` display models.
 /// When the server provides pre-computed play groupings with summary labels, this adapter
-/// maps them onto the existing tiered display system, avoiding redundant client-side grouping.
+/// maps them onto the tiered display system.
 enum ServerPlayGroupAdapter {
 
     /// Convert server play groups + timeline events into display-ready `TieredPlayGroup` models.

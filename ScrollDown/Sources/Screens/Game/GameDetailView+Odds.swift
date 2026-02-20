@@ -116,6 +116,8 @@ extension GameDetailView {
                 oddsGroupedMainlineTable(markets: markets, books: books)
             } else if selectedOddsCategory == .teamProp {
                 oddsGroupedTeamPropTable(markets: markets, books: books)
+            } else if selectedOddsCategory == .alternate {
+                oddsGroupedAlternateTable(markets: markets, books: books)
             } else {
                 oddsSortedFlatTable(markets: markets, books: books)
             }
@@ -231,7 +233,56 @@ extension GameDetailView {
         }
     }
 
-    // MARK: - Sorted Flat Table (alternates, etc.)
+    // MARK: - Grouped Alternates Table (Alt Spread / Alt Total sections)
+
+    private func oddsGroupedAlternateTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
+        let groups = groupAlternateMarkets(markets)
+
+        return VStack(spacing: 0) {
+            ForEach(Array(groups.enumerated()), id: \.offset) { gIdx, group in
+                oddsCollapsibleGroup(
+                    title: group.title,
+                    markets: group.markets,
+                    books: books,
+                    showHeader: gIdx == 0
+                )
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+    }
+
+    /// Groups alternate markets by market type display name, sorted by line within each
+    private func groupAlternateMarkets(_ markets: [GameDetailViewModel.OddsMarketKey]) -> [(title: String, markets: [GameDetailViewModel.OddsMarketKey])] {
+        var typeOrder: [String] = []
+        var typeGroups: [String: [GameDetailViewModel.OddsMarketKey]] = [:]
+
+        for market in markets {
+            let typeName = market.marketType.displayName
+            if typeGroups[typeName] == nil {
+                typeOrder.append(typeName)
+                typeGroups[typeName] = []
+            }
+            typeGroups[typeName]!.append(market)
+        }
+
+        // Sort each group by line, then side (over before under)
+        for typeName in typeOrder {
+            typeGroups[typeName]!.sort { a, b in
+                let aLine = a.line ?? 0
+                let bLine = b.line ?? 0
+                if aLine != bLine { return aLine < bLine }
+                let aIsOver = a.side?.lowercased() == "over"
+                let bIsOver = b.side?.lowercased() == "over"
+                return aIsOver && !bIsOver
+            }
+        }
+
+        return typeOrder.map { typeName in
+            (title: typeName, markets: typeGroups[typeName]!)
+        }
+    }
+
+    // MARK: - Sorted Flat Table (period, game props, etc.)
 
     private func oddsSortedFlatTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
         let sorted = markets.sorted { a, b in
@@ -389,43 +440,68 @@ extension GameDetailView {
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
 
-    // MARK: - Grouped Player Prop Table (fixed alignment)
+    // MARK: - Grouped Player Prop Table (collapsible per player)
 
     private func oddsGroupedPlayerPropTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
         let grouped = viewModel.groupedPlayerPropMarkets(filtered: markets)
 
         return VStack(spacing: 12) {
             ForEach(Array(grouped.enumerated()), id: \.offset) { _, playerGroup in
+                let collapseKey = "player-\(playerGroup.player)"
+                let isCollapsed = collapsedOddsGroups.contains(collapseKey)
+                let marketCount = playerGroup.statGroups.reduce(0) { $0 + $1.markets.count }
+
                 VStack(spacing: 0) {
-                    // Player name header
-                    Text(playerGroup.player)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundColor(DesignSystem.TextColor.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Player name header — tappable to collapse/expand
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if isCollapsed {
+                                collapsedOddsGroups.remove(collapseKey)
+                            } else {
+                                collapsedOddsGroups.insert(collapseKey)
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(playerGroup.player)
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(DesignSystem.TextColor.primary)
+                            Spacer()
+                            Text("\(marketCount)")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                            Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                        }
                         .padding(.vertical, 6)
                         .padding(.horizontal, DesignSystem.Spacing.elementPadding)
                         .background(DesignSystem.Colors.elevatedBackground)
+                    }
+                    .buttonStyle(.plain)
 
-                    // Stat groups for this player
-                    ForEach(Array(playerGroup.statGroups.enumerated()), id: \.offset) { sgIdx, statGroup in
-                        // Stat type sub-header
-                        if playerGroup.statGroups.count > 1 {
-                            Text(statGroup.statType.uppercased())
-                                .font(.caption2.weight(.semibold))
-                                .foregroundColor(DesignSystem.TextColor.tertiary)
-                                .tracking(0.5)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, DesignSystem.Spacing.elementPadding)
-                                .background(DesignSystem.Colors.alternateRowBackground)
+                    if !isCollapsed {
+                        // Stat groups for this player
+                        ForEach(Array(playerGroup.statGroups.enumerated()), id: \.offset) { sgIdx, statGroup in
+                            // Stat type sub-header
+                            if playerGroup.statGroups.count > 1 {
+                                Text(statGroup.statType.uppercased())
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                                    .tracking(0.5)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+                                    .background(DesignSystem.Colors.alternateRowBackground)
+                            }
+
+                            // Table rows with aligned header + data
+                            oddsTableRows(
+                                markets: statGroup.markets,
+                                books: books,
+                                showBookHeader: sgIdx == 0
+                            )
                         }
-
-                        // Table rows with aligned header + data
-                        oddsTableRows(
-                            markets: statGroup.markets,
-                            books: books,
-                            showBookHeader: sgIdx == 0
-                        )
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))

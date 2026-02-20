@@ -209,7 +209,9 @@ struct GameDetailView: View {
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             // Header - constrained to max-width on iPad
                             if let game = viewModel.game {
-                                GameHeaderView(game: game, scoreRevealed: isGameRead)
+                                GameHeaderView(game: game, scoreRevealed: isGameRead, onRevealScore: {
+                                    readStateStore.markRead(gameId: gameId)
+                                })
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)

@@ -148,7 +148,7 @@ struct FullPlayByPlayView: View {
             }
         }
 
-        // Fallback: sport-aware period naming
+        // Sport-aware period naming
         let sport = viewModel.game?.leagueCode ?? "NBA"
         switch sport {
         case "NCAAB":

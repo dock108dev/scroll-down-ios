@@ -60,6 +60,7 @@ ScrollDown/Sources/
 | `PlayEntry` | Individual play-by-play event with `periodLabel`, `timeLabel`, `tier` |
 | `OddsEntry` | Per-book odds with `marketType`, `marketCategory`, `playerName`, `description` |
 | `MarketCategory` | Category enum for grouping odds: mainline, playerProp, teamProp, alternate, period, gameProp |
+| `MarketType` | Market type enum with `displayName` for human-readable stat labels (Points, Rebounds, etc.) and `isPlayerProp` helper |
 | `TeamSummary` | Team name + color hex values from `/teams` endpoint |
 
 ### FairBet Data Models
@@ -120,12 +121,20 @@ The game detail view includes a cross-book odds comparison section (`GameDetailV
 - **Collapsed by default** — Uses `CollapsibleSectionCard` (Tier 3)
 - **Category tabs** — Horizontal scroll of capsule buttons; only categories with data are shown (`MarketCategory`)
 - **Player search** — TextField shown only on Player Props tab
-- **Cross-book table** — Frozen market label column + horizontally scrollable book columns
+- **Cross-book table** — Frozen market label column (120pt) + horizontally scrollable book columns
 - Book columns use `BookNameHelper` abbreviations (DK, FD, MGM, CZR, etc.)
 - Missing prices show `--`
 - Data comes from `OddsEntry` fields on `GameDetailResponse`
 
-ViewModel properties: `hasOddsData`, `availableOddsCategories`, `oddsBooks`, `oddsMarkets(for:)`, `oddsPrice(for:book:)`
+**Category-specific rendering:**
+- **Mainline** — Markets grouped into collapsible Moneyline / Spread / Total sections. Spreads sorted by absolute line; totals by line with over before under.
+- **Team Props** — Markets grouped by team name (from `description`), each group collapsible.
+- **Player Props** — Grouped by player name with bold name header, then by stat type sub-headers. Uses `MarketType.displayName` for stat labels (Points, Rebounds, etc.)
+- **Alternates / Other** — Flat sorted table (by market type, line, side).
+
+Groups are collapsible via `collapsedOddsGroups: Set<String>` state. Each group header shows market count and a chevron indicator.
+
+ViewModel properties: `hasOddsData`, `availableOddsCategories`, `oddsBooks`, `oddsMarkets(for:)`, `oddsPrice(for:book:)`, `groupedPlayerPropMarkets(filtered:)`
 
 ## Team Stats
 
@@ -161,17 +170,22 @@ Betting odds comparison system that surfaces fair odds and expected value (EV) a
 - `EVCalculator` computes EV per book using fair probabilities and book-specific fee models
 - Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
 
-**Card layout (BetCard):**
+**Card layout (BetCard) — action-first design:**
 - Row 1: Selection name (market-aware: player props show "Name Stat O/U Line") + league badge + market type
 - Row 2: Context line (props/alts show "Away @ Home", mainlines show "vs Opponent") + date/time
 - Divider
-- Fair odds chip with confidence dot (green=high, yellow=medium, orange=low) + optional "PIN {price}" reference
-- Disabled reason text when confidence is `.none`
-- **iPhone (compact):** Vertical decision stack — Fair odds chip + Parlay button, anchor book row (preferred sportsbook or best available), optional best-available disclosure, collapsible "Other books" with MiniBookChips
-- **iPad (regular):** Horizontal scroll — Fair odds chip, separator, scrollable MiniBookChip row sorted by EV, Parlay button
-- Sharp book indicator (star icon) on MiniBookChips when `book.isSharp == true`
+- **iPhone (compact):** Vertical decision stack:
+  1. Primary book row — user's preferred sportsbook (or best available) with "Best" badge, EV%, tappable `BookAbbreviationButton`
+  2. "Best available" callout — only shown when user's preferred book isn't the best
+  3. Fair estimate — tappable card with outline border: "Est. fair +125" + info icon. Opens `FairExplainerSheet`
+  4. Collapsible "Other books" — expandable list of remaining `MiniBookChip`s
+- **iPad (regular):** Horizontal scroll of `MiniBookChip`s sorted by EV + Parlay button, then fair estimate card below
+- FAIR is always **informational, never bettable** — visually distinct from sportsbook prices (outline border, secondary text color)
+- Tapping FAIR opens `FairExplainerSheet` with: fair value header, "What is this?" explanation, devig math (method, true probabilities, opposite side, vig removed %, best EV), per-book implied probability breakdown, confidence tier with description, data sources list, disclaimer
+- `BookAbbreviationButton` — tap to toggle between abbreviated and full sportsbook name
+- Sharp book indicator (star icon) shown in `FairExplainerSheet` implied probability breakdown
 
-`BookNameHelper` provides consistent sportsbook abbreviations (DraftKings→DK, FanDuel→FD, etc.) shared across anchor row and MiniBookChip.
+`BookNameHelper` provides consistent sportsbook abbreviations (DraftKings→DK, FanDuel→FD, etc.) shared across primary book row, MiniBookChip, and odds table.
 
 ## Home View
 

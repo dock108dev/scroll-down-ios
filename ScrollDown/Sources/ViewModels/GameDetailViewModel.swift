@@ -653,7 +653,7 @@ final class GameDetailViewModel: ObservableObject {
         if let openSpread = m.openingSpreadLabel {
             lines.append(WrapUpOddsLine(
                 id: "spread-open", label: "Spread", lineType: "Open", line: openSpread,
-                outcome: m.openingSpreadOutcomeLabel ?? m.spreadOutcomeLabel
+                outcome: m.openingSpreadOutcomeLabel
             ))
         }
         if let closeSpread = m.pregameSpreadLabel {
@@ -667,7 +667,7 @@ final class GameDetailViewModel: ObservableObject {
         if let openTotal = m.openingTotalLabel {
             lines.append(WrapUpOddsLine(
                 id: "total-open", label: "O/U", lineType: "Open", line: openTotal,
-                outcome: m.openingTotalOutcomeLabel ?? m.totalOutcomeLabel
+                outcome: m.openingTotalOutcomeLabel
             ))
         }
         if let closeTotal = m.pregameTotalLabel {
@@ -681,7 +681,7 @@ final class GameDetailViewModel: ObservableObject {
         if let openMLHome = m.openingMLHomeLabel, let openMLAway = m.openingMLAwayLabel {
             lines.append(WrapUpOddsLine(
                 id: "ml-open", label: "ML", lineType: "Open", line: "\(openMLAway) / \(openMLHome)",
-                outcome: m.openingMlOutcomeLabel ?? m.mlOutcomeLabel
+                outcome: m.openingMlOutcomeLabel
             ))
         }
         if let mlHome = m.pregameMLHomeLabel, let mlAway = m.pregameMLAwayLabel {

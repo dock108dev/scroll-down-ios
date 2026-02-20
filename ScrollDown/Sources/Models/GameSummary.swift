@@ -151,12 +151,11 @@ extension GameSummary {
         }()
     }
 
-    /// Status from API string, or derived from available data signals when the API omits it.
+    /// Status from API string, or derived from data when absent.
     var status: GameStatus? {
         if let raw = statusRaw {
-            return GameStatus(rawValue: raw) ?? GameStatus(rawValue: raw.lowercased())
+            return GameStatus(rawValue: raw)
         }
-        // API doesn't always include status — derive from data
         if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
             return .completed
         }

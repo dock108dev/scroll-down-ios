@@ -541,8 +541,8 @@ struct FairExplainerSheet: View {
                 VStack(alignment: .leading, spacing: 20) {
                     fairValueHeader
                     Divider()
-                    explanationSection
                     devigMathSection
+                    explanationSection
                     confidenceSection
                     dataSourcesSection
                     disclaimerSection
@@ -584,7 +584,7 @@ struct FairExplainerSheet: View {
                         Text("Sharp Reference")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("PIN \(FairBetCopy.formatOdds(refPrice))")
+                        Text(FairBetCopy.formatOdds(refPrice))
                             .font(.title3.weight(.semibold))
                             .foregroundColor(.secondary)
                     }
@@ -610,13 +610,33 @@ struct FairExplainerSheet: View {
             Label("What is this?", systemImage: "questionmark.circle")
                 .font(.subheadline.weight(.semibold))
 
-            Text("This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin (vig).")
+            Text(methodExplanation)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
             Text("It's a reference point — not a prediction of what will happen.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private var methodExplanation: String {
+        guard let method = bet.evMethod?.lowercased() else {
+            return "This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin (vig)."
+        }
+
+        if method.contains("pinnacle") && method.contains("devig") {
+            return "Pinnacle is widely regarded as the sharpest sportsbook. This estimate removes Pinnacle's margin (vig) from both sides of the market to derive the true implied probability."
+        } else if method.contains("pinnacle") && method.contains("extrapol") {
+            return "Pinnacle isn't offering this exact line, so the fair price is extrapolated from nearby Pinnacle lines. This is less precise than a direct Pinnacle devig but still anchored to sharp market data."
+        } else if method.contains("paired") || method.contains("vig_removal") || method.contains("vig removal") {
+            return "This estimate pairs the over/under (or home/away) prices from each sportsbook, removes the built-in margin (vig), and uses the median across books as the fair probability."
+        } else if method.contains("median") || method.contains("consensus") {
+            return "This estimate takes the median implied probability across all sportsbooks pricing this market, smoothing out individual book biases to approximate the true odds."
+        } else if method.contains("sharp") {
+            return "This estimate is derived from a sharp (professional) sportsbook's pricing, which typically has lower margins and more accurate odds than recreational books."
+        } else {
+            return "This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin (vig)."
         }
     }
 
@@ -636,7 +656,7 @@ struct FairExplainerSheet: View {
             if let trueProb = bet.trueProb {
                 devigNumbersCard(trueProb: trueProb)
             } else {
-                // Fallback: show what we computed client-side
+                // Client-side computed probability
                 devigNumbersCard(trueProb: fairProb)
             }
 
