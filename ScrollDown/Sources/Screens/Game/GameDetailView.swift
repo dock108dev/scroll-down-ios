@@ -29,6 +29,7 @@ struct GameDetailView: View {
     @State var isOddsExpanded = false  // Tier 3: Supporting
     @State var selectedOddsCategory: MarketCategory = .mainline
     @State var oddsPlayerSearch: String = ""
+    @State var collapsedOddsGroups: Set<String> = []
     @State var isWrapUpExpanded = false  // Tier 4: Reference
     @State var showingFullPlayByPlay = false
     @State var playRowFrames: [Int: CGRect] = [:]

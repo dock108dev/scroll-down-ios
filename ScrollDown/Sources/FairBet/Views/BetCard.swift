@@ -98,15 +98,6 @@ struct BetCard: View {
         confidence != .none && fairAmericanOdds != 0
     }
 
-    /// Brief value indicator based on best book vs fair
-    private var valueIndicator: String? {
-        guard hasFairEstimate, let ev = bestBookEV else { return nil }
-        if ev >= 5 { return "Great price" }
-        if ev >= 2 { return "Good price" }
-        if ev > 0 { return "Fair price" }
-        return nil
-    }
-
     private var valueColor: Color {
         guard let ev = bestBookEV else { return .secondary }
         if ev >= 5 { return FairBetTheme.positive }
@@ -268,35 +259,33 @@ struct BetCard: View {
         }
     }
 
-    /// Fair estimate — plain text, visually distinct from sportsbooks
+    /// Fair estimate — tappable informational element, visually distinct from sportsbooks
     @ViewBuilder
     private var fairReferenceRow: some View {
         if hasFairEstimate {
-            HStack(spacing: 4) {
-                Text("Est. fair")
-                    .font(.caption)
-                    .foregroundColor(Color(.tertiaryLabel))
-                Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(Color(.tertiaryLabel))
+            Button {
+                showFairExplainer = true
+            } label: {
+                HStack(spacing: 6) {
+                    Text("Est. fair")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
 
-                Button {
-                    showFairExplainer = true
-                } label: {
                     Image(systemName: "info.circle")
-                        .font(.caption2)
-                        .foregroundColor(Color(.tertiaryLabel))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
-
-                if let indicator = valueIndicator {
-                    Spacer()
-                    Text(indicator)
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(valueColor)
-                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(FairBetTheme.borderSubtle, lineWidth: 1)
+                )
             }
-            .padding(.top, 2)
+            .buttonStyle(.plain)
         }
     }
 
@@ -358,33 +347,31 @@ struct BetCard: View {
                 }
             }
 
-            // Fair estimate line — informational, below the books
+            // Fair estimate — informational, below the books
             if hasFairEstimate {
-                HStack(spacing: 4) {
-                    Text("Est. fair")
-                        .font(.caption)
-                        .foregroundColor(Color(.tertiaryLabel))
-                    Text(FairBetCopy.formatOdds(fairAmericanOdds))
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(Color(.tertiaryLabel))
+                Button {
+                    showFairExplainer = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Est. fair")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(FairBetCopy.formatOdds(fairAmericanOdds))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.secondary)
 
-                    Button {
-                        showFairExplainer = true
-                    } label: {
                         Image(systemName: "info.circle")
-                            .font(.caption2)
-                            .foregroundColor(Color(.tertiaryLabel))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    .buttonStyle(.plain)
-
-                    if let indicator = valueIndicator {
-                        Text("·")
-                            .foregroundColor(Color(.tertiaryLabel))
-                        Text(indicator)
-                            .font(.caption2.weight(.medium))
-                            .foregroundColor(valueColor)
-                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(FairBetTheme.borderSubtle, lineWidth: 1)
+                    )
                 }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -552,21 +539,12 @@ struct FairExplainerSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Header: the fair value
                     fairValueHeader
-
                     Divider()
-
-                    // What is this?
                     explanationSection
-
-                    // Confidence
+                    devigMathSection
                     confidenceSection
-
-                    // Data sources
                     dataSourcesSection
-
-                    // Disclaimer
                     disclaimerSection
                 }
                 .padding()
@@ -580,8 +558,10 @@ struct FairExplainerSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
+
+    // MARK: - Header
 
     private var fairValueHeader: some View {
         VStack(spacing: 8) {
@@ -589,7 +569,7 @@ struct FairExplainerSheet: View {
                 .font(.headline)
                 .foregroundColor(.primary)
 
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 VStack(spacing: 2) {
                     Text("Estimated Fair Price")
                         .font(.caption)
@@ -623,12 +603,14 @@ struct FairExplainerSheet: View {
         )
     }
 
+    // MARK: - What Is This
+
     private var explanationSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("What is this?", systemImage: "questionmark.circle")
                 .font(.subheadline.weight(.semibold))
 
-            Text("This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin.")
+            Text("This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin (vig).")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -637,6 +619,193 @@ struct FairExplainerSheet: View {
                 .foregroundColor(.secondary)
         }
     }
+
+    // MARK: - Devig Math
+
+    private var devigMathSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("How it was calculated", systemImage: "function")
+                .font(.subheadline.weight(.semibold))
+
+            // Method used
+            if let method = bet.evMethod {
+                methodRow(method)
+            }
+
+            // Show the actual devig numbers if we have them
+            if let trueProb = bet.trueProb {
+                devigNumbersCard(trueProb: trueProb)
+            } else {
+                // Fallback: show what we computed client-side
+                devigNumbersCard(trueProb: fairProb)
+            }
+
+            // Per-book implied probabilities
+            if bet.books.contains(where: { $0.impliedProb != nil }) {
+                impliedProbBreakdown
+            }
+        }
+    }
+
+    private func methodRow(_ method: String) -> some View {
+        HStack(spacing: 6) {
+            Text("Method:")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text(methodDisplayName(method))
+                .font(.caption.weight(.medium))
+                .foregroundColor(.primary)
+        }
+    }
+
+    private func methodDisplayName(_ method: String) -> String {
+        switch method.lowercased() {
+        case "paired_devig", "paired_vig_removal", "paired vig removal":
+            return "Paired vig removal"
+        case "median_consensus", "median consensus":
+            return "Median consensus"
+        case "sharp_reference", "sharp_book":
+            return "Sharp book reference"
+        default:
+            return method.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+
+    private func devigNumbersCard(trueProb: Double) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // This side
+            HStack {
+                Text("This side")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 80, alignment: .leading)
+                Spacer()
+                Text(FairBetCopy.formatProbability(trueProb))
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundColor(.primary)
+                Text("(\(FairBetCopy.formatOdds(fairOdds)))")
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.secondary)
+            }
+
+            // Opposite side (if available)
+            if let oppRef = bet.oppositeReferencePrice {
+                let oppProb = 1.0 - trueProb
+                HStack {
+                    Text("Other side")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 80, alignment: .leading)
+                    Spacer()
+                    Text(FairBetCopy.formatProbability(oppProb))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundColor(.primary)
+                    Text("(\(FairBetCopy.formatOdds(oppRef)))")
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            // Vig removed
+            let rawTotal = impliedProbTotal
+            if rawTotal > 1.0 {
+                HStack {
+                    Text("Vig removed")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 80, alignment: .leading)
+                    Spacer()
+                    Text(String(format: "%.1f%%", (rawTotal - 1.0) * 100))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundColor(FairBetTheme.info)
+                }
+            }
+
+            // Best book EV
+            if let bestEV = evResult?.ev, bestEV != 0 {
+                HStack {
+                    Text("Best EV")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 80, alignment: .leading)
+                    Spacer()
+                    Text(FairBetCopy.formatEV(bestEV))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundColor(bestEV > 0 ? FairBetTheme.positive : FairBetTheme.negative)
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(FairBetTheme.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(FairBetTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    /// Sum of raw implied probabilities from the best books (before devig)
+    private var impliedProbTotal: Double {
+        // Use reference prices if available
+        if let refPrice = evResult?.referencePrice {
+            let thisSideImplied = AmericanOdds(refPrice).impliedProbability
+            if let oppPrice = bet.oppositeReferencePrice {
+                let oppImplied = AmericanOdds(oppPrice).impliedProbability
+                return thisSideImplied + oppImplied
+            }
+            return thisSideImplied + (1.0 - fairProb) // estimate
+        }
+        return 1.0 // can't determine vig
+    }
+
+    /// Breakdown of each book's implied probability
+    private var impliedProbBreakdown: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Book implied probabilities")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            ForEach(bet.books.sorted(by: { ($0.impliedProb ?? 0) < ($1.impliedProb ?? 0) })) { book in
+                if let implied = book.impliedProb {
+                    HStack {
+                        HStack(spacing: 4) {
+                            if book.isSharp == true {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.yellow)
+                            }
+                            Text(book.name)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Text(FairBetCopy.formatOdds(book.price))
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.primary)
+                        Text(FairBetCopy.formatProbability(implied))
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.secondary)
+                            .frame(width: 50, alignment: .trailing)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(FairBetTheme.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(FairBetTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Confidence
 
     private var confidenceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -656,8 +825,18 @@ struct FairExplainerSheet: View {
             Text(confidenceDescription)
                 .font(.caption)
                 .foregroundColor(.secondary)
+
+            // Disabled reason from API
+            if let reason = evResult?.evDisabledReason {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
         }
     }
+
+    // MARK: - Data Sources
 
     private var dataSourcesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -670,19 +849,28 @@ struct FairExplainerSheet: View {
 
             FlowLayout(spacing: 6) {
                 ForEach(bet.books.sorted(by: { $0.name < $1.name })) { book in
-                    Text(book.name)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(FairBetTheme.surfaceSecondary)
-                        )
+                    HStack(spacing: 3) {
+                        if book.isSharp == true {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 7))
+                                .foregroundColor(.yellow)
+                        }
+                        Text(book.name)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(FairBetTheme.surfaceSecondary)
+                    )
                 }
             }
         }
     }
+
+    // MARK: - Disclaimer
 
     private var disclaimerSection: some View {
         Text(FairBetCopy.fullDisclaimer)
@@ -690,6 +878,8 @@ struct FairExplainerSheet: View {
             .foregroundColor(Color(.tertiaryLabel))
             .padding(.top, 8)
     }
+
+    // MARK: - Helpers
 
     private var confidenceColor: Color {
         switch confidence {
