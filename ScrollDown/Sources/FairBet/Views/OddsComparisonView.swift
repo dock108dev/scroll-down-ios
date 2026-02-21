@@ -34,6 +34,19 @@ struct OddsComparisonView: View {
                             )
                         }
 
+                        // Loading more indicator
+                        if viewModel.isLoadingMore {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Loading more bets…")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                        }
+
                         // Bottom padding
                         Color.clear.frame(height: 20)
                     }

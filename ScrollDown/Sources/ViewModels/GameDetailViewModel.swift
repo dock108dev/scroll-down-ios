@@ -350,6 +350,89 @@ final class GameDetailViewModel: ObservableObject {
             logger.error("📋 PBP fetch failed: \(error.localizedDescription, privacy: .public)")
             pbpState = .failed(error.localizedDescription)
         }
+        // Always attempt to build unified timeline — uses pbpEvents if available, falls back to detail.plays
+        buildUnifiedTimelineFromPbp()
+    }
+
+    /// Build unified timeline events from PBP events or detail plays (for live games without flow data).
+    /// Flow-based timeline takes priority; this only runs when flow plays are absent.
+    /// Sources tried in order: pbpEvents (separate PBP endpoint), then detail.plays (main response).
+    func buildUnifiedTimelineFromPbp() {
+        guard flowPlays.isEmpty else { return }
+
+        let sport = detail?.game.leagueCode
+        let homeTeamName = detail?.game.homeTeam
+        let awayTeamName = detail?.game.awayTeam
+
+        // Source 1: Separately fetched PBP events
+        if !pbpEvents.isEmpty {
+            let events = pbpEvents.enumerated().map { index, event -> UnifiedTimelineEvent in
+                var scoringTeam: String?
+                if let home = event.homeScore, let away = event.awayScore {
+                    let prevHome = index > 0 ? (pbpEvents[index - 1].homeScore ?? 0) : 0
+                    let prevAway = index > 0 ? (pbpEvents[index - 1].awayScore ?? 0) : 0
+                    if home != prevHome { scoringTeam = homeTeamName }
+                    else if away != prevAway { scoringTeam = awayTeamName }
+                }
+
+                var dict: [String: Any] = [
+                    "event_type": "pbp",
+                    "event_id": "pbp-\(event.id.stringValue)",
+                    "period": event.period as Any,
+                    "game_clock": event.gameClock as Any,
+                    "description": event.description as Any,
+                    "player_name": event.playerName as Any,
+                    "home_score": event.homeScore as Any,
+                    "away_score": event.awayScore as Any,
+                    "play_type": event.eventType as Any,
+                    "team": (event.team ?? scoringTeam) as Any
+                ]
+                if scoringTeam != nil { dict["tier"] = 1 }
+                return UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+            }
+            serverUnifiedTimeline = events
+            unifiedTimelineState = .loaded
+            logger.info("📋 Built unified timeline from PBP events: \(events.count, privacy: .public)")
+            return
+        }
+
+        // Source 2: Plays from the main game detail response
+        let detailPlays = detail?.plays ?? []
+        guard !detailPlays.isEmpty else { return }
+
+        let events = detailPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
+            var scoringTeam: String?
+            if let home = play.homeScore, let away = play.awayScore {
+                let prevHome = index > 0 ? (detailPlays[index - 1].homeScore ?? 0) : 0
+                let prevAway = index > 0 ? (detailPlays[index - 1].awayScore ?? 0) : 0
+                if home != prevHome { scoringTeam = homeTeamName }
+                else if away != prevAway { scoringTeam = awayTeamName }
+            }
+
+            var dict: [String: Any] = [
+                "event_type": "pbp",
+                "event_id": "play-\(play.playIndex)",
+                "period": play.quarter as Any,
+                "game_clock": play.gameClock as Any,
+                "description": play.description as Any,
+                "player_name": play.playerName as Any,
+                "home_score": play.homeScore as Any,
+                "away_score": play.awayScore as Any,
+                "play_type": play.playType?.rawValue as Any,
+                "team": (play.teamAbbreviation ?? scoringTeam) as Any,
+                "period_label": play.periodLabel as Any,
+                "time_label": play.timeLabel as Any
+            ]
+            if let tier = play.tier {
+                dict["tier"] = tier
+            } else if scoringTeam != nil {
+                dict["tier"] = 1
+            }
+            return UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+        }
+        serverUnifiedTimeline = events
+        unifiedTimelineState = .loaded
+        logger.info("📋 Built unified timeline from detail plays: \(events.count, privacy: .public)")
     }
 
     // MARK: - Flow Computed Properties
@@ -389,6 +472,38 @@ final class GameDetailViewModel: ObservableObject {
 
     var game: Game? {
         detail?.game
+    }
+
+    /// Best available live score from team stats points (most current) or game object (fallback).
+    var liveHomeScore: Int? {
+        if let ts = detail?.teamStats.first(where: { $0.isHome }),
+           let pts = extractPoints(from: ts.stats) {
+            return pts
+        }
+        return game?.homeScore
+    }
+
+    var liveAwayScore: Int? {
+        if let ts = detail?.teamStats.first(where: { !$0.isHome }),
+           let pts = extractPoints(from: ts.stats) {
+            return pts
+        }
+        return game?.awayScore
+    }
+
+    private func extractPoints(from stats: [String: AnyCodable]) -> Int? {
+        // Try nested "points.total" first, then flat keys
+        if let nested = stats["points"]?.value as? [String: Any],
+           let total = nested["total"] as? NSNumber {
+            return total.intValue
+        }
+        for key in ["points", "pts"] {
+            if let val = stats[key]?.value {
+                if let num = val as? NSNumber { return num.intValue }
+                if let str = val as? String, let d = Double(str) { return Int(d) }
+            }
+        }
+        return nil
     }
 
     var highlights: [SocialPostEntry] {
@@ -504,235 +619,6 @@ final class GameDetailViewModel: ObservableObject {
 
     var isNHLDataHealthy: Bool {
         detail?.dataHealth?.isHealthy ?? true
-    }
-
-    // MARK: - Odds Section
-
-    /// All odds entries from the game detail
-    var oddsEntries: [OddsEntry] {
-        detail?.odds ?? []
-    }
-
-    /// Whether we have odds data to show
-    var hasOddsData: Bool {
-        !oddsEntries.isEmpty
-    }
-
-    /// Available categories that have data, in display order
-    var availableOddsCategories: [MarketCategory] {
-        let present = Set(oddsEntries.map { $0.resolvedCategory })
-        return MarketCategory.allCases.filter { present.contains($0) }
-    }
-
-    /// Unique sportsbooks sorted alphabetically
-    var oddsBooks: [String] {
-        Array(Set(oddsEntries.map { $0.book })).sorted()
-    }
-
-    /// Filter odds entries by category
-    func oddsEntries(for category: MarketCategory) -> [OddsEntry] {
-        oddsEntries.filter { $0.resolvedCategory == category }
-    }
-
-    /// Identifies a unique market row (marketType + side + line + playerName + description)
-    struct OddsMarketKey: Hashable, Identifiable {
-        let marketType: MarketType
-        let side: String?
-        let line: Double?
-        let playerName: String?
-        let description: String?
-
-        var id: String {
-            "\(marketType.rawValue)-\(side ?? "")-\(line ?? 0)-\(playerName ?? "")-\(description ?? "")"
-        }
-
-        var displayLabel: String {
-            var parts: [String] = []
-            if let player = playerName {
-                parts.append(player)
-            }
-            // Market description
-            switch marketType {
-            case .spread:
-                if let side, let line {
-                    let sign = line >= 0 ? "+" : ""
-                    parts.append("\(side) \(sign)\(line)")
-                }
-            case .moneyline:
-                if let side { parts.append(side) }
-            case .total:
-                if let side, let line {
-                    parts.append("\(side) \(line)")
-                }
-            case .teamTotal:
-                // Show abbreviated team name from description (e.g., "AUB O 77.5")
-                if let desc = description {
-                    parts.append(TeamAbbreviations.abbreviation(for: desc))
-                }
-                if let side {
-                    let short = side.lowercased() == "over" ? "O" : (side.lowercased() == "under" ? "U" : side)
-                    parts.append(short)
-                }
-                if let line { parts.append(String(line)) }
-            default:
-                if marketType.isPlayerProp {
-                    parts.append(marketType.displayName)
-                }
-                if let side {
-                    let short = side.lowercased() == "over" ? "O" : (side.lowercased() == "under" ? "U" : side)
-                    parts.append(short)
-                }
-                if let line { parts.append(String(line)) }
-            }
-            return parts.isEmpty ? marketType.rawValue : parts.joined(separator: " ")
-        }
-    }
-
-    /// Distinct market rows for a given category
-    func oddsMarkets(for category: MarketCategory) -> [OddsMarketKey] {
-        let entries = oddsEntries(for: category)
-        var seen = Set<OddsMarketKey>()
-        var result: [OddsMarketKey] = []
-        for entry in entries {
-            let key = OddsMarketKey(
-                marketType: entry.marketType,
-                side: entry.side,
-                line: entry.line,
-                playerName: entry.playerName,
-                description: entry.description
-            )
-            if seen.insert(key).inserted {
-                result.append(key)
-            }
-        }
-        return result
-    }
-
-    /// Player prop markets grouped by player name, preserving order.
-    /// Each entry is (playerName, [(statType, [OddsMarketKey])]).
-    func groupedPlayerPropMarkets(filtered: [OddsMarketKey]) -> [(player: String, statGroups: [(statType: String, markets: [OddsMarketKey])])] {
-        var playerOrder: [String] = []
-        var playerGroups: [String: [(statType: String, markets: [OddsMarketKey])]] = [:]
-
-        for market in filtered {
-            let player = market.playerName ?? "Unknown"
-            let statType = market.marketType.displayName
-
-            if playerGroups[player] == nil {
-                playerOrder.append(player)
-                playerGroups[player] = []
-            }
-
-            // Find or create the stat group for this player
-            if let idx = playerGroups[player]!.firstIndex(where: { $0.statType == statType }) {
-                playerGroups[player]![idx].markets.append(market)
-            } else {
-                playerGroups[player]!.append((statType: statType, markets: [market]))
-            }
-        }
-
-        return playerOrder.map { player in
-            (player: player, statGroups: playerGroups[player]!)
-        }
-    }
-
-    /// Cross-book price lookup: returns the American odds price for a given market row + book
-    func oddsPrice(for market: OddsMarketKey, book: String) -> Double? {
-        oddsEntries.first { entry in
-            entry.book == book &&
-            entry.marketType == market.marketType &&
-            entry.side == market.side &&
-            entry.line == market.line &&
-            entry.playerName == market.playerName &&
-            entry.description == market.description
-        }?.price
-    }
-
-    // MARK: - Pregame Odds Lines
-
-    /// Main betting lines for the pregame section — spread, total, moneyline without outcomes
-    struct PregameOddsLine: Identifiable {
-        let id: String
-        let label: String
-        let detail: String
-    }
-
-    var pregameOddsLines: [PregameOddsLine] {
-        guard let detail else { return [] }
-        let metrics = DerivedMetrics(detail.derivedMetrics)
-        var lines: [PregameOddsLine] = []
-        if let spread = metrics.pregameSpreadLabel {
-            lines.append(PregameOddsLine(id: "spread", label: "Spread", detail: spread))
-        }
-        if let total = metrics.pregameTotalLabel {
-            lines.append(PregameOddsLine(id: "total", label: "O/U", detail: total))
-        }
-        if let mlHome = metrics.pregameMLHomeLabel, let mlAway = metrics.pregameMLAwayLabel {
-            lines.append(PregameOddsLine(id: "ml", label: "ML", detail: "\(mlAway) / \(mlHome)"))
-        }
-        return lines
-    }
-
-    // MARK: - Wrap-up Odds Summary
-
-    /// Odds line + outcome for display in the wrap-up section.
-    struct WrapUpOddsLine: Identifiable {
-        let id: String
-        let label: String
-        let lineType: String  // "Open" or "Close"
-        let line: String
-        let outcome: String?
-    }
-
-    /// Build wrap-up odds: opening + closing row for spread, O/U, ML (6 rows).
-    var wrapUpOddsLines: [WrapUpOddsLine] {
-        guard let detail else { return [] }
-        let m = DerivedMetrics(detail.derivedMetrics)
-        var lines: [WrapUpOddsLine] = []
-
-        // Spread – opening then closing
-        if let openSpread = m.openingSpreadLabel {
-            lines.append(WrapUpOddsLine(
-                id: "spread-open", label: "Spread", lineType: "Open", line: openSpread,
-                outcome: m.openingSpreadOutcomeLabel
-            ))
-        }
-        if let closeSpread = m.pregameSpreadLabel {
-            lines.append(WrapUpOddsLine(
-                id: "spread-close", label: "Spread", lineType: "Close", line: closeSpread,
-                outcome: m.spreadOutcomeLabel
-            ))
-        }
-
-        // O/U – opening then closing
-        if let openTotal = m.openingTotalLabel {
-            lines.append(WrapUpOddsLine(
-                id: "total-open", label: "O/U", lineType: "Open", line: openTotal,
-                outcome: m.openingTotalOutcomeLabel
-            ))
-        }
-        if let closeTotal = m.pregameTotalLabel {
-            lines.append(WrapUpOddsLine(
-                id: "total-close", label: "O/U", lineType: "Close", line: closeTotal,
-                outcome: m.totalOutcomeLabel
-            ))
-        }
-
-        // ML – opening then closing
-        if let openMLHome = m.openingMLHomeLabel, let openMLAway = m.openingMLAwayLabel {
-            lines.append(WrapUpOddsLine(
-                id: "ml-open", label: "ML", lineType: "Open", line: "\(openMLAway) / \(openMLHome)",
-                outcome: m.openingMlOutcomeLabel
-            ))
-        }
-        if let mlHome = m.pregameMLHomeLabel, let mlAway = m.pregameMLAwayLabel {
-            lines.append(WrapUpOddsLine(
-                id: "ml-close", label: "ML", lineType: "Close", line: "\(mlAway) / \(mlHome)",
-                outcome: m.mlOutcomeLabel
-            ))
-        }
-
-        return lines
     }
 
     // MARK: - Private Helpers

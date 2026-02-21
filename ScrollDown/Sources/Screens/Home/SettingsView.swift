@@ -3,7 +3,6 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
-    let completedGameIds: [Int]
     @AppStorage("appTheme") private var appTheme = "system"
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
@@ -76,6 +75,19 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Score Display") {
+                Picker("Score Visibility", selection: $readStateStore.scoreRevealMode) {
+                    Text("Spoiler-free (hold to reveal)").tag(ScoreRevealMode.onMarkRead)
+                    Text("Always show scores").tag(ScoreRevealMode.always)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+
+                Text("Spoiler-free hides scores until you long-press. \"Always show\" displays live and final scores automatically.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section("Odds") {
                 Picker("Default Book", selection: $preferredSportsbook) {
                     Text("Best available price").tag("")
@@ -95,32 +107,6 @@ struct SettingsView: View {
                 Text("When enabled, only shows bets with reliable fair odds (proper vig removal from multiple books).")
                     .font(.caption)
                     .foregroundColor(.secondary)
-            }
-
-            if !completedGameIds.isEmpty {
-                Section("Read Status") {
-                    Button {
-                        readStateStore.markAllRead(gameIds: completedGameIds)
-                    } label: {
-                        HStack {
-                            Image(systemName: "checkmark.circle")
-                            Text("Mark All Final as Read")
-                        }
-                    }
-
-                    Button {
-                        readStateStore.markAllUnread(gameIds: completedGameIds)
-                    } label: {
-                        HStack {
-                            Image(systemName: "circle")
-                            Text("Mark All Final as Unread")
-                        }
-                    }
-
-                    Text("\(readStateStore.readCount(for: completedGameIds)) of \(completedGameIds.count) final games marked as read.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
             }
 
             Section {

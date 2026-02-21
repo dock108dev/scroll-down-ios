@@ -117,6 +117,13 @@ extension HomeView {
                 triggerHapticIfNeeded(for: game)
             })
             .contextMenu {
+                if game.status?.isLive == true {
+                    Button {
+                        rowView.updateToLiveScore()
+                    } label: {
+                        Label("Update Score", systemImage: "arrow.clockwise")
+                    }
+                }
                 if game.status?.isFinal == true {
                     if readStateStore.isRead(gameId: game.id) {
                         Button(role: .destructive) {

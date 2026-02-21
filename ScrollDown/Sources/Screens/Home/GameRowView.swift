@@ -13,7 +13,14 @@ enum GameCardState {
 /// Two visual states: active (tappable, full styling) and noData (greyed, non-tappable)
 struct GameRowView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
+    @Environment(\.colorScheme) private var colorScheme
     let game: GameSummary
+
+    /// Cached reading-position scores from ReadingPositionStore (not directly observable by SwiftUI).
+    /// Synced on appear, after direct mutation, and when readStateStore signals external changes.
+    @State private var savedAwayScore: Int?
+    @State private var savedHomeScore: Int?
+    @State private var savedScoreContext: String?
 
     /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
@@ -21,17 +28,35 @@ struct GameRowView: View {
         return readStateStore.isRead(gameId: game.id)
     }
 
-    /// Resolved scores: reading-position scores first, then full scores if game is read
+    /// Resolved scores: cached reading-position scores first, then full scores if game is read or "always show" is on
     private var resolvedScores: (away: Int, home: Int)? {
-        // Check for saved reading-position scores (from scrolling PBP)
-        if let saved = ReadingPositionStore.shared.savedScores(for: game.id) {
-            return saved
+        if let away = savedAwayScore, let home = savedHomeScore {
+            return (away: away, home: home)
         }
-        // Fall back to full game scores if the game has been marked read
-        if isRead, let away = game.awayScore, let home = game.homeScore {
+        let shouldShow = isRead || readStateStore.scoreRevealMode == .always
+        if shouldShow, let away = game.awayScore, let home = game.homeScore {
             return (away: away, home: home)
         }
         return nil
+    }
+
+    /// Context string for saved scores (e.g., "@ Q2 · 2m ago")
+    private var scoreContextText: String? {
+        savedScoreContext
+    }
+
+    /// Updates saved scores to the current live score from the game summary
+    func updateToLiveScore() {
+        guard let away = game.awayScore, let home = game.homeScore else { return }
+        ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+        reloadSavedScores()
+    }
+
+    private func reloadSavedScores() {
+        let saved = ReadingPositionStore.shared.savedScores(for: game.id)
+        savedAwayScore = saved?.away
+        savedHomeScore = saved?.home
+        savedScoreContext = ReadingPositionStore.shared.scoreContext(for: game.id)
     }
 
     /// Computed card state based on data availability — active unless truly empty
@@ -63,25 +88,38 @@ struct GameRowView: View {
 
             // Score display — reading-position scores or final scores for read games
             if let scores = resolvedScores {
-                HStack(spacing: 4) {
-                    Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
-                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
-                    Text("-")
-                        .foregroundColor(.secondary)
-                    Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
+                            .foregroundColor(awayTeamColor)
+                        Text("-")
+                            .foregroundColor(.secondary)
+                        Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                            .foregroundColor(homeTeamColor)
+                    }
+                    .font(.caption.weight(.semibold).monospacedDigit())
+
+                    if let context = scoreContextText {
+                        Text(context)
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                    }
                 }
-                .font(.caption.weight(.semibold).monospacedDigit())
+            } else if game.status?.isLive == true {
+                // Live game with no saved score — hint to hold-to-check
+                Text("Hold to check score")
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
             }
 
-            // Resume context (if user has a saved reading position)
-            if let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
+            // Resume context (if user has a saved reading position but no scores yet)
+            if resolvedScores == nil, let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
                 Text(resumeText)
                     .font(.caption2)
                     .foregroundColor(.orange)
             }
 
-            // Date + optional play/moment counts (debug)
+            // Date display
             Text(dateDisplay)
                 .font(.caption2)
                 .foregroundColor(Color(.secondaryLabel))
@@ -108,6 +146,11 @@ struct GameRowView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(accessibilityHint)
+        .onAppear { reloadSavedScores() }
+        .onReceive(readStateStore.objectWillChange) { _ in
+            // External changes (catch-up, reset) may have updated ReadingPositionStore
+            reloadSavedScores()
+        }
     }
 
     // MARK: - State-Based Appearance
@@ -178,9 +221,22 @@ struct GameRowView: View {
         }
     }
 
-    /// Whether this game has full flow content (not just PBP)
-    private var hasFullFlow: Bool {
-        (game.hasRequiredData == true) || (game.hasPbp == true && game.hasSocial == true)
+    /// Resolves team color using game summary's inline color fields first, then cache fallback
+    private func teamColor(light: String?, dark: String?, teamName: String, opponentName: String, isHome: Bool) -> Color {
+        if let hex = (colorScheme == .dark ? dark : light), !hex.isEmpty {
+            return Color(uiColor: UIColor(hex: hex))
+        }
+        return DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome)
+    }
+
+    private var awayTeamColor: Color {
+        teamColor(light: game.awayTeamColorLight, dark: game.awayTeamColorDark,
+                  teamName: game.awayTeamName, opponentName: game.homeTeamName, isHome: false)
+    }
+
+    private var homeTeamColor: Color {
+        teamColor(light: game.homeTeamColorLight, dark: game.homeTeamColorDark,
+                  teamName: game.homeTeamName, opponentName: game.awayTeamName, isHome: true)
     }
 
     private var accessibilityLabel: String {
@@ -197,12 +253,6 @@ struct GameRowView: View {
     private var accessibilityHint: String {
         cardState.isTappable ? "Double tap to view game" : ""
     }
-}
-
-private enum Layout {
-    static let cardPadding: CGFloat = 14
-    static let contentSpacing: CGFloat = 10
-    static let textSpacing: CGFloat = 4
 }
 
 #Preview("Card States") {

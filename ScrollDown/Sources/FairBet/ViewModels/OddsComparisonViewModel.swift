@@ -29,6 +29,7 @@ final class OddsComparisonViewModel: ObservableObject {
     @Published var marketCategoriesAvailable: [String] = []
     @Published var evDiagnostics: EVDiagnostics?
     @Published var isLoading: Bool = false
+    @Published var isLoadingMore: Bool = false
     @Published var loadingProgress: String = ""
     @Published var loadingFraction: Double = 0
     @Published var errorMessage: String?
@@ -194,81 +195,81 @@ final class OddsComparisonViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Load ALL data from the API (fetch all pages)
+    /// Load data progressively: show first page immediately, then load remaining in background
     func loadAllData() async {
         let isInitialLoad = allBets.isEmpty
         isLoading = true
         errorMessage = nil
+        let limit = 500
 
-        // Only show progress on initial load — preserve existing data during refresh
         if isInitialLoad {
             loadingProgress = "Loading bets…"
             loadingFraction = 0
         }
 
         do {
-            var allFetchedBets: [APIBet] = []
-            var offset = 0
-            let limit = 500 // Max per request
-            var hasMore = true
-            var totalExpected = 0
+            // Phase 1: Fetch first page → display immediately
+            let firstResponse = try await apiClient.fetchOdds(
+                league: nil,
+                limit: limit,
+                offset: 0
+            )
 
-            while hasMore {
-                let response = try await apiClient.fetchOdds(
-                    league: nil, // Fetch all leagues
-                    limit: limit,
-                    offset: offset
-                )
+            allBets = firstResponse.bets
+            booksAvailable = firstResponse.booksAvailable
+            gamesAvailable = firstResponse.gamesAvailable ?? []
+            marketCategoriesAvailable = firstResponse.marketCategoriesAvailable ?? []
+            evDiagnostics = firstResponse.evDiagnostics
 
-                allFetchedBets.append(contentsOf: response.bets)
-                booksAvailable = response.booksAvailable
-                totalExpected = max(totalExpected, response.total)
-
-                // Store metadata from first page
-                if offset == 0 {
-                    gamesAvailable = response.gamesAvailable ?? []
-                    marketCategoriesAvailable = response.marketCategoriesAvailable ?? []
-                    evDiagnostics = response.evDiagnostics
-                }
-
-                // Update progress fraction
-                if isInitialLoad && totalExpected > 0 {
-                    loadingFraction = min(Double(allFetchedBets.count) / Double(totalExpected), 0.9)
-                }
-
-                // Check if we got all data
-                if response.bets.count < limit || allFetchedBets.count >= response.total {
-                    hasMore = false
-                } else {
-                    offset += limit
-                }
-            }
-
-            allBets = allFetchedBets
-
-            if isInitialLoad {
-                loadingFraction = 0.95
-            }
-
-            // Pre-compute pairs once (O(n) instead of O(n²))
+            // Compute and display first page results immediately
             cachedPairs = BetPairingService.pairBets(allBets)
-
-            // Pre-compute all EVs once
             computeAllEVs()
-
             applyFilters()
 
-            if isInitialLoad {
-                loadingFraction = 1.0
+            isLoading = false
+            loadingProgress = ""
+            loadingFraction = 0
+
+            let totalExpected = firstResponse.total
+
+            // Phase 2: Load remaining pages in background
+            if firstResponse.bets.count >= limit && firstResponse.bets.count < totalExpected {
+                isLoadingMore = true
+                defer { isLoadingMore = false }
+                var offset = limit
+
+                while offset < totalExpected {
+                    guard !Task.isCancelled else { break }
+
+                    let response = try await apiClient.fetchOdds(
+                        league: nil,
+                        limit: limit,
+                        offset: offset
+                    )
+
+                    guard !response.bets.isEmpty else { break }
+
+                    allBets.append(contentsOf: response.bets)
+                    offset += response.bets.count
+
+                    // Incrementally update caches and display
+                    cachedPairs = BetPairingService.pairBets(allBets)
+                    computeAllEVs()
+                    applyFilters()
+
+                    if response.bets.count < limit { break }
+                }
             }
 
         } catch {
-            errorMessage = error.localizedDescription
+            if allBets.isEmpty {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+            isLoadingMore = false
+            loadingProgress = ""
+            loadingFraction = 0
         }
-
-        isLoading = false
-        loadingProgress = ""
-        loadingFraction = 0
     }
 
     /// Refresh all data

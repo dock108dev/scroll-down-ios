@@ -125,6 +125,17 @@ See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 - Per-book EV using fair probability via `EVCalculator`
 - Fee model supports `percentOnWinnings` for future P2P/exchange integration
 
+**Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages incrementally in the background. A "Loading more bets…" indicator shows at the bottom of the list during background loading.
+
+**FairExplainerSheet — "Show the Math":**
+`FairExplainerSheet` (opened by tapping the FAIR card on any bet) presents a numbered step-by-step math walkthrough:
+1. Convert reference odds to implied probabilities (total > 100% reveals the vig)
+2. Identify the vig (total implied vs. 100%)
+3. Remove the vig via normalization to get fair probability and odds
+4. Calculate EV at the best book price with full dollar math
+
+Median/consensus bets simplify to 2 steps. Missing data (no opposite reference price, no EV) falls back gracefully. Per-book implied probabilities are available in a disclosure group below the walkthrough.
+
 ## Configuration
 
 The app uses `AppConfig` to manage runtime behavior:
@@ -172,7 +183,7 @@ User returns to game ───┘
                         └─ No position?   → Start from top
 ```
 
-`ReadingPositionStore` is the SSOT for resume position. Resume text ("Stopped at Q3 4:32") displays in the game header and home card.
+`ReadingPositionStore` is the SSOT for resume position and saved scores. Resume text ("Stopped at Q3 4:32") displays in the game header and home card. Saved scores display with context ("@ Q2 · 2m ago") in both locations. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `scoreContext(for:)`.
 
 ## Score Reveal Preference
 
@@ -180,11 +191,10 @@ User returns to game ───┘
 
 | Mode | Behavior |
 |------|----------|
-| `.onMarkRead` | Show score only after explicitly marking as read (default) |
-| `.resumed` | Show score if user has previously opened the game |
-| `.always` | Always show scores |
+| `.onMarkRead` | Spoiler-free: show score only after explicitly marking as read or hold-to-reveal (default) |
+| `.always` | Always show scores on cards and headers |
 
-Live games always show scores regardless of preference.
+Hold-to-reveal (long press on score area) lets users check scores without changing preference. Live games support hold-to-update for fresh scores.
 
 ## Game Detail View Structure
 

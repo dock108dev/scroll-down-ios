@@ -4,6 +4,54 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Score UX, Spoiler Actions, FairBet Progressive Loading, Dead Code Cleanup (Feb 21, 2025)
+
+**Score display & reveal improvements:**
+- Hold-to-reveal (long press on score area) shows scores without changing user preference
+- Hold-to-update for live games fetches fresh scores with haptic feedback
+- Score context display ("@ Q2 · 2m ago") in game header and home cards
+- Persisted scores now restore correctly on game re-entry (decoupled from play-index validation)
+- Home page cards show team-colored scores when "always show" mode is active
+
+**Team colors on home page cards:**
+- `GameRowView` now resolves team colors directly from `GameSummary` inline hex fields (light/dark), falling back to `TeamColorCache`
+- Reordered `injectTeamMetadataFromSummaries()` to run before `applyHomeSectionResults()` so cache is populated before SwiftUI renders
+
+**Spoiler-free actions (`.onMarkRead` mode):**
+- "Catch up to live" button — bulk-reveals all scores (marks finals read + saves live scores)
+- "Reset" button — undoes catch-up (marks all unread + clears saved reading positions/scores)
+- iPad: icon buttons (eye/eye.slash) in filter bar alongside refresh
+- iPhone: labeled pill buttons in dedicated action row above game list, refresh relocated there
+
+**FairBet progressive loading:**
+- First 500-bet page shown immediately; remaining pages load incrementally in background
+- "Loading more bets…" indicator at bottom of list during background fetch
+- New `isLoadingMore` published property on `OddsComparisonViewModel`
+
+**FairExplainerSheet redesigned — "Show the Math":**
+- Replaced opaque results display (This side: 50%, Other side: 50%, Vig removed: 4.8%, Best EV) with numbered step-by-step math walkthrough
+- Step 1: Convert raw reference odds to implied probabilities (total > 100% shows the vig)
+- Step 2: Identify the vig (total implied vs. 100%)
+- Step 3: Remove the vig via normalization division to get fair probability and fair odds
+- Step 4: Calculate EV at best book price with full dollar math (win/lose scenarios, EV formula)
+- Median/consensus bets simplify to 2 steps (median probability + EV)
+- Graceful fallbacks: missing opposite reference price, no EV data, minimal data
+- Per-book implied probabilities moved into a DisclosureGroup ("All book probabilities")
+- Replaced `impliedProbTotal` with clearer `rawImpliedThis`/`rawImpliedOther`/`rawImpliedTotal`/`vigPercent` computed helpers
+- Each step uses consistent card styling with numbered circle badge
+
+**Settings cleanup:**
+- Removed "Read Status" section (Mark All Read/Unread buttons) — replaced by home page catch-up/reset
+- Score Display preference (spoiler-free vs always show) remains
+
+**Dead code removed (SSOT enforcement):**
+- `ScoreRevealMode.resumed` enum case (not selectable from Settings, only referenced by deleted switch arm)
+- `GameHeaderView.hasReadingPosition` property (only consumer was `.resumed`)
+- `GameHeaderView.metadataText` computed property (never referenced in view body)
+- `GameRowView.hasFullFlow` property and `Layout` enum (unused)
+
+**Files changed:** `FairExplainerSheet.swift`, `GameRowView.swift`, `GameHeaderView.swift`, `GameDetailView.swift`, `GameDetailView+Helpers.swift`, `GameDetailView+Timeline.swift`, `HomeView.swift`, `HomeView+DataLoading.swift`, `HomeView+Sections.swift`, `SettingsView.swift`, `OddsComparisonViewModel.swift`, `OddsComparisonView.swift`, `GameDetailViewModel.swift`, `ReadingPositionStore.swift`, `Enums.swift`
+
 ### Added — Live Data Support, Read State Gating & Reading Position (Feb 2025)
 
 **GameStatus enum alignment:**
@@ -17,9 +65,9 @@ Notable changes to the Scroll Down iOS app.
 - Removed nil default on status parameter
 
 **Score reveal preference:**
-- `ScoreRevealMode` enum: `.resumed`, `.always`, `.onMarkRead` (default)
+- `ScoreRevealMode` enum: `.always`, `.onMarkRead` (default) — `.resumed` later removed as dead code
 - Stored in `ReadStateStore.scoreRevealMode` (UserDefaults-backed)
-- Live games always show scores regardless of preference
+- Live games support hold-to-update for fresh scores
 
 **Live game experience:**
 - `GameDetailViewModel` auto-polls every ~45s for live games (`startLivePolling`/`stopLivePolling`)
@@ -63,7 +111,7 @@ Notable changes to the Scroll Down iOS app.
 - iPad: horizontal book scroll → fair estimate card below
 - FAIR displayed as tappable outlined card ("Est. fair +125" + info icon) — visually distinct from sportsbooks
 - Removed confidence dots and Pinnacle reference price from main card
-- New `FairExplainerSheet` with devig math: method, true probabilities, opposite side, vig removed %, best EV, per-book implied probabilities
+- New `FairExplainerSheet` extracted from BetCard (later redesigned into step-by-step math walkthrough — see Unreleased)
 - New `BookAbbreviationButton` — tap to toggle abbreviated/full sportsbook name
 - Removed "Fair price"/"Good price"/"Great price" value indicator text
 

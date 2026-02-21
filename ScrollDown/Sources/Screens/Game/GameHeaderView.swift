@@ -9,10 +9,10 @@ struct GameHeaderView: View {
     var scoreRevealed: Bool = false
     var onRevealScore: (() -> Void)? = nil
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
-    var hasReadingPosition: Bool = false
     var resumeText: String? = nil
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
+    var scoreContextText: String? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -27,19 +27,17 @@ struct GameHeaderView: View {
         switch scoreRevealMode {
         case .always:
             return game.awayScore != nil && game.homeScore != nil
-        case .resumed:
-            return hasReadingPosition && game.awayScore != nil && game.homeScore != nil
         case .onMarkRead:
             return false
         }
     }
 
-    /// Resolved away score: display score (from scroll position) takes priority over game score
+    /// Resolved away score: display score (from scroll position or live reveal) takes priority over game score
     private var resolvedAwayScore: Int? {
         displayAwayScore ?? game.awayScore
     }
 
-    /// Resolved home score: display score (from scroll position) takes priority over game score
+    /// Resolved home score: display score (from scroll position or live reveal) takes priority over game score
     private var resolvedHomeScore: Int? {
         displayHomeScore ?? game.homeScore
     }
@@ -80,6 +78,24 @@ struct GameHeaderView: View {
                                 .font(.title2.weight(.bold).monospacedDigit())
                                 .foregroundColor(homeColor)
                         }
+                        // Score context (period + relative time) for live games
+                        if game.status.isLive, let context = scoreContextText {
+                            Text(context)
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
+                        }
+                        // "Hold to update" hint for live games with earned scores
+                        if game.status.isLive && !scoreRevealed {
+                            Text("Hold to update")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.5) {
+                        guard game.status.isLive else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onRevealScore?()
                     }
                 } else {
                     VStack(spacing: 2) {
@@ -206,14 +222,6 @@ struct GameHeaderView: View {
         case .unknown:
             return .gray
         }
-    }
-
-    // MARK: - Metadata Text
-    /// Format: "FINAL · JAN 22" or "UPCOMING · JAN 22"
-    private var metadataText: String {
-        let statusText = gameStatusText
-        let dateText = formattedGameDate
-        return "\(statusText) · \(dateText)"
     }
 
     private var gameStatusText: String {

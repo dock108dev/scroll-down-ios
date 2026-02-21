@@ -172,10 +172,34 @@ extension GameDetailView {
         viewModel.unifiedTimelineEvents.filter { $0.period == nil && $0.eventType == .tweet }
     }
 
-    /// Collapsible card for a single quarter
+    /// Collapsible card for a single quarter — uses the same tiered layout as FullPlayByPlayView
     private func unifiedQuarterCard(_ group: QuarterGroup) -> some View {
-        CollapsibleQuarterCard(
-            title: "\(quarterTitle(group.quarter, serverLabel: group.events.first?.periodLabel)) (\(group.events.count) plays)",
+        let tieredGroups: [TieredPlayGroup] = {
+            if viewModel.hasServerGroupings {
+                let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
+                    guard event.id.hasPrefix("play-") else { return nil }
+                    return Int(event.id.dropFirst(5))
+                })
+                let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
+                    !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
+                }
+                if !relevantServerGroups.isEmpty {
+                    return ServerPlayGroupAdapter.convert(
+                        serverGroups: relevantServerGroups,
+                        events: group.events
+                    )
+                }
+            }
+            return TieredPlayGrouper.group(events: group.events)
+        }()
+
+        let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
+        let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
+        let tier3GroupCount = tieredGroups.filter { $0.tier == .tertiary }.count
+
+        return CollapsibleQuarterCard(
+            title: quarterTitle(group.quarter, serverLabel: group.events.first?.periodLabel),
+            subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
             isExpanded: Binding(
                 get: { !collapsedQuarters.contains(group.quarter) },
                 set: { isExpanded in
@@ -189,14 +213,13 @@ extension GameDetailView {
                 }
             )
         ) {
-            VStack(spacing: DesignSystem.Spacing.list) {
-                ForEach(group.events) { event in
-                    UnifiedTimelineRowView(
-                        event: event,
+            LazyVStack(spacing: 6) {
+                ForEach(tieredGroups) { tieredGroup in
+                    TieredPlayGroupView(
+                        group: tieredGroup,
                         homeTeam: viewModel.game?.homeTeam ?? "Home",
                         awayTeam: viewModel.game?.awayTeam ?? "Away"
                     )
-                    .id(event.id)
                 }
             }
         }
