@@ -62,7 +62,7 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 
 **Score reveal:** User preference via `ScoreRevealMode` (`.onMarkRead` default). Live games always show scores regardless of preference.
 
-**Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. Content switches from PBP (live) to Game Flow (final) automatically.
+**Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. The view re-renders based on the updated status — if flow data was already loaded it displays, otherwise PBP remains as fallback. A "PBP" button in the section nav bar provides access to the full play-by-play sheet whenever Game Flow is the primary view.
 
 **Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only) tracks where the user stopped reading a game's PBP. Shows "Stopped at Q3 4:32" resume text in game header and home card.
 

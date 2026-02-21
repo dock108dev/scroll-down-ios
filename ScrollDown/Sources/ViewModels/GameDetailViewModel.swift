@@ -150,6 +150,7 @@ final class GameDetailViewModel: ObservableObject {
         guard !isLivePolling else { return }
         isLivePolling = true
         pollingTask = Task { [weak self] in
+            // Sleep-first: caller just loaded fresh data, so wait before first poll
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 45_000_000_000) // ~45 seconds
                 guard !Task.isCancelled else { break }
@@ -435,7 +436,7 @@ final class GameDetailViewModel: ObservableObject {
         let allApiKeys = Set(home.stats.keys).union(Set(away.stats.keys))
         let unmatched = allApiKeys.subtracting(allKnownKeys)
         if !unmatched.isEmpty {
-            print("⚠️ Unmatched team stat keys: \(unmatched.sorted())")
+            logger.debug("⚠️ Unmatched team stat keys: \(unmatched.sorted(), privacy: .public)")
         }
         #endif
 

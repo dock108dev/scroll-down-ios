@@ -86,7 +86,7 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 - [ ] Live game detail shows PBP as primary content (not Game Flow)
 - [ ] Auto-polling starts for live games (~45s interval)
 - [ ] Polling stops on dismiss or game transitioning to final
-- [ ] Game transitioning to final switches from PBP to Game Flow
+- [ ] Game transitioning to final re-renders view based on new status (shows flow if loaded, PBP as fallback)
 - [ ] Header shows pulsing LIVE badge with live score
 - [ ] Resume prompt appears when returning to a game with saved position
 

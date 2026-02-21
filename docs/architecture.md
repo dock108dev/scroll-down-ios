@@ -148,7 +148,8 @@ See [AGENTS.md — Game Status & Lifecycle](../AGENTS.md) for the full `GameStat
 Key behavior:
 - **Live games:** ViewModel polls every ~45s (`startLivePolling`), shows PBP as primary content, auto-stops on dismiss or final transition
 - **Final games:** Shows Game Flow as primary content (falls back to PBP if no flow data)
-- **Content switching:** When a live game transitions to final, polling stops and the view switches from PBP to Game Flow automatically
+- **Content switching:** When a live game transitions to final, polling stops automatically. The view re-renders based on the updated `game.status` — if flow data was already loaded, it displays; otherwise PBP remains as fallback. No automatic flow fetch is triggered on transition.
+- **PBP access:** A "PBP" button in the section navigation bar (top right) opens the full play-by-play sheet. Available whenever PBP or unified timeline data exists, including when Game Flow is the primary view.
 - **Read state gating:** `markRead` requires a `GameStatus` and silently ignores non-final games
 
 ## Reading Position Tracking
