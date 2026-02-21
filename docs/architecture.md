@@ -141,17 +141,62 @@ AppConfig.shared.gameService  // Returns appropriate service implementation
 - **Snapshot mode:** Frozen to user-specified date
 - **Live mode:** Real system time
 
+## Game Status Lifecycle
+
+See [AGENTS.md — Game Status & Lifecycle](../AGENTS.md) for the full `GameStatus` enum, computed properties (`isLive`, `isFinal`, `isPregame`), and SSOT rules.
+
+Key behavior:
+- **Live games:** ViewModel polls every ~45s (`startLivePolling`), shows PBP as primary content, auto-stops on dismiss or final transition
+- **Final games:** Shows Game Flow as primary content (falls back to PBP if no flow data)
+- **Content switching:** When a live game transitions to final, polling stops automatically. The view re-renders based on the updated `game.status` — if flow data was already loaded, it displays; otherwise PBP remains as fallback. No automatic flow fetch is triggered on transition.
+- **PBP access:** A "PBP" button in the section navigation bar (top right) opens the full play-by-play sheet. Available whenever PBP or unified timeline data exists, including when Game Flow is the primary view.
+- **Read state gating:** `markRead` requires a `GameStatus` and silently ignores non-final games
+
+## Reading Position Tracking
+
+Local-only (UserDefaults-backed) tracking of where the user stopped reading a game's PBP.
+
+```
+User scrolls PBP → updateResumeMarkerIfNeeded()
+                        │
+                        ▼
+              ReadingPositionStore.save()
+                  (playIndex, period, gameClock, labels)
+                        │
+User returns to game ───┘
+                        │
+                        ▼
+              loadResumeMarkerIfNeeded()
+                        │
+                        ├─ Position found? → Show resume prompt
+                        └─ No position?   → Start from top
+```
+
+`ReadingPositionStore` is the SSOT for resume position. Resume text ("Stopped at Q3 4:32") displays in the game header and home card.
+
+## Score Reveal Preference
+
+`ScoreRevealMode` (stored in `ReadStateStore.scoreRevealMode`):
+
+| Mode | Behavior |
+|------|----------|
+| `.onMarkRead` | Show score only after explicitly marking as read (default) |
+| `.resumed` | Show score if user has previously opened the game |
+| `.always` | Always show scores |
+
+Live games always show scores regardless of preference.
+
 ## Game Detail View Structure
 
 `GameDetailView` is split into focused extensions. See [AGENTS.md](../AGENTS.md) for the full file table.
 
 Sections render conditionally based on game status and data availability:
 - **Pregame (Overview):** Matchup context
-- **Timeline:** Flow blocks (primary) or PBP grouped by period
+- **Timeline:** Live PBP (for live games) or Flow blocks (for final games); falls back to PBP if no flow data
 - **Stats:** Player stats + team comparison
 - **NHL Stats:** Sport-specific skater/goalie tables
 - **Odds:** Cross-book comparison table with category tabs and collapsible grouped rendering (mainline grouped by Moneyline/Spread/Total, team props by team, player props by player+stat) — shown when `hasOddsData` is true
-- **Wrap-Up:** Post-game final score, highlights
+- **Wrap-Up:** Post-game final score, highlights (only for truly completed games with confirmation signals)
 
 ## Interaction Patterns
 

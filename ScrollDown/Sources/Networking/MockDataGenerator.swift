@@ -64,7 +64,7 @@ enum MockDataGenerator {
 
             let matchup = randomMatchup(for: idStart)
             let status: GameStatus = allScheduled ? .scheduled : (allFinal ? .completed : .scheduled)
-            let hasScores = status == .completed
+            let hasScores = status.isFinal
 
             let game = GameSummary(
                 id: idStart,
@@ -114,8 +114,8 @@ enum MockDataGenerator {
             }
 
             let matchup = randomMatchup(for: idStart)
-            let hasScores = status == .completed
-            let isLive = status == .inProgress
+            let hasScores = status.isFinal
+            let isLive = status.isLive
 
             let game = GameSummary(
                 id: idStart,
@@ -184,9 +184,7 @@ enum MockDataGenerator {
 
     static func generateGameDetail(from summary: GameSummary) -> GameDetailResponse {
         let status = summary.status ?? .scheduled
-        let isCompleted = status == .completed
-        let isLive = status == .inProgress
-        let hasData = isCompleted || isLive
+        let hasData = status.isFinal || status.isLive
 
         // Build the full Game object
         let game = Game(
@@ -220,7 +218,7 @@ enum MockDataGenerator {
         )
 
         let isNHL = summary.league == "NHL"
-        let plays = hasData ? generatePlays(home: summary.homeTeamName, away: summary.awayTeamName, isComplete: isCompleted, isNHL: isNHL) : []
+        let plays = hasData ? generatePlays(home: summary.homeTeamName, away: summary.awayTeamName, isComplete: status.isFinal, isNHL: isNHL) : []
 
         // Generate NHL-specific stats if this is an NHL game
         let nhlSkaters: [NHLSkaterStat]? = isNHL && hasData ? generateNHLSkaters(home: summary.homeTeamName, away: summary.awayTeamName) : nil

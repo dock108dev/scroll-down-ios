@@ -29,12 +29,76 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(game.status, .scheduled)
     }
 
-    func testGameStatusIsCompleted() {
-        XCTAssertTrue(GameStatus.completed.isCompleted)
-        XCTAssertTrue(GameStatus.final.isCompleted)
-        XCTAssertFalse(GameStatus.scheduled.isCompleted)
-        XCTAssertFalse(GameStatus.inProgress.isCompleted)
-        XCTAssertFalse(GameStatus.postponed.isCompleted)
+    func testGameStatusIsFinal() {
+        XCTAssertTrue(GameStatus.completed.isFinal)
+        XCTAssertTrue(GameStatus.final.isFinal)
+        XCTAssertTrue(GameStatus.archived.isFinal)
+        XCTAssertFalse(GameStatus.scheduled.isFinal)
+        XCTAssertFalse(GameStatus.pregame.isFinal)
+        XCTAssertFalse(GameStatus.inProgress.isFinal)
+        XCTAssertFalse(GameStatus.live.isFinal)
+        XCTAssertFalse(GameStatus.postponed.isFinal)
+    }
+
+    func testGameStatusIsLive() {
+        XCTAssertTrue(GameStatus.live.isLive)
+        XCTAssertTrue(GameStatus.inProgress.isLive)
+        XCTAssertFalse(GameStatus.completed.isLive)
+        XCTAssertFalse(GameStatus.scheduled.isLive)
+        XCTAssertFalse(GameStatus.pregame.isLive)
+    }
+
+    func testGameStatusIsPregame() {
+        XCTAssertTrue(GameStatus.pregame.isPregame)
+        XCTAssertTrue(GameStatus.scheduled.isPregame)
+        XCTAssertFalse(GameStatus.live.isPregame)
+        XCTAssertFalse(GameStatus.completed.isPregame)
+    }
+
+    func testGameStatusDecodingLive() throws {
+        let json = """
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"live"}
+        """.data(using: .utf8)!
+        let game = try JSONDecoder().decode(Game.self, from: json)
+        XCTAssertEqual(game.status, .live)
+        XCTAssertTrue(game.status.isLive)
+    }
+
+    func testGameStatusDecodingPregame() throws {
+        let json = """
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"pregame"}
+        """.data(using: .utf8)!
+        let game = try JSONDecoder().decode(Game.self, from: json)
+        XCTAssertEqual(game.status, .pregame)
+        XCTAssertTrue(game.status.isPregame)
+    }
+
+    func testGameStatusDecodingArchived() throws {
+        let json = """
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"archived"}
+        """.data(using: .utf8)!
+        let game = try JSONDecoder().decode(Game.self, from: json)
+        XCTAssertEqual(game.status, .archived)
+        XCTAssertTrue(game.status.isFinal)
+    }
+
+    func testInProgressStillDecodes() throws {
+        let json = """
+        {"id":1,"leagueCode":"NBA","season":2025,"gameDate":"2025-01-01T19:30:00Z","homeTeam":"A","awayTeam":"B","status":"in_progress"}
+        """.data(using: .utf8)!
+        let game = try JSONDecoder().decode(Game.self, from: json)
+        XCTAssertEqual(game.status, .inProgress)
+        XCTAssertTrue(game.status.isLive)
+    }
+
+    func testIsCompletedPropertyRemoved() {
+        // Negative test: isCompleted should not exist on GameStatus.
+        // If someone re-adds it, this test documents that isFinal is the SSOT.
+        // The compiler enforces removal — if isCompleted existed, callers would compile.
+        // This test verifies isFinal covers the old isCompleted semantics.
+        XCTAssertTrue(GameStatus.completed.isFinal, "isFinal must cover .completed")
+        XCTAssertTrue(GameStatus.final.isFinal, "isFinal must cover .final")
+        XCTAssertTrue(GameStatus.archived.isFinal, "isFinal must also cover .archived — the gap isCompleted had")
     }
 
     // MARK: - MarketType

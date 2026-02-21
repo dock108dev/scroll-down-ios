@@ -213,16 +213,11 @@ extension GameDetailView {
     }
 
     func loadResumeMarkerIfNeeded() {
-        guard !hasLoadedResumeMarker else {
-            return
-        }
-        guard viewModel.detail != nil else {
-            return
-        }
+        guard !hasLoadedResumeMarker else { return }
+        guard viewModel.detail != nil else { return }
         hasLoadedResumeMarker = true
-        guard let storedPlayIndex = UserDefaults.standard.object(forKey: resumeMarkerKey) as? Int else {
-            return
-        }
+        guard let position = ReadingPositionStore.shared.load(gameId: gameId) else { return }
+        let storedPlayIndex = position.playIndex
         guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
             clearSavedResumeMarker()
             return
@@ -233,27 +228,38 @@ extension GameDetailView {
     }
 
     func updateResumeMarkerIfNeeded() {
-        guard isResumeTrackingEnabled else {
-            return
-        }
-        guard let play = currentViewingPlay else {
-            return
-        }
+        guard isResumeTrackingEnabled else { return }
+        guard let play = currentViewingPlay else { return }
         let playIndex = play.playIndex
-        guard playIndex != savedResumePlayIndex else {
-            return
-        }
+        guard playIndex != savedResumePlayIndex else { return }
         savedResumePlayIndex = playIndex
-        UserDefaults.standard.set(playIndex, forKey: resumeMarkerKey)
+
+        let periodLabel: String? = {
+            guard let quarter = play.quarter else { return nil }
+            return quarterOrdinal(quarter)
+        }()
+        let timeLabel: String? = {
+            guard let quarter = play.quarter else { return nil }
+            let ordinal = quarterOrdinal(quarter)
+            if let clock = play.gameClock {
+                return "\(ordinal) \(clock)"
+            }
+            return ordinal
+        }()
+        let position = ReadingPosition(
+            playIndex: playIndex,
+            period: play.quarter,
+            gameClock: play.gameClock,
+            periodLabel: periodLabel,
+            timeLabel: timeLabel,
+            savedAt: Date()
+        )
+        ReadingPositionStore.shared.save(gameId: gameId, position: position)
     }
 
     func clearSavedResumeMarker() {
         savedResumePlayIndex = nil
-        UserDefaults.standard.removeObject(forKey: resumeMarkerKey)
-    }
-
-    var resumeMarkerKey: String {
-        "game.resume.playIndex.\(gameId)"
+        ReadingPositionStore.shared.clear(gameId: gameId)
     }
 
     func scrollToQuarterHeader(_ quarter: Int, using proxy: ScrollViewProxy) {
@@ -305,8 +311,8 @@ extension GameDetailView {
             sections.append(.overview)
         }
 
-        // Game Flow - only show when flow data exists
-        if viewModel.hasFlowData {
+        // Game Flow / Live PBP - show when flow data exists or for live games with PBP
+        if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
             sections.append(.timeline)
         }
 

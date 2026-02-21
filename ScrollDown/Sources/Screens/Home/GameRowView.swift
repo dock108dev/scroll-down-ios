@@ -15,9 +15,9 @@ struct GameRowView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
     let game: GameSummary
 
-    /// Whether the user has read this game's wrap-up
+    /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
-        guard game.status?.isCompleted == true else { return false }
+        guard game.status?.isFinal == true else { return false }
         return readStateStore.isRead(gameId: game.id)
     }
 
@@ -59,6 +59,13 @@ struct GameRowView: View {
                         .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
                 }
                 .font(.caption.weight(.semibold).monospacedDigit())
+            }
+
+            // Resume context (if user has a saved reading position)
+            if let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
+                Text(resumeText)
+                    .font(.caption2)
+                    .foregroundColor(.orange)
             }
 
             // Date + optional play/moment counts (debug)

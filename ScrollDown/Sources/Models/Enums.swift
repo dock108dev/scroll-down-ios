@@ -15,9 +15,12 @@ enum LeagueCode: String, Codable, CaseIterable {
 /// Game status as defined in the OpenAPI spec
 enum GameStatus: RawRepresentable, Codable, Equatable {
     case scheduled
+    case pregame
     case inProgress
+    case live
     case completed
     case `final`
+    case archived
     case postponed
     case canceled
     case unknown(String)
@@ -25,9 +28,12 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
     var rawValue: String {
         switch self {
         case .scheduled: return "scheduled"
+        case .pregame: return "pregame"
         case .inProgress: return "in_progress"
+        case .live: return "live"
         case .completed: return "completed"
         case .final: return "final"
+        case .archived: return "archived"
         case .postponed: return "postponed"
         case .canceled: return "canceled"
         case .unknown(let value): return value
@@ -37,9 +43,12 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
     init?(rawValue: String) {
         switch rawValue {
         case "scheduled": self = .scheduled
+        case "pregame": self = .pregame
         case "in_progress": self = .inProgress
+        case "live": self = .live
         case "completed": self = .completed
         case "final": self = .final
+        case "archived": self = .archived
         case "postponed": self = .postponed
         case "canceled": self = .canceled
         default: self = .unknown(rawValue)
@@ -61,9 +70,25 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
         lhs.rawValue == rhs.rawValue
     }
 
-    var isCompleted: Bool {
-        self == .completed || self == .final
+    var isLive: Bool {
+        self == .live || self == .inProgress
     }
+
+    var isFinal: Bool {
+        self == .final || self == .completed || self == .archived
+    }
+
+    var isPregame: Bool {
+        self == .pregame || self == .scheduled
+    }
+}
+
+// MARK: - Score Reveal Mode
+/// User preference for when scores are revealed on game cards and headers
+enum ScoreRevealMode: String, Codable, CaseIterable {
+    case resumed    // Show score if user has a saved reading position
+    case always     // Always show scores
+    case onMarkRead // Only show after explicitly marking as read (default)
 }
 
 // MARK: - Market Type

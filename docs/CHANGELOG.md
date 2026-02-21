@@ -4,6 +4,49 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Added — Live Data Support, Read State Gating & Reading Position (Feb 2025)
+
+**GameStatus enum alignment:**
+- Added `pregame`, `live`, `archived` cases to `GameStatus`
+- Added computed properties: `isLive` (`.live`, `.inProgress`), `isFinal` (`.final`, `.completed`, `.archived`), `isPregame` (`.pregame`, `.scheduled`)
+- Removed `isCompleted` — `isFinal` is the SSOT for "game is over"
+- Backward compat: `"in_progress"` still decodes to `.inProgress`
+
+**Read state gating:**
+- `ReadStateStore.markRead(gameId:status:)` now requires `GameStatus` — silently ignores non-final games
+- Removed nil default on status parameter
+
+**Score reveal preference:**
+- `ScoreRevealMode` enum: `.resumed`, `.always`, `.onMarkRead` (default)
+- Stored in `ReadStateStore.scoreRevealMode` (UserDefaults-backed)
+- Live games always show scores regardless of preference
+
+**Live game experience:**
+- `GameDetailViewModel` auto-polls every ~45s for live games (`startLivePolling`/`stopLivePolling`)
+- Timeline section shows PBP for live games, Game Flow for final
+- Auto-detects live-to-final transition: stops polling, switches content
+- Header shows pulsing red LIVE badge with live score (via `PulsingDotModifier`)
+- `load()` supports refresh (`isRefresh` parameter) for live data updates
+
+**Reading position tracking (local-only):**
+- New `ReadingPosition` model: playIndex, period, gameClock, periodLabel, timeLabel, savedAt
+- New `ReadingPositionStore` service (UserDefaults-backed, keyed by game ID)
+- Resume text ("Stopped at Q3 4:32") in game header and home card
+- Resume prompt on re-open with saved position
+
+**New files:**
+- `Sources/Models/ReadingPosition.swift`
+- `Sources/Services/ReadingPositionStore.swift`
+
+**Legacy code removed (SSOT enforcement):**
+- Removed `isCompleted` computed property (replaced by `isFinal`)
+- Removed `isOutcomeRevealed` (dead code, hardcoded false)
+- Removed legacy raw UserDefaults resume marker (`resumeMarkerKey`)
+- Updated all callers: `MockDataGenerator`, `HomeView+Sections`, `HomeViewSupport`, `GameRowView`
+- Added 7 new enum tests: `isFinal`, `isLive`, `isPregame`, decoding for live/pregame/archived
+
+**Game.swift:** Added `lastOddsAt: String?` field
+
 ### Changed — Odds Presentation & BetCard Redesign (Feb 20, 2025)
 
 **Game detail odds table overhauled** (`GameDetailView+Odds.swift`):

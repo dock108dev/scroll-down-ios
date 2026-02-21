@@ -33,6 +33,7 @@ struct Game: Codable, Identifiable, Hashable {
     var lastIngestedAt: String? = nil
     var lastPbpAt: String? = nil
     var lastSocialAt: String? = nil
+    var lastOddsAt: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -66,6 +67,7 @@ struct Game: Codable, Identifiable, Hashable {
         case lastIngestedAt
         case lastPbpAt
         case lastSocialAt
+        case lastOddsAt
     }
 
     func hash(into hasher: inout Hasher) {

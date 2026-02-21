@@ -95,15 +95,21 @@ struct GameDetailView: View {
                 async let timelineTask: () = viewModel.loadTimeline(gameId: gameId, service: appConfig.gameService)
                 async let socialTask: () = loadSocialIfEnabled()
 
-                // 1. First try flow
-                await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
-
-                // 2. If flow found, build unified timeline from flow plays (for Full PBP popup)
-                if viewModel.hasFlowData {
-                    isTimelineExpanded = false
-                    viewModel.buildUnifiedTimelineFromFlow()
-                } else {
+                if viewModel.game?.status.isLive == true {
+                    // Live game: load PBP as primary content, start polling
                     await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
+                    viewModel.startLivePolling(gameId: gameId, service: appConfig.gameService)
+                } else {
+                    // Final/other: try flow first
+                    await viewModel.loadFlow(gameId: gameId, service: appConfig.gameService)
+
+                    // If flow found, build unified timeline from flow plays (for Full PBP popup)
+                    if viewModel.hasFlowData {
+                        isTimelineExpanded = false
+                        viewModel.buildUnifiedTimelineFromFlow()
+                    } else {
+                        await viewModel.loadPbp(gameId: gameId, service: appConfig.gameService)
+                    }
                 }
 
                 // Await remaining parallel tasks
@@ -209,9 +215,16 @@ struct GameDetailView: View {
                         VStack(spacing: GameDetailLayout.sectionSpacing(horizontalSizeClass)) {
                             // Header - constrained to max-width on iPad
                             if let game = viewModel.game {
-                                GameHeaderView(game: game, scoreRevealed: isGameRead, onRevealScore: {
-                                    readStateStore.markRead(gameId: gameId)
-                                })
+                                GameHeaderView(
+                                game: game,
+                                scoreRevealed: isGameRead,
+                                onRevealScore: {
+                                    readStateStore.markRead(gameId: gameId, status: game.status)
+                                },
+                                scoreRevealMode: readStateStore.scoreRevealMode,
+                                hasReadingPosition: ReadingPositionStore.shared.load(gameId: gameId) != nil,
+                                resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId)
+                            )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)
@@ -240,8 +253,8 @@ struct GameDetailView: View {
                                     Color.clear.frame(height: 8)
                                 }
 
-                                // Game Flow section - only when flow data exists
-                                if viewModel.hasFlowData {
+                                // Game Flow / Live PBP section
+                                if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
                                     VStack(spacing: 0) {
                                         sectionAnchor(for: .timeline)
                                         timelineSection(using: proxy)
@@ -338,12 +351,15 @@ struct GameDetailView: View {
             .onAppear {
                 loadResumeMarkerIfNeeded()
             }
+            .onDisappear {
+                viewModel.stopLivePolling()
+            }
             .onChange(of: viewModel.detail?.plays.count ?? 0) {
                 loadResumeMarkerIfNeeded()
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
-                if expanded {
-                    readStateStore.markRead(gameId: gameId)
+                if expanded, let status = viewModel.game?.status {
+                    readStateStore.markRead(gameId: gameId, status: status)
                 }
             }
             .onChange(of: scrollToSection) { _, target in

@@ -25,7 +25,7 @@ ScrollDown/Sources/
 ├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView, FlowLayout)
 ├── Extensions/          # Swift extensions (String+Abbreviation)
 ├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
-├── Services/            # TimeService (snapshot mode), ReadStateStore
+├── Services/            # TimeService (snapshot mode), ReadStateStore, ReadingPositionStore
 ├── Logging/             # Structured logging (GameRoutingLogger, GameStatusLogger)
 ├── Theme/               # Typography system
 ├── FairBet/             # Betting odds comparison module
@@ -44,6 +44,28 @@ ScrollDown/Sources/
 3. **Mobile-first** — Touch navigation, vertical scrolling, collapsible sections
 4. **Server-driven display** — The backend computes derived data; the app renders it
 
+## Game Status & Lifecycle
+
+`GameStatus` is a `RawRepresentable` enum with forward-compatible `unknown(String)` fallback. Key cases: `scheduled`, `pregame`, `inProgress`, `live`, `completed`, `final`, `archived`, `postponed`, `canceled`.
+
+**Computed properties (SSOT):**
+
+| Property | True for | Purpose |
+|----------|----------|---------|
+| `isLive` | `.live`, `.inProgress` | Show live PBP, start polling |
+| `isFinal` | `.final`, `.completed`, `.archived` | Enable mark-as-read, show wrap-up |
+| `isPregame` | `.pregame`, `.scheduled` | Show pregame content only |
+
+There is no `isCompleted` property — `isFinal` is the single source of truth for "game is over."
+
+**Read state gating:** `ReadStateStore.markRead(gameId:status:)` requires a `GameStatus` and silently ignores non-final games. There is no nil default.
+
+**Score reveal:** User preference via `ScoreRevealMode` (`.onMarkRead` default). Live games always show scores regardless of preference.
+
+**Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. The view re-renders based on the updated status — if flow data was already loaded it displays, otherwise PBP remains as fallback. A "PBP" button in the section nav bar provides access to the full play-by-play sheet whenever Game Flow is the primary view.
+
+**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only) tracks where the user stopped reading a game's PBP. Shows "Stopped at Q3 4:32" resume text in game header and home card.
+
 ## Key Data Models
 
 | Model | Purpose |
@@ -61,6 +83,8 @@ ScrollDown/Sources/
 | `OddsEntry` | Per-book odds with `marketType`, `marketCategory`, `playerName`, `description` |
 | `MarketCategory` | Category enum for grouping odds: mainline, playerProp, teamProp, alternate, period, gameProp |
 | `MarketType` | Market type enum with `displayName` for human-readable stat labels (Points, Rebounds, etc.) and `isPlayerProp` helper |
+| `ReadingPosition` | Codable model for user's reading position within a game's PBP timeline (playIndex, period, gameClock, labels, savedAt) |
+| `ScoreRevealMode` | User preference enum: `.resumed`, `.always`, `.onMarkRead` — controls when scores are shown |
 | `TeamSummary` | Team name + color hex values from `/teams` endpoint |
 
 ### FairBet Data Models
@@ -207,12 +231,12 @@ The Games tab includes a search bar that filters by team name and a league filte
 |------|---------------|
 | `GameDetailView.swift` | Main container, navigation, state |
 | `GameDetailView+Overview.swift` | Pregame section |
-| `GameDetailView+Timeline.swift` | Flow/PBP timeline |
+| `GameDetailView+Timeline.swift` | Flow/PBP timeline (PBP for live games, Flow for final) |
 | `GameDetailView+Stats.swift` | Player and team stats |
 | `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
 | `GameDetailView+WrapUp.swift` | Post-game wrap-up |
 | `GameDetailView+Odds.swift` | Cross-book odds comparison table |
-| `GameDetailView+Helpers.swift` | Utility functions |
+| `GameDetailView+Helpers.swift` | Utility functions, reading position tracking, section navigation |
 | `GameDetailView+Layout.swift` | Layout constants, preference keys |
 
 ## Environments

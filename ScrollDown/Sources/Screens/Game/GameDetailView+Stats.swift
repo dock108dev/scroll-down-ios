@@ -1,4 +1,5 @@
 import SwiftUI
+import OSLog
 
 // MARK: - Player Stats Extension
 
@@ -101,7 +102,8 @@ extension GameDetailView {
         // Log first player's rawStats keys for diagnosing mismatches
         if let first = stats.first {
             let keys = Array(first.rawStats.keys).sorted()
-            print("🏀 PlayerStat sample rawStats keys: \(keys)")
+            Logger(subsystem: "com.scrolldown.app", category: "stats")
+                .debug("🏀 PlayerStat sample rawStats keys: \(keys, privacy: .public)")
         }
         #endif
 

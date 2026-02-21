@@ -1,14 +1,30 @@
 import SwiftUI
 
 extension GameDetailView {
-    /// Game Flow section - only rendered when flow data exists.
-    /// PBP is accessible via the top-bar button instead.
+    /// Primary content section title adapts to game status
+    private var timelineSectionTitle: String {
+        if viewModel.game?.status.isLive == true {
+            return "Live PBP"
+        }
+        return "Game Flow"
+    }
+
+    /// Game Flow section - content adapts based on game status:
+    /// - Live: show PBP as primary content
+    /// - Final with flow: show Game Flow
+    /// - Final without flow: show PBP (fallback)
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
-        CollapsibleSectionCard(title: "Game Flow", isExpanded: $isFlowCardExpanded) {
-            GameFlowView(
-                viewModel: viewModel,
-                isCompactFlowExpanded: $isCompactFlowExpanded
-            )
+        CollapsibleSectionCard(title: timelineSectionTitle, isExpanded: $isFlowCardExpanded) {
+            if viewModel.game?.status.isLive == true {
+                // Live: PBP is primary content
+                timelineContent(using: proxy)
+            } else {
+                // Final: Game Flow is primary
+                GameFlowView(
+                    viewModel: viewModel,
+                    isCompactFlowExpanded: $isCompactFlowExpanded
+                )
+            }
         }
         .background(
             GeometryReader { proxy in
