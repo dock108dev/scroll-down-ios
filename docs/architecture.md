@@ -127,6 +127,15 @@ See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 
 **Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages incrementally in the background. A "Loading more bets…" indicator shows at the bottom of the list during background loading.
 
+**FairExplainerSheet — "Show the Math":**
+`FairExplainerSheet` (opened by tapping the FAIR card on any bet) presents a numbered step-by-step math walkthrough:
+1. Convert reference odds to implied probabilities (total > 100% reveals the vig)
+2. Identify the vig (total implied vs. 100%)
+3. Remove the vig via normalization to get fair probability and odds
+4. Calculate EV at the best book price with full dollar math
+
+Median/consensus bets simplify to 2 steps. Missing data (no opposite reference price, no EV) falls back gracefully. Per-book implied probabilities are available in a disclosure group below the walkthrough.
+
 ## Configuration
 
 The app uses `AppConfig` to manage runtime behavior:

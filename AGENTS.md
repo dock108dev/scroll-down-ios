@@ -31,7 +31,7 @@ ScrollDown/Sources/
 ├── FairBet/             # Betting odds comparison module
 │   ├── Models/          # Bet, EVCalculator, OddsCalculator, BetPairing
 │   ├── ViewModels/      # OddsComparisonViewModel
-│   ├── Views/           # OddsComparisonView, BetCard, ParlaySheetView, FairBetCopy
+│   ├── Views/           # OddsComparisonView, BetCard, BetCardComponents, FairExplainerSheet, ParlaySheetView, FairBetCopy
 │   ├── Services/        # FairBetAPIClient, FairBetMockDataProvider
 │   └── Theme/           # FairBetTheme
 └── Mock/games/          # Static mock JSON for development
@@ -205,7 +205,7 @@ Betting odds comparison system that surfaces fair odds and expected value (EV) a
   4. Collapsible "Other books" — expandable list of remaining `MiniBookChip`s
 - **iPad (regular):** Horizontal scroll of `MiniBookChip`s sorted by EV + Parlay button, then fair estimate card below
 - FAIR is always **informational, never bettable** — visually distinct from sportsbook prices (outline border, secondary text color)
-- Tapping FAIR opens `FairExplainerSheet` with: fair value header, "What is this?" explanation, devig math (method, true probabilities, opposite side, vig removed %, best EV), per-book implied probability breakdown, confidence tier with description, data sources list, disclaimer
+- Tapping FAIR opens `FairExplainerSheet` with: fair value header, numbered step-by-step math walkthrough (Step 1: raw odds → implied probability with >100% total showing vig; Step 2: identify the vig; Step 3: remove vig via normalization to get fair probability/odds; Step 4: EV calculation with dollar math at best book price), "What is this?" method explanation, per-book implied probabilities in a disclosure group, confidence tier with description, data sources list, disclaimer. Median/consensus bets simplify to 2 steps. Missing data falls back gracefully.
 - `BookAbbreviationButton` — tap to toggle between abbreviated and full sportsbook name
 - Sharp book indicator (star icon) shown in `FairExplainerSheet` implied probability breakdown
 

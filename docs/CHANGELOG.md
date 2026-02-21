@@ -28,6 +28,18 @@ Notable changes to the Scroll Down iOS app.
 - "Loading more bets…" indicator at bottom of list during background fetch
 - New `isLoadingMore` published property on `OddsComparisonViewModel`
 
+**FairExplainerSheet redesigned — "Show the Math":**
+- Replaced opaque results display (This side: 50%, Other side: 50%, Vig removed: 4.8%, Best EV) with numbered step-by-step math walkthrough
+- Step 1: Convert raw reference odds to implied probabilities (total > 100% shows the vig)
+- Step 2: Identify the vig (total implied vs. 100%)
+- Step 3: Remove the vig via normalization division to get fair probability and fair odds
+- Step 4: Calculate EV at best book price with full dollar math (win/lose scenarios, EV formula)
+- Median/consensus bets simplify to 2 steps (median probability + EV)
+- Graceful fallbacks: missing opposite reference price, no EV data, minimal data
+- Per-book implied probabilities moved into a DisclosureGroup ("All book probabilities")
+- Replaced `impliedProbTotal` with clearer `rawImpliedThis`/`rawImpliedOther`/`rawImpliedTotal`/`vigPercent` computed helpers
+- Each step uses consistent card styling with numbered circle badge
+
 **Settings cleanup:**
 - Removed "Read Status" section (Mark All Read/Unread buttons) — replaced by home page catch-up/reset
 - Score Display preference (spoiler-free vs always show) remains
@@ -38,7 +50,7 @@ Notable changes to the Scroll Down iOS app.
 - `GameHeaderView.metadataText` computed property (never referenced in view body)
 - `GameRowView.hasFullFlow` property and `Layout` enum (unused)
 
-**Files changed:** `GameRowView.swift`, `GameHeaderView.swift`, `GameDetailView.swift`, `GameDetailView+Helpers.swift`, `GameDetailView+Timeline.swift`, `HomeView.swift`, `HomeView+DataLoading.swift`, `HomeView+Sections.swift`, `SettingsView.swift`, `OddsComparisonViewModel.swift`, `OddsComparisonView.swift`, `GameDetailViewModel.swift`, `ReadingPositionStore.swift`, `Enums.swift`
+**Files changed:** `FairExplainerSheet.swift`, `GameRowView.swift`, `GameHeaderView.swift`, `GameDetailView.swift`, `GameDetailView+Helpers.swift`, `GameDetailView+Timeline.swift`, `HomeView.swift`, `HomeView+DataLoading.swift`, `HomeView+Sections.swift`, `SettingsView.swift`, `OddsComparisonViewModel.swift`, `OddsComparisonView.swift`, `GameDetailViewModel.swift`, `ReadingPositionStore.swift`, `Enums.swift`
 
 ### Added — Live Data Support, Read State Gating & Reading Position (Feb 2025)
 
@@ -99,7 +111,7 @@ Notable changes to the Scroll Down iOS app.
 - iPad: horizontal book scroll → fair estimate card below
 - FAIR displayed as tappable outlined card ("Est. fair +125" + info icon) — visually distinct from sportsbooks
 - Removed confidence dots and Pinnacle reference price from main card
-- New `FairExplainerSheet` with devig math: method, true probabilities, opposite side, vig removed %, best EV, per-book implied probabilities
+- New `FairExplainerSheet` extracted from BetCard (later redesigned into step-by-step math walkthrough — see Unreleased)
 - New `BookAbbreviationButton` — tap to toggle abbreviated/full sportsbook name
 - Removed "Fair price"/"Good price"/"Great price" value indicator text
 
