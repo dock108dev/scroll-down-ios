@@ -225,6 +225,12 @@ extension GameDetailView {
         savedResumePlayIndex = storedPlayIndex
         shouldShowResumePrompt = true
         isResumeTrackingEnabled = false
+
+        // Restore displayed scores from saved reading position
+        if let away = position.awayScore, let home = position.homeScore {
+            displayedAwayScore = away
+            displayedHomeScore = home
+        }
     }
 
     func updateResumeMarkerIfNeeded() {
@@ -252,9 +258,17 @@ extension GameDetailView {
             gameClock: play.gameClock,
             periodLabel: periodLabel,
             timeLabel: timeLabel,
-            savedAt: Date()
+            savedAt: Date(),
+            homeScore: play.homeScore,
+            awayScore: play.awayScore
         )
         ReadingPositionStore.shared.save(gameId: gameId, position: position)
+
+        // Update displayed scores as user scrolls (only when scores are present)
+        if let away = play.awayScore, let home = play.homeScore {
+            displayedAwayScore = away
+            displayedHomeScore = home
+        }
     }
 
     func clearSavedResumeMarker() {

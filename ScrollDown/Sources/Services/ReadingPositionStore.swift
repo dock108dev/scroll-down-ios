@@ -26,6 +26,14 @@ final class ReadingPositionStore {
         defaults.removeObject(forKey: prefix + "\(gameId)")
     }
 
+    /// Returns saved scores for a game, if both home and away are present.
+    func savedScores(for gameId: Int) -> (away: Int, home: Int)? {
+        guard let position = load(gameId: gameId),
+              let away = position.awayScore,
+              let home = position.homeScore else { return nil }
+        return (away: away, home: home)
+    }
+
     /// Human-readable text for resume context, e.g. "Stopped at Q3 4:32"
     func resumeDisplayText(for gameId: Int) -> String? {
         guard let position = load(gameId: gameId) else { return nil }

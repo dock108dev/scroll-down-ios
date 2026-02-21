@@ -11,15 +11,17 @@ struct GameHeaderView: View {
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
     var hasReadingPosition: Bool = false
     var resumeText: String? = nil
+    var displayAwayScore: Int? = nil
+    var displayHomeScore: Int? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Whether the score should be shown based on preference + game state
     private var shouldShowScore: Bool {
-        // Live games: always show live score
-        if game.status.isLive { return true }
-        // Already explicitly revealed
+        // Display scores provided by scroll tracking or hold-to-reveal
+        if displayAwayScore != nil && displayHomeScore != nil { return true }
+        // Already explicitly revealed (e.g. wrap-up opened)
         if scoreRevealed { return true }
         // Check preference
         switch scoreRevealMode {
@@ -30,6 +32,16 @@ struct GameHeaderView: View {
         case .onMarkRead:
             return false
         }
+    }
+
+    /// Resolved away score: display score (from scroll position) takes priority over game score
+    private var resolvedAwayScore: Int? {
+        displayAwayScore ?? game.awayScore
+    }
+
+    /// Resolved home score: display score (from scroll position) takes priority over game score
+    private var resolvedHomeScore: Int? {
+        displayHomeScore ?? game.homeScore
     }
 
     private var awayColor: Color {
@@ -54,8 +66,8 @@ struct GameHeaderView: View {
 
                 Spacer()
 
-                // Center: score if revealed (or auto-shown for live/preference), otherwise "vs"
-                if shouldShowScore, let away = game.awayScore, let home = game.homeScore {
+                // Center: score if revealed (or earned via scrolling), otherwise "vs"
+                if shouldShowScore, let away = resolvedAwayScore, let home = resolvedHomeScore {
                     VStack(spacing: 2) {
                         HStack(spacing: 8) {
                             Text("\(away)")
@@ -74,8 +86,8 @@ struct GameHeaderView: View {
                         Text("vs")
                             .font(.system(size: 14, weight: .medium, design: .rounded))
                             .foregroundColor(DesignSystem.TextColor.tertiary)
-                        if game.awayScore != nil && game.homeScore != nil {
-                            Text("Hold to reveal score")
+                        if game.awayScore != nil || game.status.isLive {
+                            Text(game.status.isLive ? "Hold to update" : "Hold to reveal score")
                                 .font(.caption2)
                                 .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
                         }
@@ -84,7 +96,7 @@ struct GameHeaderView: View {
                     .padding(.vertical, 8)
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.5) {
-                        guard game.awayScore != nil, game.homeScore != nil else { return }
+                        guard game.awayScore != nil || game.status.isLive else { return }
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         onRevealScore?()
                     }

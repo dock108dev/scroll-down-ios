@@ -42,6 +42,8 @@ struct GameDetailView: View {
     @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
     @State var scrollToSection: GameSection? = nil  // Triggers scroll when set
+    @State var displayedAwayScore: Int? = nil
+    @State var displayedHomeScore: Int? = nil
     // iPad: Size class for adaptive layouts (internal for extension access)
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
@@ -219,11 +221,19 @@ struct GameDetailView: View {
                                 game: game,
                                 scoreRevealed: isGameRead,
                                 onRevealScore: {
-                                    readStateStore.markRead(gameId: gameId, status: game.status)
+                                    if game.status.isLive {
+                                        // Show current live score (session only)
+                                        displayedAwayScore = game.awayScore
+                                        displayedHomeScore = game.homeScore
+                                    } else {
+                                        readStateStore.markRead(gameId: gameId, status: game.status)
+                                    }
                                 },
                                 scoreRevealMode: readStateStore.scoreRevealMode,
                                 hasReadingPosition: ReadingPositionStore.shared.load(gameId: gameId) != nil,
-                                resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId)
+                                resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
+                                displayAwayScore: displayedAwayScore,
+                                displayHomeScore: displayedHomeScore
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
