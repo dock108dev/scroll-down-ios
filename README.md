@@ -27,7 +27,7 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 | Theme selection (system/light/dark) | Live |
 | Live game viewing with auto-polling PBP | Live |
 | Reading position tracking with resume | Live |
-| Score reveal preference (3 modes) | Live |
+| Score reveal preference (spoiler-free / always show) | Live |
 | iPad adaptive layout | Live |
 | Snapshot mode (beta time override) | Live |
 

@@ -60,11 +60,11 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 
 **Read state gating:** `ReadStateStore.markRead(gameId:status:)` requires a `GameStatus` and silently ignores non-final games. There is no nil default.
 
-**Score reveal:** User preference via `ScoreRevealMode` (`.onMarkRead` default). Live games always show scores regardless of preference.
+**Score reveal:** User preference via `ScoreRevealMode` (`.onMarkRead` spoiler-free default, `.always` shows all scores). Hold-to-reveal (long press) lets users check scores on demand without changing their preference. Live games support hold-to-update for fresh scores.
 
 **Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. The view re-renders based on the updated status — if flow data was already loaded it displays, otherwise PBP remains as fallback. A "PBP" button in the section nav bar provides access to the full play-by-play sheet whenever Game Flow is the primary view.
 
-**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only) tracks where the user stopped reading a game's PBP. Shows "Stopped at Q3 4:32" resume text in game header and home card.
+**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only) tracks where the user stopped reading a game's PBP. Also saves scores at the reading position. Shows "Stopped at Q3 4:32" resume text in game header and home card, with score context ("@ Q2 · 2m ago") when scores are saved.
 
 ## Key Data Models
 
@@ -83,8 +83,8 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 | `OddsEntry` | Per-book odds with `marketType`, `marketCategory`, `playerName`, `description` |
 | `MarketCategory` | Category enum for grouping odds: mainline, playerProp, teamProp, alternate, period, gameProp |
 | `MarketType` | Market type enum with `displayName` for human-readable stat labels (Points, Rebounds, etc.) and `isPlayerProp` helper |
-| `ReadingPosition` | Codable model for user's reading position within a game's PBP timeline (playIndex, period, gameClock, labels, savedAt) |
-| `ScoreRevealMode` | User preference enum: `.resumed`, `.always`, `.onMarkRead` — controls when scores are shown |
+| `ReadingPosition` | Codable model for user's reading position within a game's PBP timeline (playIndex, period, gameClock, labels, savedAt, awayScore, homeScore) |
+| `ScoreRevealMode` | User preference enum: `.always`, `.onMarkRead` — controls when scores are shown |
 | `TeamSummary` | Team name + color hex values from `/teams` endpoint |
 
 ### FairBet Data Models
@@ -111,7 +111,7 @@ The backend pre-computes all derived data. The app does not compute these client
 | Play tiers (1, 2, 3) | `tier` on each play | `PlayTier`, `TieredPlayGrouper` |
 | Odds labels (`BOS -5.5`, `O/U 221.5`) | `derivedMetrics` on game detail | `DerivedMetrics` → `pregameOddsLines` |
 | Odds outcomes (covered, went over, etc.) | `derivedMetrics` on game detail | `DerivedMetrics` → `wrapUpOddsLines` |
-| Team colors (light/dark hex) | `GET /teams` + per-game API fields → `TeamColorCache` | `DesignSystem.TeamColors` |
+| Team colors (light/dark hex) | `GET /teams` + per-game API fields → `TeamColorCache` + inline hex on `GameSummary` | `DesignSystem.TeamColors`, `GameRowView` direct resolution |
 | Team abbreviations | Per-game API fields → `TeamAbbreviations` | `TeamAbbreviations.abbreviation(for:)` |
 | Merged timeline (PBP + tweets + odds) | `GET /games/{id}/timeline` → `TimelineArtifactResponse` | `unifiedTimelineEvents` |
 
@@ -218,10 +218,16 @@ The home screen has three modes via a segmented control (`HomeViewMode`):
 | Tab | Content |
 |-----|---------|
 | Games | Game feed with Earlier/Yesterday/Today/Tomorrow sections, league filter, search bar |
-| FairBet | Odds comparison with league/market filters. One-line explainer above filters. Only shows bets with server-side fair estimates (`has_fair=true`). |
-| Settings | Theme selection, odds format, completed game tracking |
+| FairBet | Odds comparison with league/market filters. One-line explainer above filters. Only shows bets with server-side fair estimates (`has_fair=true`). Progressive loading — first 500 bets shown immediately, rest loaded in background. |
+| Settings | Theme selection, odds format, score display preference |
 
 The Games tab includes a search bar that filters by team name and a league filter (All, NBA, NCAAB, NHL). Both the Games and FairBet tabs have a refresh button overlaid on the league filter row.
+
+**Spoiler-free actions (`.onMarkRead` mode only):**
+- **Catch up to live** — Bulk-reveals all scores: marks final games as read + saves current live scores
+- **Reset** — Undoes catch-up: marks all games as unread + clears saved reading positions/scores
+- **iPad:** Icon buttons in the filter bar (eye / eye.slash icons alongside refresh)
+- **iPhone:** Labeled pill buttons in a dedicated action row above the game list, with refresh moved to that row
 
 ## View Architecture
 
