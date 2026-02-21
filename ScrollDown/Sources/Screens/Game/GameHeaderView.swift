@@ -13,6 +13,7 @@ struct GameHeaderView: View {
     var resumeText: String? = nil
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
+    var scoreContextText: String? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -79,6 +80,12 @@ struct GameHeaderView: View {
                             Text("\(home)")
                                 .font(.title2.weight(.bold).monospacedDigit())
                                 .foregroundColor(homeColor)
+                        }
+                        // Score context (period + relative time) for live games
+                        if game.status.isLive, let context = scoreContextText {
+                            Text(context)
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
                         }
                         // "Hold to update" hint for live games with earned scores
                         if game.status.isLive && !scoreRevealed {

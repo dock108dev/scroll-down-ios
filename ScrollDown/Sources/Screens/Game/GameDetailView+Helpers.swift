@@ -217,20 +217,23 @@ extension GameDetailView {
         guard viewModel.detail != nil else { return }
         hasLoadedResumeMarker = true
         guard let position = ReadingPositionStore.shared.load(gameId: gameId) else { return }
+
+        // Always restore displayed scores first — independent of play-index validity
+        if let away = position.awayScore, let home = position.homeScore {
+            displayedAwayScore = away
+            displayedHomeScore = home
+        }
+
+        // Validate play index for resume-scroll prompt
         let storedPlayIndex = position.playIndex
         guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
-            clearSavedResumeMarker()
+            // Play index doesn't match current PBP data (e.g. playIndex: 0 from hold-to-reveal).
+            // Skip resume prompt but keep the saved position so scores persist.
             return
         }
         savedResumePlayIndex = storedPlayIndex
         shouldShowResumePrompt = true
         isResumeTrackingEnabled = false
-
-        // Restore displayed scores from saved reading position
-        if let away = position.awayScore, let home = position.homeScore {
-            displayedAwayScore = away
-            displayedHomeScore = home
-        }
     }
 
     func updateResumeMarkerIfNeeded() {

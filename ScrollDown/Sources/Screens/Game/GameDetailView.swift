@@ -236,7 +236,8 @@ struct GameDetailView: View {
                                 hasReadingPosition: ReadingPositionStore.shared.load(gameId: gameId) != nil,
                                 resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
                                 displayAwayScore: displayedAwayScore,
-                                displayHomeScore: displayedHomeScore
+                                displayHomeScore: displayedHomeScore,
+                                scoreContextText: ReadingPositionStore.shared.scoreContext(for: gameId)
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
