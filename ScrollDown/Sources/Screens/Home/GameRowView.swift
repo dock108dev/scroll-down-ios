@@ -210,11 +210,6 @@ struct GameRowView: View {
         }
     }
 
-    /// Whether this game has full flow content (not just PBP)
-    private var hasFullFlow: Bool {
-        (game.hasRequiredData == true) || (game.hasPbp == true && game.hasSocial == true)
-    }
-
     /// Resolves team color using game summary's inline color fields first, then cache fallback
     private func teamColor(light: String?, dark: String?, teamName: String, opponentName: String, isHome: Bool) -> Color {
         if let hex = (colorScheme == .dark ? dark : light), !hex.isEmpty {
@@ -247,12 +242,6 @@ struct GameRowView: View {
     private var accessibilityHint: String {
         cardState.isTappable ? "Double tap to view game" : ""
     }
-}
-
-private enum Layout {
-    static let cardPadding: CGFloat = 14
-    static let contentSpacing: CGFloat = 10
-    static let textSpacing: CGFloat = 4
 }
 
 #Preview("Card States") {

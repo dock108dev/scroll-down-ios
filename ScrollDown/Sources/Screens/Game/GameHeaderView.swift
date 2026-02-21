@@ -9,7 +9,6 @@ struct GameHeaderView: View {
     var scoreRevealed: Bool = false
     var onRevealScore: (() -> Void)? = nil
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
-    var hasReadingPosition: Bool = false
     var resumeText: String? = nil
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
@@ -28,8 +27,6 @@ struct GameHeaderView: View {
         switch scoreRevealMode {
         case .always:
             return game.awayScore != nil && game.homeScore != nil
-        case .resumed:
-            return hasReadingPosition && game.awayScore != nil && game.homeScore != nil
         case .onMarkRead:
             return false
         }
@@ -225,14 +222,6 @@ struct GameHeaderView: View {
         case .unknown:
             return .gray
         }
-    }
-
-    // MARK: - Metadata Text
-    /// Format: "FINAL · JAN 22" or "UPCOMING · JAN 22"
-    private var metadataText: String {
-        let statusText = gameStatusText
-        let dateText = formattedGameDate
-        return "\(statusText) · \(dateText)"
     }
 
     private var gameStatusText: String {

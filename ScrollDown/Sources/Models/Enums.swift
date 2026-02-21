@@ -86,7 +86,6 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
 // MARK: - Score Reveal Mode
 /// User preference for when scores are revealed on game cards and headers
 enum ScoreRevealMode: String, Codable, CaseIterable {
-    case resumed    // Show score if user has a saved reading position
     case always     // Always show scores
     case onMarkRead // Only show after explicitly marking as read (default)
 }

@@ -258,7 +258,6 @@ struct GameDetailView: View {
                                     }
                                 },
                                 scoreRevealMode: readStateStore.scoreRevealMode,
-                                hasReadingPosition: ReadingPositionStore.shared.load(gameId: gameId) != nil,
                                 resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
                                 displayAwayScore: liveDisplayAwayScore(for: game),
                                 displayHomeScore: liveDisplayHomeScore(for: game),
