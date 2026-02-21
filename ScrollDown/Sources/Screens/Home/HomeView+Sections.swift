@@ -117,7 +117,7 @@ extension HomeView {
                 triggerHapticIfNeeded(for: game)
             })
             .contextMenu {
-                if game.status?.isCompleted == true {
+                if game.status?.isFinal == true {
                     if readStateStore.isRead(gameId: game.id) {
                         Button(role: .destructive) {
                             readStateStore.markUnread(gameId: game.id)
@@ -126,7 +126,9 @@ extension HomeView {
                         }
                     } else {
                         Button {
-                            readStateStore.markRead(gameId: game.id)
+                            if let status = game.status {
+                                readStateStore.markRead(gameId: game.id, status: status)
+                            }
                         } label: {
                             Label("Mark as Read", systemImage: "eye")
                         }
@@ -175,7 +177,7 @@ extension HomeView {
     // MARK: - Feedback
 
     func triggerHapticIfNeeded(for game: GameSummary) {
-        guard game.status?.isCompleted == true else { return }
+        guard game.status?.isFinal == true else { return }
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred()
     }

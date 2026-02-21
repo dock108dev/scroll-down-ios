@@ -213,16 +213,11 @@ extension GameDetailView {
     }
 
     func loadResumeMarkerIfNeeded() {
-        guard !hasLoadedResumeMarker else {
-            return
-        }
-        guard viewModel.detail != nil else {
-            return
-        }
+        guard !hasLoadedResumeMarker else { return }
+        guard viewModel.detail != nil else { return }
         hasLoadedResumeMarker = true
-        guard let storedPlayIndex = UserDefaults.standard.object(forKey: resumeMarkerKey) as? Int else {
-            return
-        }
+        guard let position = ReadingPositionStore.shared.load(gameId: gameId) else { return }
+        let storedPlayIndex = position.playIndex
         guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
             clearSavedResumeMarker()
             return
@@ -233,20 +228,12 @@ extension GameDetailView {
     }
 
     func updateResumeMarkerIfNeeded() {
-        guard isResumeTrackingEnabled else {
-            return
-        }
-        guard let play = currentViewingPlay else {
-            return
-        }
+        guard isResumeTrackingEnabled else { return }
+        guard let play = currentViewingPlay else { return }
         let playIndex = play.playIndex
-        guard playIndex != savedResumePlayIndex else {
-            return
-        }
+        guard playIndex != savedResumePlayIndex else { return }
         savedResumePlayIndex = playIndex
-        UserDefaults.standard.set(playIndex, forKey: resumeMarkerKey)
 
-        // Save full reading position with context
         let periodLabel: String? = {
             guard let quarter = play.quarter else { return nil }
             return quarterOrdinal(quarter)
@@ -272,12 +259,7 @@ extension GameDetailView {
 
     func clearSavedResumeMarker() {
         savedResumePlayIndex = nil
-        UserDefaults.standard.removeObject(forKey: resumeMarkerKey)
         ReadingPositionStore.shared.clear(gameId: gameId)
-    }
-
-    var resumeMarkerKey: String {
-        "game.resume.playIndex.\(gameId)"
     }
 
     func scrollToQuarterHeader(_ quarter: Int, using proxy: ScrollViewProxy) {

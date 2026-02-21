@@ -358,8 +358,8 @@ struct GameDetailView: View {
                 loadResumeMarkerIfNeeded()
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
-                if expanded {
-                    readStateStore.markRead(gameId: gameId, status: viewModel.game?.status)
+                if expanded, let status = viewModel.game?.status {
+                    readStateStore.markRead(gameId: gameId, status: status)
                 }
             }
             .onChange(of: scrollToSection) { _, target in

@@ -17,10 +17,6 @@ final class GameDetailViewModel: ObservableObject {
     var isLoading: Bool { loadState == .loading }
     @Published private(set) var isUnavailable: Bool = false
 
-    // Intentionally hardcoded to false — progressive disclosure design means outcomes
-    // are never auto-revealed; users explicitly choose to uncover scores via the UI.
-    var isOutcomeRevealed: Bool { false }
-
     // Social posts
     @Published private(set) var socialPosts: [SocialPostResponse] = []
     @Published private(set) var socialPostsState: SocialPostsState = .idle
@@ -469,7 +465,7 @@ final class GameDetailViewModel: ObservableObject {
     /// Requires status == completed/final AND at least one confirmation signal:
     /// either derived-metric outcomes exist or 3+ hours have elapsed since game start.
     var isGameTrulyCompleted: Bool {
-        guard game?.status.isCompleted == true else { return false }
+        guard game?.status.isFinal == true else { return false }
 
         // Signal 1: Derived metrics have outcome labels (backend only sets these after final)
         if let detail {

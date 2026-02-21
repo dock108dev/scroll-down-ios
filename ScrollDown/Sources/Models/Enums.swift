@@ -70,10 +70,6 @@ enum GameStatus: RawRepresentable, Codable, Equatable {
         lhs.rawValue == rhs.rawValue
     }
 
-    var isCompleted: Bool {
-        self == .completed || self == .final
-    }
-
     var isLive: Bool {
         self == .live || self == .inProgress
     }

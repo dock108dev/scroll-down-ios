@@ -20,7 +20,7 @@ struct HomeSectionState: Identifiable {
     let title: String
     var games: [GameSummary] = [] {
         didSet {
-            _completedGames = games.filter { $0.status?.isCompleted == true }
+            _completedGames = games.filter { $0.status?.isFinal == true }
         }
     }
     private(set) var _completedGames: [GameSummary] = []

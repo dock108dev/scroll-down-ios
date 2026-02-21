@@ -28,9 +28,8 @@ final class ReadStateStore: ObservableObject {
         return defaults.bool(forKey: prefix + "\(gameId)")
     }
 
-    func markRead(gameId: Int, status: GameStatus? = nil) {
-        // If status is provided, only mark read for final games
-        if let status, !status.isFinal { return }
+    func markRead(gameId: Int, status: GameStatus) {
+        guard status.isFinal else { return }
         objectWillChange.send()
         defaults.set(true, forKey: prefix + "\(gameId)")
         readIds?.insert(gameId)
