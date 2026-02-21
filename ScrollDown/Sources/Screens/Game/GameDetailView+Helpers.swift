@@ -224,11 +224,13 @@ extension GameDetailView {
             displayedHomeScore = home
         }
 
-        // Validate play index for resume-scroll prompt
+        // Score-only positions (e.g. from hold-to-reveal on home screen) have no
+        // timeline context — restore scores above but don't offer a resume prompt.
+        guard position.period != nil else { return }
+
+        // Validate play index against current PBP data
         let storedPlayIndex = position.playIndex
         guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
-            // Play index doesn't match current PBP data (e.g. playIndex: 0 from hold-to-reveal).
-            // Skip resume prompt but keep the saved position so scores persist.
             return
         }
         savedResumePlayIndex = storedPlayIndex

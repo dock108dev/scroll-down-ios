@@ -113,7 +113,7 @@ struct GameRowView: View {
                     .foregroundColor(.orange)
             }
 
-            // Date + optional play/moment counts (debug)
+            // Date display
             Text(dateDisplay)
                 .font(.caption2)
                 .foregroundColor(Color(.secondaryLabel))
