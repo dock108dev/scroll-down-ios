@@ -222,9 +222,12 @@ struct GameDetailView: View {
                                 scoreRevealed: isGameRead,
                                 onRevealScore: {
                                     if game.status.isLive {
-                                        // Show current live score (session only)
+                                        // Show current live score and persist it
                                         displayedAwayScore = game.awayScore
                                         displayedHomeScore = game.homeScore
+                                        if let away = game.awayScore, let home = game.homeScore {
+                                            ReadingPositionStore.shared.updateScores(for: gameId, awayScore: away, homeScore: home)
+                                        }
                                     } else {
                                         readStateStore.markRead(gameId: gameId, status: game.status)
                                     }

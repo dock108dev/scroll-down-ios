@@ -80,6 +80,18 @@ struct GameHeaderView: View {
                                 .font(.title2.weight(.bold).monospacedDigit())
                                 .foregroundColor(homeColor)
                         }
+                        // "Hold to update" hint for live games with earned scores
+                        if game.status.isLive && !scoreRevealed {
+                            Text("Hold to update")
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.5) {
+                        guard game.status.isLive else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onRevealScore?()
                     }
                 } else {
                     VStack(spacing: 2) {

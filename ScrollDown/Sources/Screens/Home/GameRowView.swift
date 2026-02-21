@@ -15,6 +15,9 @@ struct GameRowView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
     let game: GameSummary
 
+    /// Bumped to force SwiftUI to re-evaluate computed properties after store updates
+    @State private var scoreRefreshToken = false
+
     /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
         guard game.status?.isFinal == true else { return false }
@@ -23,6 +26,7 @@ struct GameRowView: View {
 
     /// Resolved scores: reading-position scores first, then full scores if game is read
     private var resolvedScores: (away: Int, home: Int)? {
+        _ = scoreRefreshToken // dependency so SwiftUI re-evaluates after updates
         // Check for saved reading-position scores (from scrolling PBP)
         if let saved = ReadingPositionStore.shared.savedScores(for: game.id) {
             return saved
@@ -32,6 +36,19 @@ struct GameRowView: View {
             return (away: away, home: home)
         }
         return nil
+    }
+
+    /// Context string for saved scores (e.g., "@ Q2 · 2m ago")
+    private var scoreContextText: String? {
+        _ = scoreRefreshToken
+        return ReadingPositionStore.shared.scoreContext(for: game.id)
+    }
+
+    /// Updates saved scores to the current live score from the game summary
+    func updateToLiveScore() {
+        guard let away = game.awayScore, let home = game.homeScore else { return }
+        ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+        scoreRefreshToken.toggle()
     }
 
     /// Computed card state based on data availability — active unless truly empty
@@ -63,19 +80,32 @@ struct GameRowView: View {
 
             // Score display — reading-position scores or final scores for read games
             if let scores = resolvedScores {
-                HStack(spacing: 4) {
-                    Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
-                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
-                    Text("-")
-                        .foregroundColor(.secondary)
-                    Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                        .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
+                            .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
+                        Text("-")
+                            .foregroundColor(.secondary)
+                        Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                            .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
+                    }
+                    .font(.caption.weight(.semibold).monospacedDigit())
+
+                    if let context = scoreContextText {
+                        Text(context)
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                    }
                 }
-                .font(.caption.weight(.semibold).monospacedDigit())
+            } else if game.status?.isLive == true {
+                // Live game with no saved score — hint to hold-to-check
+                Text("Hold to check score")
+                    .font(.caption2)
+                    .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
             }
 
-            // Resume context (if user has a saved reading position)
-            if let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
+            // Resume context (if user has a saved reading position but no scores yet)
+            if resolvedScores == nil, let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
                 Text(resumeText)
                     .font(.caption2)
                     .foregroundColor(.orange)
