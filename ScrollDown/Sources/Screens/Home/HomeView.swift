@@ -143,7 +143,20 @@ struct HomeView: View {
                         )
                         .frame(width: 20)
                         HStack(spacing: 8) {
-                            // iPad: reset button in filter bar; iPhone: in action row below
+                            // iPad: catch-up + reset in filter bar; iPhone: in action row below
+                            if horizontalSizeClass == .regular && showSpoilerActions && uncaughtUpCount > 0 {
+                                Button(action: catchUpToLive) {
+                                    Image(systemName: "eye")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundColor(HomeTheme.accentColor)
+                                        .padding(8)
+                                        .background(
+                                            Circle()
+                                                .stroke(HomeTheme.accentColor.opacity(0.4), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
                             if horizontalSizeClass == .regular && showSpoilerActions && caughtUpCount > 0 {
                                 Button(action: resetAllReadState) {
                                     Image(systemName: "eye.slash")
@@ -428,8 +441,8 @@ struct HomeView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass)) {
-                    // Spoiler-free action bar: catch up + reset (iPhone) / catch up only (iPad)
-                    if showSpoilerActions {
+                    // Spoiler-free action bar (iPhone only — iPad has these in the filter bar)
+                    if horizontalSizeClass != .regular && showSpoilerActions {
                         HStack(spacing: 8) {
                             if uncaughtUpCount > 0 {
                                 Button(action: catchUpToLive) {
@@ -454,8 +467,7 @@ struct HomeView: View {
                                 .buttonStyle(.plain)
                             }
 
-                            // iPhone only: reset button in this row (iPad has it in filter bar)
-                            if horizontalSizeClass != .regular && caughtUpCount > 0 {
+                            if caughtUpCount > 0 {
                                 Button(action: resetAllReadState) {
                                     HStack(spacing: 5) {
                                         Image(systemName: "eye.slash")
