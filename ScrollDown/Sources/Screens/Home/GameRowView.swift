@@ -21,6 +21,19 @@ struct GameRowView: View {
         return readStateStore.isRead(gameId: game.id)
     }
 
+    /// Resolved scores: reading-position scores first, then full scores if game is read
+    private var resolvedScores: (away: Int, home: Int)? {
+        // Check for saved reading-position scores (from scrolling PBP)
+        if let saved = ReadingPositionStore.shared.savedScores(for: game.id) {
+            return saved
+        }
+        // Fall back to full game scores if the game has been marked read
+        if isRead, let away = game.awayScore, let home = game.homeScore {
+            return (away: away, home: home)
+        }
+        return nil
+    }
+
     /// Computed card state based on data availability — active unless truly empty
     var cardState: GameCardState {
         let hasAnyData = game.hasOdds == true
@@ -48,14 +61,14 @@ struct GameRowView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            // Final score for read games — team-colored
-            if isRead, let home = game.homeScore, let away = game.awayScore {
+            // Score display — reading-position scores or final scores for read games
+            if let scores = resolvedScores {
                 HStack(spacing: 4) {
-                    Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(away)")
+                    Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
                         .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
                     Text("-")
                         .foregroundColor(.secondary)
-                    Text("\(home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                    Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
                         .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
                 }
                 .font(.caption.weight(.semibold).monospacedDigit())
