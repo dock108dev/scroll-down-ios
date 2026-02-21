@@ -28,7 +28,9 @@ final class ReadStateStore: ObservableObject {
         return defaults.bool(forKey: prefix + "\(gameId)")
     }
 
-    func markRead(gameId: Int) {
+    func markRead(gameId: Int, status: GameStatus? = nil) {
+        // If status is provided, only mark read for final games
+        if let status, !status.isFinal { return }
         objectWillChange.send()
         defaults.set(true, forKey: prefix + "\(gameId)")
         readIds?.insert(gameId)
@@ -61,5 +63,23 @@ final class ReadStateStore: ObservableObject {
             return gameIds.filter { cached.contains($0) }.count
         }
         return gameIds.filter { defaults.bool(forKey: prefix + "\($0)") }.count
+    }
+
+    // MARK: - Score Reveal Preference
+
+    private let scoreRevealKey = "scoreRevealMode"
+
+    var scoreRevealMode: ScoreRevealMode {
+        get {
+            guard let raw = defaults.string(forKey: scoreRevealKey),
+                  let mode = ScoreRevealMode(rawValue: raw) else {
+                return .onMarkRead
+            }
+            return mode
+        }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue.rawValue, forKey: scoreRevealKey)
+        }
     }
 }

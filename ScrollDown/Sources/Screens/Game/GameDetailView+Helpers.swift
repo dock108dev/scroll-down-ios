@@ -245,11 +245,35 @@ extension GameDetailView {
         }
         savedResumePlayIndex = playIndex
         UserDefaults.standard.set(playIndex, forKey: resumeMarkerKey)
+
+        // Save full reading position with context
+        let periodLabel: String? = {
+            guard let quarter = play.quarter else { return nil }
+            return quarterOrdinal(quarter)
+        }()
+        let timeLabel: String? = {
+            guard let quarter = play.quarter else { return nil }
+            let ordinal = quarterOrdinal(quarter)
+            if let clock = play.gameClock {
+                return "\(ordinal) \(clock)"
+            }
+            return ordinal
+        }()
+        let position = ReadingPosition(
+            playIndex: playIndex,
+            period: play.quarter,
+            gameClock: play.gameClock,
+            periodLabel: periodLabel,
+            timeLabel: timeLabel,
+            savedAt: Date()
+        )
+        ReadingPositionStore.shared.save(gameId: gameId, position: position)
     }
 
     func clearSavedResumeMarker() {
         savedResumePlayIndex = nil
         UserDefaults.standard.removeObject(forKey: resumeMarkerKey)
+        ReadingPositionStore.shared.clear(gameId: gameId)
     }
 
     var resumeMarkerKey: String {
@@ -305,8 +329,8 @@ extension GameDetailView {
             sections.append(.overview)
         }
 
-        // Game Flow - only show when flow data exists
-        if viewModel.hasFlowData {
+        // Game Flow / Live PBP - show when flow data exists or for live games with PBP
+        if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
             sections.append(.timeline)
         }
 

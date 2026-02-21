@@ -78,6 +78,10 @@ final class GameDetailViewModel: ObservableObject {
         case failed(String)
     }
 
+    // Live polling
+    @Published private(set) var isLivePolling: Bool = false
+    private var pollingTask: Task<Void, Never>?
+
     // PBP data (fetched separately when not included in main detail)
     @Published private(set) var pbpEvents: [PbpEvent] = []
     @Published private(set) var pbpState: PbpState = .idle
@@ -97,13 +101,15 @@ final class GameDetailViewModel: ObservableObject {
 
     // MARK: - Loading Methods
 
-    func load(gameId: Int, league: String?, service: GameService) async {
-        guard detail == nil else {
+    func load(gameId: Int, league: String?, service: GameService, isRefresh: Bool = false) async {
+        guard isRefresh || detail == nil else {
             loadState = .loaded
             return
         }
 
-        loadState = .loading
+        if !isRefresh {
+            loadState = .loading
+        }
         errorMessage = nil
         isUnavailable = false
 
@@ -116,6 +122,7 @@ final class GameDetailViewModel: ObservableObject {
                 loadState = .idle
                 return
             }
+            let previousStatus = detail?.game.status
             detail = response
             injectTeamColors(from: response.game)
             logger.info("📊 Game \(gameId): teamStats count=\(response.teamStats.count), playerStats count=\(response.playerStats.count)")
@@ -127,10 +134,47 @@ final class GameDetailViewModel: ObservableObject {
                 }
             }
             loadState = .loaded
+
+            // Detect transition from live to final
+            if let prev = previousStatus, prev.isLive, response.game.status.isFinal {
+                stopLivePolling()
+                logger.info("🏁 Game \(gameId) transitioned to final — stopping live polling")
+            }
         } catch {
-            errorMessage = error.localizedDescription
-            loadState = .failed(error.localizedDescription)
+            if !isRefresh {
+                errorMessage = error.localizedDescription
+                loadState = .failed(error.localizedDescription)
+            }
         }
+    }
+
+    // MARK: - Live Polling
+
+    func startLivePolling(gameId: Int, service: GameService) {
+        guard !isLivePolling else { return }
+        isLivePolling = true
+        pollingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 45_000_000_000) // ~45 seconds
+                guard !Task.isCancelled else { break }
+                await self?.refreshLiveData(gameId: gameId, service: service)
+            }
+        }
+        logger.info("▶️ Started live polling for game \(gameId)")
+    }
+
+    func stopLivePolling() {
+        pollingTask?.cancel()
+        pollingTask = nil
+        isLivePolling = false
+        logger.info("⏹️ Stopped live polling")
+    }
+
+    private func refreshLiveData(gameId: Int, service: GameService) async {
+        await load(gameId: gameId, league: game?.leagueCode, service: service, isRefresh: true)
+        // Refresh PBP for live games
+        pbpState = .idle
+        await loadPbp(gameId: gameId, service: service)
     }
 
     /// Push API-provided team colors and abbreviations into the shared caches.
@@ -357,7 +401,7 @@ final class GameDetailViewModel: ObservableObject {
     // MARK: - Score Markers
 
     var liveScoreMarker: TimelineScoreMarker? {
-        guard game?.status == .inProgress else { return nil }
+        guard game?.status.isLive == true else { return nil }
         guard let score = latestScoreDisplay() else { return nil }
         return TimelineScoreMarker(
             id: ViewModelConstants.liveMarkerId,

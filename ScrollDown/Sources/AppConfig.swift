@@ -179,9 +179,9 @@ final class AppConfig: ObservableObject {
             }
             
             switch status {
-            case .completed, .final, .scheduled, .postponed, .canceled:
+            case .completed, .final, .archived, .scheduled, .pregame, .postponed, .canceled:
                 return true // Safe for snapshot mode
-            case .inProgress:
+            case .inProgress, .live:
                 return false // Exclude live games
             case .unknown:
                 return false

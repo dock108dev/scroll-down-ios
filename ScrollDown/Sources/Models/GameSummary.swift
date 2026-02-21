@@ -210,12 +210,12 @@ extension GameSummary {
         }
 
         switch status {
-        case .scheduled:
+        case .scheduled, .pregame:
             guard let date = parsedGameDate else { return Formatting.startsAtPrefix + formattedDate }
             return Formatting.startsAtPrefix + formattedTime(date: date)
-        case .inProgress:
+        case .inProgress, .live:
             return Formatting.inProgressText
-        case .completed, .final:
+        case .completed, .final, .archived:
             return Formatting.completedText
         case .postponed:
             return Formatting.postponedText
