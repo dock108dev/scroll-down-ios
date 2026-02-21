@@ -141,17 +141,18 @@ struct FairExplainerSheet: View {
                 methodRow(method)
             }
 
-            // Show the actual devig numbers if we have them
-            if let trueProb = bet.trueProb {
-                devigNumbersCard(trueProb: trueProb)
-            } else {
-                // Client-side computed probability
-                devigNumbersCard(trueProb: fairProb)
-            }
+            // Step-by-step math walkthrough
+            mathWalkthroughSection
 
-            // Per-book implied probabilities
+            // Per-book implied probabilities (supplementary detail)
             if bet.books.contains(where: { $0.impliedProb != nil }) {
-                impliedProbBreakdown
+                DisclosureGroup {
+                    impliedProbBreakdown
+                } label: {
+                    Text("All book probabilities")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
     }
@@ -180,73 +181,198 @@ struct FairExplainerSheet: View {
         }
     }
 
-    private func devigNumbersCard(trueProb: Double) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // This side
-            HStack {
-                Text("This side")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 80, alignment: .leading)
-                Spacer()
-                Text(FairBetCopy.formatProbability(trueProb))
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundColor(.primary)
-                Text("(\(FairBetCopy.formatOdds(fairOdds)))")
-                    .font(.caption.monospacedDigit())
-                    .foregroundColor(.secondary)
-            }
+    // MARK: - Math Walkthrough
 
-            // Opposite side (if available)
-            if let oppRef = bet.oppositeReferencePrice {
-                let oppProb = 1.0 - trueProb
-                HStack {
-                    Text("Other side")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Spacer()
-                    Text(FairBetCopy.formatProbability(oppProb))
-                        .font(.caption.weight(.semibold).monospacedDigit())
-                        .foregroundColor(.primary)
-                    Text("(\(FairBetCopy.formatOdds(oppRef)))")
-                        .font(.caption.monospacedDigit())
-                        .foregroundColor(.secondary)
+    @ViewBuilder
+    private var mathWalkthroughSection: some View {
+        if isMedianConsensus {
+            medianSteps
+        } else if rawImpliedThis != nil {
+            pairedDevigSteps
+        } else {
+            fallbackSteps
+        }
+    }
+
+    // MARK: Paired devig steps (reference prices available)
+
+    @ViewBuilder
+    private var pairedDevigSteps: some View {
+        // Step 1: Raw odds → implied probability
+        mathStepView(step: 1, title: "Convert odds to implied probability") {
+            VStack(alignment: .leading, spacing: 4) {
+                if let refPrice = referencePriceValue, let thisProb = rawImpliedThis {
+                    mathLine("This side", odds: refPrice, prob: thisProb)
                 }
-            }
-
-            Divider()
-
-            // Vig removed
-            let rawTotal = impliedProbTotal
-            if rawTotal > 1.0 {
-                HStack {
-                    Text("Vig removed")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Spacer()
-                    Text(String(format: "%.1f%%", (rawTotal - 1.0) * 100))
-                        .font(.caption.weight(.semibold).monospacedDigit())
-                        .foregroundColor(FairBetTheme.info)
+                if let oppPrice = bet.oppositeReferencePrice, let otherProb = rawImpliedOther {
+                    mathLine("Other side", odds: oppPrice, prob: otherProb)
                 }
-            }
+                if let total = rawImpliedTotal {
+                    Divider()
+                    HStack {
+                        Text("Total:")
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(String(format: "%.1f%%", total * 100))
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .foregroundColor(.primary)
+                    }
+                }
 
-            // Best book EV
-            if let bestEV = evResult?.ev, bestEV != 0 {
-                HStack {
-                    Text("Best EV")
+                if rawImpliedOther == nil {
+                    Text("Only this side's reference price is available.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Spacer()
-                    Text(FairBetCopy.formatEV(bestEV))
-                        .font(.caption.weight(.semibold).monospacedDigit())
-                        .foregroundColor(bestEV > 0 ? FairBetTheme.positive : FairBetTheme.negative)
+                        .italic()
                 }
             }
         }
+
+        // Step 2: The vig
+        if let total = rawImpliedTotal, let vig = vigPercent, vig > 0 {
+            mathStepView(step: 2, title: "Identify the vig") {
+                VStack(alignment: .leading, spacing: 4) {
+                    mathRow("Total implied:", String(format: "%.1f%%", total * 100))
+                    mathRow("Should be:", "100.0%")
+                    mathRow("Vig (margin):", String(format: "%.1f%%", vig * 100))
+                }
+            }
+        }
+
+        // Step 3: Remove vig → fair probability
+        if let thisProb = rawImpliedThis, let total = rawImpliedTotal, total > 1.0 {
+            mathStepView(step: 3, title: "Remove the vig") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(format: "%.1f%% ÷ %.1f%% = %.1f%%",
+                                thisProb * 100, total * 100, fairProb * 100))
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.primary)
+
+                    Divider()
+                    mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
+                    mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
+                }
+            }
+        } else {
+            mathStepView(step: 3, title: "Fair probability") {
+                VStack(alignment: .leading, spacing: 4) {
+                    mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
+                    mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
+                }
+            }
+        }
+
+        // Step 4: EV
+        evStepView(step: 4)
+    }
+
+    // MARK: Median consensus steps
+
+    @ViewBuilder
+    private var medianSteps: some View {
+        let bookCount = bet.books.filter { $0.impliedProb != nil }.count
+
+        mathStepView(step: 1, title: "Median implied probability") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("The median implied probability across \(bookCount) book\(bookCount == 1 ? "" : "s") is \(FairBetCopy.formatProbability(fairProb)).")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Divider()
+                mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
+                mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
+            }
+        }
+
+        evStepView(step: 2)
+    }
+
+    // MARK: Fallback steps (minimal data)
+
+    @ViewBuilder
+    private var fallbackSteps: some View {
+        mathStepView(step: 1, title: "Fair probability") {
+            VStack(alignment: .leading, spacing: 4) {
+                mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
+                mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
+            }
+        }
+
+        evStepView(step: 2)
+    }
+
+    // MARK: EV step (shared)
+
+    @ViewBuilder
+    private func evStepView(step: Int) -> some View {
+        if let bestBook = bestBookForEV, let profit = bestBookProfit, let ev = evResult?.ev {
+            mathStepView(step: step, title: "Calculate EV at best price") {
+                VStack(alignment: .leading, spacing: 4) {
+                    mathRow("Best price:", "\(FairBetCopy.formatOdds(bestBook.price)) (\(bestBook.name))")
+
+                    Text("If this hits (\(FairBetCopy.formatProbability(fairProb)) chance): win \(String(format: "$%.2f", profit))")
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.secondary)
+                    Text("If this misses (\(FairBetCopy.formatProbability(1.0 - fairProb)) chance): lose $1.00")
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.secondary)
+
+                    Divider()
+
+                    let winPart = fairProb * profit
+                    let lossPart = (1.0 - fairProb)
+                    let evDollars = winPart - lossPart
+
+                    Text(String(format: "EV = (%.2f × $%.2f) − (%.2f × $1.00)", fairProb, profit, 1.0 - fairProb))
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.primary)
+                    Text(String(format: "   = $%.2f − $%.2f", winPart, lossPart))
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.primary)
+                    Text(String(format: "   = %@$%.2f per dollar (%@)",
+                                evDollars >= 0 ? "+" : "", evDollars,
+                                FairBetCopy.formatEV(ev)))
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundColor(ev > 0 ? FairBetTheme.positive : FairBetTheme.negative)
+                }
+            }
+        } else if let reason = evResult?.evDisabledReason ?? bet.evDisabledReason {
+            mathStepView(step: step, title: "Expected Value") {
+                Text("EV not available: \(reason)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+        } else {
+            mathStepView(step: step, title: "Expected Value") {
+                Text("EV not available")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+        }
+    }
+
+    // MARK: Step view helper
+
+    private func mathStepView<Content: View>(step: Int, title: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(step)")
+                .font(.caption2.weight(.bold))
+                .foregroundColor(.white)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(FairBetTheme.info))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+
+                content()
+            }
+        }
         .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(FairBetTheme.cardBackground)
@@ -257,18 +383,78 @@ struct FairExplainerSheet: View {
         )
     }
 
-    /// Sum of raw implied probabilities from the best books (before devig)
-    private var impliedProbTotal: Double {
-        // Use reference prices if available
-        if let refPrice = evResult?.referencePrice {
-            let thisSideImplied = AmericanOdds(refPrice).impliedProbability
-            if let oppPrice = bet.oppositeReferencePrice {
-                let oppImplied = AmericanOdds(oppPrice).impliedProbability
-                return thisSideImplied + oppImplied
-            }
-            return thisSideImplied + (1.0 - fairProb) // estimate
+    // MARK: Math row helpers
+
+    private func mathLine(_ label: String, odds: Int, prob: Double) -> some View {
+        HStack {
+            Text(label)
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(FairBetCopy.formatOdds(odds))
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.primary)
+            Text("→")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text(String(format: "%.1f%%", prob * 100))
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundColor(.primary)
+                .frame(width: 50, alignment: .trailing)
         }
-        return 1.0 // can't determine vig
+    }
+
+    private func mathRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundColor(.primary)
+        }
+    }
+
+    // MARK: Walkthrough computed helpers
+
+    private var referencePriceValue: Int? {
+        evResult?.referencePrice ?? bet.referencePrice
+    }
+
+    private var rawImpliedThis: Double? {
+        guard let refPrice = referencePriceValue else { return nil }
+        return AmericanOdds(refPrice).impliedProbability
+    }
+
+    private var rawImpliedOther: Double? {
+        guard let oppPrice = bet.oppositeReferencePrice else { return nil }
+        return AmericanOdds(oppPrice).impliedProbability
+    }
+
+    private var rawImpliedTotal: Double? {
+        guard let thisProb = rawImpliedThis else { return nil }
+        guard let otherProb = rawImpliedOther else { return nil }
+        return thisProb + otherProb
+    }
+
+    private var vigPercent: Double? {
+        guard let total = rawImpliedTotal else { return nil }
+        return total - 1.0
+    }
+
+    private var bestBookForEV: BookPrice? {
+        bet.bestBook
+    }
+
+    private var bestBookProfit: Double? {
+        guard let book = bestBookForEV else { return nil }
+        return EVCalculator.americanToProfit(book.price)
+    }
+
+    private var isMedianConsensus: Bool {
+        guard let method = bet.evMethod?.lowercased() else { return false }
+        return method.contains("median") || method.contains("consensus")
     }
 
     /// Breakdown of each book's implied probability
