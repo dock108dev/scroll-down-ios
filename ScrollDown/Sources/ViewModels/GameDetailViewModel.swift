@@ -350,6 +350,87 @@ final class GameDetailViewModel: ObservableObject {
             logger.error("📋 PBP fetch failed: \(error.localizedDescription, privacy: .public)")
             pbpState = .failed(error.localizedDescription)
         }
+        // Always attempt to build unified timeline — uses pbpEvents if available, falls back to detail.plays
+        buildUnifiedTimelineFromPbp()
+    }
+
+    /// Build unified timeline events from PBP events or detail plays (for live games without flow data).
+    /// Flow-based timeline takes priority; this only runs when flow plays are absent.
+    /// Sources tried in order: pbpEvents (separate PBP endpoint), then detail.plays (main response).
+    func buildUnifiedTimelineFromPbp() {
+        guard flowPlays.isEmpty else { return }
+
+        let sport = detail?.game.leagueCode
+        let homeTeamName = detail?.game.homeTeam
+        let awayTeamName = detail?.game.awayTeam
+
+        // Source 1: Separately fetched PBP events
+        if !pbpEvents.isEmpty {
+            let events = pbpEvents.enumerated().map { index, event -> UnifiedTimelineEvent in
+                var scoringTeam: String?
+                if let home = event.homeScore, let away = event.awayScore, index > 0 {
+                    let prev = pbpEvents[index - 1]
+                    if home != (prev.homeScore ?? 0) { scoringTeam = homeTeamName }
+                    else if away != (prev.awayScore ?? 0) { scoringTeam = awayTeamName }
+                }
+
+                var dict: [String: Any] = [
+                    "event_type": "pbp",
+                    "event_id": "pbp-\(event.id.stringValue)",
+                    "period": event.period as Any,
+                    "game_clock": event.gameClock as Any,
+                    "description": event.description as Any,
+                    "player_name": event.playerName as Any,
+                    "home_score": event.homeScore as Any,
+                    "away_score": event.awayScore as Any,
+                    "play_type": event.eventType as Any,
+                    "team": (event.team ?? scoringTeam) as Any
+                ]
+                if scoringTeam != nil { dict["tier"] = 1 }
+                return UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+            }
+            serverUnifiedTimeline = events
+            unifiedTimelineState = .loaded
+            logger.info("📋 Built unified timeline from PBP events: \(events.count, privacy: .public)")
+            return
+        }
+
+        // Source 2: Plays from the main game detail response
+        let detailPlays = detail?.plays ?? []
+        guard !detailPlays.isEmpty else { return }
+
+        let events = detailPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
+            var scoringTeam: String?
+            if let home = play.homeScore, let away = play.awayScore, index > 0 {
+                let prev = detailPlays[index - 1]
+                if home != (prev.homeScore ?? 0) { scoringTeam = homeTeamName }
+                else if away != (prev.awayScore ?? 0) { scoringTeam = awayTeamName }
+            }
+
+            var dict: [String: Any] = [
+                "event_type": "pbp",
+                "event_id": "play-\(play.playIndex)",
+                "period": play.quarter as Any,
+                "game_clock": play.gameClock as Any,
+                "description": play.description as Any,
+                "player_name": play.playerName as Any,
+                "home_score": play.homeScore as Any,
+                "away_score": play.awayScore as Any,
+                "play_type": play.playType?.rawValue as Any,
+                "team": (play.teamAbbreviation ?? scoringTeam) as Any,
+                "period_label": play.periodLabel as Any,
+                "time_label": play.timeLabel as Any
+            ]
+            if let tier = play.tier {
+                dict["tier"] = tier
+            } else if scoringTeam != nil {
+                dict["tier"] = 1
+            }
+            return UnifiedTimelineEvent(from: dict, index: index, sport: sport)
+        }
+        serverUnifiedTimeline = events
+        unifiedTimelineState = .loaded
+        logger.info("📋 Built unified timeline from detail plays: \(events.count, privacy: .public)")
     }
 
     // MARK: - Flow Computed Properties
