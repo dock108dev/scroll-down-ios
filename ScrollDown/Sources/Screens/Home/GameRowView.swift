@@ -16,8 +16,11 @@ struct GameRowView: View {
     @Environment(\.colorScheme) private var colorScheme
     let game: GameSummary
 
-    /// Bumped to force SwiftUI to re-evaluate computed properties after store updates
-    @State private var scoreRefreshToken = false
+    /// Cached reading-position scores from ReadingPositionStore (not directly observable by SwiftUI).
+    /// Synced on appear, after direct mutation, and when readStateStore signals external changes.
+    @State private var savedAwayScore: Int?
+    @State private var savedHomeScore: Int?
+    @State private var savedScoreContext: String?
 
     /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
@@ -25,14 +28,11 @@ struct GameRowView: View {
         return readStateStore.isRead(gameId: game.id)
     }
 
-    /// Resolved scores: reading-position scores first, then full scores if game is read or "always show" is on
+    /// Resolved scores: cached reading-position scores first, then full scores if game is read or "always show" is on
     private var resolvedScores: (away: Int, home: Int)? {
-        _ = scoreRefreshToken // dependency so SwiftUI re-evaluates after updates
-        // Check for saved reading-position scores (from scrolling PBP)
-        if let saved = ReadingPositionStore.shared.savedScores(for: game.id) {
-            return saved
+        if let away = savedAwayScore, let home = savedHomeScore {
+            return (away: away, home: home)
         }
-        // Show scores if game is read OR user has "always show" enabled
         let shouldShow = isRead || readStateStore.scoreRevealMode == .always
         if shouldShow, let away = game.awayScore, let home = game.homeScore {
             return (away: away, home: home)
@@ -42,15 +42,21 @@ struct GameRowView: View {
 
     /// Context string for saved scores (e.g., "@ Q2 · 2m ago")
     private var scoreContextText: String? {
-        _ = scoreRefreshToken
-        return ReadingPositionStore.shared.scoreContext(for: game.id)
+        savedScoreContext
     }
 
     /// Updates saved scores to the current live score from the game summary
     func updateToLiveScore() {
         guard let away = game.awayScore, let home = game.homeScore else { return }
         ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
-        scoreRefreshToken.toggle()
+        reloadSavedScores()
+    }
+
+    private func reloadSavedScores() {
+        let saved = ReadingPositionStore.shared.savedScores(for: game.id)
+        savedAwayScore = saved?.away
+        savedHomeScore = saved?.home
+        savedScoreContext = ReadingPositionStore.shared.scoreContext(for: game.id)
     }
 
     /// Computed card state based on data availability — active unless truly empty
@@ -140,6 +146,11 @@ struct GameRowView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(accessibilityHint)
+        .onAppear { reloadSavedScores() }
+        .onReceive(readStateStore.objectWillChange) { _ in
+            // External changes (catch-up, reset) may have updated ReadingPositionStore
+            reloadSavedScores()
+        }
     }
 
     // MARK: - State-Based Appearance

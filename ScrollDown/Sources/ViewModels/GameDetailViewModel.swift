@@ -368,10 +368,11 @@ final class GameDetailViewModel: ObservableObject {
         if !pbpEvents.isEmpty {
             let events = pbpEvents.enumerated().map { index, event -> UnifiedTimelineEvent in
                 var scoringTeam: String?
-                if let home = event.homeScore, let away = event.awayScore, index > 0 {
-                    let prev = pbpEvents[index - 1]
-                    if home != (prev.homeScore ?? 0) { scoringTeam = homeTeamName }
-                    else if away != (prev.awayScore ?? 0) { scoringTeam = awayTeamName }
+                if let home = event.homeScore, let away = event.awayScore {
+                    let prevHome = index > 0 ? (pbpEvents[index - 1].homeScore ?? 0) : 0
+                    let prevAway = index > 0 ? (pbpEvents[index - 1].awayScore ?? 0) : 0
+                    if home != prevHome { scoringTeam = homeTeamName }
+                    else if away != prevAway { scoringTeam = awayTeamName }
                 }
 
                 var dict: [String: Any] = [
@@ -401,10 +402,11 @@ final class GameDetailViewModel: ObservableObject {
 
         let events = detailPlays.enumerated().map { index, play -> UnifiedTimelineEvent in
             var scoringTeam: String?
-            if let home = play.homeScore, let away = play.awayScore, index > 0 {
-                let prev = detailPlays[index - 1]
-                if home != (prev.homeScore ?? 0) { scoringTeam = homeTeamName }
-                else if away != (prev.awayScore ?? 0) { scoringTeam = awayTeamName }
+            if let home = play.homeScore, let away = play.awayScore {
+                let prevHome = index > 0 ? (detailPlays[index - 1].homeScore ?? 0) : 0
+                let prevAway = index > 0 ? (detailPlays[index - 1].awayScore ?? 0) : 0
+                if home != prevHome { scoringTeam = homeTeamName }
+                else if away != prevAway { scoringTeam = awayTeamName }
             }
 
             var dict: [String: Any] = [
