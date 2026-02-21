@@ -13,6 +13,7 @@ enum GameCardState {
 /// Two visual states: active (tappable, full styling) and noData (greyed, non-tappable)
 struct GameRowView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
+    @Environment(\.colorScheme) private var colorScheme
     let game: GameSummary
 
     /// Bumped to force SwiftUI to re-evaluate computed properties after store updates
@@ -24,15 +25,16 @@ struct GameRowView: View {
         return readStateStore.isRead(gameId: game.id)
     }
 
-    /// Resolved scores: reading-position scores first, then full scores if game is read
+    /// Resolved scores: reading-position scores first, then full scores if game is read or "always show" is on
     private var resolvedScores: (away: Int, home: Int)? {
         _ = scoreRefreshToken // dependency so SwiftUI re-evaluates after updates
         // Check for saved reading-position scores (from scrolling PBP)
         if let saved = ReadingPositionStore.shared.savedScores(for: game.id) {
             return saved
         }
-        // Fall back to full game scores if the game has been marked read
-        if isRead, let away = game.awayScore, let home = game.homeScore {
+        // Show scores if game is read OR user has "always show" enabled
+        let shouldShow = isRead || readStateStore.scoreRevealMode == .always
+        if shouldShow, let away = game.awayScore, let home = game.homeScore {
             return (away: away, home: home)
         }
         return nil
@@ -83,11 +85,11 @@ struct GameRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
                         Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
-                            .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.awayTeamName, against: game.homeTeamName, isHome: false))
+                            .foregroundColor(awayTeamColor)
                         Text("-")
                             .foregroundColor(.secondary)
                         Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                            .foregroundColor(DesignSystem.TeamColors.matchupColor(for: game.homeTeamName, against: game.awayTeamName, isHome: true))
+                            .foregroundColor(homeTeamColor)
                     }
                     .font(.caption.weight(.semibold).monospacedDigit())
 
@@ -211,6 +213,24 @@ struct GameRowView: View {
     /// Whether this game has full flow content (not just PBP)
     private var hasFullFlow: Bool {
         (game.hasRequiredData == true) || (game.hasPbp == true && game.hasSocial == true)
+    }
+
+    /// Resolves team color using game summary's inline color fields first, then cache fallback
+    private func teamColor(light: String?, dark: String?, teamName: String, opponentName: String, isHome: Bool) -> Color {
+        if let hex = (colorScheme == .dark ? dark : light), !hex.isEmpty {
+            return Color(uiColor: UIColor(hex: hex))
+        }
+        return DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome)
+    }
+
+    private var awayTeamColor: Color {
+        teamColor(light: game.awayTeamColorLight, dark: game.awayTeamColorDark,
+                  teamName: game.awayTeamName, opponentName: game.homeTeamName, isHome: false)
+    }
+
+    private var homeTeamColor: Color {
+        teamColor(light: game.homeTeamColorLight, dark: game.homeTeamColorDark,
+                  teamName: game.homeTeamName, opponentName: game.awayTeamName, isHome: true)
     }
 
     private var accessibilityLabel: String {

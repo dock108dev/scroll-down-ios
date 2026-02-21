@@ -129,6 +129,29 @@ struct GameDetailView: View {
         isWrapUpExpanded || readStateStore.isRead(gameId: gameId)
     }
 
+    /// Best available away score for header display.
+    /// For live games: uses team-stats-derived score (freshest) when scores are revealed or "always show" is on.
+    private func liveDisplayAwayScore(for game: Game) -> Int? {
+        guard game.status.isLive else { return displayedAwayScore }
+        let scoresRevealed = displayedAwayScore != nil
+        let alwaysShow = readStateStore.scoreRevealMode == .always
+        if scoresRevealed || alwaysShow {
+            return viewModel.liveAwayScore ?? displayedAwayScore
+        }
+        return displayedAwayScore
+    }
+
+    /// Best available home score for header display.
+    private func liveDisplayHomeScore(for game: Game) -> Int? {
+        guard game.status.isLive else { return displayedHomeScore }
+        let scoresRevealed = displayedHomeScore != nil
+        let alwaysShow = readStateStore.scoreRevealMode == .always
+        if scoresRevealed || alwaysShow {
+            return viewModel.liveHomeScore ?? displayedHomeScore
+        }
+        return displayedHomeScore
+    }
+
     private func loadSocialIfEnabled() async {
         if viewModel.isSocialTabEnabled {
             await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
@@ -222,10 +245,12 @@ struct GameDetailView: View {
                                 scoreRevealed: isGameRead,
                                 onRevealScore: {
                                     if game.status.isLive {
-                                        // Show current live score and persist it
-                                        displayedAwayScore = game.awayScore
-                                        displayedHomeScore = game.homeScore
-                                        if let away = game.awayScore, let home = game.homeScore {
+                                        // Use team-stats-derived scores (most current) for live games
+                                        let away = viewModel.liveAwayScore ?? game.awayScore
+                                        let home = viewModel.liveHomeScore ?? game.homeScore
+                                        displayedAwayScore = away
+                                        displayedHomeScore = home
+                                        if let away, let home {
                                             ReadingPositionStore.shared.updateScores(for: gameId, awayScore: away, homeScore: home)
                                         }
                                     } else {
@@ -235,8 +260,8 @@ struct GameDetailView: View {
                                 scoreRevealMode: readStateStore.scoreRevealMode,
                                 hasReadingPosition: ReadingPositionStore.shared.load(gameId: gameId) != nil,
                                 resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
-                                displayAwayScore: displayedAwayScore,
-                                displayHomeScore: displayedHomeScore,
+                                displayAwayScore: liveDisplayAwayScore(for: game),
+                                displayHomeScore: liveDisplayHomeScore(for: game),
                                 scoreContextText: ReadingPositionStore.shared.scoreContext(for: gameId)
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))

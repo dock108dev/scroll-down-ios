@@ -472,6 +472,38 @@ final class GameDetailViewModel: ObservableObject {
         detail?.game
     }
 
+    /// Best available live score from team stats points (most current) or game object (fallback).
+    var liveHomeScore: Int? {
+        if let ts = detail?.teamStats.first(where: { $0.isHome }),
+           let pts = extractPoints(from: ts.stats) {
+            return pts
+        }
+        return game?.homeScore
+    }
+
+    var liveAwayScore: Int? {
+        if let ts = detail?.teamStats.first(where: { !$0.isHome }),
+           let pts = extractPoints(from: ts.stats) {
+            return pts
+        }
+        return game?.awayScore
+    }
+
+    private func extractPoints(from stats: [String: AnyCodable]) -> Int? {
+        // Try nested "points.total" first, then flat keys
+        if let nested = stats["points"]?.value as? [String: Any],
+           let total = nested["total"] as? NSNumber {
+            return total.intValue
+        }
+        for key in ["points", "pts"] {
+            if let val = stats[key]?.value {
+                if let num = val as? NSNumber { return num.intValue }
+                if let str = val as? String, let d = Double(str) { return Int(d) }
+            }
+        }
+        return nil
+    }
+
     var highlights: [SocialPostEntry] {
         detail?.socialPosts.filter { $0.hasVideo || $0.imageUrl != nil } ?? []
     }

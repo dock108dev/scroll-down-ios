@@ -142,8 +142,27 @@ struct HomeView: View {
                             endPoint: .trailing
                         )
                         .frame(width: 20)
-                        refreshButton {
-                            startLoadGames(scrollToToday: false)
+                        HStack(spacing: 8) {
+                            // iPad: reset button in filter bar; iPhone: in action row below
+                            if horizontalSizeClass == .regular && showSpoilerActions && caughtUpCount > 0 {
+                                Button(action: resetAllReadState) {
+                                    Image(systemName: "eye.slash")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(8)
+                                        .background(
+                                            Circle()
+                                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            // iPad: always show refresh here; iPhone: only when no action row
+                            if horizontalSizeClass == .regular || !showSpoilerActions {
+                                refreshButton {
+                                    startLoadGames(scrollToToday: false)
+                                }
+                            }
                         }
                         .padding(.trailing, horizontalPadding)
                         .background(HomeTheme.background)
@@ -380,7 +399,7 @@ struct HomeView: View {
             } else if viewMode == .odds {
                 OddsComparisonView(viewModel: oddsViewModel)
             } else {
-                SettingsView(oddsViewModel: oddsViewModel, completedGameIds: allCompletedGameIds)
+                SettingsView(oddsViewModel: oddsViewModel)
             }
         }
     }
@@ -409,6 +428,70 @@ struct HomeView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass)) {
+                    // Spoiler-free action bar: catch up + reset (iPhone) / catch up only (iPad)
+                    if showSpoilerActions {
+                        HStack(spacing: 8) {
+                            if uncaughtUpCount > 0 {
+                                Button(action: catchUpToLive) {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "eye")
+                                            .font(.caption2.weight(.semibold))
+                                        Text("Catch up")
+                                            .font(.caption.weight(.medium))
+                                        Text("\(uncaughtUpCount)")
+                                            .font(.caption2.weight(.bold).monospacedDigit())
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 1)
+                                            .background(Color.white.opacity(0.2))
+                                            .clipShape(Capsule())
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(HomeTheme.accentColor.opacity(0.85))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            // iPhone only: reset button in this row (iPad has it in filter bar)
+                            if horizontalSizeClass != .regular && caughtUpCount > 0 {
+                                Button(action: resetAllReadState) {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "eye.slash")
+                                            .font(.caption2.weight(.semibold))
+                                        Text("Reset")
+                                            .font(.caption.weight(.medium))
+                                        Text("\(caughtUpCount)")
+                                            .font(.caption2.weight(.bold).monospacedDigit())
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 1)
+                                            .background(Color(.systemGray4))
+                                            .clipShape(Capsule())
+                                    }
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            Spacer()
+
+                            // iPhone only: refresh button in this row
+                            if horizontalSizeClass != .regular {
+                                refreshButton {
+                                    startLoadGames(scrollToToday: false)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.bottom, 4)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
                     // Earlier section (2+ days ago)
                     sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded)
                         .id(earlierSection.title)
@@ -457,6 +540,63 @@ struct HomeView: View {
 
     private var allCompletedGameIds: [Int] {
         sectionsInOrder.flatMap { $0.completedGames.map(\.id) }
+    }
+
+    /// All games across sections (for catch-up)
+    private var allGames: [GameSummary] {
+        sectionsInOrder.flatMap(\.games)
+    }
+
+    /// Number of games the user hasn't caught up on yet (unread finals + unrevealed live)
+    private var uncaughtUpCount: Int {
+        allGames.filter { game in
+            if game.status?.isFinal == true {
+                return !readStateStore.isRead(gameId: game.id)
+            }
+            if game.status?.isLive == true {
+                return ReadingPositionStore.shared.savedScores(for: game.id) == nil
+            }
+            return false
+        }.count
+    }
+
+    /// Number of games that have been caught up on (read finals + revealed live)
+    private var caughtUpCount: Int {
+        allGames.filter { game in
+            if game.status?.isFinal == true {
+                return readStateStore.isRead(gameId: game.id)
+            }
+            if game.status?.isLive == true {
+                return ReadingPositionStore.shared.savedScores(for: game.id) != nil
+            }
+            return false
+        }.count
+    }
+
+    /// Whether the spoiler-free action bar should show at all
+    private var showSpoilerActions: Bool {
+        readStateStore.scoreRevealMode == .onMarkRead && (uncaughtUpCount > 0 || caughtUpCount > 0)
+    }
+
+    /// Catch up to live: mark all finals as read + reveal all live scores
+    private func catchUpToLive() {
+        readStateStore.markAllRead(gameIds: allCompletedGameIds)
+        for game in allGames where game.status?.isLive == true {
+            if let away = game.awayScore, let home = game.homeScore {
+                ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+            }
+        }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
+    /// Reset all: mark everything unread + clear saved scores
+    private func resetAllReadState() {
+        let allIds = allGames.map(\.id)
+        readStateStore.markAllUnread(gameIds: allIds)
+        for id in allIds {
+            ReadingPositionStore.shared.clear(gameId: id)
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     // MARK: - Adaptive Layout

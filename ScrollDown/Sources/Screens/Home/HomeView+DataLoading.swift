@@ -40,9 +40,9 @@ extension HomeView {
 
         guard !Task.isCancelled else { isUpdating = false; return }
 
+        injectTeamMetadataFromSummaries(primaryResults)
         applyHomeSectionResults(primaryResults)
         preloadReadState()
-        injectTeamMetadataFromSummaries(primaryResults)
         saveSectionsToCache(primaryResults, cache: cache)
 
         if scrollToToday {
@@ -58,9 +58,9 @@ extension HomeView {
 
         guard !Task.isCancelled else { isUpdating = false; return }
 
+        injectTeamMetadataFromSummaries(secondaryResults)
         applyHomeSectionResults(secondaryResults)
         preloadReadState()
-        injectTeamMetadataFromSummaries(secondaryResults)
         saveSectionsToCache(secondaryResults, cache: cache)
 
         let allResults = primaryResults + secondaryResults

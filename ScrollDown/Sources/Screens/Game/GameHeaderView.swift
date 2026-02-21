@@ -35,17 +35,14 @@ struct GameHeaderView: View {
         }
     }
 
-    /// Resolved away score: for live games, prefer fresh game score (updated by polling);
-    /// display score serves as fallback until first poll completes on re-entry.
+    /// Resolved away score: display score (from scroll position or live reveal) takes priority over game score
     private var resolvedAwayScore: Int? {
-        if game.status.isLive { return game.awayScore ?? displayAwayScore }
-        return displayAwayScore ?? game.awayScore
+        displayAwayScore ?? game.awayScore
     }
 
-    /// Resolved home score: same priority as away score.
+    /// Resolved home score: display score (from scroll position or live reveal) takes priority over game score
     private var resolvedHomeScore: Int? {
-        if game.status.isLive { return game.homeScore ?? displayHomeScore }
-        return displayHomeScore ?? game.homeScore
+        displayHomeScore ?? game.homeScore
     }
 
     private var awayColor: Color {
