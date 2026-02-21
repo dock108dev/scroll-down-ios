@@ -233,8 +233,9 @@ final class OddsComparisonViewModel: ObservableObject {
             let totalExpected = firstResponse.total
 
             // Phase 2: Load remaining pages in background
-            if firstResponse.bets.count < totalExpected && firstResponse.bets.count >= limit {
+            if firstResponse.bets.count >= limit && firstResponse.bets.count < totalExpected {
                 isLoadingMore = true
+                defer { isLoadingMore = false }
                 var offset = limit
 
                 while offset < totalExpected {
@@ -258,8 +259,6 @@ final class OddsComparisonViewModel: ObservableObject {
 
                     if response.bets.count < limit { break }
                 }
-
-                isLoadingMore = false
             }
 
         } catch {
