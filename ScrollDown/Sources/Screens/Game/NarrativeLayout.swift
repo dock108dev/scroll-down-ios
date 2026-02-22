@@ -205,6 +205,15 @@ struct FlowContainerView: View {
                         awayTeam: awayTeam,
                         sport: sport
                     )
+                    .id("block-\(block.blockIndex)")
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: PlayRowFramePreferenceKey.self,
+                                value: [-(block.blockIndex + 1): geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
+                            )
+                        }
+                    )
 
                     if block.blockIndex < blocks.count - 1 {
                         Divider()

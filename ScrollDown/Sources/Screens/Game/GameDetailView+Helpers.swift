@@ -84,6 +84,28 @@ extension GameDetailView {
             .0
     }
 
+    var currentViewingBlock: BlockDisplayModel? {
+        guard scrollViewFrame.height > 0 else { return nil }
+        let blocks = viewModel.blockDisplayModels
+        guard !blocks.isEmpty else { return nil }
+        let blocksByEncodedIndex = Dictionary(uniqueKeysWithValues: blocks.map { (-(($0.blockIndex) + 1), $0) })
+
+        let visibleBlocks = playRowFrames.compactMap { encodedIndex, frame -> (BlockDisplayModel, CGRect)? in
+            guard encodedIndex < 0,
+                  let block = blocksByEncodedIndex[encodedIndex],
+                  frame.maxY >= scrollViewFrame.minY,
+                  frame.minY <= scrollViewFrame.maxY else {
+                return nil
+            }
+            return (block, frame)
+        }
+
+        return visibleBlocks
+            .sorted { $0.1.minY < $1.1.minY }
+            .last?
+            .0
+    }
+
     func periodDescriptor(for play: PlayEntry) -> String {
         guard let quarter = play.quarter else {
             return "Game"
@@ -216,10 +238,19 @@ extension GameDetailView {
         isFlowCardExpanded = true
         isTimelineExpanded = true
         selectedSection = .timeline
-        expandQuarter(for: savedResumePlayIndex)
+
+        let scrollId: String
+        if savedResumePlayIndex < 0 {
+            let blockIndex = -(savedResumePlayIndex + 1)
+            scrollId = "block-\(blockIndex)"
+        } else {
+            expandQuarter(for: savedResumePlayIndex)
+            scrollId = "play-\(savedResumePlayIndex)"
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.easeInOut) {
-                proxy.scrollTo("play-\(savedResumePlayIndex)", anchor: .top)
+                proxy.scrollTo(scrollId, anchor: .top)
             }
         }
         shouldShowResumePrompt = false
@@ -256,11 +287,14 @@ extension GameDetailView {
 
         // Score-only positions (e.g. from hold-to-reveal on home screen) have no
         // timeline context — restore scores above but don't offer a resume prompt.
+        // Block-based positions always have a period, so this gate passes for them.
         guard position.period != nil else { return }
 
-        // Validate play index against current PBP data
+        // Validate play index against current PBP data or flow block data
         let storedPlayIndex = position.playIndex
-        guard viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true else {
+        let isValidPlay = viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true
+        let isValidBlock = storedPlayIndex < 0 && (-(storedPlayIndex + 1)) < viewModel.blockDisplayModels.count
+        guard isValidPlay || isValidBlock else {
             return
         }
         savedResumePlayIndex = storedPlayIndex
@@ -274,40 +308,66 @@ extension GameDetailView {
 
     func updateResumeMarkerIfNeeded() {
         guard isResumeTrackingEnabled else { return }
-        guard let play = currentViewingPlay else { return }
-        let playIndex = play.playIndex
-        guard playIndex != savedResumePlayIndex else { return }
-        savedResumePlayIndex = playIndex
 
-        let periodLabel: String? = {
-            guard let quarter = play.quarter else { return nil }
-            return quarterOrdinal(quarter)
-        }()
-        let timeLabel: String? = {
-            guard let quarter = play.quarter else { return nil }
-            let ordinal = quarterOrdinal(quarter)
-            if let clock = play.gameClock {
-                return "\(ordinal) \(clock)"
+        // Try PBP play first (live games)
+        if let play = currentViewingPlay {
+            let playIndex = play.playIndex
+            guard playIndex != savedResumePlayIndex else { return }
+            savedResumePlayIndex = playIndex
+
+            let periodLabel: String? = {
+                guard let quarter = play.quarter else { return nil }
+                return quarterOrdinal(quarter)
+            }()
+            let timeLabel: String? = {
+                guard let quarter = play.quarter else { return nil }
+                let ordinal = quarterOrdinal(quarter)
+                if let clock = play.gameClock {
+                    return "\(ordinal) \(clock)"
+                }
+                return ordinal
+            }()
+            let position = ReadingPosition(
+                playIndex: playIndex,
+                period: play.quarter,
+                gameClock: play.gameClock,
+                periodLabel: periodLabel,
+                timeLabel: timeLabel,
+                savedAt: Date(),
+                homeScore: play.homeScore,
+                awayScore: play.awayScore
+            )
+            ReadingPositionStore.shared.save(gameId: gameId, position: position)
+
+            // Update displayed scores as user scrolls (only when scores are present)
+            if let away = play.awayScore, let home = play.homeScore {
+                displayedAwayScore = away
+                displayedHomeScore = home
             }
-            return ordinal
-        }()
+            return
+        }
+
+        // Try flow block (completed games)
+        guard let block = currentViewingBlock else { return }
+        let encodedIndex = -(block.blockIndex + 1)
+        guard encodedIndex != savedResumePlayIndex else { return }
+        savedResumePlayIndex = encodedIndex
+
+        let periodLabel = block.periodDisplay
         let position = ReadingPosition(
-            playIndex: playIndex,
-            period: play.quarter,
-            gameClock: play.gameClock,
+            playIndex: encodedIndex,
+            period: block.periodStart,
+            gameClock: block.endClock,
             periodLabel: periodLabel,
-            timeLabel: timeLabel,
+            timeLabel: periodLabel,
             savedAt: Date(),
-            homeScore: play.homeScore,
-            awayScore: play.awayScore
+            homeScore: block.endScore.home,
+            awayScore: block.endScore.away
         )
         ReadingPositionStore.shared.save(gameId: gameId, position: position)
 
-        // Update displayed scores as user scrolls (only when scores are present)
-        if let away = play.awayScore, let home = play.homeScore {
-            displayedAwayScore = away
-            displayedHomeScore = home
-        }
+        displayedAwayScore = block.endScore.away
+        displayedHomeScore = block.endScore.home
     }
 
     func clearSavedResumeMarker() {

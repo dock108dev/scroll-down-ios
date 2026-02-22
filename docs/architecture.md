@@ -6,29 +6,65 @@ For directory layout, data models, API endpoints, and environment reference, see
 
 ## MVVM Data Flow
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         SwiftUI View                            │
-│   (HomeView, GameDetailView, FlowBlockCardView, etc.)           │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │ observes @Published
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       ViewModel                                 │
-│   GameDetailViewModel                                           │
-│   • Holds @Published state                                      │
-│   • Handles user actions                                        │
-│   • Orchestrates service calls                                  │
-│   • Reads pre-computed data from API responses                  │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │ calls async
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      GameService                                │
-│   protocol GameService { ... }                                  │
-│   • MockGameService — generated local data for offline dev      │
-│   • RealGameService — calls backend APIs                        │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Views
+        HV[HomeView]
+        GDV[GameDetailView]
+        GFV[GameFlowView]
+        OCV[OddsComparisonView]
+        SV[SettingsView]
+    end
+
+    subgraph ViewModels
+        GDVM[GameDetailViewModel]
+        OCVM[OddsComparisonViewModel]
+    end
+
+    subgraph Services
+        GS[GameService Protocol]
+        RGS[RealGameService]
+        MGS[MockGameService]
+    end
+
+    subgraph Stores
+        RSS[ReadStateStore]
+        RPS[ReadingPositionStore]
+        TCC[TeamColorCache]
+        HGC[HomeGameCache]
+    end
+
+    subgraph API["Backend API"]
+        GAMES["/games"]
+        DETAIL["/games/{id}"]
+        FLOW["/games/{id}/flow"]
+        PBP["/pbp/game/{id}"]
+        TEAMS["/teams"]
+        ODDS["/fairbet/odds"]
+    end
+
+    HV -->|observes| GDVM
+    GDV -->|observes| GDVM
+    GFV -->|observes| GDVM
+    OCV -->|observes| OCVM
+
+    GDVM -->|calls| GS
+    OCVM -->|calls| ODDS
+
+    GS -.->|impl| RGS
+    GS -.->|impl| MGS
+
+    RGS --> GAMES
+    RGS --> DETAIL
+    RGS --> FLOW
+    RGS --> PBP
+    RGS --> TEAMS
+
+    GDV -->|reads/writes| RPS
+    GDV -->|reads/writes| RSS
+    HV -->|reads| RPS
+    HV -->|reads/writes| HGC
+    HV -->|reads| RSS
 ```
 
 Views never call services directly. ViewModels mediate all data access.
@@ -165,24 +201,29 @@ Key behavior:
 
 ## Reading Position Tracking
 
-Local-only (UserDefaults-backed) tracking of where the user stopped reading a game's PBP.
+Local-only (UserDefaults-backed) tracking of where the user stopped reading a game's PBP or Game Flow.
 
 ```
-User scrolls PBP → updateResumeMarkerIfNeeded()
-                        │
-                        ▼
-              ReadingPositionStore.save()
-                  (playIndex, period, gameClock, labels)
-                        │
-User returns to game ───┘
-                        │
-                        ▼
-              loadResumeMarkerIfNeeded()
-                        │
-                        ├─ Position found + autoResumePosition ON?  → Auto-scroll to saved play
-                        ├─ Position found + autoResumePosition OFF? → Show resume prompt
-                        └─ No position?   → Start from top
+User scrolls PBP/Flow → updateResumeMarkerIfNeeded()
+                              │
+                              ├─ PBP play visible?  → save playIndex (positive)
+                              └─ Flow block visible? → save -(blockIndex+1) (negative)
+                              │
+                              ▼
+                    ReadingPositionStore.save()
+                        (playIndex, period, gameClock, labels)
+                              │
+User returns to game ─────────┘
+                              │
+                              ▼
+                    loadResumeMarkerIfNeeded()
+                              │
+                              ├─ Position found + autoResumePosition ON?  → Auto-scroll to saved play/block
+                              ├─ Position found + autoResumePosition OFF? → Show resume prompt
+                              └─ No position?   → Start from top
 ```
+
+Flow blocks use negative-encoded `playIndex` values (`-(blockIndex + 1)`) to share the same `ReadingPosition` model and `PlayRowFramePreferenceKey` infrastructure as PBP plays. `resumeScroll()` decodes the sign to determine the scroll ID format (`"block-N"` vs `"play-N"`).
 
 `ReadingPositionStore` is the SSOT for resume position and saved scores. Uses in-memory caches (`scoreCache`, `contextCache`) to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. Resume text ("Stopped at Q3 4:32") displays in the game header and home card. Saved scores display with context ("@ Q2 · 2m ago") in both locations. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `scoreContext(for:)`, `preload(gameIds:)`.
 
