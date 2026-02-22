@@ -236,8 +236,22 @@ struct HomeView: View {
     private func leagueFilterButton(_ league: LeagueCode?, label: String) -> some View {
         Button(action: {
             selectedLeague = league
-            // Show cached data immediately while network revalidates
-            let _ = loadCachedSections(from: HomeGameCache.shared)
+            let cache = HomeGameCache.shared
+            // If no cache exists for this league, clear sections to show loading spinners
+            let hasCache = cache.isSameCalendarDay(range: .current, league: league)
+                || cache.isSameCalendarDay(range: .yesterday, league: league)
+            if !hasCache {
+                earlierSection.games = []
+                earlierSection.isLoading = true
+                yesterdaySection.games = []
+                yesterdaySection.isLoading = true
+                todaySection.games = []
+                todaySection.isLoading = true
+                tomorrowSection.games = []
+                tomorrowSection.isLoading = true
+            } else {
+                let _ = loadCachedSections(from: cache)
+            }
             startLoadGames(scrollToToday: false)
         }) {
             Text(label)
@@ -251,16 +265,18 @@ struct HomeView: View {
     }
 
     private var contentView: some View {
-        Group {
+        ZStack {
             if viewMode == .recaps {
                 if let error = errorMessage {
                     errorView(error)
                 } else {
                     gameListView
                 }
-            } else if viewMode == .odds {
-                OddsComparisonView(viewModel: oddsViewModel)
-            } else {
+            }
+            OddsComparisonView(viewModel: oddsViewModel)
+                .opacity(viewMode == .odds ? 1 : 0)
+                .allowsHitTesting(viewMode == .odds)
+            if viewMode == .settings {
                 SettingsView(oddsViewModel: oddsViewModel)
             }
         }

@@ -10,6 +10,10 @@ final class ReadingPositionStore {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
+    // In-memory caches to avoid repeated UserDefaults reads
+    private var scoreCache: [Int: (away: Int, home: Int)?] = [:]
+    private var contextCache: [Int: String?] = [:]
+
     private init() {}
 
     func save(gameId: Int, position: ReadingPosition) {
@@ -24,14 +28,22 @@ final class ReadingPositionStore {
 
     func clear(gameId: Int) {
         defaults.removeObject(forKey: prefix + "\(gameId)")
+        scoreCache.removeValue(forKey: gameId)
+        contextCache.removeValue(forKey: gameId)
     }
 
     /// Returns saved scores for a game, if both home and away are present.
     func savedScores(for gameId: Int) -> (away: Int, home: Int)? {
+        if let cached = scoreCache[gameId] { return cached }
         guard let position = load(gameId: gameId),
               let away = position.awayScore,
-              let home = position.homeScore else { return nil }
-        return (away: away, home: home)
+              let home = position.homeScore else {
+            scoreCache[gameId] = nil
+            return nil
+        }
+        let result = (away: away, home: home)
+        scoreCache[gameId] = result
+        return result
     }
 
     /// Updates (or creates) a reading position with new scores and a fresh timestamp.
@@ -58,12 +70,26 @@ final class ReadingPositionStore {
             awayScore: awayScore
         )
         save(gameId: gameId, position: position)
+        scoreCache[gameId] = (away: awayScore, home: homeScore)
+        contextCache.removeValue(forKey: gameId)
+    }
+
+    /// Preload caches for a batch of game IDs to avoid individual UserDefaults reads.
+    func preload(gameIds: [Int]) {
+        for gameId in gameIds {
+            guard scoreCache[gameId] == nil else { continue }
+            _ = savedScores(for: gameId)
+        }
     }
 
     /// Context string for a saved score, e.g. "@ Q2 · 2m ago"
     func scoreContext(for gameId: Int) -> String? {
+        if let cached = contextCache[gameId] { return cached }
         guard let position = load(gameId: gameId),
-              position.awayScore != nil, position.homeScore != nil else { return nil }
+              position.awayScore != nil, position.homeScore != nil else {
+            contextCache[gameId] = nil
+            return nil
+        }
         var parts: [String] = []
         if let timeLabel = position.timeLabel {
             parts.append("@ \(timeLabel)")
@@ -71,7 +97,9 @@ final class ReadingPositionStore {
             parts.append("@ \(periodLabel)")
         }
         parts.append(relativeTimeString(from: position.savedAt))
-        return parts.joined(separator: " · ")
+        let result = parts.joined(separator: " · ")
+        contextCache[gameId] = result
+        return result
     }
 
     private func relativeTimeString(from date: Date) -> String {
