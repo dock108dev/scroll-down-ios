@@ -117,7 +117,7 @@ struct FairExplainerSheet: View {
         if method.contains("pinnacle") && method.contains("devig") {
             return "Pinnacle is widely regarded as the sharpest sportsbook. This estimate uses Shin's method to remove Pinnacle's margin (vig) from both sides of the market. Unlike simple division, Shin's method accounts for favorite-longshot bias, producing more accurate fair probabilities."
         } else if method.contains("pinnacle") && method.contains("extrapol") {
-            return "Pinnacle isn't offering this exact line, so the fair price is extrapolated from nearby Pinnacle lines. This is less precise than a direct Pinnacle devig but still anchored to sharp market data."
+            return "Pinnacle isn't offering this exact line, so the fair price is extrapolated from nearby Pinnacle lines using Shin's method to remove vig. This is less precise than a direct Pinnacle devig but still accounts for favorite-longshot bias and is anchored to sharp market data."
         } else if method.contains("paired") || method.contains("vig_removal") || method.contains("vig removal") {
             return "This estimate pairs the over/under (or home/away) prices from each sportsbook, removes the built-in margin (vig), and uses the median across books as the fair probability."
         } else if method.contains("median") || method.contains("consensus") {
@@ -172,6 +172,8 @@ struct FairExplainerSheet: View {
         switch method.lowercased() {
         case "pinnacle_devig":
             return "Pinnacle Devig (Shin's)"
+        case "pinnacle_extrapolated":
+            return "Pinnacle Extrapolated (Shin's)"
         case "paired_devig", "paired_vig_removal", "paired vig removal":
             return "Paired vig removal"
         case "median_consensus", "median consensus":
@@ -285,7 +287,9 @@ struct FairExplainerSheet: View {
                     mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
                     mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
 
-                    Text("Shin's method shifts more vig correction to longshots.")
+                    Text(isPinnacleExtrapolated
+                         ? "Shin's method shifts more vig correction to longshots. Extrapolated from nearby Pinnacle lines."
+                         : "Shin's method shifts more vig correction to longshots.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .italic()
@@ -508,7 +512,12 @@ struct FairExplainerSheet: View {
     }
 
     private var isPinnacleDevig: Bool {
-        bet.evMethod?.lowercased() == "pinnacle_devig"
+        guard let method = bet.evMethod?.lowercased() else { return false }
+        return method.contains("pinnacle") && (method.contains("devig") || method.contains("extrapol"))
+    }
+
+    private var isPinnacleExtrapolated: Bool {
+        bet.evMethod?.lowercased().contains("extrapol") == true
     }
 
     /// Breakdown of each book's implied probability

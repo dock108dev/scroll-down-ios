@@ -226,11 +226,9 @@ struct BetCard: View {
                     )
             }
 
-            if ev > 0 {
-                Text(FairBetCopy.formatEV(ev))
-                    .font(.caption)
-                    .foregroundColor(evColor(for: ev))
-            }
+            Text(FairBetCopy.formatEV(ev))
+                .font(.caption)
+                .foregroundColor(evColor(for: ev))
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -251,11 +249,9 @@ struct BetCard: View {
             Text(FairBetCopy.formatOdds(book.price))
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.primary)
-            if ev > 0 {
-                Text(FairBetCopy.formatEV(ev))
-                    .font(.caption2)
-                    .foregroundColor(evColor(for: ev))
-            }
+            Text(FairBetCopy.formatEV(ev))
+                .font(.caption2)
+                .foregroundColor(evColor(for: ev))
         }
     }
 
@@ -407,7 +403,7 @@ struct BetCard: View {
     private func evColor(for ev: Double) -> Color {
         if ev >= 5 { return FairBetTheme.positive }
         if ev > 0 { return FairBetTheme.positiveMuted }
-        if ev < -2 { return FairBetTheme.negative }
+        if ev < 0 { return FairBetTheme.negative }
         return .secondary
     }
 

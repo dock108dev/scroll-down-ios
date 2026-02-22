@@ -69,7 +69,7 @@ struct MiniBookChip: View {
             return FairBetTheme.positive
         } else if ev > 0 {
             return FairBetTheme.positiveMuted
-        } else if ev < -2 {
+        } else if ev < 0 {
             return FairBetTheme.negative
         }
         return .secondary
