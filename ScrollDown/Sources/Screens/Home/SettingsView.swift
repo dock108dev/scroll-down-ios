@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
     @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
+    @AppStorage("autoResumePosition") private var autoResumePosition = true
 
     private var sportsbooks: [String] {
         let available = oddsViewModel.booksAvailable
@@ -73,6 +74,13 @@ struct SettingsView: View {
                     }
                     .foregroundColor(.primary)
                 }
+            }
+
+            Section("Game — Behavior") {
+                Toggle("Auto-resume position", isOn: $autoResumePosition)
+                Text("Automatically scroll to where you left off when reopening a game. When off, you'll be asked before resuming.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             Section("Score Display") {

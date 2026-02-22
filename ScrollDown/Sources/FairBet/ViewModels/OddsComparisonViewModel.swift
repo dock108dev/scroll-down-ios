@@ -228,31 +228,66 @@ final class OddsComparisonViewModel: ObservableObject {
 
             let totalExpected = firstResponse.total
 
-            // Phase 2: Load remaining pages in background
+            // Phase 2: Fetch remaining pages concurrently
             if firstResponse.bets.count >= limit && firstResponse.bets.count < totalExpected {
                 isLoadingMore = true
                 defer { isLoadingMore = false }
+
+                // Build list of remaining offsets
+                var offsets: [Int] = []
                 var offset = limit
-
                 while offset < totalExpected {
-                    guard !Task.isCancelled else { break }
+                    offsets.append(offset)
+                    offset += limit
+                }
 
-                    let response = try await apiClient.fetchOdds(
-                        league: nil,
-                        limit: limit,
-                        offset: offset
-                    )
+                // Fetch pages concurrently (max 3 at a time)
+                let remainingBets: [APIBet] = try await withThrowingTaskGroup(of: (Int, [APIBet]).self) { group in
+                    var results: [(Int, [APIBet])] = []
+                    var activeCount = 0
+                    var offsetIndex = 0
 
-                    guard !response.bets.isEmpty else { break }
+                    // Seed initial batch
+                    while offsetIndex < offsets.count && activeCount < 3 {
+                        let currentOffset = offsets[offsetIndex]
+                        group.addTask { [apiClient] in
+                            let response = try await apiClient.fetchOdds(
+                                league: nil,
+                                limit: limit,
+                                offset: currentOffset
+                            )
+                            return (currentOffset, response.bets)
+                        }
+                        activeCount += 1
+                        offsetIndex += 1
+                    }
 
-                    allBets.append(contentsOf: response.bets)
-                    offset += response.bets.count
+                    // As each completes, add next
+                    for try await result in group {
+                        results.append(result)
+                        if offsetIndex < offsets.count {
+                            let currentOffset = offsets[offsetIndex]
+                            group.addTask { [apiClient] in
+                                let response = try await apiClient.fetchOdds(
+                                    league: nil,
+                                    limit: limit,
+                                    offset: currentOffset
+                                )
+                                return (currentOffset, response.bets)
+                            }
+                            offsetIndex += 1
+                        }
+                    }
 
-                    // Incrementally update caches and display
-                    computeAllEVs()
+                    // Sort by offset to maintain order, then flatten
+                    return results.sorted { $0.0 < $1.0 }.flatMap { $0.1 }
+                }
+
+                if !remainingBets.isEmpty {
+                    let insertionIndex = allBets.count
+                    allBets.append(contentsOf: remainingBets)
+                    computeEVsForNewBets(startingAt: insertionIndex)
                     applyFilters()
-
-                    if response.bets.count < limit { break }
                 }
             }
 
@@ -404,6 +439,15 @@ final class OddsComparisonViewModel: ObservableObject {
     private func computeAllEVs() {
         cachedEVResults.removeAll()
         for bet in allBets {
+            cachedEVResults[bet.id] = computeEVResult(for: bet)
+        }
+    }
+
+    /// Compute EVs only for newly appended bets (avoids recomputing the entire cache)
+    private func computeEVsForNewBets(startingAt index: Int) {
+        guard index < allBets.count else { return }
+        for i in index..<allBets.count {
+            let bet = allBets[i]
             cachedEVResults[bet.id] = computeEVResult(for: bet)
         }
     }

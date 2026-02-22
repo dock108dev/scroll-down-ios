@@ -90,6 +90,36 @@ final class GameDetailViewModel: ObservableObject {
 
     private let logger = Logger(subsystem: "com.scrolldown.app", category: "timeline")
 
+    // MARK: - In-Memory Detail Cache
+
+    /// Lightweight in-memory cache so re-visiting a game doesn't trigger a full reload.
+    /// NavigationStack destroys views on pop; this survives across view re-creation.
+    private static var detailCache: [Int: CachedGameDetail] = [:]
+
+    struct CachedGameDetail {
+        let detail: GameDetailResponse
+        let cachedAt: Date
+    }
+
+    static func cacheDetail(_ detail: GameDetailResponse) {
+        // Evict oldest entries beyond 8 to keep memory bounded
+        if detailCache.count >= 8 {
+            let oldest = detailCache.min(by: { $0.value.cachedAt < $1.value.cachedAt })
+            if let key = oldest?.key { detailCache.removeValue(forKey: key) }
+        }
+        detailCache[detail.game.id] = CachedGameDetail(detail: detail, cachedAt: Date())
+    }
+
+    static func cachedDetail(for gameId: Int) -> GameDetailResponse? {
+        guard let entry = detailCache[gameId] else { return nil }
+        // Expire after 5 minutes
+        guard Date().timeIntervalSince(entry.cachedAt) < 300 else {
+            detailCache.removeValue(forKey: gameId)
+            return nil
+        }
+        return entry.detail
+    }
+
     init(detail: GameDetailResponse? = nil) {
         self.detail = detail
         self.loadState = detail == nil ? .idle : .loaded
@@ -99,6 +129,14 @@ final class GameDetailViewModel: ObservableObject {
 
     func load(gameId: Int, league: String?, service: GameService, isRefresh: Bool = false) async {
         guard isRefresh || detail == nil else {
+            loadState = .loaded
+            return
+        }
+
+        // Restore from in-memory cache (survives NavigationStack pop/push)
+        if !isRefresh, detail == nil, let cached = Self.cachedDetail(for: gameId) {
+            detail = cached
+            injectTeamColors(from: cached.game)
             loadState = .loaded
             return
         }
@@ -121,6 +159,7 @@ final class GameDetailViewModel: ObservableObject {
             let previousStatus = detail?.game.status
             detail = response
             injectTeamColors(from: response.game)
+            Self.cacheDetail(response)
             logger.info("📊 Game \(gameId): teamStats count=\(response.teamStats.count), playerStats count=\(response.playerStats.count)")
             if response.teamStats.isEmpty {
                 logger.info("📊 Game \(gameId): No teamStats returned by API")

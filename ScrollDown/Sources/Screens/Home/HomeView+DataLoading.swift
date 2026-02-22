@@ -113,7 +113,18 @@ extension HomeView {
             switch result.range {
             case .earlier:
                 if result.errorMessage == nil {
-                    earlierSection.games = sortedGames.reversed()
+                    // Most recent day first, but chronological within each day
+                    earlierSection.games = sortedGames.sorted { lhs, rhs in
+                        let lhsDate = lhs.parsedGameDate ?? .distantFuture
+                        let rhsDate = rhs.parsedGameDate ?? .distantFuture
+                        let cal = Calendar.current
+                        let lhsDay = cal.startOfDay(for: lhsDate)
+                        let rhsDay = cal.startOfDay(for: rhsDate)
+                        if lhsDay != rhsDay { return lhsDay > rhsDay }
+                        if lhsDate != rhsDate { return lhsDate < rhsDate }
+                        if lhs.leagueCode != rhs.leagueCode { return lhs.leagueCode < rhs.leagueCode }
+                        return lhs.awayTeam < rhs.awayTeam
+                    }
                 }
                 earlierSection.errorMessage = earlierSection.games.isEmpty ? result.errorMessage : nil
                 earlierSection.isLoading = false

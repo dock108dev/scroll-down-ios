@@ -4,11 +4,15 @@ extension GameDetailView {
     // MARK: - Pregame Buzz Section (Tier 4: Reference)
 
     var pregameSection: some View {
-        CollapsibleSectionCard(
-            title: "Pregame Buzz",
-            isExpanded: $isOverviewExpanded
+        Section(header:
+            PinnedSectionHeader(title: "Pregame Buzz", isExpanded: $isOverviewExpanded)
+                .id(GameSection.overview.anchorId)
+                .background(GameTheme.background)
         ) {
-            pregameBuzzContent
+            if isOverviewExpanded {
+                pregameBuzzContent
+                    .sectionCardBody()
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Pregame buzz")

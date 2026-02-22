@@ -236,8 +236,24 @@ struct HomeView: View {
     private func leagueFilterButton(_ league: LeagueCode?, label: String) -> some View {
         Button(action: {
             selectedLeague = league
-            // Show cached data immediately while network revalidates
-            let _ = loadCachedSections(from: HomeGameCache.shared)
+            let cache = HomeGameCache.shared
+            // If no cache exists for this league, clear sections to show loading spinners
+            let hasCache = cache.isSameCalendarDay(range: .earlier, league: league)
+                || cache.isSameCalendarDay(range: .yesterday, league: league)
+                || cache.isSameCalendarDay(range: .current, league: league)
+                || cache.isSameCalendarDay(range: .tomorrow, league: league)
+            if !hasCache {
+                earlierSection.games = []
+                earlierSection.isLoading = true
+                yesterdaySection.games = []
+                yesterdaySection.isLoading = true
+                todaySection.games = []
+                todaySection.isLoading = true
+                tomorrowSection.games = []
+                tomorrowSection.isLoading = true
+            } else {
+                let _ = loadCachedSections(from: cache)
+            }
             startLoadGames(scrollToToday: false)
         }) {
             Text(label)
@@ -251,16 +267,18 @@ struct HomeView: View {
     }
 
     private var contentView: some View {
-        Group {
+        ZStack {
             if viewMode == .recaps {
                 if let error = errorMessage {
                     errorView(error)
                 } else {
                     gameListView
                 }
-            } else if viewMode == .odds {
-                OddsComparisonView(viewModel: oddsViewModel)
-            } else {
+            }
+            OddsComparisonView(viewModel: oddsViewModel)
+                .opacity(viewMode == .odds ? 1 : 0)
+                .allowsHitTesting(viewMode == .odds)
+            if viewMode == .settings {
                 SettingsView(oddsViewModel: oddsViewModel)
             }
         }
@@ -289,7 +307,7 @@ struct HomeView: View {
     var gameListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass)) {
+                LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass), pinnedViews: [.sectionHeaders]) {
                     // Spoiler-free action bar (iPhone only — iPad has these in the filter bar)
                     if horizontalSizeClass != .regular && showSpoilerActions {
                         HStack(spacing: 8) {
@@ -354,31 +372,31 @@ struct HomeView: View {
                     }
 
                     // Earlier section (2+ days ago)
-                    sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded)
-                        .id(earlierSection.title)
-                    if earlierSection.isExpanded {
-                        sectionContent(for: earlierSection)
+                    Section(header: sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded).id(earlierSection.title)) {
+                        if earlierSection.isExpanded {
+                            sectionContent(for: earlierSection)
+                        }
                     }
 
                     // Yesterday section
-                    sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded)
-                        .id(yesterdaySection.title)
-                    if yesterdaySection.isExpanded {
-                        sectionContent(for: yesterdaySection)
+                    Section(header: sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded).id(yesterdaySection.title)) {
+                        if yesterdaySection.isExpanded {
+                            sectionContent(for: yesterdaySection)
+                        }
                     }
 
                     // Today section (all games — completed recaps + scheduled/in-progress)
-                    sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
-                        .id(todaySection.title)
-                    if todaySection.isExpanded {
-                        sectionContent(for: todaySection)
+                    Section(header: sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded).id(todaySection.title)) {
+                        if todaySection.isExpanded {
+                            sectionContent(for: todaySection)
+                        }
                     }
 
                     // Tomorrow section
-                    sectionHeader(for: tomorrowSection, isExpanded: $tomorrowSection.isExpanded)
-                        .id(tomorrowSection.title)
-                    if tomorrowSection.isExpanded {
-                        sectionContent(for: tomorrowSection)
+                    Section(header: sectionHeader(for: tomorrowSection, isExpanded: $tomorrowSection.isExpanded).id(tomorrowSection.title)) {
+                        if tomorrowSection.isExpanded {
+                            sectionContent(for: tomorrowSection)
+                        }
                     }
                 }
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))

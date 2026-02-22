@@ -45,6 +45,81 @@ struct GameSummary: Codable, Identifiable, Hashable {
     let awayTeamAbbr: String?
     let derivedMetrics: [String: AnyCodable]?
 
+    /// Cached parsed date — parsed once at decode time to avoid repeated ISO8601 parsing.
+    private let _parsedGameDate: Date?
+
+    private static func parseGameDate(_ dateString: String) -> Date? {
+        DateFormatting.isoFractional.date(from: dateString)
+            ?? DateFormatting.iso.date(from: dateString)
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        leagueCode = try c.decode(String.self, forKey: .leagueCode)
+        gameDate = try c.decode(String.self, forKey: .gameDate)
+        statusRaw = try c.decodeIfPresent(String.self, forKey: .statusRaw)
+        homeTeam = try c.decode(String.self, forKey: .homeTeam)
+        awayTeam = try c.decode(String.self, forKey: .awayTeam)
+        homeScore = try c.decodeIfPresent(Int.self, forKey: .homeScore)
+        awayScore = try c.decodeIfPresent(Int.self, forKey: .awayScore)
+        hasBoxscore = try c.decodeIfPresent(Bool.self, forKey: .hasBoxscore)
+        hasPlayerStats = try c.decodeIfPresent(Bool.self, forKey: .hasPlayerStats)
+        hasOdds = try c.decodeIfPresent(Bool.self, forKey: .hasOdds)
+        hasSocial = try c.decodeIfPresent(Bool.self, forKey: .hasSocial)
+        hasPbp = try c.decodeIfPresent(Bool.self, forKey: .hasPbp)
+        hasFlow = try c.decodeIfPresent(Bool.self, forKey: .hasFlow)
+        playCount = try c.decodeIfPresent(Int.self, forKey: .playCount)
+        socialPostCount = try c.decodeIfPresent(Int.self, forKey: .socialPostCount)
+        hasRequiredData = try c.decodeIfPresent(Bool.self, forKey: .hasRequiredData)
+        scrapeVersion = try c.decodeIfPresent(Int.self, forKey: .scrapeVersion)
+        lastScrapedAt = try c.decodeIfPresent(String.self, forKey: .lastScrapedAt)
+        lastIngestedAt = try c.decodeIfPresent(String.self, forKey: .lastIngestedAt)
+        lastPbpAt = try c.decodeIfPresent(String.self, forKey: .lastPbpAt)
+        lastSocialAt = try c.decodeIfPresent(String.self, forKey: .lastSocialAt)
+        homeTeamColorLight = try c.decodeIfPresent(String.self, forKey: .homeTeamColorLight)
+        homeTeamColorDark = try c.decodeIfPresent(String.self, forKey: .homeTeamColorDark)
+        awayTeamColorLight = try c.decodeIfPresent(String.self, forKey: .awayTeamColorLight)
+        awayTeamColorDark = try c.decodeIfPresent(String.self, forKey: .awayTeamColorDark)
+        homeTeamAbbr = try c.decodeIfPresent(String.self, forKey: .homeTeamAbbr)
+        awayTeamAbbr = try c.decodeIfPresent(String.self, forKey: .awayTeamAbbr)
+        derivedMetrics = try c.decodeIfPresent([String: AnyCodable].self, forKey: .derivedMetrics)
+        _parsedGameDate = Self.parseGameDate(gameDate)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(leagueCode, forKey: .leagueCode)
+        try c.encode(gameDate, forKey: .gameDate)
+        try c.encodeIfPresent(statusRaw, forKey: .statusRaw)
+        try c.encode(homeTeam, forKey: .homeTeam)
+        try c.encode(awayTeam, forKey: .awayTeam)
+        try c.encodeIfPresent(homeScore, forKey: .homeScore)
+        try c.encodeIfPresent(awayScore, forKey: .awayScore)
+        try c.encodeIfPresent(hasBoxscore, forKey: .hasBoxscore)
+        try c.encodeIfPresent(hasPlayerStats, forKey: .hasPlayerStats)
+        try c.encodeIfPresent(hasOdds, forKey: .hasOdds)
+        try c.encodeIfPresent(hasSocial, forKey: .hasSocial)
+        try c.encodeIfPresent(hasPbp, forKey: .hasPbp)
+        try c.encodeIfPresent(hasFlow, forKey: .hasFlow)
+        try c.encodeIfPresent(playCount, forKey: .playCount)
+        try c.encodeIfPresent(socialPostCount, forKey: .socialPostCount)
+        try c.encodeIfPresent(hasRequiredData, forKey: .hasRequiredData)
+        try c.encodeIfPresent(scrapeVersion, forKey: .scrapeVersion)
+        try c.encodeIfPresent(lastScrapedAt, forKey: .lastScrapedAt)
+        try c.encodeIfPresent(lastIngestedAt, forKey: .lastIngestedAt)
+        try c.encodeIfPresent(lastPbpAt, forKey: .lastPbpAt)
+        try c.encodeIfPresent(lastSocialAt, forKey: .lastSocialAt)
+        try c.encodeIfPresent(homeTeamColorLight, forKey: .homeTeamColorLight)
+        try c.encodeIfPresent(homeTeamColorDark, forKey: .homeTeamColorDark)
+        try c.encodeIfPresent(awayTeamColorLight, forKey: .awayTeamColorLight)
+        try c.encodeIfPresent(awayTeamColorDark, forKey: .awayTeamColorDark)
+        try c.encodeIfPresent(homeTeamAbbr, forKey: .homeTeamAbbr)
+        try c.encodeIfPresent(awayTeamAbbr, forKey: .awayTeamAbbr)
+        try c.encodeIfPresent(derivedMetrics, forKey: .derivedMetrics)
+    }
+
     // Convenience init for mock data generation
     init(
         id: Int,
@@ -102,6 +177,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
         self.homeTeamAbbr = homeTeamAbbr
         self.awayTeamAbbr = awayTeamAbbr
         self.derivedMetrics = nil
+        self._parsedGameDate = Self.parseGameDate(gameDate)
     }
 
     func hash(into hasher: inout Hasher) {
@@ -122,33 +198,6 @@ extension GameSummary {
         static let postponedText = "Postponed"
         static let canceledText = "Canceled"
         static let statusUnavailableText = "Status unavailable"
-
-        static let isoFormatterFractional: ISO8601DateFormatter = {
-            let f = ISO8601DateFormatter()
-            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            return f
-        }()
-        static let isoFormatter: ISO8601DateFormatter = {
-            let f = ISO8601DateFormatter()
-            f.formatOptions = [.withInternetDateTime]
-            return f
-        }()
-        static let mediumDateTimeFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.dateStyle = .medium
-            f.timeStyle = .short
-            return f
-        }()
-        static let shortDateFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.setLocalizedDateFormatFromTemplate("MMM d")
-            return f
-        }()
-        static let timeFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.timeStyle = .short
-            return f
-        }()
     }
 
     /// Status from API string, or derived from data when absent.
@@ -185,22 +234,21 @@ extension GameSummary {
         return "\(home) - \(away)"
     }
 
-    /// Parsed game date
+    /// Parsed game date (cached at decode time)
     var parsedGameDate: Date? {
-        Formatting.isoFormatterFractional.date(from: gameDate)
-            ?? Formatting.isoFormatter.date(from: gameDate)
+        _parsedGameDate
     }
 
     /// Formatted date for display
     var formattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
-        return Formatting.mediumDateTimeFormatter.string(from: date)
+        return DateFormatting.mediumDateTime.string(from: date)
     }
 
     /// Short formatted date (e.g., "Jan 1 • 7:30 PM")
     var shortFormattedDate: String {
         guard let date = parsedGameDate else { return gameDate }
-        return "\(Formatting.shortDateFormatter.string(from: date)) • \(Formatting.timeFormatter.string(from: date))"
+        return "\(DateFormatting.shortDate.string(from: date)) • \(DateFormatting.time.string(from: date))"
     }
 
     var statusLine: String {
@@ -227,6 +275,6 @@ extension GameSummary {
     }
 
     private func formattedTime(date: Date) -> String {
-        Formatting.timeFormatter.string(from: date)
+        DateFormatting.time.string(from: date)
     }
 }

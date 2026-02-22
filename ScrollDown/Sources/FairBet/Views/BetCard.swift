@@ -407,21 +407,30 @@ struct BetCard: View {
         return .secondary
     }
 
+    private enum TimeFormatting {
+        static let timeOnly: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "h:mm a"
+            return f
+        }()
+
+        static let dateOnly: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "MMM d"
+            return f
+        }()
+    }
+
     private var formattedTime: String {
-        let formatter = DateFormatter()
         let calendar = Calendar.current
 
         if calendar.isDateInToday(bet.gameDate) {
-            formatter.dateFormat = "h:mm a"
-            return "Today · \(formatter.string(from: bet.gameDate))"
+            return "Today · \(TimeFormatting.timeOnly.string(from: bet.gameDate))"
         } else if calendar.isDateInTomorrow(bet.gameDate) {
-            formatter.dateFormat = "h:mm a"
-            return "Tomorrow · \(formatter.string(from: bet.gameDate))"
+            return "Tomorrow · \(TimeFormatting.timeOnly.string(from: bet.gameDate))"
         } else {
-            formatter.dateFormat = "MMM d"
-            let datePart = formatter.string(from: bet.gameDate)
-            formatter.dateFormat = "h:mm a"
-            let timePart = formatter.string(from: bet.gameDate)
+            let datePart = TimeFormatting.dateOnly.string(from: bet.gameDate)
+            let timePart = TimeFormatting.timeOnly.string(from: bet.gameDate)
             return "\(datePart) · \(timePart)"
         }
     }

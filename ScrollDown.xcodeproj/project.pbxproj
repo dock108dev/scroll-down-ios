@@ -42,6 +42,7 @@
 		4A70E261308F486937F45170 /* TeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A25EB6B171A96090300768 /* TeamView.swift */; };
 		4D3374D81F19862B11A6BEC1 /* GameRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D6BAE2EE29C726F4391E11 /* GameRowView.swift */; };
 		4D430F81F377F5E20893C743 /* StatAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF11F8B8F83124F1A28CA49 /* StatAnnotation.swift */; };
+		4E1DF03DA0DA9C7E97DABC6A /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F5D627F39C792F93FCBB5D /* DateFormatting.swift */; };
 		4E1DF03DA0DA9C7E97DABC6B /* String+Abbreviation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F5D627F39C792F93FCBB5E /* String+Abbreviation.swift */; };
 		4E1DF03DA0DA9C7E97DABC6C /* TeamAbbreviations.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F5D627F39C792F93FCBB5F /* TeamAbbreviations.swift */; };
 		525D7497F91710305BA1C096 /* game-002.json in Resources */ = {isa = PBXBuildFile; fileRef = 784E51CC06BECE994AA7DE32 /* game-002.json */; };
@@ -88,6 +89,7 @@
 		BB01C2D3E4F5A6B7C8D9000A /* StyledPlayDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */; };
 		BB01C2D3E4F5A6B7C8D9000B /* UnifiedTimelineRowView+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */; };
 		BB02C3D4E5F6A7B8C9D0001A /* UnifiedTimelineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA02B3C4D5E6F7A8B9C0001A /* UnifiedTimelineRowView.swift */; };
+		BB02C3D4E5F6A7B8C9D0001B /* UnifiedTimelineRowView+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA02B3C4D5E6F7A8B9C0001B /* UnifiedTimelineRowView+Previews.swift */; };
 		BB01C2D3E4F5A6B7C8D9F001 /* InlineVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01B2C3D4E5F6A7B8C9F001 /* InlineVideoPlayer.swift */; };
 		BC6568D936312248A0361F5A /* HomeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AADCA528A2C95E3311E6A78 /* HomeTheme.swift */; };
 		BCD3F6FA49CFAA122E7CA551 /* GameDetailDisplayModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EA8126B015E4B4AF86450D /* GameDetailDisplayModels.swift */; };
@@ -218,6 +220,7 @@
 		AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StyledPlayDescription.swift; sourceTree = "<group>"; };
 		AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UnifiedTimelineRowView+Layout.swift"; sourceTree = "<group>"; };
 		AA02B3C4D5E6F7A8B9C0001A /* UnifiedTimelineRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnifiedTimelineRowView.swift; sourceTree = "<group>"; };
+		AA02B3C4D5E6F7A8B9C0001B /* UnifiedTimelineRowView+Previews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UnifiedTimelineRowView+Previews.swift"; sourceTree = "<group>"; };
 		AA01B2C3D4E5F6A7B8C9F001 /* InlineVideoPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineVideoPlayer.swift; sourceTree = "<group>"; };
 		ACFA802A8B2F8604244A8724 /* FairBetAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairBetAPIClient.swift; sourceTree = "<group>"; };
 		AD12859B949FE45C68980D98 /* GameDetailView+Timeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Timeline.swift"; sourceTree = "<group>"; };
@@ -239,6 +242,7 @@
 		CA25EFFBFB27E3522263ED14 /* FairBetMockDataProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairBetMockDataProvider.swift; sourceTree = "<group>"; };
 		CE0933EFD998ED9CB2C2B27C /* GameDetailView+Stats.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Stats.swift"; sourceTree = "<group>"; };
 		D45471A1D6AA5C0FEC1A3A01 /* GameDetailView+Odds.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Odds.swift"; sourceTree = "<group>"; };
+		D4F5D627F39C792F93FCBB5D /* DateFormatting.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		D4F5D627F39C792F93FCBB5E /* String+Abbreviation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "String+Abbreviation.swift"; sourceTree = "<group>"; };
 		D4F5D627F39C792F93FCBB5F /* TeamAbbreviations.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TeamAbbreviations.swift; sourceTree = "<group>"; };
 		D4F6E31EB99A720B92370CB4 /* GameDetailView+Helpers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameDetailView+Helpers.swift"; sourceTree = "<group>"; };
@@ -447,6 +451,7 @@
 		509B1ADB0353F34597CB08B9 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				D4F5D627F39C792F93FCBB5D /* DateFormatting.swift */,
 				D4F5D627F39C792F93FCBB5E /* String+Abbreviation.swift */,
 				D4F5D627F39C792F93FCBB5F /* TeamAbbreviations.swift */,
 			);
@@ -505,6 +510,7 @@
 				AA01B2C3D4E5F6A7B8C9000A /* StyledPlayDescription.swift */,
 				AA01B2C3D4E5F6A7B8C9000B /* UnifiedTimelineRowView+Layout.swift */,
 				AA02B3C4D5E6F7A8B9C0001A /* UnifiedTimelineRowView.swift */,
+				AA02B3C4D5E6F7A8B9C0001B /* UnifiedTimelineRowView+Previews.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -857,6 +863,8 @@
 				BB01C2D3E4F5A6B7C8D9000A /* StyledPlayDescription.swift in Sources */,
 				BB01C2D3E4F5A6B7C8D9000B /* UnifiedTimelineRowView+Layout.swift in Sources */,
 				BB02C3D4E5F6A7B8C9D0001A /* UnifiedTimelineRowView.swift in Sources */,
+				BB02C3D4E5F6A7B8C9D0001B /* UnifiedTimelineRowView+Previews.swift in Sources */,
+				4E1DF03DA0DA9C7E97DABC6A /* DateFormatting.swift in Sources */,
 				4E1DF03DA0DA9C7E97DABC6B /* String+Abbreviation.swift in Sources */,
 				4E1DF03DA0DA9C7E97DABC6C /* TeamAbbreviations.swift in Sources */,
 				5C6064771135EAF3EE4288B7 /* PlayerNameCell.swift in Sources */,
