@@ -126,7 +126,7 @@ struct HomeView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: HomeLayout.filterSpacing) {
                         leagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
-                        ForEach(LeagueCode.allCases, id: \.self) { league in
+                        ForEach(LeagueCode.allCases.filter { leaguesWithGames.contains($0.rawValue) }, id: \.self) { league in
                             leagueFilterButton(league, label: league.rawValue)
                         }
                     }
@@ -406,6 +406,11 @@ struct HomeView: View {
     /// All games across sections (for catch-up)
     private var allGames: [GameSummary] {
         sectionsInOrder.flatMap(\.games)
+    }
+
+    /// Leagues that have at least one game in the loaded sections
+    private var leaguesWithGames: Set<String> {
+        Set(allGames.map(\.leagueCode))
     }
 
     /// Number of games the user hasn't caught up on yet (unread finals + unrevealed live)

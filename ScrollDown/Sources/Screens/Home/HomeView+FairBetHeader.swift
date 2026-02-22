@@ -13,6 +13,24 @@ struct FairBetHeaderView: View {
     @Binding var selectedMarket: MarketFilter?
     let horizontalPadding: CGFloat
 
+    /// Leagues that have at least one bet in the loaded data
+    private var leaguesWithBets: Set<FairBetLeague> {
+        Set(viewModel.allBets.compactMap { FairBetLeague(rawValue: $0.leagueCode) })
+    }
+
+    /// Markets that have at least one bet in the loaded data
+    private var marketsWithBets: Set<MarketKey> {
+        Set(viewModel.allBets.map(\.market))
+    }
+
+    private var hasPlayerProps: Bool {
+        marketsWithBets.contains(where: \.isPlayerProp)
+    }
+
+    private var hasTeamProps: Bool {
+        marketsWithBets.contains(where: \.isTeamProp)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Explainer
@@ -25,9 +43,9 @@ struct FairBetHeaderView: View {
             // Combined filter bar: league pills, separator, market pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    // League filters
+                    // League filters — only show leagues with bets
                     oddsLeagueFilterButton(nil, label: HomeStrings.allLeaguesLabel)
-                    ForEach(FairBetLeague.allCases) { league in
+                    ForEach(FairBetLeague.allCases.filter { leaguesWithBets.contains($0) }) { league in
                         oddsLeagueFilterButton(league, label: league.rawValue)
                     }
 
@@ -36,13 +54,17 @@ struct FairBetHeaderView: View {
                         .fill(Color.secondary.opacity(0.3))
                         .frame(width: 1, height: 20)
 
-                    // Market filters
+                    // Market filters — only show markets with bets
                     oddsMarketFilterButton(nil, label: "All")
-                    ForEach(MarketKey.mainlineMarkets) { market in
+                    ForEach(MarketKey.mainlineMarkets.filter { marketsWithBets.contains($0) }) { market in
                         oddsMarketFilterButton(.single(market), label: market.displayName)
                     }
-                    oddsMarketFilterButton(.playerProps, label: "Player Props")
-                    oddsMarketFilterButton(.teamProps, label: "Team Props")
+                    if hasPlayerProps {
+                        oddsMarketFilterButton(.playerProps, label: "Player Props")
+                    }
+                    if hasTeamProps {
+                        oddsMarketFilterButton(.teamProps, label: "Team Props")
+                    }
                 }
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
@@ -142,6 +164,26 @@ struct FairBetHeaderView: View {
             }
             .padding(.horizontal, horizontalPadding)
             .padding(.bottom, 6)
+        }
+        .onChange(of: viewModel.allBets) {
+            // Reset stale league selection if the selected league no longer has bets
+            if let league = selectedLeague, !leaguesWithBets.contains(league) {
+                selectedLeague = nil
+                viewModel.selectLeague(nil)
+            }
+            // Reset stale market selection if the selected market no longer has bets
+            if let market = selectedMarket {
+                let stillValid: Bool
+                switch market {
+                case .single(let key): stillValid = marketsWithBets.contains(key)
+                case .playerProps: stillValid = hasPlayerProps
+                case .teamProps: stillValid = hasTeamProps
+                }
+                if !stillValid {
+                    selectedMarket = nil
+                    viewModel.selectedMarketFilter = nil
+                }
+            }
         }
     }
 

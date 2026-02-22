@@ -68,6 +68,12 @@ extension HomeView {
 
         isUpdating = false
 
+        // Reset stale league selection if the selected league has no games
+        let loadedLeagues = Set([earlierSection, yesterdaySection, todaySection, tomorrowSection].flatMap(\.games).map(\.leagueCode))
+        if let league = selectedLeague, !loadedLeagues.contains(league.rawValue) {
+            selectedLeague = nil
+        }
+
         // 4. Only show global error if ALL sections failed AND no data to display
         let hasAnyData = !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
             || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
