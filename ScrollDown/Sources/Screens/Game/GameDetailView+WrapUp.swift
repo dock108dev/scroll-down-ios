@@ -6,11 +6,15 @@ extension GameDetailView {
     // MARK: - Wrap-up Section (Tier 4: Reference)
 
     var wrapUpSection: some View {
-        CollapsibleSectionCard(
-            title: "Wrap-up",
-            isExpanded: $isWrapUpExpanded
+        Section(header:
+            PinnedSectionHeader(title: "Wrap-up", isExpanded: $isWrapUpExpanded)
+                .id(GameSection.final.anchorId)
+                .background(GameTheme.background)
         ) {
-            wrapUpContent
+            if isWrapUpExpanded {
+                wrapUpContent
+                    .sectionCardBody()
+            }
         }
     }
 

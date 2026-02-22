@@ -54,6 +54,41 @@ extension View {
     func sectionCard() -> some View {
         modifier(SectionCardModifier())
     }
+
+    /// Card body styling for content below a `PinnedSectionHeader`.
+    /// Rounds only the bottom corners so header + body form a connected card.
+    func sectionCardBody() -> some View {
+        modifier(SectionCardBodyModifier())
+    }
+}
+
+struct SectionCardBodyModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(DesignSystem.Spacing.cardPadding)
+            .background(DesignSystem.Colors.cardBackground)
+            .clipShape(UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: DesignSystem.Radius.card,
+                bottomTrailingRadius: DesignSystem.Radius.card,
+                topTrailingRadius: 0
+            ))
+            .shadow(
+                color: DesignSystem.Shadow.color,
+                radius: DesignSystem.Shadow.radius,
+                x: 0,
+                y: DesignSystem.Shadow.y
+            )
+            .overlay(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: DesignSystem.Radius.card,
+                    bottomTrailingRadius: DesignSystem.Radius.card,
+                    topTrailingRadius: 0
+                )
+                .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: DesignSystem.borderWidth)
+            )
+    }
 }
 
 private enum Layout {

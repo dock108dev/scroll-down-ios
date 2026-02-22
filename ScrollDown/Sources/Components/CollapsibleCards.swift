@@ -1,18 +1,16 @@
 import SwiftUI
 
-// MARK: - Collapsible Section Card
+// MARK: - Pinned Section Header
 
-/// A card that expands/collapses to show content with a title header.
-/// Used for major sections in the game detail view.
-/// iPad: Tighter internal spacing for density.
-struct CollapsibleSectionCard<Content: View>: View {
+/// A header-only view designed for use with `Section(header:)` inside
+/// `LazyVStack(pinnedViews: [.sectionHeaders])`. Renders the same header
+/// layout as a collapsible card header but without wrapping content.
+struct PinnedSectionHeader: View {
     let title: String
     let subtitle: String?
     let collapsedTitle: String?
     @Binding var isExpanded: Bool
-    /// Optional callback triggered when header is tapped (for global expand/collapse scenarios)
     var onHeaderTap: (() -> Void)?
-    let content: Content
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(
@@ -20,53 +18,66 @@ struct CollapsibleSectionCard<Content: View>: View {
         subtitle: String? = nil,
         collapsedTitle: String? = nil,
         isExpanded: Binding<Bool>,
-        onHeaderTap: (() -> Void)? = nil,
-        @ViewBuilder content: () -> Content
+        onHeaderTap: (() -> Void)? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
         self.collapsedTitle = collapsedTitle
         self._isExpanded = isExpanded
         self.onHeaderTap = onHeaderTap
-        self.content = content()
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: horizontalSizeClass == .regular ? 8 : 12) { // iPad: tighter internal spacing
-            Button(action: toggle) {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let collapsedTitle, !isExpanded {
-                            Text(collapsedTitle)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(DesignSystem.TextColor.primary)
-                        } else {
-                            Text(title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(DesignSystem.TextColor.primary)
-                            if let subtitle {
-                                Text(subtitle)
-                                    .font(.caption2)
-                                    .foregroundColor(DesignSystem.TextColor.secondary)
-                            }
+        Button(action: toggle) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let collapsedTitle, !isExpanded {
+                        Text(collapsedTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                    } else {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
                         }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
-                .contentShape(Rectangle()) // Full row tap target
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
             }
-            .buttonStyle(InteractiveRowButtonStyle())
-
-            if isExpanded {
-                content
-                    .transition(.opacity)
-            }
+            .contentShape(Rectangle())
         }
-        .sectionCard()
+        .buttonStyle(InteractiveRowButtonStyle())
+        .padding(DesignSystem.Spacing.cardPadding)
+        .background(DesignSystem.Colors.cardBackground)
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: DesignSystem.Radius.card,
+            bottomLeadingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+            bottomTrailingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+            topTrailingRadius: DesignSystem.Radius.card
+        ))
+        .shadow(
+            color: DesignSystem.Shadow.color,
+            radius: DesignSystem.Shadow.radius,
+            x: 0,
+            y: DesignSystem.Shadow.y
+        )
+        .overlay(
+            UnevenRoundedRectangle(
+                topLeadingRadius: DesignSystem.Radius.card,
+                bottomLeadingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+                bottomTrailingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+                topTrailingRadius: DesignSystem.Radius.card
+            )
+            .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: DesignSystem.borderWidth)
+        )
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
@@ -177,20 +188,5 @@ struct SubtleInteractiveButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
-
-// MARK: - Layout Constants
-
-private enum CardLayout {
-    static let sectionSpacing: CGFloat = 20
-    static let listSpacing: CGFloat = 8
-    static let horizontalPadding: CGFloat = 12
-    static let cardCornerRadius: CGFloat = 16
-    static let borderWidth: CGFloat = 1
-    static let shadowRadius: CGFloat = 10
-    static let shadowYOffset: CGFloat = 4
-    static let headerSpacing: CGFloat = 12
-    static let subtitleSpacing: CGFloat = 4
-}
-
 
 

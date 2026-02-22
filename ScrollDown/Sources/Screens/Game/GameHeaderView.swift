@@ -53,80 +53,80 @@ struct GameHeaderView: View {
     var body: some View {
         VStack(spacing: 0) {
             // MARK: Primary Row - Team Matchup (NO SCORE - spoiler free!)
-            HStack(spacing: 0) {
-                // Away team block (left side)
+            HStack(alignment: .top, spacing: 0) {
+                // Away team block (left-aligned column)
                 TappableTeamBlock(
                     teamName: game.awayTeam,
                     opponentName: game.homeTeam,
                     leagueCode: game.leagueCode,
                     isHome: false
                 )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer()
-
-                // Center: score if revealed (or earned via scrolling), otherwise "vs"
-                if shouldShowScore, let away = resolvedAwayScore, let home = resolvedHomeScore {
-                    VStack(spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text("\(away)")
-                                .font(.title2.weight(.bold).monospacedDigit())
-                                .foregroundColor(awayColor)
-                            Text("–")
-                                .font(.title3.weight(.medium))
+                // Center: score bug (fixed-proportion column)
+                Group {
+                    if shouldShowScore, let away = resolvedAwayScore, let home = resolvedHomeScore {
+                        VStack(spacing: 2) {
+                            HStack(spacing: 8) {
+                                Text("\(away)")
+                                    .font(.title2.weight(.bold).monospacedDigit())
+                                    .foregroundColor(awayColor)
+                                Text("–")
+                                    .font(.title3.weight(.medium))
+                                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                                Text("\(home)")
+                                    .font(.title2.weight(.bold).monospacedDigit())
+                                    .foregroundColor(homeColor)
+                            }
+                            // Score context (period + relative time) for live games
+                            if game.status.isLive, let context = scoreContextText {
+                                Text(context)
+                                    .font(.caption2)
+                                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                                    .multilineTextAlignment(.center)
+                            } else if game.status.isLive && !scoreRevealed {
+                                Text("Hold to update")
+                                    .font(.caption2)
+                                    .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onLongPressGesture(minimumDuration: 0.5) {
+                            guard game.status.isLive else { return }
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            onRevealScore?()
+                        }
+                    } else {
+                        VStack(spacing: 2) {
+                            Text("vs")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
                                 .foregroundColor(DesignSystem.TextColor.tertiary)
-                            Text("\(home)")
-                                .font(.title2.weight(.bold).monospacedDigit())
-                                .foregroundColor(homeColor)
+                            if game.awayScore != nil || game.status.isLive {
+                                Text(game.status.isLive ? "Hold to update" : "Hold to reveal score")
+                                    .font(.caption2)
+                                    .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                                    .multilineTextAlignment(.center)
+                            }
                         }
-                        // Score context (period + relative time) for live games
-                        if game.status.isLive, let context = scoreContextText {
-                            Text(context)
-                                .font(.caption2)
-                                .foregroundColor(DesignSystem.TextColor.tertiary)
-                                .lineLimit(1)
-                        } else if game.status.isLive && !scoreRevealed {
-                            // "Hold to update" hint only when no context is showing yet
-                            Text("Hold to update")
-                                .font(.caption2)
-                                .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                        .onLongPressGesture(minimumDuration: 0.5) {
+                            guard game.awayScore != nil || game.status.isLive else { return }
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            onRevealScore?()
                         }
-                    }
-                    .contentShape(Rectangle())
-                    .onLongPressGesture(minimumDuration: 0.5) {
-                        guard game.status.isLive else { return }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        onRevealScore?()
-                    }
-                } else {
-                    VStack(spacing: 2) {
-                        Text("vs")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundColor(DesignSystem.TextColor.tertiary)
-                        if game.awayScore != nil || game.status.isLive {
-                            Text(game.status.isLive ? "Hold to update" : "Hold to reveal score")
-                                .font(.caption2)
-                                .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .contentShape(Rectangle())
-                    .onLongPressGesture(minimumDuration: 0.5) {
-                        guard game.awayScore != nil || game.status.isLive else { return }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        onRevealScore?()
                     }
                 }
+                .frame(maxWidth: .infinity)
 
-                Spacer()
-
-                // Home team block (right side)
+                // Home team block (right-aligned column)
                 TappableTeamBlock(
                     teamName: game.homeTeam,
                     opponentName: game.awayTeam,
                     leagueCode: game.leagueCode,
                     isHome: true
                 )
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .padding(.vertical, 20)
 
@@ -298,6 +298,7 @@ private struct TappableTeamBlock: View {
                         alignment: .leading
                     )
                     .padding(.leading, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     // Home team: color bar on right
                     TeamBlockView(
@@ -307,6 +308,7 @@ private struct TappableTeamBlock: View {
                         alignment: .trailing
                     )
                     .padding(.trailing, 12)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
 
                     Rectangle()
                         .fill(DesignSystem.TeamColors.matchupColor(for: teamName, against: opponentName, isHome: isHome).opacity(0.8))
@@ -352,11 +354,10 @@ private struct TeamBlockView: View {
                 .font(.title2.weight(.bold))
                 .foregroundColor(teamColor)
 
-            // Team name - secondary
+            // Team name - secondary (wraps for long names)
             Text(teamName)
                 .font(.caption)
                 .foregroundColor(DesignSystem.TextColor.secondary)
-                .lineLimit(1)
         }
     }
 

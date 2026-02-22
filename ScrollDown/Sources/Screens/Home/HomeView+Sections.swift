@@ -61,6 +61,7 @@ extension HomeView {
             }
             .buttonStyle(.plain)
         }
+        .background(HomeTheme.background)
     }
 
     @ViewBuilder
@@ -97,7 +98,8 @@ extension HomeView {
                 }
             }
             .padding(.horizontal, horizontalPadding)
-            .transition(.opacity.animation(.easeIn(duration: 0.2)))
+            .transition(.opacity)
+            .animation(nil, value: gamesToShow.count)
         }
     }
 

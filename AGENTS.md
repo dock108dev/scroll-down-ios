@@ -22,7 +22,7 @@ ScrollDown/Sources/
 │   ├── Home/            # Game list feed
 │   ├── Game/            # Game detail view (split into extensions)
 │   └── Team/            # Team page
-├── Components/          # Reusable UI (CollapsibleCards, LoadingSkeletonView, FlowLayout)
+├── Components/          # Reusable UI (PinnedSectionHeader, CollapsibleQuarterCard, LoadingSkeletonView, FlowLayout)
 ├── Extensions/          # Swift extensions (String+Abbreviation)
 ├── Networking/          # GameService protocol + implementations, FlowAdapter, TeamColorCache
 ├── Services/            # TimeService (snapshot mode), ReadStateStore, ReadingPositionStore
@@ -64,7 +64,7 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 
 **Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. The view re-renders based on the updated status — if flow data was already loaded it displays, otherwise PBP remains as fallback. A "PBP" button in the section nav bar provides access to the full play-by-play sheet whenever Game Flow is the primary view.
 
-**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only) tracks where the user stopped reading a game's PBP. Also saves scores at the reading position. Shows "Stopped at Q3 4:32" resume text in game header and home card, with score context ("@ Q2 · 2m ago") when scores are saved.
+**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only, with in-memory caches) tracks where the user stopped reading a game's PBP. Also saves scores at the reading position. Shows "Stopped at Q3 4:32" resume text in game header and home card, with score context ("@ Q2 · 2m ago") when scores are saved. Auto-resume (default ON, `@AppStorage("autoResumePosition")`) automatically scrolls to the saved position on re-open; when OFF, shows a manual "Resume where you left off?" prompt.
 
 ## Key Data Models
 
@@ -142,7 +142,7 @@ The app renders completed games using a **blocks-based** flow system:
 
 The game detail view includes a cross-book odds comparison section (`GameDetailView+Odds.swift`):
 
-- **Collapsed by default** — Uses `CollapsibleSectionCard` (Tier 3)
+- **Collapsed by default** — Uses `PinnedSectionHeader` with `.sectionCardBody()` (Tier 3)
 - **Category tabs** — Horizontal scroll of capsule buttons; only categories with data are shown (`MarketCategory`)
 - **Player search** — TextField shown only on Player Props tab
 - **Cross-book table** — Frozen market label column (120pt) + horizontally scrollable book columns
@@ -219,7 +219,7 @@ The home screen has three modes via a segmented control (`HomeViewMode`):
 |-----|---------|
 | Games | Game feed with Earlier/Yesterday/Today/Tomorrow sections, league filter, search bar |
 | FairBet | Odds comparison with league/market filters. One-line explainer above filters. Only shows bets with server-side fair estimates (`has_fair=true`). Progressive loading — first 500 bets shown immediately, rest loaded in background. |
-| Settings | Theme selection, odds format, score display preference |
+| Settings | Theme selection, odds format, score display preference, auto-resume position toggle |
 
 The Games tab includes a search bar that filters by team name and a league filter (All, NBA, NCAAB, NHL). Both the Games and FairBet tabs have a refresh button overlaid on the league filter row.
 
@@ -242,7 +242,7 @@ The Games tab includes a search bar that filters by team name and a league filte
 | `GameDetailView+NHLStats.swift` | NHL-specific skater/goalie tables |
 | `GameDetailView+WrapUp.swift` | Post-game wrap-up |
 | `GameDetailView+Odds.swift` | Cross-book odds comparison table |
-| `GameDetailView+Helpers.swift` | Utility functions, reading position tracking, section navigation |
+| `GameDetailView+Helpers.swift` | Utility functions, reading position tracking, section frame tracking |
 | `GameDetailView+Layout.swift` | Layout constants, preference keys |
 
 ## Environments

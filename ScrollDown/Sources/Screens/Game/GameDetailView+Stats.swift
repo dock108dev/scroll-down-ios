@@ -7,15 +7,21 @@ extension GameDetailView {
     // MARK: - Player Stats Section (Tier 3: Supporting)
 
     func playerStatsSection(_ stats: [PlayerStat]) -> some View {
-        CollapsibleSectionCard(
-            title: "Player Stats",
-            isExpanded: $isPlayerStatsExpanded
+        Section(header:
+            PinnedSectionHeader(title: "Player Stats", isExpanded: $isPlayerStatsExpanded)
+                .id(GameSection.playerStats.anchorId)
+                .background(GameTheme.background)
         ) {
-            // NHL uses separate skaters/goalies arrays
-            if viewModel.isNHL {
-                nhlStatsContent
-            } else {
-                playerStatsContent(stats)
+            if isPlayerStatsExpanded {
+                Group {
+                    // NHL uses separate skaters/goalies arrays
+                    if viewModel.isNHL {
+                        nhlStatsContent
+                    } else {
+                        playerStatsContent(stats)
+                    }
+                }
+                .sectionCardBody()
             }
         }
     }
@@ -437,11 +443,15 @@ extension GameDetailView {
     // MARK: - Team Stats Section (Tier 3: Supporting)
 
     func teamStatsSection(_ stats: [TeamStat]) -> some View {
-        CollapsibleSectionCard(
-            title: "Team Stats",
-            isExpanded: $isTeamStatsExpanded
+        Section(header:
+            PinnedSectionHeader(title: "Team Stats", isExpanded: $isTeamStatsExpanded)
+                .id(GameSection.teamStats.anchorId)
+                .background(GameTheme.background)
         ) {
-            teamStatsContent(stats)
+            if isTeamStatsExpanded {
+                teamStatsContent(stats)
+                    .sectionCardBody()
+            }
         }
     }
 

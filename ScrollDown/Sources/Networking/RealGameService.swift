@@ -14,28 +14,42 @@ final class RealGameService: GameService {
     /// HTTP header name for API key authentication
     private static let apiKeyHeader = "X-API-Key"
 
-    /// EST calendar for date formatting (API expects dates in Eastern Time)
-    private var estCalendar: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "America/New_York")!
-        return calendar
+    /// Shared formatters for date/calendar operations (API expects Eastern Time)
+    private enum Formatting {
+        static let estCalendar: Calendar = {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: "America/New_York")!
+            return calendar
+        }()
+
+        static let dateFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "America/New_York")!
+            return formatter
+        }()
     }
 
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "America/New_York")!
-        return formatter
-    }
+    /// URLError codes that are safe to retry (transient network failures)
+    private static let retryableCodes: Set<URLError.Code> = [
+        .timedOut, .networkConnectionLost, .notConnectedToInternet,
+        .cannotFindHost, .cannotConnectToHost
+    ]
 
     init(
         baseURL: URL,
         apiKey: String? = nil,
-        session: URLSession = .shared
+        session: URLSession? = nil
     ) {
         self.baseURL = baseURL
         self.apiKey = apiKey
-        self.session = session
+        if let session {
+            self.session = session
+        } else {
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 15
+            self.session = URLSession(configuration: config)
+        }
         self.decoder = JSONDecoder()
     }
 
@@ -47,46 +61,46 @@ final class RealGameService: GameService {
 
     func fetchGames(range: GameRange, league: LeagueCode?) async throws -> GameListResponse {
         let now = TimeService.shared.now
-        let today = estCalendar.startOfDay(for: now)
+        let today = Formatting.estCalendar.startOfDay(for: now)
 
         var queryItems: [URLQueryItem] = []
 
         switch range {
         case .current:
-            let dateStr = dateFormatter.string(from: today)
+            let dateStr = Formatting.dateFormatter.string(from: today)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .yesterday:
-            guard let yesterday = estCalendar.date(byAdding: .day, value: -1, to: today) else {
+            guard let yesterday = Formatting.estCalendar.date(byAdding: .day, value: -1, to: today) else {
                 throw GameServiceError.networkError(URLError(.unknown))
             }
-            let dateStr = dateFormatter.string(from: yesterday)
+            let dateStr = Formatting.dateFormatter.string(from: yesterday)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .earlier:
-            guard let twoDaysAgo = estCalendar.date(byAdding: .day, value: -2, to: today),
-                  let threeDaysAgo = estCalendar.date(byAdding: .day, value: -3, to: today) else {
+            guard let twoDaysAgo = Formatting.estCalendar.date(byAdding: .day, value: -2, to: today),
+                  let threeDaysAgo = Formatting.estCalendar.date(byAdding: .day, value: -3, to: today) else {
                 throw GameServiceError.networkError(URLError(.unknown))
             }
-            queryItems.append(URLQueryItem(name: "startDate", value: dateFormatter.string(from: threeDaysAgo)))
-            queryItems.append(URLQueryItem(name: "endDate", value: dateFormatter.string(from: twoDaysAgo)))
+            queryItems.append(URLQueryItem(name: "startDate", value: Formatting.dateFormatter.string(from: threeDaysAgo)))
+            queryItems.append(URLQueryItem(name: "endDate", value: Formatting.dateFormatter.string(from: twoDaysAgo)))
 
         case .tomorrow:
-            guard let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today) else {
+            guard let tomorrow = Formatting.estCalendar.date(byAdding: .day, value: 1, to: today) else {
                 throw GameServiceError.networkError(URLError(.unknown))
             }
-            let dateStr = dateFormatter.string(from: tomorrow)
+            let dateStr = Formatting.dateFormatter.string(from: tomorrow)
             queryItems.append(URLQueryItem(name: "startDate", value: dateStr))
             queryItems.append(URLQueryItem(name: "endDate", value: dateStr))
 
         case .next24:
-            guard let tomorrow = estCalendar.date(byAdding: .day, value: 1, to: today) else {
+            guard let tomorrow = Formatting.estCalendar.date(byAdding: .day, value: 1, to: today) else {
                 throw GameServiceError.networkError(URLError(.unknown))
             }
-            let todayStr = dateFormatter.string(from: today)
-            let tomorrowStr = dateFormatter.string(from: tomorrow)
+            let todayStr = Formatting.dateFormatter.string(from: today)
+            let tomorrowStr = Formatting.dateFormatter.string(from: tomorrow)
             queryItems.append(URLQueryItem(name: "startDate", value: todayStr))
             queryItems.append(URLQueryItem(name: "endDate", value: tomorrowStr))
         }
@@ -152,41 +166,63 @@ final class RealGameService: GameService {
             urlRequest.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeader)
         }
 
-        do {
-            logger.info("📡 Requesting: \(url.absoluteString, privacy: .public)")
-            let (data, response) = try await session.data(for: urlRequest)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLError(.badServerResponse)
-            }
-            logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
+        return try await requestWithRetry(urlRequest, path: path)
+    }
 
-            // Handle authentication errors specifically
-            if httpResponse.statusCode == 401 {
-                logger.error("📡 Authentication failed - missing or invalid API key")
-                throw GameServiceError.unauthorized
+    /// Execute a URLRequest with automatic retry for transient network failures.
+    /// Max 2 retries with exponential backoff (1s, 2s).
+    private func requestWithRetry<T: Decodable>(_ urlRequest: URLRequest, path: String, maxRetries: Int = 2) async throws -> T {
+        var lastError: Error?
+
+        for attempt in 0...maxRetries {
+            if attempt > 0 {
+                let delay = UInt64(attempt) * 1_000_000_000 // 1s, 2s
+                logger.info("📡 Retry \(attempt, privacy: .public)/\(maxRetries, privacy: .public) for \(path, privacy: .public)")
+                try await Task.sleep(nanoseconds: delay)
             }
 
-            guard (200..<300).contains(httpResponse.statusCode) else {
-                logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
-                throw URLError(.badServerResponse)
-            }
             do {
-                let result = try decoder.decode(T.self, from: data)
-                logger.info("📡 Decode success for \(path, privacy: .public)")
-                return result
-            } catch {
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")
+                logger.info("📡 Requesting: \(urlRequest.url?.absoluteString ?? "nil", privacy: .public)")
+                let (data, response) = try await session.data(for: urlRequest)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
                 }
-                logger.error("📡 Decode error: \(error.localizedDescription, privacy: .public)")
-                throw error
+                logger.info("📡 Response status: \(httpResponse.statusCode, privacy: .public), bytes: \(data.count, privacy: .public)")
+
+                if httpResponse.statusCode == 401 {
+                    logger.error("📡 Authentication failed - missing or invalid API key")
+                    throw GameServiceError.unauthorized
+                }
+
+                guard (200..<300).contains(httpResponse.statusCode) else {
+                    logger.error("Request failed path=\(path, privacy: .public) status=\(httpResponse.statusCode, privacy: .public)")
+                    throw URLError(.badServerResponse)
+                }
+                do {
+                    let result = try decoder.decode(T.self, from: data)
+                    logger.info("📡 Decode success for \(path, privacy: .public)")
+                    return result
+                } catch {
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        logger.error("📡 Decode failed. Raw response: \(jsonString.prefix(500), privacy: .public)")
+                    }
+                    logger.error("📡 Decode error: \(error.localizedDescription, privacy: .public)")
+                    throw error
+                }
+            } catch let error as URLError where Self.retryableCodes.contains(error.code) && attempt < maxRetries {
+                lastError = error
+                logger.warning("📡 Retryable error: \(error.localizedDescription, privacy: .public)")
+                continue
+            } catch let error as DecodingError {
+                logger.error("📡 DecodingError: \(String(describing: error), privacy: .public)")
+                throw GameServiceError.decodingError(error)
+            } catch {
+                logger.error("📡 NetworkError: \(error.localizedDescription, privacy: .public)")
+                throw GameServiceError.networkError(error)
             }
-        } catch let error as DecodingError {
-            logger.error("📡 DecodingError: \(String(describing: error), privacy: .public)")
-            throw GameServiceError.decodingError(error)
-        } catch {
-            logger.error("📡 NetworkError: \(error.localizedDescription, privacy: .public)")
-            throw GameServiceError.networkError(error)
         }
+
+        // Should only reach here if all retries exhausted
+        throw GameServiceError.networkError(lastError ?? URLError(.unknown))
     }
 }
