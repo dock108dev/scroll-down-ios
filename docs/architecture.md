@@ -125,7 +125,7 @@ See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 - Per-book EV using fair probability via `EVCalculator`
 - Fee model supports `percentOnWinnings` for future P2P/exchange integration
 
-**Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages incrementally in the background. A "Loading more bets…" indicator shows at the bottom of the list during background loading.
+**Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages concurrently (max 3 in-flight via `TaskGroup`) with incremental EV computation (`computeEVsForNewBets`). A "Loading more bets…" indicator shows at the bottom of the list during background loading.
 
 **FairExplainerSheet — "Show the Math":**
 `FairExplainerSheet` (opened by tapping the FAIR card on any bet) presents a numbered step-by-step math walkthrough:
@@ -179,11 +179,12 @@ User returns to game ───┘
                         ▼
               loadResumeMarkerIfNeeded()
                         │
-                        ├─ Position found? → Show resume prompt
+                        ├─ Position found + autoResumePosition ON?  → Auto-scroll to saved play
+                        ├─ Position found + autoResumePosition OFF? → Show resume prompt
                         └─ No position?   → Start from top
 ```
 
-`ReadingPositionStore` is the SSOT for resume position and saved scores. Resume text ("Stopped at Q3 4:32") displays in the game header and home card. Saved scores display with context ("@ Q2 · 2m ago") in both locations. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `scoreContext(for:)`.
+`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses in-memory caches (`scoreCache`, `contextCache`) to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. Resume text ("Stopped at Q3 4:32") displays in the game header and home card. Saved scores display with context ("@ Q2 · 2m ago") in both locations. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `scoreContext(for:)`, `preload(gameIds:)`.
 
 ## Score Reveal Preference
 
@@ -200,7 +201,7 @@ Hold-to-reveal (long press on score area) lets users check scores without changi
 
 `GameDetailView` is split into focused extensions. See [AGENTS.md](../AGENTS.md) for the full file table.
 
-Sections render conditionally based on game status and data availability:
+Sections render inside a `LazyVStack(pinnedViews: [.sectionHeaders])`. Each section uses `PinnedSectionHeader` for a sticky header that pins when scrolled past, paired with `.sectionCardBody()` for content styling. Content renders conditionally based on game status and data availability:
 - **Pregame (Overview):** Matchup context
 - **Timeline:** Live PBP (for live games) or Flow blocks (for final games); falls back to PBP if no flow data
 - **Stats:** Player stats + team comparison

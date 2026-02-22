@@ -93,7 +93,9 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 - [ ] Polling stops on dismiss or game transitioning to final
 - [ ] Game transitioning to final re-renders view based on new status (shows flow if loaded, PBP as fallback)
 - [ ] Header shows pulsing LIVE badge with live score
-- [ ] Resume prompt appears when returning to a game with saved position
+- [ ] Auto-resume scrolls to saved position when returning to a game (default ON)
+- [ ] Resume prompt appears when auto-resume is toggled OFF in Settings
+- [ ] Auto-resume setting toggle appears in Settings under "Game — Behavior"
 
 ### Navigation
 - [ ] Scrolling stable when expanding sections

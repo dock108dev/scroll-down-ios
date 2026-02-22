@@ -4,6 +4,50 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Pinned Section Headers, Auto-Resume, Performance (Feb 22, 2025)
+
+**Pinned section headers:**
+- Migrated all game detail sections from `CollapsibleSectionCard` to `PinnedSectionHeader` + `.sectionCardBody()` inside `LazyVStack(pinnedViews: [.sectionHeaders])`
+- Section headers now stick to the top of the scroll view when scrolled past, improving navigation
+- New `SectionCardBodyModifier` rounds only bottom corners so header + body form a connected card
+- Removed `CollapsibleSectionCard` (dead code after migration)
+- Removed `sectionAnchor(for:)` helper (replaced by `.id()` on `PinnedSectionHeader`)
+- Removed unused `CardLayout` constants enum
+- Home view sections also migrated to `Section(header:)` with `LazyVStack(pinnedViews:)`
+
+**Auto-resume scroll position:**
+- New `@AppStorage("autoResumePosition")` setting (default ON)
+- When ON, automatically scrolls to saved PBP position when reopening a game (no prompt)
+- When OFF, shows existing "Resume where you left off?" prompt
+- New Settings toggle under "Game — Behavior" section
+- `resumeScroll(using:)` now expands flow card and uses 0.3s layout delay before scrolling
+
+**Performance improvements:**
+- `GameSummary.parsedGameDate` cached at decode time (`_parsedGameDate`) — avoids repeated ISO8601 parsing
+- `ReadingPositionStore` in-memory caches (`scoreCache`, `contextCache`) for saved scores and context strings
+- `ReadingPositionStore.preload(gameIds:)` for batch cache warming
+- `OddsComparisonViewModel` fetches remaining odds pages concurrently (max 3 via `TaskGroup`) instead of sequentially
+- `computeEVsForNewBets(startingAt:)` for incremental EV computation (avoids recomputing entire cache)
+- `RealGameService.Formatting` static calendar/formatter (avoids per-call allocation)
+- `BetCard.TimeFormatting` static date formatters (avoids per-render allocation)
+- `RealGameService.requestWithRetry()` adds automatic retry for transient network failures (max 2 retries, exponential backoff)
+- Default `URLSession` timeout reduced to 15s
+
+**Layout improvements:**
+- `GameHeaderView` uses flex columns (`frame(maxWidth: .infinity)`) instead of `Spacer()` for more stable team/score layout
+- `TeamBlockView` allows team name wrapping (removed `lineLimit(1)`)
+- `OddsComparisonView` preserved in ZStack with opacity toggle to maintain scroll position when switching tabs
+- Earlier section sorted by most-recent-day-first, chronological within each day
+- League filter shows loading spinners when no cache exists for selected league
+
+**Dead code removed:**
+- `CollapsibleSectionCard` struct (79 lines, zero callers)
+- `sectionAnchor(for:)` function (replaced by PinnedSectionHeader)
+- `CardLayout` enum (zero references)
+- Updated doc comment referencing deleted `CollapsibleSectionCard`
+
+**Files changed:** `CollapsibleCards.swift`, `SectionCardView.swift`, `GameDetailView.swift`, `GameDetailView+Helpers.swift`, `GameDetailView+Overview.swift`, `GameDetailView+Timeline.swift`, `GameDetailView+Stats.swift`, `GameDetailView+WrapUp.swift`, `GameDetailView+Odds.swift`, `GameHeaderView.swift`, `HomeView.swift`, `HomeView+Sections.swift`, `HomeView+DataLoading.swift`, `SettingsView.swift`, `OddsComparisonViewModel.swift`, `RealGameService.swift`, `BetCard.swift`, `GameSummary.swift`, `ReadingPositionStore.swift`
+
 ### Changed — Score UX, Spoiler Actions, FairBet Progressive Loading, Dead Code Cleanup (Feb 21, 2025)
 
 **Score display & reveal improvements:**
@@ -227,7 +271,7 @@ Notable changes to the Scroll Down iOS app.
 **Other changes:**
 - BetCard parlay button repositioned (right-aligned)
 - Games API limit reduced from 500 to 200 for faster loading
-- Container types consolidated to `CollapsibleSectionCard`
+- Container types consolidated to `CollapsibleSectionCard` (later replaced by `PinnedSectionHeader`)
 
 ### Changed — Display & Data Cleanup (Feb 14, 2025)
 
