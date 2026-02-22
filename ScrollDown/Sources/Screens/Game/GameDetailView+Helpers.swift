@@ -213,11 +213,14 @@ extension GameDetailView {
             isResumeTrackingEnabled = true
             return
         }
+        isFlowCardExpanded = true
         isTimelineExpanded = true
         selectedSection = .timeline
         expandQuarter(for: savedResumePlayIndex)
-        withAnimation(.easeInOut) {
-            proxy.scrollTo("play-\(savedResumePlayIndex)", anchor: .top)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.easeInOut) {
+                proxy.scrollTo("play-\(savedResumePlayIndex)", anchor: .top)
+            }
         }
         shouldShowResumePrompt = false
         isResumeTrackingEnabled = true
@@ -261,8 +264,12 @@ extension GameDetailView {
             return
         }
         savedResumePlayIndex = storedPlayIndex
-        shouldShowResumePrompt = true
         isResumeTrackingEnabled = false
+        if autoResumePosition {
+            pendingAutoScroll = true
+        } else {
+            shouldShowResumePrompt = true
+        }
     }
 
     func updateResumeMarkerIfNeeded() {

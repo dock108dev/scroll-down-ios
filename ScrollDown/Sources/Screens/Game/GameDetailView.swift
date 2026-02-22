@@ -42,6 +42,8 @@ struct GameDetailView: View {
     @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
     @State var scrollToSection: GameSection? = nil  // Triggers scroll when set
+    @State var pendingAutoScroll = false
+    @AppStorage("autoResumePosition") var autoResumePosition = true
     @State var displayedAwayScore: Int? = nil
     @State var displayedHomeScore: Int? = nil
     // iPad: Size class for adaptive layouts (internal for extension access)
@@ -415,6 +417,12 @@ struct GameDetailView: View {
                     scrollToSection = nil
                     isManualTabSelection = false
                 }
+            }
+            .onChange(of: pendingAutoScroll) { _, shouldScroll in
+                guard shouldScroll else { return }
+                pendingAutoScroll = false
+                isFlowCardExpanded = true
+                resumeScroll(using: proxy)
             }
         }
     }
