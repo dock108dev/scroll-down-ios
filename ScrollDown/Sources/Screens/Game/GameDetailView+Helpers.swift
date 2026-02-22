@@ -368,6 +368,12 @@ extension GameDetailView {
 
         displayedAwayScore = block.endScore.away
         displayedHomeScore = block.endScore.home
+
+        // Auto-mark as read when user reaches the last flow block
+        if block.blockIndex == viewModel.blockDisplayModels.count - 1,
+           let status = viewModel.game?.status {
+            readStateStore.markRead(gameId: gameId, status: status)
+        }
     }
 
     func clearSavedResumeMarker() {

@@ -410,6 +410,18 @@ struct HomeView: View {
                     proxy.scrollTo(HomeStrings.sectionYesterday, anchor: .top)
                 }
             }
+            .onChange(of: earlierSection.isExpanded) { _, expanded in
+                if !expanded { scrollToSectionHeader(earlierSection, using: proxy) }
+            }
+            .onChange(of: yesterdaySection.isExpanded) { _, expanded in
+                if !expanded { scrollToSectionHeader(yesterdaySection, using: proxy) }
+            }
+            .onChange(of: todaySection.isExpanded) { _, expanded in
+                if !expanded { scrollToSectionHeader(todaySection, using: proxy) }
+            }
+            .onChange(of: tomorrowSection.isExpanded) { _, expanded in
+                if !expanded { scrollToSectionHeader(tomorrowSection, using: proxy) }
+            }
         }
     }
 
@@ -503,6 +515,14 @@ struct HomeView: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Scroll Helpers
+
+    private func scrollToSectionHeader(_ section: HomeSectionState, using proxy: ScrollViewProxy) {
+        withAnimation(.easeOut(duration: 0.25)) {
+            proxy.scrollTo(section.title, anchor: .top)
+        }
     }
 
     // MARK: - Load Task Management
