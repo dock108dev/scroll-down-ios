@@ -401,14 +401,7 @@ struct BetCard: View {
     }
 
     private func computeEV(for book: BookPrice) -> Double {
-        if let serverEV = book.evPercent {
-            return serverEV
-        }
-        return EVCalculator.computeEV(
-            americanOdds: book.price,
-            marketProbability: fairProbability,
-            bookKey: book.name.lowercased()
-        )
+        book.evPercent ?? 0
     }
 
     private func evColor(for ev: Double) -> Color {

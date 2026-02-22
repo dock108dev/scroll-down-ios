@@ -106,4 +106,13 @@ struct OddsCalculator {
     static func formattedDecimalOdds(_ decimal: Double) -> String {
         String(format: "%.2f", decimal)
     }
+
+    // MARK: - Profit Conversion
+
+    /// Convert American odds to profit per $1 stake
+    static func americanToProfit(_ odds: Int) -> Double {
+        if odds > 0 { return Double(odds) / 100.0 }
+        if odds < 0 { return 100.0 / Double(abs(odds)) }
+        return 0
+    }
 }

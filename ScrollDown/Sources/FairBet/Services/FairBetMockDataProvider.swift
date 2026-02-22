@@ -63,9 +63,11 @@ final class FairBetMockDataProvider: ObservableObject {
                     BookPrice(book: "PointsBet", priceValue: -115, observedAt: now),
                     BookPrice(book: "BetRivers", priceValue: -110, observedAt: now)
                 ],
+                evMethod: "pinnacle_devig",
                 evConfidenceTier: "high",
                 trueProb: 0.52,
-                referencePrice: -108
+                referencePrice: -108,
+                oppositeReferencePrice: 108
             ),
             // Spread: Celtics +3.5 (opposite side)
             APIBet(
@@ -104,9 +106,11 @@ final class FairBetMockDataProvider: ObservableObject {
                     BookPrice(book: "Pinnacle", priceValue: -143, observedAt: now, isSharp: true),
                     BookPrice(book: "BetRivers", priceValue: -145, observedAt: now)
                 ],
+                evMethod: "pinnacle_devig",
                 evConfidenceTier: "medium",
                 trueProb: 0.59,
-                referencePrice: -143
+                referencePrice: -143,
+                oppositeReferencePrice: 123
             ),
             // Moneyline: Lakers (opposite side)
             APIBet(

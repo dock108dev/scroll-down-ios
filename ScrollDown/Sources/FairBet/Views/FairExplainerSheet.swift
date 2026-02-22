@@ -115,7 +115,7 @@ struct FairExplainerSheet: View {
         }
 
         if method.contains("pinnacle") && method.contains("devig") {
-            return "Pinnacle is widely regarded as the sharpest sportsbook. This estimate removes Pinnacle's margin (vig) from both sides of the market to derive the true implied probability."
+            return "Pinnacle is widely regarded as the sharpest sportsbook. This estimate uses Shin's method to remove Pinnacle's margin (vig) from both sides of the market. Unlike simple division, Shin's method accounts for favorite-longshot bias, producing more accurate fair probabilities."
         } else if method.contains("pinnacle") && method.contains("extrapol") {
             return "Pinnacle isn't offering this exact line, so the fair price is extrapolated from nearby Pinnacle lines. This is less precise than a direct Pinnacle devig but still anchored to sharp market data."
         } else if method.contains("paired") || method.contains("vig_removal") || method.contains("vig removal") {
@@ -170,6 +170,8 @@ struct FairExplainerSheet: View {
 
     private func methodDisplayName(_ method: String) -> String {
         switch method.lowercased() {
+        case "pinnacle_devig":
+            return "Pinnacle Devig (Shin's)"
         case "paired_devig", "paired_vig_removal", "paired vig removal":
             return "Paired vig removal"
         case "median_consensus", "median consensus":
@@ -185,12 +187,32 @@ struct FairExplainerSheet: View {
 
     @ViewBuilder
     private var mathWalkthroughSection: some View {
-        if isMedianConsensus {
+        if confidence == .none {
+            notAvailableSteps
+        } else if isMedianConsensus {
             medianSteps
         } else if rawImpliedThis != nil {
             pairedDevigSteps
         } else {
             fallbackSteps
+        }
+    }
+
+    // MARK: Not available steps
+
+    @ViewBuilder
+    private var notAvailableSteps: some View {
+        mathStepView(step: 1, title: "Fair Estimate Not Available") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(evResult?.evDisabledReason ?? bet.evDisabledReason ?? "Server EV not available")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+
+                Text("The server did not compute a fair probability for this bet. This may be due to insufficient sharp market data or an unsupported market type.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
@@ -241,7 +263,35 @@ struct FairExplainerSheet: View {
         }
 
         // Step 3: Remove vig → fair probability
-        if let thisProb = rawImpliedThis, let total = rawImpliedTotal, total > 1.0 {
+        if isPinnacleDevig, let total = rawImpliedTotal, total > 1.0 {
+            // Shin's method walkthrough
+            let z = 1.0 - (1.0 / total)
+            mathStepView(step: 3, title: "Remove the vig (Shin's method)") {
+                VStack(alignment: .leading, spacing: 4) {
+                    mathRow("Total implied:", String(format: "%.1f%%", total * 100))
+                    mathRow("z = 1 − 1/total:", String(format: "%.4f", z))
+
+                    Divider()
+
+                    Text("Shin's formula adjusts each side's probability\nusing z to correct for favorite-longshot bias.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if let thisProb = rawImpliedThis {
+                        mathRow("Raw q (this side):", String(format: "%.1f%%", thisProb * 100))
+                    }
+
+                    Divider()
+                    mathRow("Fair probability:", FairBetCopy.formatProbability(fairProb))
+                    mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
+
+                    Text("Shin's method shifts more vig correction to longshots.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                }
+            }
+        } else if let thisProb = rawImpliedThis, let total = rawImpliedTotal, total > 1.0 {
             mathStepView(step: 3, title: "Remove the vig") {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(String(format: "%.1f%% ÷ %.1f%% = %.1f%%",
@@ -449,12 +499,16 @@ struct FairExplainerSheet: View {
 
     private var bestBookProfit: Double? {
         guard let book = bestBookForEV else { return nil }
-        return EVCalculator.americanToProfit(book.price)
+        return OddsCalculator.americanToProfit(book.price)
     }
 
     private var isMedianConsensus: Bool {
         guard let method = bet.evMethod?.lowercased() else { return false }
         return method.contains("median") || method.contains("consensus")
+    }
+
+    private var isPinnacleDevig: Bool {
+        bet.evMethod?.lowercased() == "pinnacle_devig"
     }
 
     /// Breakdown of each book's implied probability
@@ -595,11 +649,12 @@ struct FairExplainerSheet: View {
     }
 
     private var confidenceDescription: String {
+        let pinnacleNote = isPinnacleDevig ? " Derived from Pinnacle's sharp lines using Shin's method." : ""
         switch confidence {
         case .high:
-            return "Multiple sportsbooks are pricing both sides of this bet, allowing accurate vig removal."
+            return "Multiple sportsbooks are pricing both sides of this bet, allowing accurate vig removal." + pinnacleNote
         case .medium:
-            return "A few sportsbooks are pricing both sides. The estimate is reasonable but less precise."
+            return "A few sportsbooks are pricing both sides. The estimate is reasonable but less precise." + pinnacleNote
         case .low:
             return "Limited books are pricing this bet. The estimate is a rough approximation."
         case .none:

@@ -80,9 +80,6 @@ final class OddsComparisonViewModel: ObservableObject {
 
     // MARK: - Cached Computations (for performance)
 
-    /// Pre-computed pairs for vig removal (computed once per data load)
-    private var cachedPairs: [String: APIBet] = [:]
-
     /// Cached EV results per bet ID (EV value + confidence)
     private var cachedEVResults: [String: EVResult] = [:]
 
@@ -222,7 +219,6 @@ final class OddsComparisonViewModel: ObservableObject {
             evDiagnostics = firstResponse.evDiagnostics
 
             // Compute and display first page results immediately
-            cachedPairs = BetPairingService.pairBets(allBets)
             computeAllEVs()
             applyFilters()
 
@@ -253,7 +249,6 @@ final class OddsComparisonViewModel: ObservableObject {
                     offset += response.bets.count
 
                     // Incrementally update caches and display
-                    cachedPairs = BetPairingService.pairBets(allBets)
                     computeAllEVs()
                     applyFilters()
 
@@ -310,7 +305,6 @@ final class OddsComparisonViewModel: ObservableObject {
         let response = FairBetMockDataProvider.shared.getMockBetsResponse()
         allBets = response.bets
         booksAvailable = response.booksAvailable
-        cachedPairs = BetPairingService.pairBets(allBets)
         computeAllEVs()
         applyFilters()
     }
@@ -414,55 +408,43 @@ final class OddsComparisonViewModel: ObservableObject {
         }
     }
 
-    /// Calculate best EV for a single bet using cached pairs.
-    /// Uses server-side EV annotations when available, otherwise computes via paired vig removal.
+    /// Calculate best EV for a single bet using server-side annotations exclusively.
     private func computeEVResult(for bet: APIBet) -> EVResult {
-        // Server-side EV: use when confidence tier is present, at least one book has evPercent,
-        // AND we have a real trueProb.
-        if let serverTier = bet.evConfidenceTier,
-           let bestServerBook = bet.books.compactMap({ book -> (book: BookPrice, ev: Double)? in
-               guard let ev = book.evPercent else { return nil }
-               return (book, ev)
-           }).max(by: { $0.ev < $1.ev }),
-           let fairProb = bet.trueProb ?? bestServerBook.book.trueProb ?? bet.books.compactMap(\.trueProb).first {
-            let confidence: FairOddsConfidence
-            switch serverTier {
-            case "high": confidence = .high
-            case "medium": confidence = .medium
-            case "low": confidence = .low
-            default: confidence = .none
-            }
-            let fairOdds = OddsCalculator.probToAmerican(fairProb)
+        // Use server-side EV annotations exclusively
+        guard let serverTier = bet.evConfidenceTier,
+              let bestServerBook = bet.books
+                  .compactMap({ b -> (book: BookPrice, ev: Double)? in
+                      guard let ev = b.evPercent else { return nil }
+                      return (b, ev)
+                  }).max(by: { $0.ev < $1.ev }),
+              let fairProb = bet.trueProb
+        else {
+            // Server didn't provide EV — return "not available"
             return EVResult(
-                ev: bestServerBook.ev,
-                confidence: confidence,
-                fairProbability: fairProb,
-                fairAmericanOdds: fairOdds,
+                ev: 0,
+                confidence: .none,
+                fairProbability: 0,
+                fairAmericanOdds: 0,
                 referencePrice: bet.referencePrice,
-                evDisabledReason: bet.evDisabledReason
+                evDisabledReason: bet.evDisabledReason ?? "Server EV not available"
             )
         }
 
-        // Client-side EV via paired vig removal
-        let fairResult = bet.fairProbability(pairs: cachedPairs)
-        let pFair = fairResult.fairProbability
-
-        var best = -Double.greatestFiniteMagnitude
-        for book in bet.books {
-            let ev = EVCalculator.computeEV(
-                americanOdds: book.price,
-                marketProbability: pFair,
-                bookKey: book.name.lowercased()
-            )
-            if ev > best {
-                best = ev
-            }
+        let confidence: FairOddsConfidence
+        switch serverTier {
+        case "high": confidence = .high
+        case "medium": confidence = .medium
+        case "low": confidence = .low
+        default: confidence = .none
         }
+
         return EVResult(
-            ev: best,
-            confidence: fairResult.confidence,
-            fairProbability: fairResult.fairProbability,
-            fairAmericanOdds: fairResult.fairAmericanOdds
+            ev: bestServerBook.ev,
+            confidence: confidence,
+            fairProbability: fairProb,
+            fairAmericanOdds: OddsCalculator.probToAmerican(fairProb),
+            referencePrice: bet.referencePrice,
+            evDisabledReason: bet.evDisabledReason
         )
     }
 
