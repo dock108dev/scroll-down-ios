@@ -251,7 +251,28 @@ struct GameDetailView: View {
                                         displayedAwayScore = away
                                         displayedHomeScore = home
                                         if let away, let home {
-                                            ReadingPositionStore.shared.updateScores(for: gameId, awayScore: away, homeScore: home)
+                                            // Find latest play with score for game position context
+                                            let latestPlay = (viewModel.detail?.plays ?? [])
+                                                .last(where: { $0.homeScore != nil && $0.awayScore != nil })
+                                            let sport = game.leagueCode
+                                            let pLabel = latestPlay?.periodLabel
+                                                ?? latestPlay?.quarter.map { Self.formatPeriodLabel($0, sport: sport) }
+                                            let tLabel = latestPlay?.timeLabel
+                                                ?? latestPlay.flatMap { play in
+                                                    guard let q = play.quarter else { return nil }
+                                                    let label = Self.formatPeriodLabel(q, sport: sport)
+                                                    if let clock = play.gameClock { return "\(label) \(clock)" }
+                                                    return label
+                                                }
+                                            ReadingPositionStore.shared.updateScores(
+                                                for: gameId,
+                                                awayScore: away,
+                                                homeScore: home,
+                                                period: latestPlay?.quarter,
+                                                gameClock: latestPlay?.gameClock,
+                                                periodLabel: pLabel,
+                                                timeLabel: tLabel
+                                            )
                                         }
                                     } else {
                                         readStateStore.markRead(gameId: gameId, status: game.status)

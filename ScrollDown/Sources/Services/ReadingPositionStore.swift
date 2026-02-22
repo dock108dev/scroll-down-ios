@@ -35,14 +35,24 @@ final class ReadingPositionStore {
     }
 
     /// Updates (or creates) a reading position with new scores and a fresh timestamp.
-    func updateScores(for gameId: Int, awayScore: Int, homeScore: Int) {
+    /// When `period`/`gameClock`/`periodLabel`/`timeLabel` are supplied they overwrite
+    /// the stored values; otherwise existing position data is preserved.
+    func updateScores(
+        for gameId: Int,
+        awayScore: Int,
+        homeScore: Int,
+        period: Int? = nil,
+        gameClock: String? = nil,
+        periodLabel: String? = nil,
+        timeLabel: String? = nil
+    ) {
         let existing = load(gameId: gameId)
         let position = ReadingPosition(
             playIndex: existing?.playIndex ?? 0,
-            period: existing?.period,
-            gameClock: existing?.gameClock,
-            periodLabel: existing?.periodLabel,
-            timeLabel: existing?.timeLabel,
+            period: period ?? existing?.period,
+            gameClock: gameClock ?? existing?.gameClock,
+            periodLabel: periodLabel ?? existing?.periodLabel,
+            timeLabel: timeLabel ?? existing?.timeLabel,
             savedAt: Date(),
             homeScore: homeScore,
             awayScore: awayScore
@@ -55,7 +65,9 @@ final class ReadingPositionStore {
         guard let position = load(gameId: gameId),
               position.awayScore != nil, position.homeScore != nil else { return nil }
         var parts: [String] = []
-        if let periodLabel = position.periodLabel {
+        if let timeLabel = position.timeLabel {
+            parts.append("@ \(timeLabel)")
+        } else if let periodLabel = position.periodLabel {
             parts.append("@ \(periodLabel)")
         }
         parts.append(relativeTimeString(from: position.savedAt))
@@ -82,6 +94,8 @@ final class ReadingPositionStore {
         if let periodLabel = position.periodLabel {
             return "Stopped at \(periodLabel)"
         }
-        return "Stopped at play \(position.playIndex)"
+        // No time info available — only show if user actually scrolled into the timeline
+        guard position.playIndex > 0 else { return nil }
+        return nil
     }
 }

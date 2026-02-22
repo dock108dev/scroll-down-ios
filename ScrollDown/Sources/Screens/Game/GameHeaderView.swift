@@ -82,10 +82,10 @@ struct GameHeaderView: View {
                         if game.status.isLive, let context = scoreContextText {
                             Text(context)
                                 .font(.caption2)
-                                .foregroundColor(DesignSystem.TextColor.secondary)
-                        }
-                        // "Hold to update" hint for live games with earned scores
-                        if game.status.isLive && !scoreRevealed {
+                                .foregroundColor(DesignSystem.TextColor.tertiary)
+                                .lineLimit(1)
+                        } else if game.status.isLive && !scoreRevealed {
+                            // "Hold to update" hint only when no context is showing yet
                             Text("Hold to update")
                                 .font(.caption2)
                                 .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
@@ -176,7 +176,8 @@ struct GameHeaderView: View {
                 }
 
                 // Resume text (when user has a saved reading position)
-                if let resumeText {
+                // Hidden when score context is already showing the same info in the score bar
+                if let resumeText, scoreContextText == nil {
                     HStack {
                         Text(resumeText)
                             .font(.caption2)

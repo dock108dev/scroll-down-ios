@@ -110,6 +110,33 @@ extension GameDetailView {
         }
     }
 
+    /// Compact period label for score context display (e.g. "Q2", "P1", "1st Half").
+    /// Static so it can be called from closures without capturing `self`.
+    static func formatPeriodLabel(_ quarter: Int, sport: String) -> String {
+        switch sport {
+        case "NCAAB":
+            switch quarter {
+            case 1: return "1st Half"
+            case 2: return "2nd Half"
+            case 3: return "OT"
+            default: return "\(quarter - 2)OT"
+            }
+        case "NHL":
+            switch quarter {
+            case 1...3: return "P\(quarter)"
+            case 4: return "OT"
+            default: return "\(quarter - 3)OT"
+            }
+        default: // NBA and others
+            switch quarter {
+            case 1...4: return "Q\(quarter)"
+            case 5: return "OT"
+            default: return "\(quarter - 4)OT"
+            }
+        }
+    }
+
+    /// Ordinal period label for viewing pill (e.g. "1st", "2nd", "P1", "1st Half").
     func quarterOrdinal(_ quarter: Int) -> String {
         let sport = viewModel.game?.leagueCode ?? "NBA"
         switch sport {
