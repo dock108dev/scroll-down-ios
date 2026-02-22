@@ -133,16 +133,10 @@ extension GameDetailView {
     private func oddsGroupedMainlineTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
         let groups = groupMainlineMarkets(markets)
 
-        return VStack(spacing: 0) {
-            ForEach(Array(groups.enumerated()), id: \.offset) { gIdx, group in
-                oddsCollapsibleGroup(
-                    title: group.title,
-                    markets: group.markets,
-                    books: books,
-                    showHeader: gIdx == 0
-                )
-            }
-        }
+        return oddsGroupedUnifiedTable(
+            teamGroups: groups,
+            books: books
+        )
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
 
@@ -193,17 +187,120 @@ extension GameDetailView {
     private func oddsGroupedTeamPropTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
         let groups = groupTeamPropMarkets(markets)
 
-        return VStack(spacing: 0) {
-            ForEach(Array(groups.enumerated()), id: \.offset) { gIdx, group in
-                oddsCollapsibleGroup(
-                    title: group.title,
-                    markets: group.markets,
-                    books: books,
-                    showHeader: gIdx == 0
-                )
+        return oddsGroupedUnifiedTable(
+            teamGroups: groups,
+            books: books
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+    }
+
+    // MARK: - Unified Grouped Table (single horizontal scroll across all groups)
+
+    private func oddsGroupedUnifiedTable(
+        teamGroups: [(title: String, markets: [GameDetailViewModel.OddsMarketKey])],
+        books: [String]
+    ) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Frozen label column
+            VStack(spacing: 0) {
+                // "MARKET" header
+                Text("MARKET")
+                    .font(DesignSystem.Typography.statLabel)
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .textCase(.uppercase)
+                    .frame(width: 120, alignment: .leading)
+                    .padding(.vertical, 8)
+                    .padding(.leading, DesignSystem.Spacing.elementPadding)
+                    .background(DesignSystem.Colors.elevatedBackground)
+
+                ForEach(Array(teamGroups.enumerated()), id: \.offset) { _, group in
+                    // Team name sub-header
+                    Text(group.title.uppercased())
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                        .tracking(0.5)
+                        .frame(width: 120, alignment: .leading)
+                        .frame(height: 28)
+                        .padding(.leading, DesignSystem.Spacing.elementPadding)
+                        .background(DesignSystem.Colors.alternateRowBackground)
+
+                    // Market label rows
+                    ForEach(Array(group.markets.enumerated()), id: \.element.id) { index, market in
+                        Text(market.displayLabel)
+                            .font(DesignSystem.Typography.statValue)
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                            .lineLimit(2)
+                            .frame(width: 120, alignment: .leading)
+                            .frame(height: 36)
+                            .padding(.leading, DesignSystem.Spacing.elementPadding)
+                            .background(index.isMultiple(of: 2) ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
+                            .overlay(alignment: .bottom) {
+                                if !index.isMultiple(of: 2) {
+                                    Rectangle()
+                                        .fill(DesignSystem.borderColor.opacity(0.4))
+                                        .frame(height: DesignSystem.borderWidth)
+                                }
+                            }
+                    }
+                }
+            }
+
+            // Vertical divider
+            Rectangle()
+                .fill(DesignSystem.borderColor)
+                .frame(width: 1)
+
+            // Scrollable book columns — single ScrollView for all teams
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    // Book names header
+                    HStack(spacing: 6) {
+                        ForEach(books, id: \.self) { book in
+                            Text(BookNameHelper.abbreviated(book))
+                                .font(DesignSystem.Typography.statLabel)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
+                                .textCase(.uppercase)
+                                .frame(width: 48)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 8)
+                    .background(DesignSystem.Colors.elevatedBackground)
+
+                    ForEach(Array(teamGroups.enumerated()), id: \.offset) { _, group in
+                        // Matching spacer for team name sub-header
+                        HStack(spacing: 6) {
+                            ForEach(books, id: \.self) { _ in
+                                Color.clear.frame(width: 48)
+                            }
+                        }
+                        .frame(height: 28)
+                        .padding(.horizontal, 8)
+                        .background(DesignSystem.Colors.alternateRowBackground)
+
+                        // Price cell rows
+                        ForEach(Array(group.markets.enumerated()), id: \.element.id) { index, market in
+                            HStack(spacing: 6) {
+                                ForEach(books, id: \.self) { book in
+                                    oddsPriceCell(for: market, book: book)
+                                        .frame(width: 48)
+                                }
+                            }
+                            .frame(height: 36)
+                            .padding(.horizontal, 8)
+                            .background(index.isMultiple(of: 2) ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
+                            .overlay(alignment: .bottom) {
+                                if !index.isMultiple(of: 2) {
+                                    Rectangle()
+                                        .fill(DesignSystem.borderColor.opacity(0.4))
+                                        .frame(height: DesignSystem.borderWidth)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
 
     /// Groups team props by team name (from description), sorted by line
@@ -242,16 +339,10 @@ extension GameDetailView {
     private func oddsGroupedAlternateTable(markets: [GameDetailViewModel.OddsMarketKey], books: [String]) -> some View {
         let groups = groupAlternateMarkets(markets)
 
-        return VStack(spacing: 0) {
-            ForEach(Array(groups.enumerated()), id: \.offset) { gIdx, group in
-                oddsCollapsibleGroup(
-                    title: group.title,
-                    markets: group.markets,
-                    books: books,
-                    showHeader: gIdx == 0
-                )
-            }
-        }
+        return oddsGroupedUnifiedTable(
+            teamGroups: groups,
+            books: books
+        )
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
     }
 
@@ -303,52 +394,6 @@ extension GameDetailView {
             return (a.side ?? "") < (b.side ?? "")
         }
         return oddsFlatTable(markets: sorted, books: books)
-    }
-
-    // MARK: - Collapsible Group (shared by mainline, team props)
-
-    private func oddsCollapsibleGroup(
-        title: String,
-        markets: [GameDetailViewModel.OddsMarketKey],
-        books: [String],
-        showHeader: Bool
-    ) -> some View {
-        let isCollapsed = collapsedOddsGroups.contains(title)
-
-        return VStack(spacing: 0) {
-            // Section header — tappable to collapse/expand
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    if isCollapsed {
-                        collapsedOddsGroups.remove(title)
-                    } else {
-                        collapsedOddsGroups.insert(title)
-                    }
-                }
-            } label: {
-                HStack {
-                    Text(title)
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(DesignSystem.TextColor.secondary)
-                        .textCase(.uppercase)
-                    Spacer()
-                    Text("\(markets.count)")
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                }
-                .padding(.horizontal, DesignSystem.Spacing.elementPadding)
-                .padding(.vertical, 8)
-                .background(DesignSystem.Colors.elevatedBackground)
-            }
-            .buttonStyle(.plain)
-
-            if !isCollapsed {
-                oddsTableRows(markets: markets, books: books, showBookHeader: showHeader || !collapsedOddsGroups.isEmpty)
-            }
-        }
     }
 
     // MARK: - Table Rows (shared renderer)

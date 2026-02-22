@@ -238,8 +238,10 @@ struct HomeView: View {
             selectedLeague = league
             let cache = HomeGameCache.shared
             // If no cache exists for this league, clear sections to show loading spinners
-            let hasCache = cache.isSameCalendarDay(range: .current, league: league)
+            let hasCache = cache.isSameCalendarDay(range: .earlier, league: league)
                 || cache.isSameCalendarDay(range: .yesterday, league: league)
+                || cache.isSameCalendarDay(range: .current, league: league)
+                || cache.isSameCalendarDay(range: .tomorrow, league: league)
             if !hasCache {
                 earlierSection.games = []
                 earlierSection.isLoading = true
