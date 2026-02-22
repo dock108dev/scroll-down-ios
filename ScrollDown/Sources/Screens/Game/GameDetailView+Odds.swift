@@ -7,11 +7,15 @@ extension GameDetailView {
     // MARK: - Odds Section (Tier 3: Supporting, collapsed by default)
 
     var oddsSection: some View {
-        CollapsibleSectionCard(
-            title: "Odds",
-            isExpanded: $isOddsExpanded
+        Section(header:
+            PinnedSectionHeader(title: "Odds", isExpanded: $isOddsExpanded)
+                .id(GameSection.odds.anchorId)
+                .background(GameTheme.background)
         ) {
-            oddsContent
+            if isOddsExpanded {
+                oddsContent
+                    .sectionCardBody()
+            }
         }
     }
 
@@ -481,30 +485,128 @@ extension GameDetailView {
                     .buttonStyle(.plain)
 
                     if !isCollapsed {
-                        // Stat groups for this player
-                        ForEach(Array(playerGroup.statGroups.enumerated()), id: \.offset) { sgIdx, statGroup in
-                            // Stat type sub-header
-                            if playerGroup.statGroups.count > 1 {
-                                Text(statGroup.statType.uppercased())
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                                    .tracking(0.5)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, DesignSystem.Spacing.elementPadding)
-                                    .background(DesignSystem.Colors.alternateRowBackground)
-                            }
-
-                            // Table rows with aligned header + data
-                            oddsTableRows(
-                                markets: statGroup.markets,
-                                books: books,
-                                showBookHeader: sgIdx == 0
-                            )
-                        }
+                        oddsPlayerUnifiedTable(
+                            statGroups: playerGroup.statGroups,
+                            books: books,
+                            showStatHeaders: playerGroup.statGroups.count > 1
+                        )
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.element))
+            }
+        }
+    }
+
+    // MARK: - Unified Player Prop Table (single horizontal scroll per player card)
+
+    private func oddsPlayerUnifiedTable(
+        statGroups: [(statType: String, markets: [GameDetailViewModel.OddsMarketKey])],
+        books: [String],
+        showStatHeaders: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Frozen label column
+            VStack(spacing: 0) {
+                // "MARKET" header
+                Text("MARKET")
+                    .font(DesignSystem.Typography.statLabel)
+                    .foregroundColor(DesignSystem.TextColor.secondary)
+                    .textCase(.uppercase)
+                    .frame(width: 120, alignment: .leading)
+                    .padding(.vertical, 8)
+                    .padding(.leading, DesignSystem.Spacing.elementPadding)
+                    .background(DesignSystem.Colors.elevatedBackground)
+
+                ForEach(Array(statGroups.enumerated()), id: \.offset) { _, statGroup in
+                    // Stat type sub-header
+                    if showStatHeaders {
+                        Text(statGroup.statType.uppercased())
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                            .tracking(0.5)
+                            .frame(width: 120, alignment: .leading)
+                            .frame(height: 28)
+                            .padding(.leading, DesignSystem.Spacing.elementPadding)
+                            .background(DesignSystem.Colors.alternateRowBackground)
+                    }
+
+                    // Market label rows
+                    ForEach(Array(statGroup.markets.enumerated()), id: \.element.id) { index, market in
+                        Text(market.displayLabel)
+                            .font(DesignSystem.Typography.statValue)
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                            .lineLimit(2)
+                            .frame(width: 120, alignment: .leading)
+                            .frame(height: 36)
+                            .padding(.leading, DesignSystem.Spacing.elementPadding)
+                            .background(index.isMultiple(of: 2) ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
+                            .overlay(alignment: .bottom) {
+                                if !index.isMultiple(of: 2) {
+                                    Rectangle()
+                                        .fill(DesignSystem.borderColor.opacity(0.4))
+                                        .frame(height: DesignSystem.borderWidth)
+                                }
+                            }
+                    }
+                }
+            }
+
+            // Vertical divider
+            Rectangle()
+                .fill(DesignSystem.borderColor)
+                .frame(width: 1)
+
+            // Scrollable book columns — single ScrollView for all stat groups
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    // Book names header
+                    HStack(spacing: 6) {
+                        ForEach(books, id: \.self) { book in
+                            Text(BookNameHelper.abbreviated(book))
+                                .font(DesignSystem.Typography.statLabel)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
+                                .textCase(.uppercase)
+                                .frame(width: 48)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 8)
+                    .background(DesignSystem.Colors.elevatedBackground)
+
+                    ForEach(Array(statGroups.enumerated()), id: \.offset) { _, statGroup in
+                        // Matching spacer for stat sub-header
+                        if showStatHeaders {
+                            HStack(spacing: 6) {
+                                ForEach(books, id: \.self) { _ in
+                                    Color.clear.frame(width: 48)
+                                }
+                            }
+                            .frame(height: 28)
+                            .padding(.horizontal, 8)
+                            .background(DesignSystem.Colors.alternateRowBackground)
+                        }
+
+                        // Price cell rows
+                        ForEach(Array(statGroup.markets.enumerated()), id: \.element.id) { index, market in
+                            HStack(spacing: 6) {
+                                ForEach(books, id: \.self) { book in
+                                    oddsPriceCell(for: market, book: book)
+                                        .frame(width: 48)
+                                }
+                            }
+                            .frame(height: 36)
+                            .padding(.horizontal, 8)
+                            .background(index.isMultiple(of: 2) ? DesignSystem.Colors.alternateRowBackground : DesignSystem.Colors.rowBackground)
+                            .overlay(alignment: .bottom) {
+                                if !index.isMultiple(of: 2) {
+                                    Rectangle()
+                                        .fill(DesignSystem.borderColor.opacity(0.4))
+                                        .frame(height: DesignSystem.borderWidth)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -19,6 +19,9 @@ final class ReadingPositionStore {
     func save(gameId: Int, position: ReadingPosition) {
         guard let data = try? encoder.encode(position) else { return }
         defaults.set(data, forKey: prefix + "\(gameId)")
+        // Invalidate caches so next read picks up the new position
+        scoreCache.removeValue(forKey: gameId)
+        contextCache.removeValue(forKey: gameId)
     }
 
     func load(gameId: Int) -> ReadingPosition? {

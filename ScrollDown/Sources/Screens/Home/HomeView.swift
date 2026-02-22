@@ -305,7 +305,7 @@ struct HomeView: View {
     var gameListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass)) {
+                LazyVStack(alignment: .leading, spacing: HomeLayout.cardSpacing(horizontalSizeClass), pinnedViews: [.sectionHeaders]) {
                     // Spoiler-free action bar (iPhone only — iPad has these in the filter bar)
                     if horizontalSizeClass != .regular && showSpoilerActions {
                         HStack(spacing: 8) {
@@ -370,31 +370,31 @@ struct HomeView: View {
                     }
 
                     // Earlier section (2+ days ago)
-                    sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded)
-                        .id(earlierSection.title)
-                    if earlierSection.isExpanded {
-                        sectionContent(for: earlierSection)
+                    Section(header: sectionHeader(for: earlierSection, isExpanded: $earlierSection.isExpanded).id(earlierSection.title)) {
+                        if earlierSection.isExpanded {
+                            sectionContent(for: earlierSection)
+                        }
                     }
 
                     // Yesterday section
-                    sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded)
-                        .id(yesterdaySection.title)
-                    if yesterdaySection.isExpanded {
-                        sectionContent(for: yesterdaySection)
+                    Section(header: sectionHeader(for: yesterdaySection, isExpanded: $yesterdaySection.isExpanded).id(yesterdaySection.title)) {
+                        if yesterdaySection.isExpanded {
+                            sectionContent(for: yesterdaySection)
+                        }
                     }
 
                     // Today section (all games — completed recaps + scheduled/in-progress)
-                    sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded)
-                        .id(todaySection.title)
-                    if todaySection.isExpanded {
-                        sectionContent(for: todaySection)
+                    Section(header: sectionHeader(for: todaySection, isExpanded: $todaySection.isExpanded).id(todaySection.title)) {
+                        if todaySection.isExpanded {
+                            sectionContent(for: todaySection)
+                        }
                     }
 
                     // Tomorrow section
-                    sectionHeader(for: tomorrowSection, isExpanded: $tomorrowSection.isExpanded)
-                        .id(tomorrowSection.title)
-                    if tomorrowSection.isExpanded {
-                        sectionContent(for: tomorrowSection)
+                    Section(header: sectionHeader(for: tomorrowSection, isExpanded: $tomorrowSection.isExpanded).id(tomorrowSection.title)) {
+                        if tomorrowSection.isExpanded {
+                            sectionContent(for: tomorrowSection)
+                        }
                     }
                 }
                 .padding(.bottom, HomeLayout.bottomPadding(horizontalSizeClass))

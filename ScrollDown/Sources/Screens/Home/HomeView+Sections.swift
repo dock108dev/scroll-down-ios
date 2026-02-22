@@ -61,6 +61,7 @@ extension HomeView {
             }
             .buttonStyle(.plain)
         }
+        .background(HomeTheme.background)
     }
 
     @ViewBuilder

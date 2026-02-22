@@ -14,26 +14,35 @@ extension GameDetailView {
     /// - Final with flow: show Game Flow
     /// - Final without flow: show PBP (fallback)
     func timelineSection(using proxy: ScrollViewProxy) -> some View {
-        CollapsibleSectionCard(title: timelineSectionTitle, isExpanded: $isFlowCardExpanded) {
-            if viewModel.game?.status.isLive == true {
-                // Live: PBP is primary content
-                timelineContent(using: proxy)
-            } else {
-                // Final: Game Flow is primary
-                GameFlowView(
-                    viewModel: viewModel,
-                    isCompactFlowExpanded: $isCompactFlowExpanded
+        Section(header:
+            PinnedSectionHeader(title: timelineSectionTitle, isExpanded: $isFlowCardExpanded)
+                .id(GameSection.timeline.anchorId)
+                .background(GameTheme.background)
+        ) {
+            if isFlowCardExpanded {
+                Group {
+                    if viewModel.game?.status.isLive == true {
+                        // Live: PBP is primary content
+                        timelineContent(using: proxy)
+                    } else {
+                        // Final: Game Flow is primary
+                        GameFlowView(
+                            viewModel: viewModel,
+                            isCompactFlowExpanded: $isCompactFlowExpanded
+                        )
+                    }
+                }
+                .sectionCardBody()
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: TimelineFramePreferenceKey.self,
+                            value: geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
+                        )
+                    }
                 )
             }
         }
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: TimelineFramePreferenceKey.self,
-                    value: proxy.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
-                )
-            }
-        )
         .accessibilityElement(children: .contain)
         .onAppear {
             initializeCollapsedQuarters()

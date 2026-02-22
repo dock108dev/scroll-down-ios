@@ -212,7 +212,6 @@ extension HomeView {
         let allIds = [earlierSection, yesterdaySection, todaySection, tomorrowSection]
             .flatMap { $0.games.map(\.id) }
         readStateStore.preload(gameIds: allIds)
-        ReadingPositionStore.shared.preload(gameIds: allIds)
     }
 
     /// Push API-provided team colors and abbreviations from game summaries into shared caches.

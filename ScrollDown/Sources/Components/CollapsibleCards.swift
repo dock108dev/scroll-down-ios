@@ -78,6 +78,95 @@ struct CollapsibleSectionCard<Content: View>: View {
     }
 }
 
+// MARK: - Pinned Section Header
+
+/// A header-only view designed for use with `Section(header:)` inside
+/// `LazyVStack(pinnedViews: [.sectionHeaders])`. Renders the same header
+/// layout as `CollapsibleSectionCard` but without wrapping content.
+struct PinnedSectionHeader: View {
+    let title: String
+    let subtitle: String?
+    let collapsedTitle: String?
+    @Binding var isExpanded: Bool
+    var onHeaderTap: (() -> Void)?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        collapsedTitle: String? = nil,
+        isExpanded: Binding<Bool>,
+        onHeaderTap: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.collapsedTitle = collapsedTitle
+        self._isExpanded = isExpanded
+        self.onHeaderTap = onHeaderTap
+    }
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let collapsedTitle, !isExpanded {
+                        Text(collapsedTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                    } else {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(DesignSystem.TextColor.primary)
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundColor(DesignSystem.TextColor.secondary)
+                        }
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(InteractiveRowButtonStyle())
+        .padding(DesignSystem.Spacing.cardPadding)
+        .background(DesignSystem.Colors.cardBackground)
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: DesignSystem.Radius.card,
+            bottomLeadingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+            bottomTrailingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+            topTrailingRadius: DesignSystem.Radius.card
+        ))
+        .shadow(
+            color: DesignSystem.Shadow.color,
+            radius: DesignSystem.Shadow.radius,
+            x: 0,
+            y: DesignSystem.Shadow.y
+        )
+        .overlay(
+            UnevenRoundedRectangle(
+                topLeadingRadius: DesignSystem.Radius.card,
+                bottomLeadingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+                bottomTrailingRadius: isExpanded ? 0 : DesignSystem.Radius.card,
+                topTrailingRadius: DesignSystem.Radius.card
+            )
+            .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: DesignSystem.borderWidth)
+        )
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+    }
+
+    private func toggle() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isExpanded.toggle()
+            onHeaderTap?()
+        }
+    }
+}
+
 // MARK: - Collapsible Quarter Card
 
 /// A smaller collapsible card used for quarter sections within the timeline.

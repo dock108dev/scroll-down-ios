@@ -300,69 +300,51 @@ struct GameDetailView: View {
                             }
 
                             // Content sections matching navigation order
-                            VStack(spacing: 0) {
+                            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                                 // Pregame section - only if content exists
                                 if !viewModel.pregameSocialPosts.isEmpty {
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .overview)
-                                        pregameSection
-                                    }
-                                    .background(sectionFrameTracker(for: .overview))
+                                    pregameSection
+                                        .background(sectionFrameTracker(for: .overview))
 
                                     Color.clear.frame(height: 8)
                                 }
 
                                 // Game Flow / Live PBP section
                                 if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .timeline)
-                                        timelineSection(using: proxy)
-                                    }
-                                    .background(sectionFrameTracker(for: .timeline))
+                                    timelineSection(using: proxy)
+                                        .background(sectionFrameTracker(for: .timeline))
                                 }
 
                                 // Player Stats - only if data exists
                                 if !viewModel.playerStats.isEmpty {
                                     Color.clear.frame(height: 8)
 
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .playerStats)
-                                        playerStatsSection(viewModel.playerStats)
-                                    }
-                                    .background(sectionFrameTracker(for: .playerStats))
+                                    playerStatsSection(viewModel.playerStats)
+                                        .background(sectionFrameTracker(for: .playerStats))
                                 }
 
                                 // Team Stats - only if data exists
                                 if !viewModel.teamStats.isEmpty {
                                     Color.clear.frame(height: 8)
 
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .teamStats)
-                                        teamStatsSection(viewModel.teamStats)
-                                    }
-                                    .background(sectionFrameTracker(for: .teamStats))
+                                    teamStatsSection(viewModel.teamStats)
+                                        .background(sectionFrameTracker(for: .teamStats))
                                 }
 
                                 // Odds - only if odds data exists
                                 if viewModel.hasOddsData {
                                     Color.clear.frame(height: 8)
 
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .odds)
-                                        oddsSection
-                                    }
-                                    .background(sectionFrameTracker(for: .odds))
+                                    oddsSection
+                                        .background(sectionFrameTracker(for: .odds))
                                 }
 
                                 // Wrap-up - for completed games (with confirmation signals)
                                 if viewModel.isGameTrulyCompleted {
                                     Color.clear.frame(height: 8)
 
-                                    VStack(spacing: 0) {
-                                        sectionAnchor(for: .final)
-                                        wrapUpSection
-                                    }
-                                    .background(sectionFrameTracker(for: .final))
+                                    wrapUpSection
+                                        .background(sectionFrameTracker(for: .final))
                                 }
                             }
                             .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
