@@ -60,6 +60,12 @@ extension View {
     func sectionCardBody() -> some View {
         modifier(SectionCardBodyModifier())
     }
+
+    /// Card body styling for content below a `PinnedQuarterHeader`.
+    /// Smaller element-level radius, lighter shadow.
+    func quarterCardBody() -> some View {
+        modifier(QuarterCardBodyModifier())
+    }
 }
 
 struct SectionCardBodyModifier: ViewModifier {
@@ -87,6 +93,27 @@ struct SectionCardBodyModifier: ViewModifier {
                     topTrailingRadius: 0
                 )
                 .stroke(DesignSystem.borderColor.opacity(0.3), lineWidth: DesignSystem.borderWidth)
+            )
+    }
+}
+
+struct QuarterCardBodyModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+            .padding(.vertical, 8)
+            .background(DesignSystem.Colors.cardBackground)
+            .clipShape(UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: DesignSystem.Radius.element,
+                bottomTrailingRadius: DesignSystem.Radius.element,
+                topTrailingRadius: 0
+            ))
+            .shadow(
+                color: DesignSystem.Shadow.color,
+                radius: DesignSystem.Shadow.subtleRadius,
+                x: 0,
+                y: DesignSystem.Shadow.subtleY
             )
     }
 }

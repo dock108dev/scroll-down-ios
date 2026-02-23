@@ -183,20 +183,6 @@ struct HomeView: View {
                 }
                 .background(HomeTheme.background)
 
-                // Subtle updating indicator during stale-while-revalidate
-                if isUpdating {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                        Text("Updating…")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, horizontalPadding)
-                    .padding(.vertical, 2)
-                    .transition(.opacity)
-                }
-
                 // Search bar
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
@@ -237,23 +223,14 @@ struct HomeView: View {
         Button(action: {
             selectedLeague = league
             let cache = HomeGameCache.shared
-            // If no cache exists for this league, clear sections to show loading spinners
-            let hasCache = cache.isSameCalendarDay(range: .earlier, league: league)
+            if cache.isSameCalendarDay(range: .earlier, league: league)
                 || cache.isSameCalendarDay(range: .yesterday, league: league)
                 || cache.isSameCalendarDay(range: .current, league: league)
-                || cache.isSameCalendarDay(range: .tomorrow, league: league)
-            if !hasCache {
-                earlierSection.games = []
-                earlierSection.isLoading = true
-                yesterdaySection.games = []
-                yesterdaySection.isLoading = true
-                todaySection.games = []
-                todaySection.isLoading = true
-                tomorrowSection.games = []
-                tomorrowSection.isLoading = true
-            } else {
+                || cache.isSameCalendarDay(range: .tomorrow, league: league) {
                 let _ = loadCachedSections(from: cache)
             }
+            // Keep existing data visible while loading; refresh button shows spinner
+            isUpdating = true
             startLoadGames(scrollToToday: false)
         }) {
             Text(label)
@@ -505,16 +482,25 @@ struct HomeView: View {
 
     private func refreshButton(action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: "arrow.clockwise")
-                .font(.caption.weight(.medium))
-                .foregroundColor(.secondary)
-                .padding(8)
-                .background(
-                    Circle()
-                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                )
+            Group {
+                if isUpdating {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(width: 16, height: 16)
+            .padding(8)
+            .background(
+                Circle()
+                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
+        .disabled(isUpdating)
     }
 
     // MARK: - Scroll Helpers

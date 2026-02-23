@@ -6,7 +6,7 @@ struct SettingsView: View {
     @AppStorage("appTheme") private var appTheme = "system"
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @AppStorage("homeExpandedSections") private var homeExpandedSections = ""
-    @AppStorage("gameExpandedSections") private var gameExpandedSections = "timeline"
+    @AppStorage("gameExpandedSections") private var gameExpandedSections = ""
     @AppStorage("autoResumePosition") private var autoResumePosition = true
 
     private var sportsbooks: [String] {
@@ -77,7 +77,7 @@ struct SettingsView: View {
             }
 
             Section("Game — Behavior") {
-                Toggle("Auto-resume position", isOn: $autoResumePosition)
+                Toggle("Auto resume position", isOn: $autoResumePosition)
                 Text("Automatically scroll to where you left off when reopening a game. When off, you'll be asked before resuming.")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -85,13 +85,13 @@ struct SettingsView: View {
 
             Section("Score Display") {
                 Picker("Score Visibility", selection: $readStateStore.scoreRevealMode) {
-                    Text("Spoiler-free (hold to reveal)").tag(ScoreRevealMode.onMarkRead)
+                    Text("Spoiler free (hold to reveal)").tag(ScoreRevealMode.onMarkRead)
                     Text("Always show scores").tag(ScoreRevealMode.always)
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
 
-                Text("Spoiler-free hides scores until you long-press. \"Always show\" displays live and final scores automatically.")
+                Text("Spoiler free hides scores until you long press. \"Always show\" displays live and final scores automatically.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -110,9 +110,9 @@ struct SettingsView: View {
                     }
                 }
 
-                Toggle("Hide Limited Data", isOn: $oddsViewModel.hideLimitedData)
+                Toggle("Hide Thin Markets", isOn: $oddsViewModel.hideLimitedData)
 
-                Text("When enabled, only shows bets with reliable fair odds (proper vig removal from multiple books).")
+                Text("Filters out bets where only a few books are posting or they can't agree on a number. If the market is thin, the fair estimate is just one book's opinion.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

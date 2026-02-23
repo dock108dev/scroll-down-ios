@@ -120,6 +120,34 @@ final class GameDetailViewModel: ObservableObject {
         return entry.detail
     }
 
+    // MARK: - In-Memory Flow Cache
+
+    private static var flowCache: [Int: CachedFlowData] = [:]
+
+    struct CachedFlowData {
+        let response: GameFlowResponse
+        let blockDisplayModels: [BlockDisplayModel]
+        let flowPlays: [FlowPlay]
+        let cachedAt: Date
+    }
+
+    static func cacheFlow(gameId: Int, response: GameFlowResponse, blocks: [BlockDisplayModel], plays: [FlowPlay]) {
+        if flowCache.count >= 8 {
+            let oldest = flowCache.min(by: { $0.value.cachedAt < $1.value.cachedAt })
+            if let key = oldest?.key { flowCache.removeValue(forKey: key) }
+        }
+        flowCache[gameId] = CachedFlowData(response: response, blockDisplayModels: blocks, flowPlays: plays, cachedAt: Date())
+    }
+
+    static func cachedFlow(for gameId: Int) -> CachedFlowData? {
+        guard let entry = flowCache[gameId] else { return nil }
+        guard Date().timeIntervalSince(entry.cachedAt) < 300 else {
+            flowCache.removeValue(forKey: gameId)
+            return nil
+        }
+        return entry
+    }
+
     init(detail: GameDetailResponse? = nil) {
         self.detail = detail
         self.loadState = detail == nil ? .idle : .loaded
@@ -294,6 +322,15 @@ final class GameDetailViewModel: ObservableObject {
             break
         }
 
+        // Restore from in-memory cache (survives NavigationStack pop/push)
+        if let cached = Self.cachedFlow(for: gameId) {
+            flowResponse = cached.response
+            flowPlays = cached.flowPlays
+            blockDisplayModels = cached.blockDisplayModels
+            flowState = .loaded
+            return
+        }
+
         flowState = .loading
 
         do {
@@ -304,6 +341,7 @@ final class GameDetailViewModel: ObservableObject {
             let sport = game?.leagueCode ?? response.sport ?? "NBA"
             blockDisplayModels = FlowAdapter.convertToDisplayModels(from: response, sport: sport, socialPosts: detail?.socialPosts ?? [])
             flowState = .loaded
+            Self.cacheFlow(gameId: gameId, response: response, blocks: blockDisplayModels, plays: flowPlays)
             logger.info("📖 Loaded flow: \(response.blocks.count, privacy: .public) blocks, \(response.plays.count, privacy: .public) plays")
         } catch {
             logger.error("📖 Flow fetch failed: \(error.localizedDescription, privacy: .public)")

@@ -33,13 +33,6 @@ struct FairBetHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Explainer
-            Text("Bets with a FairBet estimate — compare prices and find value across books.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, horizontalPadding)
-                .padding(.top, 4)
-
             // Combined filter bar: league pills, separator, market pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -152,12 +145,19 @@ struct FairBetHeaderView: View {
                 Button {
                     Task { await viewModel.refresh() }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    Group {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption.weight(.medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(width: 32, height: 32)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isLoading)

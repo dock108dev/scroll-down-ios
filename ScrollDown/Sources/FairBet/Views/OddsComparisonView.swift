@@ -12,13 +12,26 @@ struct OddsComparisonView: View {
             if viewModel.isLoading && viewModel.allBets.isEmpty {
                 loadingView
             } else if let error = viewModel.errorMessage, viewModel.allBets.isEmpty {
-                Spacer()
-                FairBetErrorStateView(message: error) {
-                    Task { await viewModel.refresh() }
+                ScrollView {
+                    VStack {
+                        Spacer(minLength: 100)
+                        FairBetErrorStateView(message: error) {
+                            Task { await viewModel.refresh() }
+                        }
+                        Spacer(minLength: 100)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                Spacer()
+                .refreshable {
+                    await viewModel.refresh()
+                }
             } else if viewModel.displayedBets.isEmpty {
-                emptyStateView
+                ScrollView {
+                    emptyStateContent
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
             } else {
                 // Bets feed
                 ScrollView {
@@ -89,9 +102,9 @@ struct OddsComparisonView: View {
 
     // MARK: - Empty State
 
-    private var emptyStateView: some View {
+    private var emptyStateContent: some View {
         VStack(spacing: 20) {
-            Spacer()
+            Spacer(minLength: 100)
 
             Image(systemName: "chart.line.downtrend.xyaxis")
                 .font(.system(size: 48))
@@ -125,8 +138,9 @@ struct OddsComparisonView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 100)
         }
+        .frame(maxWidth: .infinity)
         .padding()
     }
 }

@@ -81,7 +81,7 @@ struct ParlaySheetView: View {
 
     private var combinedResultCard: some View {
         VStack(spacing: 12) {
-            Text("\(viewModel.parlayCount)-Leg Parlay")
+            Text("\(viewModel.parlayCount) Leg Parlay")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.secondary)
 
@@ -179,9 +179,9 @@ struct ParlaySheetView: View {
 
     private var confidenceLabel: String {
         switch viewModel.parlayConfidence {
-        case .high: return "High"
-        case .medium: return "Medium"
-        case .low: return "Low"
+        case .high: return "Sharp"
+        case .medium: return "Market"
+        case .low: return "Thin"
         case .none: return "N/A"
         }
     }

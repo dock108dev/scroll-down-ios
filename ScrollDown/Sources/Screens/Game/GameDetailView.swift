@@ -19,7 +19,7 @@ struct GameDetailView: View {
     // Tier 2 (Timeline): Collapsed by default unless no flow
     // Tier 3 (Stats): Collapsed by default
     // Tier 4 (Reference): Collapsed by default
-    @State var isFlowCardExpanded = true  // Flow Card: expanded by default (primary content)
+    @State var isFlowCardExpanded = false  // Flow Card: collapsed by default, user expands
     @State var isOverviewExpanded = false  // Tier 4: Reference
     @State var pregamePostsShown = 5  // Paginate pregame posts
     @State var isTimelineExpanded = false  // Tier 2: Secondary (expanded if no flow)
@@ -48,19 +48,30 @@ struct GameDetailView: View {
     @State var displayedHomeScore: Int? = nil
     // iPad: Size class for adaptive layouts (internal for extension access)
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
 
     init(gameId: Int, leagueCode: String? = nil, detail: GameDetailResponse? = nil) {
         self.gameId = gameId
         self.leagueCode = leagueCode
         _viewModel = StateObject(wrappedValue: GameDetailViewModel(detail: detail))
 
-        let prefs = UserDefaults.standard.string(forKey: "gameExpandedSections") ?? "timeline"
-        let expandedSet = Set(prefs.split(separator: ",").map(String.init))
-        _isFlowCardExpanded = State(initialValue: expandedSet.contains("timeline"))
-        _isOverviewExpanded = State(initialValue: expandedSet.contains("overview"))
-        _isPlayerStatsExpanded = State(initialValue: expandedSet.contains("playerStats"))
-        _isTeamStatsExpanded = State(initialValue: expandedSet.contains("teamStats"))
-        _isWrapUpExpanded = State(initialValue: expandedSet.contains("final"))
+        // Per-game expansion state (survives NavigationStack pop/push)
+        if let cached = GameExpansionCache.load(gameId: gameId) {
+            _isFlowCardExpanded = State(initialValue: cached.contains("timeline"))
+            _isOverviewExpanded = State(initialValue: cached.contains("overview"))
+            _isPlayerStatsExpanded = State(initialValue: cached.contains("playerStats"))
+            _isTeamStatsExpanded = State(initialValue: cached.contains("teamStats"))
+            _isOddsExpanded = State(initialValue: cached.contains("odds"))
+            _isWrapUpExpanded = State(initialValue: cached.contains("final"))
+        } else {
+            let prefs = UserDefaults.standard.string(forKey: "gameExpandedSections") ?? ""
+            let expandedSet = Set(prefs.split(separator: ",").map(String.init))
+            _isFlowCardExpanded = State(initialValue: expandedSet.contains("timeline"))
+            _isOverviewExpanded = State(initialValue: expandedSet.contains("overview"))
+            _isPlayerStatsExpanded = State(initialValue: expandedSet.contains("playerStats"))
+            _isTeamStatsExpanded = State(initialValue: expandedSet.contains("teamStats"))
+            _isWrapUpExpanded = State(initialValue: expandedSet.contains("final"))
+        }
     }
 
     var body: some View {
@@ -132,24 +143,23 @@ struct GameDetailView: View {
     }
 
     /// Best available away score for header display.
-    /// For live games: uses team-stats-derived score (freshest) when scores are revealed or "always show" is on.
+    /// For live games: only auto-upgrades to polling data in `.always` mode.
+    /// In `.onMarkRead` mode, scores update only via explicit user action (long-press).
     private func liveDisplayAwayScore(for game: Game) -> Int? {
         guard game.status.isLive else { return displayedAwayScore }
-        let scoresRevealed = displayedAwayScore != nil
-        let alwaysShow = readStateStore.scoreRevealMode == .always
-        if scoresRevealed || alwaysShow {
-            return viewModel.liveAwayScore ?? displayedAwayScore
+        if readStateStore.scoreRevealMode == .always {
+            return viewModel.liveAwayScore ?? game.awayScore
         }
         return displayedAwayScore
     }
 
     /// Best available home score for header display.
+    /// For live games: only auto-upgrades to polling data in `.always` mode.
+    /// In `.onMarkRead` mode, scores update only via explicit user action (long-press).
     private func liveDisplayHomeScore(for game: Game) -> Int? {
         guard game.status.isLive else { return displayedHomeScore }
-        let scoresRevealed = displayedHomeScore != nil
-        let alwaysShow = readStateStore.scoreRevealMode == .always
-        if scoresRevealed || alwaysShow {
-            return viewModel.liveHomeScore ?? displayedHomeScore
+        if readStateStore.scoreRevealMode == .always {
+            return viewModel.liveHomeScore ?? game.homeScore
         }
         return displayedHomeScore
     }
@@ -311,9 +321,10 @@ struct GameDetailView: View {
                                     Color.clear.frame(height: 8)
                                 }
 
-                                // Game Flow / Live PBP section
-                                if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
-                                    timelineSection(using: proxy)
+                                // Game Flow / Live PBP section(s)
+                                if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData)
+                                    || (!viewModel.hasFlowData && viewModel.hasPbpData) {
+                                    timelineSections(using: proxy)
                                         .background(sectionFrameTracker(for: .timeline))
                                 }
 
@@ -396,8 +407,22 @@ struct GameDetailView: View {
             }
             .onDisappear {
                 viewModel.stopLivePolling()
+                GameExpansionCache.save(gameId: gameId, sections: currentExpandedSections)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .background {
+                    viewModel.stopLivePolling()
+                } else if newPhase == .active, viewModel.game?.status.isLive == true {
+                    viewModel.startLivePolling(gameId: gameId, service: appConfig.gameService)
+                }
             }
             .onChange(of: viewModel.detail?.plays.count ?? 0) {
+                loadResumeMarkerIfNeeded()
+            }
+            .onChange(of: viewModel.blockDisplayModels.count) {
+                loadResumeMarkerIfNeeded()
+            }
+            .onChange(of: viewModel.unifiedTimelineState) {
                 loadResumeMarkerIfNeeded()
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
@@ -427,6 +452,30 @@ struct GameDetailView: View {
         }
     }
 
+    var currentExpandedSections: Set<String> {
+        var set = Set<String>()
+        if isFlowCardExpanded { set.insert("timeline") }
+        if isOverviewExpanded { set.insert("overview") }
+        if isPlayerStatsExpanded { set.insert("playerStats") }
+        if isTeamStatsExpanded { set.insert("teamStats") }
+        if isOddsExpanded { set.insert("odds") }
+        if isWrapUpExpanded { set.insert("final") }
+        return set
+    }
+}
+
+/// In-memory cache for per-game section expansion state.
+/// Survives NavigationStack pop/push so returning to a game restores your toggles.
+enum GameExpansionCache {
+    private static var store: [Int: Set<String>] = [:]
+
+    static func save(gameId: Int, sections: Set<String>) {
+        store[gameId] = sections
+    }
+
+    static func load(gameId: Int) -> Set<String>? {
+        store[gameId]
+    }
 }
 
 #Preview {

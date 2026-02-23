@@ -9,44 +9,153 @@ extension GameDetailView {
         return "Game Flow"
     }
 
-    /// Game Flow section - content adapts based on game status:
-    /// - Live: show PBP as primary content
-    /// - Final with flow: show Game Flow
-    /// - Final without flow: show PBP (fallback)
-    func timelineSection(using proxy: ScrollViewProxy) -> some View {
+    /// Whether the PBP quarters should be separate pinned sections
+    private var usesPinnedQuarters: Bool {
+        guard isFlowCardExpanded else { return false }
+        if viewModel.game?.status.isLive == true {
+            return viewModel.hasPbpData
+        }
+        // Non-live without flow falls back to PBP
+        return !viewModel.hasFlowData && viewModel.hasPbpData
+    }
+
+    /// Game Flow / Live PBP sections.
+    /// For PBP, quarter sections are output at the same LazyVStack level
+    /// so their headers can pin to the top of the scroll view.
+    @ViewBuilder
+    func timelineSections(using proxy: ScrollViewProxy) -> some View {
+        // Main section header ("Live PBP" / "Game Flow")
         Section(header:
             PinnedSectionHeader(title: timelineSectionTitle, isExpanded: $isFlowCardExpanded)
                 .id(GameSection.timeline.anchorId)
                 .background(GameTheme.background)
         ) {
             if isFlowCardExpanded {
-                Group {
-                    if viewModel.game?.status.isLive == true {
-                        // Live: PBP is primary content
-                        timelineContent(using: proxy)
-                    } else {
-                        // Final: Game Flow is primary
-                        GameFlowView(
-                            viewModel: viewModel,
-                            isCompactFlowExpanded: $isCompactFlowExpanded
+                if !usesPinnedQuarters {
+                    // Flow content (or loading/empty states) stays inline
+                    flowOrFallbackContent(using: proxy)
+                        .sectionCardBody()
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: TimelineFramePreferenceKey.self,
+                                    value: geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
+                                )
+                            }
                         )
-                    }
                 }
-                .sectionCardBody()
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.preference(
-                            key: TimelineFramePreferenceKey.self,
-                            value: geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))
-                        )
-                    }
-                )
             }
         }
         .accessibilityElement(children: .contain)
         .onAppear {
             initializeCollapsedQuarters()
         }
+
+        // PBP quarter sections — pinned headers at the same LazyVStack level
+        if usesPinnedQuarters {
+            ForEach(groupedQuarters, id: \.quarter) { group in
+                pinnedQuarterSection(group)
+            }
+
+            if !ungroupedTweets.isEmpty {
+                Section {
+                    VStack(spacing: DesignSystem.Spacing.list) {
+                        ForEach(ungroupedTweets) { event in
+                            UnifiedTimelineRowView(
+                                event: event,
+                                homeTeam: viewModel.game?.homeTeam ?? "Home",
+                                awayTeam: viewModel.game?.awayTeam ?? "Away"
+                            )
+                        }
+                    }
+                    .sectionCardBody()
+                }
+            }
+        }
+    }
+
+    /// Flow content or non-PBP fallback (loading, coming soon)
+    @ViewBuilder
+    private func flowOrFallbackContent(using proxy: ScrollViewProxy) -> some View {
+        if viewModel.hasFlowData {
+            GameFlowView(
+                viewModel: viewModel,
+                isCompactFlowExpanded: $isCompactFlowExpanded
+            )
+        } else if viewModel.isLoadingAnyData {
+            timelineLoadingView
+        } else {
+            comingSoonView
+        }
+    }
+
+    /// A single quarter as a pinned section
+    private func pinnedQuarterSection(_ group: QuarterGroup) -> some View {
+        let tieredGroups = buildTieredGroups(for: group)
+        let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
+        let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
+        let tier3GroupCount = tieredGroups.filter { $0.tier == .tertiary }.count
+
+        return Section(header:
+            PinnedQuarterHeader(
+                title: quarterTitle(group.quarter, serverLabel: group.events.first?.periodLabel),
+                subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
+                isExpanded: Binding(
+                    get: { !collapsedQuarters.contains(group.quarter) },
+                    set: { isExpanded in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if isExpanded {
+                                collapsedQuarters.remove(group.quarter)
+                            } else {
+                                collapsedQuarters.insert(group.quarter)
+                            }
+                        }
+                    }
+                )
+            )
+            .id("quarter-\(group.quarter)")
+            .background(
+                GeometryReader { geo in
+                    Color.clear.preference(
+                        key: PlayRowFramePreferenceKey.self,
+                        value: [-(10000 + group.quarter): geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
+                    )
+                }
+            )
+        ) {
+            if !collapsedQuarters.contains(group.quarter) {
+                LazyVStack(spacing: 6) {
+                    ForEach(tieredGroups) { tieredGroup in
+                        TieredPlayGroupView(
+                            group: tieredGroup,
+                            homeTeam: viewModel.game?.homeTeam ?? "Home",
+                            awayTeam: viewModel.game?.awayTeam ?? "Away"
+                        )
+                    }
+                }
+                .quarterCardBody()
+            }
+        }
+    }
+
+    /// Build tiered groups for a quarter (shared between inline and legacy paths)
+    private func buildTieredGroups(for group: QuarterGroup) -> [TieredPlayGroup] {
+        if viewModel.hasServerGroupings {
+            let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
+                guard event.id.hasPrefix("play-") else { return nil }
+                return Int(event.id.dropFirst(5))
+            })
+            let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
+                !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
+            }
+            if !relevantServerGroups.isEmpty {
+                return ServerPlayGroupAdapter.convert(
+                    serverGroups: relevantServerGroups,
+                    events: group.events
+                )
+            }
+        }
+        return TieredPlayGrouper.group(events: group.events)
     }
 
     /// Toggles all boundary headers (expand all or collapse all)
@@ -74,30 +183,6 @@ extension GameDetailView {
         return "\(pbpCount) plays"
     }
 
-    func timelineContent(using proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: GameDetailLayout.cardSpacing) {
-            // Priority 1: Show flow if available (flow with blocks)
-            if viewModel.hasFlowData {
-                GameFlowView(
-                    viewModel: viewModel,
-                    isCompactFlowExpanded: $isCompactFlowExpanded
-                )
-            }
-            // Priority 2: Show PBP grouped by period (from PBP API or detail.plays)
-            else if viewModel.hasPbpData {
-                unifiedTimelineView
-            }
-            // Priority 3: Still loading flow or PBP
-            else if viewModel.isLoadingAnyData {
-                timelineLoadingView
-            }
-            // Priority 4: No content available - show Coming Soon
-            else {
-                comingSoonView
-            }
-        }
-    }
-
     private var timelineLoadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
@@ -117,7 +202,7 @@ extension GameDetailView {
             Text("Coming Soon")
                 .font(.headline)
                 .foregroundColor(Color(.secondaryLabel))
-            Text("Play-by-play data is being processed")
+            Text("Play by play data is being processed")
                 .font(.caption)
                 .foregroundColor(Color(.tertiaryLabel))
         }
@@ -141,26 +226,8 @@ extension GameDetailView {
 
     // MARK: - Unified Timeline (Grouped by Quarter)
 
-    private var unifiedTimelineView: some View {
-        VStack(spacing: DesignSystem.Spacing.list) {
-            ForEach(groupedQuarters, id: \.quarter) { group in
-                unifiedQuarterCard(group)
-            }
-
-            if !ungroupedTweets.isEmpty {
-                ForEach(ungroupedTweets) { event in
-                    UnifiedTimelineRowView(
-                        event: event,
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away"
-                    )
-                }
-            }
-        }
-    }
-
     /// Groups events by quarter/period
-    private var groupedQuarters: [QuarterGroup] {
+    var groupedQuarters: [QuarterGroup] {
         let events = viewModel.unifiedTimelineEvents
         var groups: [Int: [UnifiedTimelineEvent]] = [:]
 
@@ -177,30 +244,15 @@ extension GameDetailView {
     }
 
     /// Tweets without a period (pre/post game)
-    private var ungroupedTweets: [UnifiedTimelineEvent] {
+    var ungroupedTweets: [UnifiedTimelineEvent] {
         viewModel.unifiedTimelineEvents.filter { $0.period == nil && $0.eventType == .tweet }
     }
 
-    /// Collapsible card for a single quarter — uses the same tiered layout as FullPlayByPlayView
+    // MARK: - Full PBP View (Popup)
+
+    /// Collapsible card for a single quarter — used in contexts without pinned headers
     private func unifiedQuarterCard(_ group: QuarterGroup) -> some View {
-        let tieredGroups: [TieredPlayGroup] = {
-            if viewModel.hasServerGroupings {
-                let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
-                    guard event.id.hasPrefix("play-") else { return nil }
-                    return Int(event.id.dropFirst(5))
-                })
-                let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
-                    !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
-                }
-                if !relevantServerGroups.isEmpty {
-                    return ServerPlayGroupAdapter.convert(
-                        serverGroups: relevantServerGroups,
-                        events: group.events
-                    )
-                }
-            }
-            return TieredPlayGrouper.group(events: group.events)
-        }()
+        let tieredGroups = buildTieredGroups(for: group)
 
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
         let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
@@ -233,11 +285,19 @@ extension GameDetailView {
             }
         }
         .id("quarter-\(group.quarter)")
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: PlayRowFramePreferenceKey.self,
+                    value: [-(10000 + group.quarter): geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
+                )
+            }
+        )
     }
 }
 
 /// Helper struct for grouping events by quarter
-private struct QuarterGroup {
+struct QuarterGroup {
     let quarter: Int
     let events: [UnifiedTimelineEvent]
 }

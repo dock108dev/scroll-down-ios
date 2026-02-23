@@ -255,7 +255,7 @@ struct Tier3PlayRowView: View {
                     Text(description)
                         .font(.caption2)
                         .foregroundColor(DesignSystem.TextColor.tertiary)
-                        .lineLimit(1)
+                        .lineLimit(3)
                 }
             }
 

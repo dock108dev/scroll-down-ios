@@ -270,17 +270,16 @@ struct FairExplainerSheet: View {
             let z = 1.0 - (1.0 / total)
             mathStepView(step: 3, title: "Remove the vig (Shin's method)") {
                 VStack(alignment: .leading, spacing: 4) {
-                    mathRow("Total implied:", String(format: "%.1f%%", total * 100))
-                    mathRow("z = 1 − 1/total:", String(format: "%.4f", z))
+                    mathRow("z = 1 − (1 / total):", String(format: "%.2f%%", z * 100))
 
-                    Divider()
+                    if let q = rawImpliedThis {
+                        mathRow("q (this side):", String(format: "%.2f%%", q * 100))
 
-                    Text("Shin's formula adjusts each side's probability\nusing z to correct for favorite-longshot bias.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Divider()
 
-                    if let thisProb = rawImpliedThis {
-                        mathRow("Raw q (this side):", String(format: "%.1f%%", thisProb * 100))
+                        Text("p = (√(z² + 4(1−z)q²) − z) / (2(1−z))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.secondary)
                     }
 
                     Divider()
@@ -288,8 +287,8 @@ struct FairExplainerSheet: View {
                     mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
 
                     Text(isPinnacleExtrapolated
-                         ? "Shin's method shifts more vig correction to longshots. Extrapolated from nearby Pinnacle lines."
-                         : "Shin's method shifts more vig correction to longshots.")
+                         ? "Shin's method shifts more vig onto longshots. Extrapolated from nearby Pinnacle lines."
+                         : "Shin's method shifts more vig onto longshots.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .italic()
@@ -650,22 +649,21 @@ struct FairExplainerSheet: View {
 
     private var confidenceLabel: String {
         switch confidence {
-        case .high: return "High confidence"
-        case .medium: return "Moderate confidence"
-        case .low: return "Limited data"
-        case .none: return "Insufficient data"
+        case .high: return "Sharp"
+        case .medium: return "Market"
+        case .low: return "Thin"
+        case .none: return "Unavailable"
         }
     }
 
     private var confidenceDescription: String {
-        let pinnacleNote = isPinnacleDevig ? " Derived from Pinnacle's sharp lines using Shin's method." : ""
         switch confidence {
         case .high:
-            return "Multiple sportsbooks are pricing both sides of this bet, allowing accurate vig removal." + pinnacleNote
+            return "High-action, efficient market. Many books posting with tight consensus and deep liquidity — the devigged number is close to the true probability."
         case .medium:
-            return "A few sportsbooks are pricing both sides. The estimate is reasonable but less precise." + pinnacleNote
+            return "Decent market with enough books for price discovery and reasonable agreement. Standard confidence."
         case .low:
-            return "Limited books are pricing this bet. The estimate is a rough approximation."
+            return "Low-liquidity market. Few books posting, or wide disagreement between them. The line may reflect one book's model more than true market consensus."
         case .none:
             return "Not enough data to produce a reliable estimate."
         }

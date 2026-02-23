@@ -16,13 +16,14 @@ extension HomeView {
         let cache = HomeGameCache.shared
         let hasCachedData = loadCachedSections(from: cache)
 
-        // Show subtle updating indicator when we have cached data
-        if hasCachedData {
+        // 2. Show loading spinners only on cold start (no data at all).
+        // Otherwise keep existing data visible and show the refresh button spinner.
+        let hasAnyVisibleData = hasCachedData
+            || !earlierSection.games.isEmpty || !yesterdaySection.games.isEmpty
+            || !todaySection.games.isEmpty || !tomorrowSection.games.isEmpty
+        if hasAnyVisibleData {
             isUpdating = true
-        }
-
-        // 2. Only show loading spinners if no cached data exists
-        if !hasCachedData {
+        } else {
             earlierSection.isLoading = true
             yesterdaySection.isLoading = true
             todaySection.isLoading = true
@@ -136,7 +137,7 @@ extension HomeView {
                 yesterdaySection.isLoading = false
             case .current:
                 if result.errorMessage == nil {
-                    todaySection.games = sortedGames
+                    todaySection.games = sortTodayGames(sortedGames)
                 }
                 todaySection.errorMessage = todaySection.games.isEmpty ? result.errorMessage : nil
                 todaySection.isLoading = false
@@ -185,7 +186,7 @@ extension HomeView {
         }
         if cache.isSameCalendarDay(range: .current, league: selectedLeague),
            let cached = cache.load(range: .current, league: selectedLeague) {
-            todaySection.games = cached.games
+            todaySection.games = sortTodayGames(cached.games)
             todaySection.isLoading = false
             hasCachedData = true
         }
@@ -212,6 +213,20 @@ extension HomeView {
         let allIds = [earlierSection, yesterdaySection, todaySection, tomorrowSection]
             .flatMap { $0.games.map(\.id) }
         readStateStore.preload(gameIds: allIds)
+    }
+
+    /// Sort today's games: live/upcoming first by time, then final games by time.
+    func sortTodayGames(_ games: [GameSummary]) -> [GameSummary] {
+        games.sorted { lhs, rhs in
+            let lhsFinal = lhs.status?.isFinal == true
+            let rhsFinal = rhs.status?.isFinal == true
+            if lhsFinal != rhsFinal { return !lhsFinal }
+            let lhsDate = lhs.parsedGameDate ?? .distantFuture
+            let rhsDate = rhs.parsedGameDate ?? .distantFuture
+            if lhsDate != rhsDate { return lhsDate < rhsDate }
+            if lhs.leagueCode != rhs.leagueCode { return lhs.leagueCode < rhs.leagueCode }
+            return lhs.awayTeam < rhs.awayTeam
+        }
     }
 
     /// Push API-provided team colors and abbreviations from game summaries into shared caches.
