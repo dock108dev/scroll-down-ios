@@ -64,7 +64,7 @@ final class FairBetMockDataProvider: ObservableObject {
                     BookPrice(book: "BetRivers", priceValue: -110, observedAt: now)
                 ],
                 evMethod: "pinnacle_devig",
-                evConfidenceTier: "high",
+                evConfidenceTier: "full",
                 trueProb: 0.52,
                 referencePrice: -108,
                 oppositeReferencePrice: 108
@@ -107,7 +107,7 @@ final class FairBetMockDataProvider: ObservableObject {
                     BookPrice(book: "BetRivers", priceValue: -145, observedAt: now)
                 ],
                 evMethod: "pinnacle_devig",
-                evConfidenceTier: "medium",
+                evConfidenceTier: "decent",
                 trueProb: 0.59,
                 referencePrice: -143,
                 oppositeReferencePrice: 123

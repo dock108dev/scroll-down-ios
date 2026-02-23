@@ -20,7 +20,6 @@ struct GameRowView: View {
     /// Synced on appear, after direct mutation, and when readStateStore signals external changes.
     @State private var savedAwayScore: Int?
     @State private var savedHomeScore: Int?
-    @State private var savedScoreContext: String?
 
     /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
@@ -38,11 +37,6 @@ struct GameRowView: View {
             return (away: away, home: home)
         }
         return nil
-    }
-
-    /// Context string for saved scores (e.g., "@ Q2 · 2m ago")
-    private var scoreContextText: String? {
-        savedScoreContext
     }
 
     /// Updates saved scores to the current live score from the game summary
@@ -67,7 +61,6 @@ struct GameRowView: View {
         let saved = ReadingPositionStore.shared.savedScores(for: game.id)
         savedAwayScore = saved?.away
         savedHomeScore = saved?.home
-        savedScoreContext = ReadingPositionStore.shared.scoreContext(for: game.id)
     }
 
     /// Computed card state based on data availability — active unless truly empty

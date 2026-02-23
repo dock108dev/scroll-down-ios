@@ -131,17 +131,4 @@ final class ReadingPositionStore {
         return "\(days)d ago"
     }
 
-    /// Human-readable text for resume context, e.g. "Stopped at Q3 4:32"
-    func resumeDisplayText(for gameId: Int) -> String? {
-        guard let position = load(gameId: gameId) else { return nil }
-        if let timeLabel = position.timeLabel {
-            return "Stopped at \(timeLabel)"
-        }
-        if let periodLabel = position.periodLabel {
-            return "Stopped at \(periodLabel)"
-        }
-        // No time info available — only show if user actually scrolled into the timeline
-        guard position.playIndex > 0 else { return nil }
-        return nil
-    }
 }
