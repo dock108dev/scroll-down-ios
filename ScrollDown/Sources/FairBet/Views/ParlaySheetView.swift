@@ -179,9 +179,9 @@ struct ParlaySheetView: View {
 
     private var confidenceLabel: String {
         switch viewModel.parlayConfidence {
-        case .high: return "High"
-        case .medium: return "Medium"
-        case .low: return "Low"
+        case .high: return "Sharp"
+        case .medium: return "Market"
+        case .low: return "Thin"
         case .none: return "N/A"
         }
     }

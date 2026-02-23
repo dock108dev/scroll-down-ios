@@ -5,10 +5,12 @@
 
 import Foundation
 
-/// Confidence level for fair odds computation
+/// How much we trust the devigged line as a reflection of true probability.
+/// Books know how to set odds, but external factors (liquidity, competition,
+/// handle depth) affect how closely a posted line tracks the real number.
 enum FairOddsConfidence: String, Codable {
-    case high       // 2+ sharp books pricing both sides
-    case medium     // 1 sharp book pricing both sides
-    case low        // No sharp books available
+    case high       // SHARP — high-action, efficient market, tight consensus
+    case medium     // MARKET — decent market, enough books for price discovery
+    case low        // THIN — few books or wide disagreement, less reliable
     case none       // Cannot compute fair odds
 }

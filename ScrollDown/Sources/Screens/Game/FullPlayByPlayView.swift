@@ -14,20 +14,25 @@ struct FullPlayByPlayView: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: DesignSystem.Spacing.list) {
+                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                         ForEach(groupedPeriods, id: \.period) { group in
-                            periodCard(group)
-                                .id("pbp-period-\(group.period)")
+                            periodSection(group)
                         }
 
                         // Ungrouped events (pre/post game tweets)
                         if !ungroupedEvents.isEmpty {
-                            ForEach(ungroupedEvents) { event in
-                                UnifiedTimelineRowView(
-                                    event: event,
-                                    homeTeam: viewModel.game?.homeTeam ?? "Home",
-                                    awayTeam: viewModel.game?.awayTeam ?? "Away"
-                                )
+                            Section {
+                                VStack(spacing: DesignSystem.Spacing.list) {
+                                    ForEach(ungroupedEvents) { event in
+                                        UnifiedTimelineRowView(
+                                            event: event,
+                                            homeTeam: viewModel.game?.homeTeam ?? "Home",
+                                            awayTeam: viewModel.game?.awayTeam ?? "Away"
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, DesignSystem.Spacing.cardPadding)
+                                .padding(.vertical, DesignSystem.Spacing.section)
                             }
                         }
                     }
@@ -85,60 +90,68 @@ struct FullPlayByPlayView: View {
         viewModel.unifiedTimelineEvents.filter { $0.period == nil || $0.period == 0 }
     }
 
-    // MARK: - Period Card with Tiered Display
+    // MARK: - Period Section with Pinned Header
 
-    private func periodCard(_ group: PeriodGroup) -> some View {
-        let tieredGroups: [TieredPlayGroup] = {
-            if viewModel.hasServerGroupings {
-                // Parse playIndex values from event IDs ("play-10002" → 10002)
-                let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
-                    guard event.id.hasPrefix("play-") else { return nil }
-                    return Int(event.id.dropFirst(5))
-                })
-                let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
-                    !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
-                }
-                if !relevantServerGroups.isEmpty {
-                    return ServerPlayGroupAdapter.convert(
-                        serverGroups: relevantServerGroups,
-                        events: group.events
-                    )
-                }
-            }
-            return TieredPlayGrouper.group(events: group.events)
-        }()
+    private func periodSection(_ group: PeriodGroup) -> some View {
+        let tieredGroups = buildTieredGroups(for: group)
 
-        // Count visible plays (Tier 1 + Tier 2 + collapsed Tier 3 groups)
         let tier1Count = tieredGroups.filter { $0.tier == .primary }.flatMap { $0.events }.count
         let tier2Count = tieredGroups.filter { $0.tier == .secondary }.flatMap { $0.events }.count
         let tier3GroupCount = tieredGroups.filter { $0.tier == .tertiary }.count
 
-        return CollapsibleQuarterCard(
-            title: periodTitle(group.period, events: group.events),
-            subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
-            isExpanded: Binding(
-                get: { !collapsedPeriods.contains(group.period) },
-                set: { isExpanded in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        if isExpanded {
-                            collapsedPeriods.remove(group.period)
-                        } else {
-                            collapsedPeriods.insert(group.period)
+        return Section(header:
+            PinnedQuarterHeader(
+                title: periodTitle(group.period, events: group.events),
+                subtitle: "\(tier1Count) key plays, \(tier2Count + tier3GroupCount) other",
+                isExpanded: Binding(
+                    get: { !collapsedPeriods.contains(group.period) },
+                    set: { isExpanded in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if isExpanded {
+                                collapsedPeriods.remove(group.period)
+                            } else {
+                                collapsedPeriods.insert(group.period)
+                            }
                         }
                     }
-                }
+                )
             )
+            .id("pbp-period-\(group.period)")
         ) {
-            LazyVStack(spacing: 6) {
-                ForEach(tieredGroups) { tieredGroup in
-                    TieredPlayGroupView(
-                        group: tieredGroup,
-                        homeTeam: viewModel.game?.homeTeam ?? "Home",
-                        awayTeam: viewModel.game?.awayTeam ?? "Away"
-                    )
+            if !collapsedPeriods.contains(group.period) {
+                LazyVStack(spacing: 6) {
+                    ForEach(tieredGroups) { tieredGroup in
+                        TieredPlayGroupView(
+                            group: tieredGroup,
+                            homeTeam: viewModel.game?.homeTeam ?? "Home",
+                            awayTeam: viewModel.game?.awayTeam ?? "Away"
+                        )
+                    }
                 }
+                .quarterCardBody()
             }
         }
+    }
+
+    // MARK: - Tiered Groups
+
+    private func buildTieredGroups(for group: PeriodGroup) -> [TieredPlayGroup] {
+        if viewModel.hasServerGroupings {
+            let periodPlayIndices = Set(group.events.compactMap { event -> Int? in
+                guard event.id.hasPrefix("play-") else { return nil }
+                return Int(event.id.dropFirst(5))
+            })
+            let relevantServerGroups = viewModel.serverPlayGroups.filter { serverGroup in
+                !Set(serverGroup.playIndices).isDisjoint(with: periodPlayIndices)
+            }
+            if !relevantServerGroups.isEmpty {
+                return ServerPlayGroupAdapter.convert(
+                    serverGroups: relevantServerGroups,
+                    events: group.events
+                )
+            }
+        }
+        return TieredPlayGrouper.group(events: group.events)
     }
 
     // MARK: - Period Title
@@ -151,7 +164,6 @@ struct FullPlayByPlayView: View {
 
         // Use server-provided label if available
         if let label = events.first?.periodLabel, !label.isEmpty {
-            // Expand abbreviated labels for section headers
             switch label {
             case "P1": return "Period 1"
             case "P2": return "Period 2"
@@ -162,7 +174,6 @@ struct FullPlayByPlayView: View {
             }
         }
 
-        // Sport-aware period naming
         let sport = viewModel.game?.leagueCode ?? "NBA"
         switch sport {
         case "NCAAB":

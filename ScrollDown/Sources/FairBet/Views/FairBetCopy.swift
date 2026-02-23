@@ -39,7 +39,7 @@ enum FairBetCopy {
 
     // MARK: - Confidence Indicators
 
-    static let confidenceLow = "Limited data"
+    static let confidenceLow = "Thin"
     static let confidenceUnavailable = "Estimate unavailable"
 
     // MARK: - Empty / Unavailable States
