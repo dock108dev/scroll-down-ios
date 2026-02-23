@@ -9,10 +9,8 @@ struct GameHeaderView: View {
     var scoreRevealed: Bool = false
     var onRevealScore: (() -> Void)? = nil
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
-    var resumeText: String? = nil
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
-    var scoreContextText: String? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -78,13 +76,7 @@ struct GameHeaderView: View {
                                     .font(.title2.weight(.bold).monospacedDigit())
                                     .foregroundColor(homeColor)
                             }
-                            // Score context (period + relative time) for live games
-                            if game.status.isLive, let context = scoreContextText {
-                                Text(context)
-                                    .font(.caption2)
-                                    .foregroundColor(DesignSystem.TextColor.tertiary)
-                                    .multilineTextAlignment(.center)
-                            } else if game.status.isLive && !scoreRevealed {
+                            if game.status.isLive && !scoreRevealed {
                                 Text("Hold to update")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
@@ -175,16 +167,6 @@ struct GameHeaderView: View {
                         .clipShape(Capsule())
                 }
 
-                // Resume text (when user has a saved reading position)
-                // Hidden when score context is already showing the same info in the score bar
-                if let resumeText, scoreContextText == nil {
-                    HStack {
-                        Text(resumeText)
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Spacer()
-                    }
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)

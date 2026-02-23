@@ -456,7 +456,18 @@ struct HomeView: View {
         readStateStore.markAllRead(gameIds: allCompletedGameIds)
         for game in allGames where game.status?.isLive == true {
             if let away = game.awayScore, let home = game.homeScore {
-                ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+                let periodLabel = game.currentPeriod.map {
+                    GameDetailView.formatPeriodLabel($0, sport: game.leagueCode)
+                }
+                ReadingPositionStore.shared.updateScores(
+                    for: game.id,
+                    awayScore: away,
+                    homeScore: home,
+                    period: game.currentPeriod,
+                    gameClock: game.gameClock,
+                    periodLabel: periodLabel,
+                    timeLabel: game.gameClock
+                )
             }
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()

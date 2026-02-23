@@ -36,14 +36,8 @@ struct GameDetailView: View {
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
     @State var sectionFrames: [GameSection: CGRect] = [:]
-    @State var savedResumePlayIndex: Int?
-    @State var hasLoadedResumeMarker = false
-    @State var isResumeTrackingEnabled = true
-    @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
     @State var scrollToSection: GameSection? = nil  // Triggers scroll when set
-    @State var pendingAutoScroll = false
-    @AppStorage("autoResumePosition") var autoResumePosition = true
     @State var displayedAwayScore: Int? = nil
     @State var displayedHomeScore: Int? = nil
     // iPad: Size class for adaptive layouts (internal for extension access)
@@ -291,24 +285,12 @@ struct GameDetailView: View {
                                     }
                                 },
                                 scoreRevealMode: readStateStore.scoreRevealMode,
-                                resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
                                 displayAwayScore: liveDisplayAwayScore(for: game),
-                                displayHomeScore: liveDisplayHomeScore(for: game),
-                                scoreContextText: ReadingPositionStore.shared.scoreContext(for: gameId)
+                                displayHomeScore: liveDisplayHomeScore(for: game)
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)
-                            }
-
-                            // Resume prompt (if applicable)
-                            if shouldShowResumePrompt {
-                                resumePromptView(
-                                    onResume: { resumeScroll(using: proxy) },
-                                    onStartOver: { startOver(using: proxy) }
-                                )
-                                .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
-                                .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                             }
 
                             // Content sections matching navigation order
@@ -389,21 +371,16 @@ struct GameDetailView: View {
             .clipped()
             .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
                 playRowFrames = value
-                updateResumeMarkerIfNeeded()
             }
             .onPreferenceChange(TimelineFramePreferenceKey.self) { value in
                 timelineFrame = value
             }
             .onPreferenceChange(ScrollViewFramePreferenceKey.self) { value in
                 scrollViewFrame = value
-                updateResumeMarkerIfNeeded()
             }
             .onPreferenceChange(SectionFramePreferenceKey.self) { value in
                 sectionFrames = value
                 updateSelectedSectionFromScroll()
-            }
-            .onAppear {
-                loadResumeMarkerIfNeeded()
             }
             .onDisappear {
                 viewModel.stopLivePolling()
@@ -415,15 +392,6 @@ struct GameDetailView: View {
                 } else if newPhase == .active, viewModel.game?.status.isLive == true {
                     viewModel.startLivePolling(gameId: gameId, service: appConfig.gameService)
                 }
-            }
-            .onChange(of: viewModel.detail?.plays.count ?? 0) {
-                loadResumeMarkerIfNeeded()
-            }
-            .onChange(of: viewModel.blockDisplayModels.count) {
-                loadResumeMarkerIfNeeded()
-            }
-            .onChange(of: viewModel.unifiedTimelineState) {
-                loadResumeMarkerIfNeeded()
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
                 if expanded, let status = viewModel.game?.status {
@@ -442,12 +410,6 @@ struct GameDetailView: View {
                     scrollToSection = nil
                     isManualTabSelection = false
                 }
-            }
-            .onChange(of: pendingAutoScroll) { _, shouldScroll in
-                guard shouldScroll else { return }
-                pendingAutoScroll = false
-                isFlowCardExpanded = true
-                resumeScroll(using: proxy)
             }
         }
     }

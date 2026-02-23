@@ -6,7 +6,6 @@ import SwiftUI
 /// Tier 3: Low-signal (misses, rebounds) - Collapsed by default
 struct FullPlayByPlayView: View {
     @ObservedObject var viewModel: GameDetailViewModel
-    var initialQuarter: Int? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var collapsedPeriods: Set<Int> = []
 
@@ -50,19 +49,7 @@ struct FullPlayByPlayView: View {
                     }
                 }
                 .onAppear {
-                    let allPeriods = Set(groupedPeriods.map { $0.period })
-                    if let target = initialQuarter, allPeriods.contains(target) {
-                        // Expand the target quarter, collapse the rest
-                        collapsedPeriods = allPeriods.subtracting([target])
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            withAnimation(.easeInOut) {
-                                proxy.scrollTo("pbp-period-\(target)", anchor: .top)
-                            }
-                        }
-                    } else {
-                        // All periods collapsed by default
-                        collapsedPeriods = allPeriods
-                    }
+                    collapsedPeriods = Set(groupedPeriods.map { $0.period })
                 }
             }
         }

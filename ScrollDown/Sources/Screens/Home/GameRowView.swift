@@ -48,7 +48,18 @@ struct GameRowView: View {
     /// Updates saved scores to the current live score from the game summary
     func updateToLiveScore() {
         guard let away = game.awayScore, let home = game.homeScore else { return }
-        ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+        let periodLabel = game.currentPeriod.map {
+            GameDetailView.formatPeriodLabel($0, sport: game.leagueCode)
+        }
+        ReadingPositionStore.shared.updateScores(
+            for: game.id,
+            awayScore: away,
+            homeScore: home,
+            period: game.currentPeriod,
+            gameClock: game.gameClock,
+            periodLabel: periodLabel,
+            timeLabel: game.gameClock
+        )
         reloadSavedScores()
     }
 
@@ -86,48 +97,51 @@ struct GameRowView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            // Score display — reading-position scores or final scores for read games
-            if let scores = resolvedScores {
+            // Score display — always reserves space for games with score data to prevent card resizing
+            if resolvedScores != nil || game.homeScore != nil || game.status?.isLive == true {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
-                            .foregroundColor(awayTeamColor)
-                        Text("-")
-                            .foregroundColor(.secondary)
-                        Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
-                            .foregroundColor(homeTeamColor)
+                    if let scores = resolvedScores {
+                        HStack(spacing: 4) {
+                            Text("\(TeamAbbreviations.abbreviation(for: game.awayTeamName)) \(scores.away)")
+                                .foregroundColor(awayTeamColor)
+                            Text("-")
+                                .foregroundColor(.secondary)
+                            Text("\(scores.home) \(TeamAbbreviations.abbreviation(for: game.homeTeamName))")
+                                .foregroundColor(homeTeamColor)
+                        }
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                    } else {
+                        Text(" ")
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .hidden()
                     }
-                    .font(.caption.weight(.semibold).monospacedDigit())
 
                     if let context = scoreContextText {
                         Text(context)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
+                    } else if game.status?.isLive == true && resolvedScores == nil {
+                        Text("Hold to check score")
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                    } else {
+                        Text(" ")
+                            .font(.caption2)
+                            .hidden()
                     }
                 }
-            } else if game.status?.isLive == true {
-                // Live game with no saved score — hint to hold-to-check
-                Text("Hold to check score")
-                    .font(.caption2)
-                    .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
             }
 
-            // Resume context (if user has a saved reading position but no scores yet)
-            if resolvedScores == nil, let resumeText = ReadingPositionStore.shared.resumeDisplayText(for: game.id) {
-                Text(resumeText)
-                    .font(.caption2)
-                    .foregroundColor(.orange)
-            }
-
-            // Date display
-            Text(dateDisplay)
-                .font(.caption2)
-                .foregroundColor(Color(.secondaryLabel))
-
-            Spacer(minLength: 4)
-
-            // CTA aligned to bottom-right
+            // Date and status display
             HStack {
+                if game.isExplicitlyFinal {
+                    Text("Final")
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(Color(.tertiaryLabel))
+                }
+                Text(dateDisplay)
+                    .font(.caption2)
+                    .foregroundColor(Color(.secondaryLabel))
                 Spacer()
                 rightElement
             }

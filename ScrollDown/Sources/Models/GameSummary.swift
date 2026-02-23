@@ -13,6 +13,7 @@ struct GameSummary: Codable, Identifiable, Hashable {
         case id, leagueCode, gameDate, homeTeam, awayTeam
         case statusRaw = "status"
         case homeScore, awayScore
+        case currentPeriod, gameClock
         case hasBoxscore, hasPlayerStats, hasOdds, hasSocial, hasPbp, hasFlow
         case playCount, socialPostCount, hasRequiredData, scrapeVersion
         case lastScrapedAt, lastIngestedAt, lastPbpAt, lastSocialAt
@@ -23,6 +24,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
     let awayTeam: String
     let homeScore: Int?
     let awayScore: Int?
+    let currentPeriod: Int?
+    let gameClock: String?
     let hasBoxscore: Bool?
     let hasPlayerStats: Bool?
     let hasOdds: Bool?
@@ -63,6 +66,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         awayTeam = try c.decode(String.self, forKey: .awayTeam)
         homeScore = try c.decodeIfPresent(Int.self, forKey: .homeScore)
         awayScore = try c.decodeIfPresent(Int.self, forKey: .awayScore)
+        currentPeriod = try c.decodeIfPresent(Int.self, forKey: .currentPeriod)
+        gameClock = try c.decodeIfPresent(String.self, forKey: .gameClock)
         hasBoxscore = try c.decodeIfPresent(Bool.self, forKey: .hasBoxscore)
         hasPlayerStats = try c.decodeIfPresent(Bool.self, forKey: .hasPlayerStats)
         hasOdds = try c.decodeIfPresent(Bool.self, forKey: .hasOdds)
@@ -97,6 +102,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         try c.encode(awayTeam, forKey: .awayTeam)
         try c.encodeIfPresent(homeScore, forKey: .homeScore)
         try c.encodeIfPresent(awayScore, forKey: .awayScore)
+        try c.encodeIfPresent(currentPeriod, forKey: .currentPeriod)
+        try c.encodeIfPresent(gameClock, forKey: .gameClock)
         try c.encodeIfPresent(hasBoxscore, forKey: .hasBoxscore)
         try c.encodeIfPresent(hasPlayerStats, forKey: .hasPlayerStats)
         try c.encodeIfPresent(hasOdds, forKey: .hasOdds)
@@ -130,6 +137,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         awayTeam: String,
         homeScore: Int?,
         awayScore: Int?,
+        currentPeriod: Int? = nil,
+        gameClock: String? = nil,
         hasBoxscore: Bool?,
         hasPlayerStats: Bool?,
         hasOdds: Bool?,
@@ -156,6 +165,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         self.awayTeam = awayTeam
         self.homeScore = homeScore
         self.awayScore = awayScore
+        self.currentPeriod = currentPeriod
+        self.gameClock = gameClock
         self.hasBoxscore = hasBoxscore
         self.hasPlayerStats = hasPlayerStats
         self.hasOdds = hasOdds
@@ -212,6 +223,13 @@ extension GameSummary {
             return .scheduled
         }
         return nil
+    }
+
+    /// Whether the API explicitly reports this game as final (not derived from data presence)
+    var isExplicitlyFinal: Bool {
+        guard let raw = statusRaw,
+              let status = GameStatus(rawValue: raw) else { return false }
+        return status.isFinal
     }
 
     /// Convenience accessors for team names
