@@ -4,6 +4,21 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Dead Code Removal & SSOT Enforcement (Feb 22, 2025)
+
+**Score-context cleanup (GameRowView):**
+- Removed `@State savedScoreContext` property (replaced by `gameTimeDisplay` SSOT)
+- Removed `scoreContextText` computed property (dead after SSOT migration)
+- Removed `scoreContext(for:)` call from `reloadSavedScores()` (no UI consumer remains)
+
+**Orphaned method removal (ReadingPositionStore):**
+- Removed `resumeDisplayText(for:)` — replaced by `gameTimeLabel(for:)` as SSOT for game-time display
+
+**Mock data alignment (FairBetMockDataProvider):**
+- Updated `evConfidenceTier` strings: `"high"` → `"full"`, `"medium"` → `"decent"` to match live API tier names
+
+**Files changed:** `GameRowView.swift`, `ReadingPositionStore.swift`, `FairBetMockDataProvider.swift`
+
 ### Changed — Pinned Section Headers, Auto-Resume, Performance (Feb 22, 2025)
 
 **Pinned section headers:**

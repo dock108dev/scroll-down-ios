@@ -64,7 +64,7 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 
 **Live polling:** `GameDetailViewModel.startLivePolling()` polls every ~45s for live games. Auto-stops on dismiss or when game transitions to final. The view re-renders based on the updated status — if flow data was already loaded it displays, otherwise PBP remains as fallback. A "PBP" button in the section nav bar provides access to the full play-by-play sheet whenever Game Flow is the primary view.
 
-**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only, with in-memory caches) tracks where the user stopped reading a game's PBP. Also saves scores at the reading position. Shows "Stopped at Q3 4:32" resume text in game header and home card, with score context ("@ Q2 · 2m ago") when scores are saved. Auto-resume (default ON, `@AppStorage("autoResumePosition")`) automatically scrolls to the saved position on re-open; when OFF, shows a manual "Resume where you left off?" prompt.
+**Reading position:** `ReadingPositionStore` (UserDefaults-backed, local-only, with in-memory caches) tracks where the user stopped reading a game's PBP. Also saves scores at the reading position. `gameTimeLabel(for:)` is the SSOT for game-time display (e.g., "@ Q3 5:42") — shown under scores in the game header and home card when saved scores exist. Auto-resume (default ON, `@AppStorage("autoResumePosition")`) automatically scrolls to the saved position on re-open; when OFF, shows a manual "Resume where you left off?" prompt.
 
 ## Key Data Models
 
@@ -98,7 +98,7 @@ There is no `isCompleted` property — `isFinal` is the single source of truth f
 | `GameDropdown` | Game option for filter UI (gameId, matchup, gameDate) |
 | `EVDiagnostics` | Server-side EV computation stats (pairs, unpaired, eligible counts) |
 | `MarketFilter` | Filter enum: `.single(MarketKey)`, `.playerProps`, `.teamProps` |
-| `FairOddsConfidence` | Confidence tier: `.high`, `.medium`, `.low`, `.none` |
+| `FairOddsConfidence` | Client-side confidence tier (fallback path): `.high`, `.medium`, `.low`, `.none` |
 
 ## What the Server Provides
 
@@ -184,7 +184,7 @@ Betting odds comparison system that surfaces fair odds and expected value (EV) a
 5. `BetCard` renders each bet with EV, fair odds, confidence indicators, and book chips
 
 **Server-side EV (preferred path):**
-- The server computes `trueProb` via Pinnacle devig and provides confidence tiers (`high`, `medium`, `low`)
+- The server computes `trueProb` via Pinnacle devig and provides confidence tiers (`full`, `decent`, `low`)
 - `referencePrice` shows the Pinnacle reference line when available
 - `evDisabledReason` explains why EV is unavailable (e.g., "Reference line unavailable")
 - The client checks `evConfidenceTier` + `trueProb` + per-book `evPercent` before using server values

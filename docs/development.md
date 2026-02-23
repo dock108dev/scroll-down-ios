@@ -81,7 +81,7 @@ See [beta-time-override.md](beta-time-override.md) for full documentation.
 - [ ] Reading position saves on scroll and restores on re-open
 - [ ] Score reveal respects user preference (onMarkRead, always)
 - [ ] Hold-to-reveal shows score on demand (long press on score area)
-- [ ] Live games support hold-to-update for fresh scores with context ("@ Q2 · 2m ago")
+- [ ] Live games support hold-to-update for fresh scores
 - [ ] `markRead` is silently ignored for non-final games
 - [ ] Catch-up button bulk-reveals all scores (iPad: filter bar, iPhone: action row)
 - [ ] Reset button undoes catch-up (marks unread, clears saved positions/scores)
