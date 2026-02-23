@@ -4,6 +4,15 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Changed — Consolidate HomeTheme into GameTheme (Feb 22, 2025)
+
+- Merged `HomeTheme` (33-line duplicate of `GameTheme`) into `GameTheme`
+- Added `GameTheme.cardCornerRadius` (the only unique value from `HomeTheme`)
+- Replaced all `HomeTheme.` references with `GameTheme.` across 5 consumer files (20 references)
+- Deleted `HomeTheme.swift`
+
+**Files changed:** `GameTheme.swift`, `ScrollDownApp.swift`, `HomeView.swift`, `HomeView+Sections.swift`, `HomeView+FairBetHeader.swift`, `GameRowView.swift`
+
 ### Changed — Dead Code Removal & SSOT Enforcement (Feb 22, 2025)
 
 **Score-context cleanup (GameRowView):**

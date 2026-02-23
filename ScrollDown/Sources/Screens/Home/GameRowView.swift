@@ -142,12 +142,12 @@ struct GameRowView: View {
         .padding(12)
         .frame(minHeight: 110)
         .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: HomeTheme.cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: GameTheme.cardCornerRadius))
         .shadow(
             color: shadowColor,
             radius: shadowRadius,
             x: 0,
-            y: HomeTheme.cardShadowYOffset
+            y: GameTheme.cardShadowYOffset
         )
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
@@ -173,7 +173,7 @@ struct GameRowView: View {
         Group {
             switch cardState {
             case .active:
-                HomeTheme.cardBackground
+                GameTheme.cardBackground
             case .noData:
                 Color(.systemGray5)
             }
@@ -182,14 +182,14 @@ struct GameRowView: View {
 
     private var shadowColor: Color {
         switch cardState {
-        case .active: return HomeTheme.cardShadow
+        case .active: return GameTheme.cardShadow
         case .noData: return .clear
         }
     }
 
     private var shadowRadius: CGFloat {
         switch cardState {
-        case .active: return HomeTheme.cardShadowRadius
+        case .active: return GameTheme.cardShadowRadius
         case .noData: return 0
         }
     }
@@ -344,7 +344,7 @@ struct GameRowView: View {
         ))
     }
     .padding()
-    .background(HomeTheme.background)
+    .background(GameTheme.background)
     .environmentObject(ReadStateStore.shared)
 }
 
@@ -395,7 +395,7 @@ struct GameRowView: View {
         ))
     }
     .padding()
-    .background(HomeTheme.background)
+    .background(GameTheme.background)
     .preferredColorScheme(.dark)
     .environmentObject(ReadStateStore.shared)
 }

@@ -258,7 +258,8 @@ enum GameTheme {
     })
     static let cardShadowRadius: CGFloat = 8
     static let cardShadowYOffset: CGFloat = 2
-    
+    static let cardCornerRadius: CGFloat = 12
+
     // Elevated card shadow for interactive elements
     static let elevatedShadow = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark

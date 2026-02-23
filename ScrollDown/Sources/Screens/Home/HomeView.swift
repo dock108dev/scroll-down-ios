@@ -38,7 +38,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            HomeTheme.background
+            GameTheme.background
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 headerView
@@ -137,7 +137,7 @@ struct HomeView: View {
                 .overlay(alignment: .trailing) {
                     HStack(spacing: 0) {
                         LinearGradient(
-                            colors: [HomeTheme.background.opacity(0), HomeTheme.background],
+                            colors: [GameTheme.background.opacity(0), GameTheme.background],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -148,11 +148,11 @@ struct HomeView: View {
                                 Button(action: catchUpToLive) {
                                     Image(systemName: "eye")
                                         .font(.caption.weight(.medium))
-                                        .foregroundColor(HomeTheme.accentColor)
+                                        .foregroundColor(GameTheme.accentColor)
                                         .padding(8)
                                         .background(
                                             Circle()
-                                                .stroke(HomeTheme.accentColor.opacity(0.4), lineWidth: 1)
+                                                .stroke(GameTheme.accentColor.opacity(0.4), lineWidth: 1)
                                         )
                                 }
                                 .buttonStyle(.plain)
@@ -178,10 +178,10 @@ struct HomeView: View {
                             }
                         }
                         .padding(.trailing, horizontalPadding)
-                        .background(HomeTheme.background)
+                        .background(GameTheme.background)
                     }
                 }
-                .background(HomeTheme.background)
+                .background(GameTheme.background)
 
                 // Search bar
                 HStack(spacing: 8) {
@@ -237,7 +237,7 @@ struct HomeView: View {
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, HomeLayout.filterHorizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
-                .background(selectedLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
+                .background(selectedLeague == league ? GameTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedLeague == league ? .white : .primary)
                 .clipShape(Capsule())
         }
@@ -305,7 +305,7 @@ struct HomeView: View {
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(HomeTheme.accentColor.opacity(0.85))
+                                    .background(GameTheme.accentColor.opacity(0.85))
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                                 .buttonStyle(.plain)
