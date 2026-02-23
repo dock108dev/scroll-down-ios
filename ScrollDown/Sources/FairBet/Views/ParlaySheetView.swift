@@ -81,7 +81,7 @@ struct ParlaySheetView: View {
 
     private var combinedResultCard: some View {
         VStack(spacing: 12) {
-            Text("\(viewModel.parlayCount)-Leg Parlay")
+            Text("\(viewModel.parlayCount) Leg Parlay")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.secondary)
 

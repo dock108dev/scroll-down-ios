@@ -117,7 +117,7 @@ extension GameDetailView {
             Text("Coming Soon")
                 .font(.headline)
                 .foregroundColor(Color(.secondaryLabel))
-            Text("Play-by-play data is being processed")
+            Text("Play by play data is being processed")
                 .font(.caption)
                 .foregroundColor(Color(.tertiaryLabel))
         }

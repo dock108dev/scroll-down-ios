@@ -276,8 +276,10 @@ extension GameDetailView {
     func loadResumeMarkerIfNeeded() {
         guard !hasLoadedResumeMarker else { return }
         guard viewModel.detail != nil else { return }
-        hasLoadedResumeMarker = true
-        guard let position = ReadingPositionStore.shared.load(gameId: gameId) else { return }
+        guard let position = ReadingPositionStore.shared.load(gameId: gameId) else {
+            hasLoadedResumeMarker = true
+            return
+        }
 
         // Always restore displayed scores first — independent of play-index validity
         if let away = position.awayScore, let home = position.homeScore {
@@ -288,12 +290,22 @@ extension GameDetailView {
         // Score-only positions (e.g. from hold-to-reveal on home screen) have no
         // timeline context — restore scores above but don't offer a resume prompt.
         // Block-based positions always have a period, so this gate passes for them.
-        guard position.period != nil else { return }
+        guard position.period != nil else {
+            hasLoadedResumeMarker = true
+            return
+        }
 
         // Validate play index against current PBP data or flow block data
         let storedPlayIndex = position.playIndex
         let isValidPlay = viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true
         let isValidBlock = storedPlayIndex < 0 && (-(storedPlayIndex + 1)) < viewModel.blockDisplayModels.count
+
+        // Block-based position but blocks haven't loaded yet — retry when they arrive
+        if storedPlayIndex < 0 && viewModel.blockDisplayModels.isEmpty {
+            return
+        }
+
+        hasLoadedResumeMarker = true
         guard isValidPlay || isValidBlock else {
             return
         }

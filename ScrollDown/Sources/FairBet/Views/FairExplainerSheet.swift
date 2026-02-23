@@ -270,17 +270,16 @@ struct FairExplainerSheet: View {
             let z = 1.0 - (1.0 / total)
             mathStepView(step: 3, title: "Remove the vig (Shin's method)") {
                 VStack(alignment: .leading, spacing: 4) {
-                    mathRow("Total implied:", String(format: "%.1f%%", total * 100))
-                    mathRow("z = 1 − 1/total:", String(format: "%.4f", z))
+                    mathRow("z = 1 − (1 / total):", String(format: "%.2f%%", z * 100))
 
-                    Divider()
+                    if let q = rawImpliedThis {
+                        mathRow("q (this side):", String(format: "%.2f%%", q * 100))
 
-                    Text("Shin's formula adjusts each side's probability\nusing z to correct for favorite-longshot bias.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Divider()
 
-                    if let thisProb = rawImpliedThis {
-                        mathRow("Raw q (this side):", String(format: "%.1f%%", thisProb * 100))
+                        Text("p = (√(z² + 4(1−z)q²) − z) / (2(1−z))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.secondary)
                     }
 
                     Divider()
@@ -288,8 +287,8 @@ struct FairExplainerSheet: View {
                     mathRow("Fair odds:", FairBetCopy.formatOdds(fairOdds))
 
                     Text(isPinnacleExtrapolated
-                         ? "Shin's method shifts more vig correction to longshots. Extrapolated from nearby Pinnacle lines."
-                         : "Shin's method shifts more vig correction to longshots.")
+                         ? "Shin's method shifts more vig onto longshots. Extrapolated from nearby Pinnacle lines."
+                         : "Shin's method shifts more vig onto longshots.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .italic()

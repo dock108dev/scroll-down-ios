@@ -13,11 +13,11 @@ struct RealityAndFeedbackView: View {
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
 
-            Text("Game flow summaries are AI-generated. They're usually solid, but occasionally a player ends up on the wrong team or a play gets invented. We're working on it — you can help by flagging the weird ones.")
+            Text("Game flow summaries are AI generated. They're usually solid, but occasionally a player ends up on the wrong team or a play gets invented. We're working on it — you can help by flagging the weird ones.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Text("FairBet odds are vig-removed estimates based on what the market is pricing. They assume markets are efficient, which mostly holds for major lines. Thin markets, early lines, and niche props can drift. Some games, odds, or socials may be missing entirely — data sources have gaps and timing limits.")
+            Text("FairBet odds are vig removed estimates based on what the market is pricing. They assume markets are efficient, which mostly holds for major lines. Thin markets, early lines, and niche props can drift. Some games, odds, or socials may be missing entirely — data sources have gaps and timing limits.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
