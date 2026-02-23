@@ -225,7 +225,7 @@ User returns to game ─────────┘
 
 Flow blocks use negative-encoded `playIndex` values (`-(blockIndex + 1)`) to share the same `ReadingPosition` model and `PlayRowFramePreferenceKey` infrastructure as PBP plays. `resumeScroll()` decodes the sign to determine the scroll ID format (`"block-N"` vs `"play-N"`).
 
-`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses in-memory caches (`scoreCache`, `contextCache`) to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. `gameTimeLabel(for:)` is the SSOT display method — returns game-time strings (e.g., "@ Q3 5:42") shown under scores in the game header and home card. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `gameTimeLabel(for:)`, `scoreContext(for:)`, `preload(gameIds:)`.
+`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses an in-memory `scoreCache` to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. `gameTimeLabel(for:)` is the SSOT display method — returns game-time strings (e.g., "@ Q3 5:42") shown under scores in the game header and home card. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `gameTimeLabel(for:)`, `preload(gameIds:)`.
 
 ## Score Reveal Preference
 

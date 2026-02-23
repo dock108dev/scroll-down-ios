@@ -11,8 +11,9 @@ Notable changes to the Scroll Down iOS app.
 - Removed `scoreContextText` computed property (dead after SSOT migration)
 - Removed `scoreContext(for:)` call from `reloadSavedScores()` (no UI consumer remains)
 
-**Orphaned method removal (ReadingPositionStore):**
+**Orphaned code removal (ReadingPositionStore):**
 - Removed `resumeDisplayText(for:)` — replaced by `gameTimeLabel(for:)` as SSOT for game-time display
+- Removed `scoreContext(for:)`, `relativeTimeString(from:)`, and `contextCache` — no UI callers remain after SSOT migration
 
 **Mock data alignment (FairBetMockDataProvider):**
 - Updated `evConfidenceTier` strings: `"high"` → `"full"`, `"medium"` → `"decent"` to match live API tier names
