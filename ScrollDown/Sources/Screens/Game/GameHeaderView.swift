@@ -77,6 +77,12 @@ struct GameHeaderView: View {
                                     .foregroundColor(homeColor)
                             }
                             if game.status.isLive && !scoreRevealed {
+                                if let context = ReadingPositionStore.shared.scoreContext(for: game.id) {
+                                    Text(context)
+                                        .font(.caption2)
+                                        .foregroundColor(DesignSystem.TextColor.tertiary)
+                                        .padding(.bottom, 4)
+                                }
                                 Text("Hold to update")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))

@@ -5,7 +5,7 @@ import SwiftUI
 
 extension HomeView {
 
-    func loadGames(scrollToToday: Bool = true) async {
+    func loadGames() async {
         errorMessage = nil
         earlierSection.errorMessage = nil
         yesterdaySection.errorMessage = nil
@@ -45,12 +45,6 @@ extension HomeView {
         applyHomeSectionResults(primaryResults)
         preloadReadState()
         saveSectionsToCache(primaryResults, cache: cache)
-
-        if scrollToToday {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                NotificationCenter.default.post(name: .scrollToYesterday, object: nil)
-            }
-        }
 
         // Phase 2: Earlier + Tomorrow (off-screen)
         async let earlierResult = loadSection(range: .earlier, service: service)

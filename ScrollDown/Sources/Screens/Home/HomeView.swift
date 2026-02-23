@@ -68,14 +68,14 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingAdminSettings, onDismiss: {
             // Reload data after admin settings changed (e.g., snapshot mode)
-            startLoadGames(scrollToToday: false)
+            startLoadGames()
         }) {
             AdminSettingsView()
                 .environmentObject(appConfig)
         }
         .onReceive(refreshTimer) { _ in
             guard hasLoadedInitialData, viewMode == .recaps else { return }
-            startLoadGames(scrollToToday: false, priority: .background)
+            startLoadGames(priority: .background)
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, hasLoadedInitialData else { return }
@@ -83,7 +83,7 @@ struct HomeView: View {
             let dayChanged = !cache.isSameCalendarDay(range: .current, league: selectedLeague)
             let cacheStale = !cache.isFresh(range: .current, league: selectedLeague, maxAge: 900)
             guard dayChanged || cacheStale else { return }
-            startLoadGames(scrollToToday: dayChanged)
+            startLoadGames()
         }
     }
 
@@ -173,7 +173,7 @@ struct HomeView: View {
                             // iPad: always show refresh here; iPhone: only when no action row
                             if horizontalSizeClass == .regular || !showSpoilerActions {
                                 refreshButton {
-                                    startLoadGames(scrollToToday: false)
+                                    startLoadGames()
                                 }
                             }
                         }
@@ -231,7 +231,7 @@ struct HomeView: View {
             }
             // Keep existing data visible while loading; refresh button shows spinner
             isUpdating = true
-            startLoadGames(scrollToToday: false)
+            startLoadGames()
         }) {
             Text(label)
                 .font(.subheadline.weight(.medium))
@@ -339,7 +339,7 @@ struct HomeView: View {
                             // iPhone only: refresh button in this row
                             if horizontalSizeClass != .regular {
                                 refreshButton {
-                                    startLoadGames(scrollToToday: false)
+                                    startLoadGames()
                                 }
                             }
                         }
@@ -380,12 +380,7 @@ struct HomeView: View {
             }
             .refreshable {
                 loadTask?.cancel()
-                await loadGames(scrollToToday: false)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
-                withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo(HomeStrings.sectionYesterday, anchor: .top)
-                }
+                await loadGames()
             }
             .onChange(of: earlierSection.isExpanded) { _, expanded in
                 if !expanded { scrollToSectionHeader(earlierSection, using: proxy) }
@@ -525,10 +520,10 @@ struct HomeView: View {
     // MARK: - Load Task Management
 
     /// Cancels any in-flight load and starts a new one. All callers should go through this.
-    func startLoadGames(scrollToToday: Bool = true, priority: TaskPriority = .userInitiated) {
+    func startLoadGames(priority: TaskPriority = .userInitiated) {
         loadTask?.cancel()
         loadTask = Task(priority: priority) {
-            await loadGames(scrollToToday: scrollToToday)
+            await loadGames()
         }
     }
 }

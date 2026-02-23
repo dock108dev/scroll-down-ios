@@ -216,6 +216,10 @@ extension GameSummary {
         if let raw = statusRaw {
             return GameStatus(rawValue: raw)
         }
+        // Live game indicators take priority over score-based completion
+        if currentPeriod != nil || gameClock != nil {
+            return .live
+        }
         if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
             return .completed
         }
