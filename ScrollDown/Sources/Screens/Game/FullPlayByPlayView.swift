@@ -6,45 +6,59 @@ import SwiftUI
 /// Tier 3: Low-signal (misses, rebounds) - Collapsed by default
 struct FullPlayByPlayView: View {
     @ObservedObject var viewModel: GameDetailViewModel
+    var initialQuarter: Int? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var collapsedPeriods: Set<Int> = []
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: DesignSystem.Spacing.list) {
-                    ForEach(groupedPeriods, id: \.period) { group in
-                        periodCard(group)
-                    }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: DesignSystem.Spacing.list) {
+                        ForEach(groupedPeriods, id: \.period) { group in
+                            periodCard(group)
+                                .id("pbp-period-\(group.period)")
+                        }
 
-                    // Ungrouped events (pre/post game tweets)
-                    if !ungroupedEvents.isEmpty {
-                        ForEach(ungroupedEvents) { event in
-                            UnifiedTimelineRowView(
-                                event: event,
-                                homeTeam: viewModel.game?.homeTeam ?? "Home",
-                                awayTeam: viewModel.game?.awayTeam ?? "Away"
-                            )
+                        // Ungrouped events (pre/post game tweets)
+                        if !ungroupedEvents.isEmpty {
+                            ForEach(ungroupedEvents) { event in
+                                UnifiedTimelineRowView(
+                                    event: event,
+                                    homeTeam: viewModel.game?.homeTeam ?? "Home",
+                                    awayTeam: viewModel.game?.awayTeam ?? "Away"
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.cardPadding)
+                    .padding(.vertical, DesignSystem.Spacing.section)
+                }
+                .background(GameTheme.background)
+                .navigationTitle("Play-by-Play")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
                         }
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.cardPadding)
-                .padding(.vertical, DesignSystem.Spacing.section)
-            }
-            .background(GameTheme.background)
-            .navigationTitle("Play-by-Play")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                .onAppear {
+                    let allPeriods = Set(groupedPeriods.map { $0.period })
+                    if let target = initialQuarter, allPeriods.contains(target) {
+                        // Expand the target quarter, collapse the rest
+                        collapsedPeriods = allPeriods.subtracting([target])
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation(.easeInOut) {
+                                proxy.scrollTo("pbp-period-\(target)", anchor: .top)
+                            }
+                        }
+                    } else {
+                        // All periods collapsed by default
+                        collapsedPeriods = allPeriods
                     }
                 }
-            }
-            .onAppear {
-                // All periods collapsed by default - user expands what they want
-                let allPeriods = Set(groupedPeriods.map { $0.period })
-                collapsedPeriods = allPeriods
             }
         }
     }

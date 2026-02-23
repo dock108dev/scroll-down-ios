@@ -106,6 +106,18 @@ extension GameDetailView {
             .0
     }
 
+    /// Detect visible PBP quarter from frame tracking (encoded as -(10000 + quarter))
+    var currentViewingQuarter: Int? {
+        guard scrollViewFrame.height > 0 else { return nil }
+        let visibleQuarters = playRowFrames.compactMap { key, frame -> (Int, CGRect)? in
+            guard key <= -10000,
+                  frame.maxY >= scrollViewFrame.minY,
+                  frame.minY <= scrollViewFrame.maxY else { return nil }
+            return (-(key + 10000), frame)
+        }
+        return visibleQuarters.sorted { $0.1.minY < $1.1.minY }.last?.0
+    }
+
     func periodDescriptor(for play: PlayEntry) -> String {
         guard let quarter = play.quarter else {
             return "Game"
@@ -240,7 +252,12 @@ extension GameDetailView {
         selectedSection = .timeline
 
         let scrollId: String
-        if savedResumePlayIndex < 0 {
+        if savedResumePlayIndex <= -10000 {
+            // Quarter-level position (PBP)
+            let quarter = -(savedResumePlayIndex + 10000)
+            collapsedQuarters.remove(quarter)
+            scrollId = "quarter-\(quarter)"
+        } else if savedResumePlayIndex < 0 {
             let blockIndex = -(savedResumePlayIndex + 1)
             scrollId = "block-\(blockIndex)"
         } else {
@@ -297,18 +314,17 @@ extension GameDetailView {
 
         // Validate play index against current PBP data or flow block data
         let storedPlayIndex = position.playIndex
-        let isValidPlay = viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true
-        let isValidBlock = storedPlayIndex < 0 && (-(storedPlayIndex + 1)) < viewModel.blockDisplayModels.count
+        let isValidPlay = storedPlayIndex >= 0 && viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true
+        let isValidBlock = storedPlayIndex < 0 && storedPlayIndex > -10000 && (-(storedPlayIndex + 1)) < viewModel.blockDisplayModels.count
+        let isValidQuarter = storedPlayIndex <= -10000
 
         // Block-based position but blocks haven't loaded yet — retry when they arrive
-        if storedPlayIndex < 0 && viewModel.blockDisplayModels.isEmpty {
+        if storedPlayIndex < 0 && storedPlayIndex > -10000 && viewModel.blockDisplayModels.isEmpty {
             return
         }
 
         hasLoadedResumeMarker = true
-        guard isValidPlay || isValidBlock else {
-            return
-        }
+        guard isValidPlay || isValidBlock || isValidQuarter else { return }
         savedResumePlayIndex = storedPlayIndex
         isResumeTrackingEnabled = false
         if autoResumePosition {
@@ -360,32 +376,79 @@ extension GameDetailView {
         }
 
         // Try flow block (completed games)
-        guard let block = currentViewingBlock else { return }
-        let encodedIndex = -(block.blockIndex + 1)
-        guard encodedIndex != savedResumePlayIndex else { return }
-        savedResumePlayIndex = encodedIndex
+        if let block = currentViewingBlock {
+            let encodedIndex = -(block.blockIndex + 1)
+            guard encodedIndex != savedResumePlayIndex else { return }
+            savedResumePlayIndex = encodedIndex
 
-        let periodLabel = block.periodDisplay
+            let periodLabel = block.periodDisplay
+            let position = ReadingPosition(
+                playIndex: encodedIndex,
+                period: block.periodStart,
+                gameClock: block.endClock,
+                periodLabel: periodLabel,
+                timeLabel: periodLabel,
+                savedAt: Date(),
+                homeScore: block.endScore.home,
+                awayScore: block.endScore.away
+            )
+            ReadingPositionStore.shared.save(gameId: gameId, position: position)
+
+            displayedAwayScore = block.endScore.away
+            displayedHomeScore = block.endScore.home
+
+            // Auto-mark as read when user reaches the last flow block
+            if block.blockIndex == viewModel.blockDisplayModels.count - 1,
+               let status = viewModel.game?.status {
+                readStateStore.markRead(gameId: gameId, status: status)
+            }
+            return
+        }
+
+        // Try PBP quarter (inline timeline without individual play tracking)
+        guard let quarter = currentViewingQuarter else { return }
+        let encodedQuarter = -(10000 + quarter)
+        guard encodedQuarter != savedResumePlayIndex else { return }
+        savedResumePlayIndex = encodedQuarter
+
+        let sport = viewModel.game?.leagueCode ?? "NBA"
+        let label = Self.formatPeriodLabel(quarter, sport: sport)
+        let events = viewModel.unifiedTimelineEvents.filter { $0.period == quarter }
+        let lastScoringEvent = events.last(where: { $0.homeScore != nil && $0.awayScore != nil })
+
         let position = ReadingPosition(
-            playIndex: encodedIndex,
-            period: block.periodStart,
-            gameClock: block.endClock,
-            periodLabel: periodLabel,
-            timeLabel: periodLabel,
+            playIndex: encodedQuarter,
+            period: quarter,
+            gameClock: lastScoringEvent?.gameClock,
+            periodLabel: label,
+            timeLabel: lastScoringEvent?.gameClock.map { "\(label) \($0)" } ?? label,
             savedAt: Date(),
-            homeScore: block.endScore.home,
-            awayScore: block.endScore.away
+            homeScore: lastScoringEvent?.homeScore,
+            awayScore: lastScoringEvent?.awayScore
         )
         ReadingPositionStore.shared.save(gameId: gameId, position: position)
 
-        displayedAwayScore = block.endScore.away
-        displayedHomeScore = block.endScore.home
-
-        // Auto-mark as read when user reaches the last flow block
-        if block.blockIndex == viewModel.blockDisplayModels.count - 1,
-           let status = viewModel.game?.status {
-            readStateStore.markRead(gameId: gameId, status: status)
+        if let away = lastScoringEvent?.awayScore, let home = lastScoringEvent?.homeScore {
+            displayedAwayScore = away
+            displayedHomeScore = home
         }
+    }
+
+    /// Current resume position as a quarter number (for passing to Full PBP popup)
+    var resumeQuarter: Int? {
+        if let idx = savedResumePlayIndex {
+            if idx <= -10000 {
+                return -(idx + 10000)
+            }
+            if idx < 0 {
+                let blockIndex = -(idx + 1)
+                guard blockIndex < viewModel.blockDisplayModels.count else { return nil }
+                return viewModel.blockDisplayModels[blockIndex].periodStart
+            }
+            return viewModel.detail?.plays.first(where: { $0.playIndex == idx })?.quarter
+        }
+        // Fall back to saved position from store
+        return ReadingPositionStore.shared.load(gameId: gameId)?.period
     }
 
     func clearSavedResumeMarker() {
@@ -526,7 +589,7 @@ extension GameDetailView {
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $showingFullPlayByPlay) {
-                    FullPlayByPlayView(viewModel: viewModel)
+                    FullPlayByPlayView(viewModel: viewModel, initialQuarter: resumeQuarter)
                 }
             }
         }

@@ -233,6 +233,14 @@ extension GameDetailView {
             }
         }
         .id("quarter-\(group.quarter)")
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: PlayRowFramePreferenceKey.self,
+                    value: [-(10000 + group.quarter): geo.frame(in: .named(GameDetailLayout.scrollCoordinateSpace))]
+                )
+            }
+        )
     }
 }
 
