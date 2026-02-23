@@ -127,6 +127,10 @@ struct GameDetailView: View {
                     }
                 }
 
+                // All primary data loaded — trigger resume check directly
+                // (onChange handlers can miss when cache hits are synchronous)
+                loadResumeMarkerIfNeeded()
+
                 // Await remaining parallel tasks
                 _ = await (timelineTask, socialTask)
             }

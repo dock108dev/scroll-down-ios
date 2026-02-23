@@ -248,7 +248,7 @@ extension GameDetailView {
             scrollId = "play-\(savedResumePlayIndex)"
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation(.easeInOut) {
                 proxy.scrollTo(scrollId, anchor: .top)
             }
