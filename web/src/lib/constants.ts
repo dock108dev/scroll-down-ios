@@ -12,11 +12,17 @@ export const BOOK_ABBREVIATIONS: Record<string, string> = {
   fanduel: "FD",
   betmgm: "MGM",
   caesars: "CZR",
-  pointsbet: "PB",
+  espnbet: "ESPN",
+  fanatics: "FAN",
+  "hard rock bet": "HR",
+  pinnacle: "PIN",
   bet365: "365",
   betrivers: "BR",
+  "william hill": "WH",
+  "888sport": "888",
+  // legacy
+  pointsbet: "PB",
   wynnbet: "WYNN",
-  pinnacle: "PIN",
   bovada: "BOV",
 };
 

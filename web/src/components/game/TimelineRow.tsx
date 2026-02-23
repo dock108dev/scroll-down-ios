@@ -5,41 +5,247 @@ interface TimelineRowProps {
   play: PlayEntry;
   homeTeamAbbr?: string;
   awayTeamAbbr?: string;
+  homeColor?: string;
+  awayColor?: string;
+  /** Previous play in sequence, used to detect score changes */
+  previousPlay?: PlayEntry;
 }
 
-export function TimelineRow({ play }: TimelineRowProps) {
-  const tier = play.tier ?? 3;
+// ─── Action keywords that get bold/semibold styling ────────
+const BOLD_KEYWORDS = [
+  "MISS",
+  "makes",
+  "GOAL",
+  "TOUCHDOWN",
+  "FIELD GOAL",
+  "HOME RUN",
+  "STRIKEOUT",
+  "PENALTY",
+  "FOUL",
+  "TURNOVER",
+  "STEAL",
+  "BLOCK",
+  "DUNK",
+  "THREE",
+  "FREE THROW",
+];
+
+// Build a regex that matches any of the bold keywords (case-insensitive for
+// mixed-case terms like "makes") plus parenthetical content for de-emphasis.
+const STYLED_PATTERN = new RegExp(
+  `(${BOLD_KEYWORDS.map((k) => k.replace(/\s+/g, "\\s+")).join("|")})|(\\([^)]*\\))`,
+  "gi",
+);
+
+/**
+ * Renders a play description with styled action keywords (bold) and
+ * parenthetical/location info (de-emphasized).
+ */
+function StyledDescription({
+  text,
+  tier,
+}: {
+  text: string;
+  tier: number;
+}) {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  // Reset regex state
+  STYLED_PATTERN.lastIndex = 0;
+
+  while ((match = STYLED_PATTERN.exec(text)) !== null) {
+    // Push plain text before this match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1]) {
+      // Bold keyword
+      parts.push(
+        <span key={match.index} className="font-semibold">
+          {match[0]}
+        </span>,
+      );
+    } else if (match[2]) {
+      // Parenthetical content - de-emphasized
+      parts.push(
+        <span key={match.index} className="text-neutral-500">
+          {match[0]}
+        </span>,
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Push remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
 
   return (
-    <div
+    <p
       className={cn(
-        "flex items-start gap-3 py-1.5 px-2 rounded",
-        tier === 1 && "bg-neutral-800/40",
-        tier === 2 && "bg-neutral-800/20",
+        "leading-snug",
+        tier === 1 && "text-sm font-semibold text-white",
+        tier === 2 && "text-sm text-neutral-300 font-medium",
+        tier === 3 && "text-xs text-neutral-500",
       )}
     >
-      <span className="shrink-0 w-12 text-right text-xs text-neutral-500 font-mono">
+      {parts}
+    </p>
+  );
+}
+
+/**
+ * Returns the accent color for a play based on its team abbreviation.
+ * Falls back to a default neutral accent.
+ */
+function getAccentColor(
+  teamAbbr: string | undefined,
+  homeTeamAbbr: string | undefined,
+  awayTeamAbbr: string | undefined,
+  homeColor: string | undefined,
+  awayColor: string | undefined,
+): string {
+  if (!teamAbbr) return "#525252"; // neutral-600
+  if (teamAbbr === homeTeamAbbr && homeColor) return homeColor;
+  if (teamAbbr === awayTeamAbbr && awayColor) return awayColor;
+  return "#525252";
+}
+
+/**
+ * Detects if this play changed the score compared to the previous play.
+ */
+function isScoreChange(play: PlayEntry, prev?: PlayEntry): boolean {
+  if (play.homeScore == null || play.awayScore == null) return false;
+  if (!prev || prev.homeScore == null || prev.awayScore == null) {
+    // First play with a score counts as a score change if scores > 0
+    return (play.homeScore ?? 0) > 0 || (play.awayScore ?? 0) > 0;
+  }
+  return play.homeScore !== prev.homeScore || play.awayScore !== prev.awayScore;
+}
+
+// ─── Main component ─────────────────────────────────────────
+
+export function TimelineRow({
+  play,
+  homeTeamAbbr,
+  awayTeamAbbr,
+  homeColor,
+  awayColor,
+  previousPlay,
+}: TimelineRowProps) {
+  const tier = play.tier ?? 3;
+  const accentColor = getAccentColor(
+    play.teamAbbreviation,
+    homeTeamAbbr,
+    awayTeamAbbr,
+    homeColor,
+    awayColor,
+  );
+  const scoreChanged = tier === 1 && isScoreChange(play, previousPlay);
+
+  // ── Tier 1: Primary / high-impact ──
+  if (tier === 1) {
+    return (
+      <div
+        className="flex items-start gap-3 py-2 px-3 rounded-md bg-neutral-800/40"
+        style={{ borderLeft: `4px solid ${accentColor}` }}
+      >
+        {/* Time label */}
+        <span className="shrink-0 w-12 text-right text-xs text-neutral-400 font-mono pt-0.5">
+          {play.timeLabel ?? play.gameClock ?? ""}
+        </span>
+
+        {/* Team abbreviation badge */}
+        {play.teamAbbreviation && (
+          <span
+            className="shrink-0 inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            {play.teamAbbreviation}
+          </span>
+        )}
+
+        {/* Description */}
+        <div className="flex-1 min-w-0">
+          <StyledDescription text={play.description ?? ""} tier={1} />
+        </div>
+
+        {/* Score display */}
+        {play.awayScore != null && play.homeScore != null && (
+          <span className="shrink-0 text-sm font-bold tabular-nums flex items-center gap-0.5">
+            <span style={{ color: awayColor ?? "#a3a3a3" }}>
+              {play.awayScore}
+            </span>
+            <span className="text-neutral-600">-</span>
+            <span style={{ color: homeColor ?? "#a3a3a3" }}>
+              {play.homeScore}
+            </span>
+            {scoreChanged && (
+              <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            )}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // ── Tier 2: Secondary / contextual ──
+  if (tier === 2) {
+    return (
+      <div
+        className="flex items-start gap-3 py-1.5 px-3 rounded ml-4"
+        style={{ borderLeft: `2px solid ${accentColor}40` }}
+      >
+        {/* Time label */}
+        <span className="shrink-0 w-12 text-right text-xs text-neutral-500 font-mono pt-0.5">
+          {play.timeLabel ?? play.gameClock ?? ""}
+        </span>
+
+        {/* Team abbreviation badge at 50% opacity */}
+        {play.teamAbbreviation && (
+          <span
+            className="shrink-0 inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/70"
+            style={{ backgroundColor: `${accentColor}80` }}
+          >
+            {play.teamAbbreviation}
+          </span>
+        )}
+
+        {/* Description */}
+        <div className="flex-1 min-w-0">
+          <StyledDescription text={play.description ?? ""} tier={2} />
+        </div>
+
+        {/* Score (muted) */}
+        {play.awayScore != null && play.homeScore != null && (
+          <span className="shrink-0 text-xs text-neutral-500 font-mono tabular-nums">
+            {play.awayScore}-{play.homeScore}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // ── Tier 3: Tertiary / low-signal ──
+  return (
+    <div className="flex items-start gap-2 py-1 px-2 ml-8">
+      {/* Dot indicator */}
+      <span className="shrink-0 mt-1.5 w-1 h-1 rounded-full bg-neutral-600" />
+
+      {/* Time label */}
+      <span className="shrink-0 w-10 text-right text-[10px] text-neutral-600 font-mono">
         {play.timeLabel ?? play.gameClock ?? ""}
       </span>
 
+      {/* Description */}
       <div className="flex-1 min-w-0">
-        <p
-          className={cn(
-            "text-sm leading-snug",
-            tier === 1 && "font-semibold text-white",
-            tier === 2 && "text-neutral-300",
-            tier === 3 && "text-neutral-500 text-xs",
-          )}
-        >
-          {play.description ?? ""}
-        </p>
+        <StyledDescription text={play.description ?? ""} tier={3} />
       </div>
-
-      <span className="shrink-0 text-xs text-neutral-500 font-mono tabular-nums">
-        {play.awayScore != null && play.homeScore != null
-          ? `${play.awayScore}-${play.homeScore}`
-          : ""}
-      </span>
     </div>
   );
 }

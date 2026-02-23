@@ -1,5 +1,9 @@
+"use client";
+
 import { cn } from "@/lib/utils";
-import { BOOK_ABBREVIATIONS } from "@/lib/constants";
+import { FairBetTheme } from "@/lib/theme";
+import { bookAbbreviation } from "@/lib/theme";
+import { formatEV } from "@/lib/fairbet-utils";
 
 interface MiniBookChipProps {
   book: string;
@@ -9,21 +13,51 @@ interface MiniBookChipProps {
 }
 
 export function MiniBookChip({ book, price, ev, isSharp }: MiniBookChipProps) {
-  const hasPositiveEV = ev != null && ev > 0;
-  const abbr = BOOK_ABBREVIATIONS[book] ?? book;
+  const evVal = ev ?? 0;
+  const abbr = bookAbbreviation(book);
+
+  // Background colours by EV tier
+  let bgStyle: React.CSSProperties;
+  if (evVal >= 5) {
+    bgStyle = {
+      backgroundColor: FairBetTheme.successSoft,
+      borderColor: `${FairBetTheme.positive}33`,
+      borderWidth: 1,
+      borderStyle: "solid",
+    };
+  } else if (evVal > 0) {
+    bgStyle = {
+      backgroundColor: FairBetTheme.successSoftMuted,
+    };
+  } else {
+    bgStyle = {
+      backgroundColor: `${FairBetTheme.surfaceSecondary}80`,
+    };
+  }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-mono",
-        hasPositiveEV
-          ? "bg-green-500/10 text-green-400 border border-green-500/20"
-          : "bg-neutral-800 text-neutral-400 border border-neutral-700",
-        isSharp && "ring-1 ring-blue-500/30",
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
+        isSharp && "ring-1",
       )}
+      style={{
+        ...bgStyle,
+        ...(isSharp ? { boxShadow: `0 0 0 1px ${FairBetTheme.info}50` } : {}),
+      }}
     >
-      <span className="text-[10px] text-neutral-500">{abbr}</span>
-      {price}
+      <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+        {abbr}
+      </span>
+      <span className="font-bold text-white">{price}</span>
+      {ev != null && (
+        <span
+          className="text-[10px] font-medium"
+          style={{ color: evVal >= 5 ? FairBetTheme.positive : evVal > 0 ? FairBetTheme.positiveMuted : FairBetTheme.neutral }}
+        >
+          {formatEV(evVal)}
+        </span>
+      )}
     </span>
   );
 }

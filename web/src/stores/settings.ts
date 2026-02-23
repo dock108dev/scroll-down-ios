@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export type FairbetSortOption = "bestEV" | "gameTime" | "league";
+
 interface SettingsState {
   theme: "system" | "light" | "dark";
   scoreRevealMode: "always" | "onMarkRead";
@@ -10,6 +12,8 @@ interface SettingsState {
   homeExpandedSections: string[];
   gameExpandedSections: string[];
   hideLimitedData: boolean;
+  showOnlyPositiveEV: boolean;
+  fairbetSortOption: FairbetSortOption;
 
   setTheme: (t: "system" | "light" | "dark") => void;
   setScoreRevealMode: (m: "always" | "onMarkRead") => void;
@@ -19,11 +23,15 @@ interface SettingsState {
   setHomeExpandedSections: (s: string[]) => void;
   setGameExpandedSections: (s: string[]) => void;
   setHideLimitedData: (v: boolean) => void;
+  setShowOnlyPositiveEV: (v: boolean) => void;
+  setFairbetSortOption: (o: FairbetSortOption) => void;
+  toggleHomeSection: (section: string) => void;
+  toggleGameSection: (section: string) => void;
 }
 
 export const useSettings = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: "system",
       scoreRevealMode: "onMarkRead",
       preferredSportsbook: "",
@@ -32,6 +40,8 @@ export const useSettings = create<SettingsState>()(
       homeExpandedSections: [],
       gameExpandedSections: [],
       hideLimitedData: true,
+      showOnlyPositiveEV: false,
+      fairbetSortOption: "bestEV",
 
       setTheme: (theme) => set({ theme }),
       setScoreRevealMode: (scoreRevealMode) => set({ scoreRevealMode }),
@@ -45,6 +55,23 @@ export const useSettings = create<SettingsState>()(
       setGameExpandedSections: (gameExpandedSections) =>
         set({ gameExpandedSections }),
       setHideLimitedData: (hideLimitedData) => set({ hideLimitedData }),
+      setShowOnlyPositiveEV: (showOnlyPositiveEV) =>
+        set({ showOnlyPositiveEV }),
+      setFairbetSortOption: (fairbetSortOption) => set({ fairbetSortOption }),
+      toggleHomeSection: (section) => {
+        const current = get().homeExpandedSections;
+        const next = current.includes(section)
+          ? current.filter((s) => s !== section)
+          : [...current, section];
+        set({ homeExpandedSections: next });
+      },
+      toggleGameSection: (section) => {
+        const current = get().gameExpandedSections;
+        const next = current.includes(section)
+          ? current.filter((s) => s !== section)
+          : [...current, section];
+        set({ gameExpandedSections: next });
+      },
     }),
     { name: "sd-settings" },
   ),
