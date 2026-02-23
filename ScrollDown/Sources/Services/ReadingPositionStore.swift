@@ -105,6 +105,21 @@ final class ReadingPositionStore {
         return result
     }
 
+    /// Game time label only (e.g. "@ Q3 5:42"), no relative time. SSOT for game position display.
+    func gameTimeLabel(for gameId: Int) -> String? {
+        guard let position = load(gameId: gameId),
+              position.awayScore != nil, position.homeScore != nil else {
+            return nil
+        }
+        if let timeLabel = position.timeLabel {
+            return "@ \(timeLabel)"
+        }
+        if let periodLabel = position.periodLabel {
+            return "@ \(periodLabel)"
+        }
+        return nil
+    }
+
     private func relativeTimeString(from date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
         if seconds < 60 { return "just now" }

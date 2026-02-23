@@ -119,7 +119,8 @@ extension HomeView {
                 triggerHapticIfNeeded(for: game)
             })
             .contextMenu {
-                if game.status?.isLive == true || game.currentPeriod != nil || game.gameClock != nil {
+                if readStateStore.scoreRevealMode != .always,
+                   game.status?.isLive == true || game.currentPeriod != nil || game.gameClock != nil {
                     Button {
                         rowView.updateToLiveScore()
                     } label: {

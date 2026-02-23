@@ -116,11 +116,11 @@ struct GameRowView: View {
                             .hidden()
                     }
 
-                    if let context = scoreContextText {
-                        Text(context)
+                    if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
+                        Text(gameTime)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
-                    } else if game.status?.isLive == true && resolvedScores == nil {
+                    } else if game.status?.isLive == true && resolvedScores == nil && readStateStore.scoreRevealMode != .always {
                         Text("Hold to check score")
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))

@@ -76,21 +76,21 @@ struct GameHeaderView: View {
                                     .font(.title2.weight(.bold).monospacedDigit())
                                     .foregroundColor(homeColor)
                             }
-                            if game.status.isLive && !scoreRevealed {
-                                if let context = ReadingPositionStore.shared.scoreContext(for: game.id) {
-                                    Text(context)
-                                        .font(.caption2)
-                                        .foregroundColor(DesignSystem.TextColor.tertiary)
-                                        .padding(.bottom, 4)
-                                }
+                            if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
+                                Text(gameTime)
+                                    .font(.caption2)
+                                    .foregroundColor(DesignSystem.TextColor.tertiary)
+                            }
+                            if game.status.isLive && !scoreRevealed && scoreRevealMode != .always {
                                 Text("Hold to update")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                                    .padding(.top, 2)
                             }
                         }
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.5) {
-                            guard game.status.isLive else { return }
+                            guard game.status.isLive, scoreRevealMode != .always else { return }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             onRevealScore?()
                         }
@@ -99,7 +99,7 @@ struct GameHeaderView: View {
                             Text("vs")
                                 .font(.system(size: 14, weight: .medium, design: .rounded))
                                 .foregroundColor(DesignSystem.TextColor.tertiary)
-                            if game.awayScore != nil || game.status.isLive {
+                            if scoreRevealMode != .always, game.awayScore != nil || game.status.isLive {
                                 Text(game.status.isLive ? "Hold to update" : "Hold to reveal score")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
@@ -109,7 +109,8 @@ struct GameHeaderView: View {
                         .padding(.vertical, 8)
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.5) {
-                            guard game.awayScore != nil || game.status.isLive else { return }
+                            guard scoreRevealMode != .always,
+                                  game.awayScore != nil || game.status.isLive else { return }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             onRevealScore?()
                         }
