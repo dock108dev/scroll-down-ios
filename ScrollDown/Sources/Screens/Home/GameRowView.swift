@@ -116,7 +116,7 @@ struct GameRowView: View {
                             .hidden()
                     }
 
-                    if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
+                    if let gameTime = gameTimeDisplay {
                         Text(gameTime)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
@@ -216,6 +216,19 @@ struct GameRowView: View {
 
     private var matchupTitle: String {
         "\(game.awayTeamName) at \(game.homeTeamName)"
+    }
+
+    /// Game time display — SSOT from ReadingPositionStore, fallback to API data
+    private var gameTimeDisplay: String? {
+        if let stored = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
+            return stored
+        }
+        guard game.status?.isLive == true, let period = game.currentPeriod else { return nil }
+        let periodLabel = GameDetailView.formatPeriodLabel(period, sport: game.leagueCode)
+        if let clock = game.gameClock, !clock.isEmpty {
+            return "@ \(periodLabel) \(clock)"
+        }
+        return "@ \(periodLabel)"
     }
 
     private var dateDisplay: String {

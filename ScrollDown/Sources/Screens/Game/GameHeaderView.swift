@@ -11,6 +11,7 @@ struct GameHeaderView: View {
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
+    var displayGameTime: String? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -76,7 +77,7 @@ struct GameHeaderView: View {
                                     .font(.title2.weight(.bold).monospacedDigit())
                                     .foregroundColor(homeColor)
                             }
-                            if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
+                            if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) ?? displayGameTime {
                                 Text(gameTime)
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary)

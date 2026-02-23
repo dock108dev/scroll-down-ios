@@ -158,6 +158,25 @@ struct GameDetailView: View {
         return displayedHomeScore
     }
 
+    /// Game time label from PBP data for the header (fallback when ReadingPositionStore is empty)
+    private func liveGameTimeLabel(for game: Game) -> String? {
+        guard game.status.isLive else { return nil }
+        guard let latestPlay = (viewModel.detail?.plays ?? [])
+            .last(where: { $0.homeScore != nil && $0.awayScore != nil }) else { return nil }
+        if let timeLabel = latestPlay.timeLabel {
+            return "@ \(timeLabel)"
+        }
+        if let periodLabel = latestPlay.periodLabel {
+            return "@ \(periodLabel)"
+        }
+        if let q = latestPlay.quarter {
+            let label = Self.formatPeriodLabel(q, sport: game.leagueCode)
+            if let clock = latestPlay.gameClock { return "@ \(label) \(clock)" }
+            return "@ \(label)"
+        }
+        return nil
+    }
+
     private func loadSocialIfEnabled() async {
         if viewModel.isSocialTabEnabled {
             await viewModel.loadSocialPosts(gameId: gameId, service: appConfig.gameService)
@@ -286,7 +305,8 @@ struct GameDetailView: View {
                                 },
                                 scoreRevealMode: readStateStore.scoreRevealMode,
                                 displayAwayScore: liveDisplayAwayScore(for: game),
-                                displayHomeScore: liveDisplayHomeScore(for: game)
+                                displayHomeScore: liveDisplayHomeScore(for: game),
+                                displayGameTime: liveGameTimeLabel(for: game)
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
@@ -385,6 +405,7 @@ struct GameDetailView: View {
             .onDisappear {
                 viewModel.stopLivePolling()
                 GameExpansionCache.save(gameId: gameId, sections: currentExpandedSections)
+                GameExpansionCache.saveQuarters(gameId: gameId, collapsed: collapsedQuarters)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background {
@@ -430,6 +451,7 @@ struct GameDetailView: View {
 /// Survives NavigationStack pop/push so returning to a game restores your toggles.
 enum GameExpansionCache {
     private static var store: [Int: Set<String>] = [:]
+    private static var quarterStore: [Int: Set<Int>] = [:]
 
     static func save(gameId: Int, sections: Set<String>) {
         store[gameId] = sections
@@ -437,6 +459,14 @@ enum GameExpansionCache {
 
     static func load(gameId: Int) -> Set<String>? {
         store[gameId]
+    }
+
+    static func saveQuarters(gameId: Int, collapsed: Set<Int>) {
+        quarterStore[gameId] = collapsed
+    }
+
+    static func loadQuarters(gameId: Int) -> Set<Int>? {
+        quarterStore[gameId]
     }
 }
 
