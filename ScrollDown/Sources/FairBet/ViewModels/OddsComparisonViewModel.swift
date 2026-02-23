@@ -357,7 +357,7 @@ final class OddsComparisonViewModel: ObservableObject {
         // Require minimum 3 books for reliable data
         filtered = filtered.filter { $0.books.count >= 3 }
 
-        // Hide limited data (low/none confidence)
+        // Hide thin markets (low/none confidence)
         if hideLimitedData {
             filtered = filtered.filter { bet in
                 let conf = cachedEVResults[bet.id]?.confidence ?? .none

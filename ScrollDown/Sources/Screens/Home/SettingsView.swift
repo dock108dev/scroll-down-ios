@@ -110,9 +110,9 @@ struct SettingsView: View {
                     }
                 }
 
-                Toggle("Hide Limited Data", isOn: $oddsViewModel.hideLimitedData)
+                Toggle("Hide Thin Markets", isOn: $oddsViewModel.hideLimitedData)
 
-                Text("When enabled, only shows bets with reliable fair odds (proper vig removal from multiple books).")
+                Text("Filters out bets where only a few books are posting or they can't agree on a number. If the market is thin, the fair estimate is just one book's opinion.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
