@@ -9,10 +9,9 @@ struct GameHeaderView: View {
     var scoreRevealed: Bool = false
     var onRevealScore: (() -> Void)? = nil
     var scoreRevealMode: ScoreRevealMode = .onMarkRead
-    var resumeText: String? = nil
     var displayAwayScore: Int? = nil
     var displayHomeScore: Int? = nil
-    var scoreContextText: String? = nil
+    var displayGameTime: String? = nil
 
     @State private var hasAppeared = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -78,21 +77,21 @@ struct GameHeaderView: View {
                                     .font(.title2.weight(.bold).monospacedDigit())
                                     .foregroundColor(homeColor)
                             }
-                            // Score context (period + relative time) for live games
-                            if game.status.isLive, let context = scoreContextText {
-                                Text(context)
+                            if let gameTime = ReadingPositionStore.shared.gameTimeLabel(for: game.id) ?? displayGameTime {
+                                Text(gameTime)
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary)
-                                    .multilineTextAlignment(.center)
-                            } else if game.status.isLive && !scoreRevealed {
+                            }
+                            if game.status.isLive && !scoreRevealed && scoreRevealMode != .always {
                                 Text("Hold to update")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
+                                    .padding(.top, 2)
                             }
                         }
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.5) {
-                            guard game.status.isLive else { return }
+                            guard game.status.isLive, scoreRevealMode != .always else { return }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             onRevealScore?()
                         }
@@ -101,7 +100,7 @@ struct GameHeaderView: View {
                             Text("vs")
                                 .font(.system(size: 14, weight: .medium, design: .rounded))
                                 .foregroundColor(DesignSystem.TextColor.tertiary)
-                            if game.awayScore != nil || game.status.isLive {
+                            if scoreRevealMode != .always, game.awayScore != nil || game.status.isLive {
                                 Text(game.status.isLive ? "Hold to update" : "Hold to reveal score")
                                     .font(.caption2)
                                     .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
@@ -111,7 +110,8 @@ struct GameHeaderView: View {
                         .padding(.vertical, 8)
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.5) {
-                            guard game.awayScore != nil || game.status.isLive else { return }
+                            guard scoreRevealMode != .always,
+                                  game.awayScore != nil || game.status.isLive else { return }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             onRevealScore?()
                         }
@@ -175,16 +175,6 @@ struct GameHeaderView: View {
                         .clipShape(Capsule())
                 }
 
-                // Resume text (when user has a saved reading position)
-                // Hidden when score context is already showing the same info in the score bar
-                if let resumeText, scoreContextText == nil {
-                    HStack {
-                        Text(resumeText)
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Spacer()
-                    }
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)

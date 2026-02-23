@@ -141,8 +141,3 @@ let homeDateFormatter: ISO8601DateFormatter = {
     return formatter
 }()
 
-// MARK: - Notifications
-
-extension Notification.Name {
-    static let scrollToYesterday = Notification.Name("scrollToYesterday")
-}

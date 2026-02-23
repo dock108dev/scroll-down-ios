@@ -150,7 +150,7 @@ Player stats use direct key lookup against `PlayerStat.rawStats`.
 See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
 
 **Server-side EV (preferred):**
-- The server computes `trueProb` via Pinnacle devig and provides per-bet `evConfidenceTier` (high/medium/low)
+- The server computes `trueProb` via Pinnacle devig and provides per-bet `evConfidenceTier` (`full`/`decent`/`low`)
 - Per-book `evPercent` and `isSharp` annotations enable direct EV display without client computation
 - `referencePrice` and `evDisabledReason` provide transparency about the fair odds source
 - `OddsComparisonViewModel.computeEVResult()` checks for server annotations first
@@ -225,7 +225,7 @@ User returns to game ─────────┘
 
 Flow blocks use negative-encoded `playIndex` values (`-(blockIndex + 1)`) to share the same `ReadingPosition` model and `PlayRowFramePreferenceKey` infrastructure as PBP plays. `resumeScroll()` decodes the sign to determine the scroll ID format (`"block-N"` vs `"play-N"`).
 
-`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses in-memory caches (`scoreCache`, `contextCache`) to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. Resume text ("Stopped at Q3 4:32") displays in the game header and home card. Saved scores display with context ("@ Q2 · 2m ago") in both locations. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `scoreContext(for:)`, `preload(gameIds:)`.
+`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses an in-memory `scoreCache` to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. `gameTimeLabel(for:)` is the SSOT display method — returns game-time strings (e.g., "@ Q3 5:42") shown under scores in the game header and home card. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `gameTimeLabel(for:)`, `preload(gameIds:)`.
 
 ## Score Reveal Preference
 

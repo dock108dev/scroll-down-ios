@@ -50,9 +50,6 @@ enum GameDetailLayout {
     static let viewingPillHorizontalPadding: CGFloat = 12
     static let viewingPillVerticalPadding: CGFloat = 6
     static let viewingPillTopPadding: CGFloat = 12
-    static let resumePromptPadding: CGFloat = 16
-    static let resumePromptSpacing: CGFloat = 8
-    static let resumeButtonSpacing: CGFloat = 12
     static let contextPadding: CGFloat = 12
     static let contextCornerRadius: CGFloat = 8
     static let scrollCoordinateSpace = "gameScrollView"

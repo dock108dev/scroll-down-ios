@@ -62,7 +62,7 @@ struct FairBetHeaderView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
             }
-            .background(HomeTheme.background)
+            .background(GameTheme.background)
 
             // Controls row: search + sort + parlay + refresh
             HStack(spacing: 8) {
@@ -198,7 +198,7 @@ struct FairBetHeaderView: View {
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, HomeLayout.filterHorizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
-                .background(selectedLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
+                .background(selectedLeague == league ? GameTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedLeague == league ? .white : .primary)
                 .clipShape(Capsule())
         }
@@ -213,7 +213,7 @@ struct FairBetHeaderView: View {
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, HomeLayout.filterHorizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
-                .background(selectedMarket == filter ? HomeTheme.accentColor : Color(.systemGray5))
+                .background(selectedMarket == filter ? GameTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedMarket == filter ? .white : .primary)
                 .clipShape(Capsule())
         }

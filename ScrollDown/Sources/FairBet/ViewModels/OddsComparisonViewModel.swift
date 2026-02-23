@@ -476,9 +476,9 @@ final class OddsComparisonViewModel: ObservableObject {
 
         let confidence: FairOddsConfidence
         switch serverTier {
-        case "high": confidence = .high
-        case "medium": confidence = .medium
-        case "low": confidence = .low
+        case "full": confidence = .high
+        case "decent": confidence = .medium
+        case "thin": confidence = .low
         default: confidence = .none
         }
 

@@ -38,7 +38,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            HomeTheme.background
+            GameTheme.background
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 headerView
@@ -68,14 +68,14 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingAdminSettings, onDismiss: {
             // Reload data after admin settings changed (e.g., snapshot mode)
-            startLoadGames(scrollToToday: false)
+            startLoadGames()
         }) {
             AdminSettingsView()
                 .environmentObject(appConfig)
         }
         .onReceive(refreshTimer) { _ in
             guard hasLoadedInitialData, viewMode == .recaps else { return }
-            startLoadGames(scrollToToday: false, priority: .background)
+            startLoadGames(priority: .background)
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, hasLoadedInitialData else { return }
@@ -83,7 +83,7 @@ struct HomeView: View {
             let dayChanged = !cache.isSameCalendarDay(range: .current, league: selectedLeague)
             let cacheStale = !cache.isFresh(range: .current, league: selectedLeague, maxAge: 900)
             guard dayChanged || cacheStale else { return }
-            startLoadGames(scrollToToday: dayChanged)
+            startLoadGames()
         }
     }
 
@@ -137,7 +137,7 @@ struct HomeView: View {
                 .overlay(alignment: .trailing) {
                     HStack(spacing: 0) {
                         LinearGradient(
-                            colors: [HomeTheme.background.opacity(0), HomeTheme.background],
+                            colors: [GameTheme.background.opacity(0), GameTheme.background],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -148,11 +148,11 @@ struct HomeView: View {
                                 Button(action: catchUpToLive) {
                                     Image(systemName: "eye")
                                         .font(.caption.weight(.medium))
-                                        .foregroundColor(HomeTheme.accentColor)
+                                        .foregroundColor(GameTheme.accentColor)
                                         .padding(8)
                                         .background(
                                             Circle()
-                                                .stroke(HomeTheme.accentColor.opacity(0.4), lineWidth: 1)
+                                                .stroke(GameTheme.accentColor.opacity(0.4), lineWidth: 1)
                                         )
                                 }
                                 .buttonStyle(.plain)
@@ -173,15 +173,15 @@ struct HomeView: View {
                             // iPad: always show refresh here; iPhone: only when no action row
                             if horizontalSizeClass == .regular || !showSpoilerActions {
                                 refreshButton {
-                                    startLoadGames(scrollToToday: false)
+                                    startLoadGames()
                                 }
                             }
                         }
                         .padding(.trailing, horizontalPadding)
-                        .background(HomeTheme.background)
+                        .background(GameTheme.background)
                     }
                 }
-                .background(HomeTheme.background)
+                .background(GameTheme.background)
 
                 // Search bar
                 HStack(spacing: 8) {
@@ -231,13 +231,13 @@ struct HomeView: View {
             }
             // Keep existing data visible while loading; refresh button shows spinner
             isUpdating = true
-            startLoadGames(scrollToToday: false)
+            startLoadGames()
         }) {
             Text(label)
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, HomeLayout.filterHorizontalPadding)
                 .padding(.vertical, HomeLayout.filterVerticalPadding)
-                .background(selectedLeague == league ? HomeTheme.accentColor : Color(.systemGray5))
+                .background(selectedLeague == league ? GameTheme.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedLeague == league ? .white : .primary)
                 .clipShape(Capsule())
         }
@@ -305,7 +305,7 @@ struct HomeView: View {
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(HomeTheme.accentColor.opacity(0.85))
+                                    .background(GameTheme.accentColor.opacity(0.85))
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                                 .buttonStyle(.plain)
@@ -339,7 +339,7 @@ struct HomeView: View {
                             // iPhone only: refresh button in this row
                             if horizontalSizeClass != .regular {
                                 refreshButton {
-                                    startLoadGames(scrollToToday: false)
+                                    startLoadGames()
                                 }
                             }
                         }
@@ -380,12 +380,7 @@ struct HomeView: View {
             }
             .refreshable {
                 loadTask?.cancel()
-                await loadGames(scrollToToday: false)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .scrollToYesterday)) { _ in
-                withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo(HomeStrings.sectionYesterday, anchor: .top)
-                }
+                await loadGames()
             }
             .onChange(of: earlierSection.isExpanded) { _, expanded in
                 if !expanded { scrollToSectionHeader(earlierSection, using: proxy) }
@@ -456,7 +451,18 @@ struct HomeView: View {
         readStateStore.markAllRead(gameIds: allCompletedGameIds)
         for game in allGames where game.status?.isLive == true {
             if let away = game.awayScore, let home = game.homeScore {
-                ReadingPositionStore.shared.updateScores(for: game.id, awayScore: away, homeScore: home)
+                let periodLabel = game.currentPeriod.map {
+                    GameDetailView.formatPeriodLabel($0, sport: game.leagueCode)
+                }
+                ReadingPositionStore.shared.updateScores(
+                    for: game.id,
+                    awayScore: away,
+                    homeScore: home,
+                    period: game.currentPeriod,
+                    gameClock: game.gameClock,
+                    periodLabel: periodLabel,
+                    timeLabel: game.gameClock
+                )
             }
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -514,10 +520,10 @@ struct HomeView: View {
     // MARK: - Load Task Management
 
     /// Cancels any in-flight load and starts a new one. All callers should go through this.
-    func startLoadGames(scrollToToday: Bool = true, priority: TaskPriority = .userInitiated) {
+    func startLoadGames(priority: TaskPriority = .userInitiated) {
         loadTask?.cancel()
         loadTask = Task(priority: priority) {
-            await loadGames(scrollToToday: scrollToToday)
+            await loadGames()
         }
     }
 }

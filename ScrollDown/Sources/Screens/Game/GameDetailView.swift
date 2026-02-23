@@ -36,14 +36,8 @@ struct GameDetailView: View {
     @State var timelineFrame: CGRect = .zero
     @State var scrollViewFrame: CGRect = .zero
     @State var sectionFrames: [GameSection: CGRect] = [:]
-    @State var savedResumePlayIndex: Int?
-    @State var hasLoadedResumeMarker = false
-    @State var isResumeTrackingEnabled = true
-    @State var shouldShowResumePrompt = false
     @State var isManualTabSelection = false
     @State var scrollToSection: GameSection? = nil  // Triggers scroll when set
-    @State var pendingAutoScroll = false
-    @AppStorage("autoResumePosition") var autoResumePosition = true
     @State var displayedAwayScore: Int? = nil
     @State var displayedHomeScore: Int? = nil
     // iPad: Size class for adaptive layouts (internal for extension access)
@@ -162,6 +156,25 @@ struct GameDetailView: View {
             return viewModel.liveHomeScore ?? game.homeScore
         }
         return displayedHomeScore
+    }
+
+    /// Game time label from PBP data for the header (fallback when ReadingPositionStore is empty)
+    private func liveGameTimeLabel(for game: Game) -> String? {
+        guard game.status.isLive else { return nil }
+        guard let latestPlay = (viewModel.detail?.plays ?? [])
+            .last(where: { $0.homeScore != nil && $0.awayScore != nil }) else { return nil }
+        if let timeLabel = latestPlay.timeLabel {
+            return "@ \(timeLabel)"
+        }
+        if let periodLabel = latestPlay.periodLabel {
+            return "@ \(periodLabel)"
+        }
+        if let q = latestPlay.quarter {
+            let label = Self.formatPeriodLabel(q, sport: game.leagueCode)
+            if let clock = latestPlay.gameClock { return "@ \(label) \(clock)" }
+            return "@ \(label)"
+        }
+        return nil
     }
 
     private func loadSocialIfEnabled() async {
@@ -291,24 +304,13 @@ struct GameDetailView: View {
                                     }
                                 },
                                 scoreRevealMode: readStateStore.scoreRevealMode,
-                                resumeText: ReadingPositionStore.shared.resumeDisplayText(for: gameId),
                                 displayAwayScore: liveDisplayAwayScore(for: game),
                                 displayHomeScore: liveDisplayHomeScore(for: game),
-                                scoreContextText: ReadingPositionStore.shared.scoreContext(for: gameId)
+                                displayGameTime: liveGameTimeLabel(for: game)
                             )
                                     .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
                                     .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                                     .id(GameSection.header)
-                            }
-
-                            // Resume prompt (if applicable)
-                            if shouldShowResumePrompt {
-                                resumePromptView(
-                                    onResume: { resumeScroll(using: proxy) },
-                                    onStartOver: { startOver(using: proxy) }
-                                )
-                                .padding(.horizontal, GameDetailLayout.horizontalPadding(horizontalSizeClass))
-                                .frame(maxWidth: horizontalSizeClass == .regular ? GameDetailLayout.maxContentWidth : .infinity)
                             }
 
                             // Content sections matching navigation order
@@ -389,25 +391,21 @@ struct GameDetailView: View {
             .clipped()
             .onPreferenceChange(PlayRowFramePreferenceKey.self) { value in
                 playRowFrames = value
-                updateResumeMarkerIfNeeded()
             }
             .onPreferenceChange(TimelineFramePreferenceKey.self) { value in
                 timelineFrame = value
             }
             .onPreferenceChange(ScrollViewFramePreferenceKey.self) { value in
                 scrollViewFrame = value
-                updateResumeMarkerIfNeeded()
             }
             .onPreferenceChange(SectionFramePreferenceKey.self) { value in
                 sectionFrames = value
                 updateSelectedSectionFromScroll()
             }
-            .onAppear {
-                loadResumeMarkerIfNeeded()
-            }
             .onDisappear {
                 viewModel.stopLivePolling()
                 GameExpansionCache.save(gameId: gameId, sections: currentExpandedSections)
+                GameExpansionCache.saveQuarters(gameId: gameId, collapsed: collapsedQuarters)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background {
@@ -415,15 +413,6 @@ struct GameDetailView: View {
                 } else if newPhase == .active, viewModel.game?.status.isLive == true {
                     viewModel.startLivePolling(gameId: gameId, service: appConfig.gameService)
                 }
-            }
-            .onChange(of: viewModel.detail?.plays.count ?? 0) {
-                loadResumeMarkerIfNeeded()
-            }
-            .onChange(of: viewModel.blockDisplayModels.count) {
-                loadResumeMarkerIfNeeded()
-            }
-            .onChange(of: viewModel.unifiedTimelineState) {
-                loadResumeMarkerIfNeeded()
             }
             .onChange(of: isWrapUpExpanded) { _, expanded in
                 if expanded, let status = viewModel.game?.status {
@@ -442,12 +431,6 @@ struct GameDetailView: View {
                     scrollToSection = nil
                     isManualTabSelection = false
                 }
-            }
-            .onChange(of: pendingAutoScroll) { _, shouldScroll in
-                guard shouldScroll else { return }
-                pendingAutoScroll = false
-                isFlowCardExpanded = true
-                resumeScroll(using: proxy)
             }
         }
     }
@@ -468,6 +451,7 @@ struct GameDetailView: View {
 /// Survives NavigationStack pop/push so returning to a game restores your toggles.
 enum GameExpansionCache {
     private static var store: [Int: Set<String>] = [:]
+    private static var quarterStore: [Int: Set<Int>] = [:]
 
     static func save(gameId: Int, sections: Set<String>) {
         store[gameId] = sections
@@ -475,6 +459,14 @@ enum GameExpansionCache {
 
     static func load(gameId: Int) -> Set<String>? {
         store[gameId]
+    }
+
+    static func saveQuarters(gameId: Int, collapsed: Set<Int>) {
+        quarterStore[gameId] = collapsed
+    }
+
+    static func loadQuarters(gameId: Int) -> Set<Int>? {
+        quarterStore[gameId]
     }
 }
 

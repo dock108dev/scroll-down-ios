@@ -61,7 +61,7 @@ extension HomeView {
             }
             .buttonStyle(.plain)
         }
-        .background(HomeTheme.background)
+        .background(GameTheme.background)
     }
 
     @ViewBuilder
@@ -119,14 +119,15 @@ extension HomeView {
                 triggerHapticIfNeeded(for: game)
             })
             .contextMenu {
-                if game.status?.isLive == true {
+                if readStateStore.scoreRevealMode != .always,
+                   game.status?.isLive == true || game.currentPeriod != nil || game.gameClock != nil {
                     Button {
                         rowView.updateToLiveScore()
                     } label: {
                         Label("Update Score", systemImage: "arrow.clockwise")
                     }
                 }
-                if game.status?.isFinal == true {
+                if game.status?.isFinal == true && game.currentPeriod == nil && game.gameClock == nil {
                     if readStateStore.isRead(gameId: game.id) {
                         Button(role: .destructive) {
                             readStateStore.markUnread(gameId: game.id)

@@ -20,7 +20,7 @@ struct ScrollDownApp: App {
                 .environmentObject(appConfig)
                 .environmentObject(readStateStore)
                 .preferredColorScheme(colorScheme)
-                .tint(HomeTheme.accentColor)
+                .tint(GameTheme.accentColor)
                 .task {
                     await TeamColorCache.shared.loadCachedOrFetch(service: appConfig.gameService)
                 }

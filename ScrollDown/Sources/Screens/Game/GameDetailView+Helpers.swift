@@ -84,40 +84,6 @@ extension GameDetailView {
             .0
     }
 
-    var currentViewingBlock: BlockDisplayModel? {
-        guard scrollViewFrame.height > 0 else { return nil }
-        let blocks = viewModel.blockDisplayModels
-        guard !blocks.isEmpty else { return nil }
-        let blocksByEncodedIndex = Dictionary(uniqueKeysWithValues: blocks.map { (-(($0.blockIndex) + 1), $0) })
-
-        let visibleBlocks = playRowFrames.compactMap { encodedIndex, frame -> (BlockDisplayModel, CGRect)? in
-            guard encodedIndex < 0,
-                  let block = blocksByEncodedIndex[encodedIndex],
-                  frame.maxY >= scrollViewFrame.minY,
-                  frame.minY <= scrollViewFrame.maxY else {
-                return nil
-            }
-            return (block, frame)
-        }
-
-        return visibleBlocks
-            .sorted { $0.1.minY < $1.1.minY }
-            .last?
-            .0
-    }
-
-    /// Detect visible PBP quarter from frame tracking (encoded as -(10000 + quarter))
-    var currentViewingQuarter: Int? {
-        guard scrollViewFrame.height > 0 else { return nil }
-        let visibleQuarters = playRowFrames.compactMap { key, frame -> (Int, CGRect)? in
-            guard key <= -10000,
-                  frame.maxY >= scrollViewFrame.minY,
-                  frame.minY <= scrollViewFrame.maxY else { return nil }
-            return (-(key + 10000), frame)
-        }
-        return visibleQuarters.sorted { $0.1.minY < $1.1.minY }.last?.0
-    }
-
     func periodDescriptor(for play: PlayEntry) -> String {
         guard let quarter = play.quarter else {
             return "Game"
@@ -218,242 +184,11 @@ extension GameDetailView {
             .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
 
-    func resumePromptView(onResume: @escaping () -> Void, onStartOver: @escaping () -> Void) -> some View {
-        VStack(spacing: GameDetailLayout.resumePromptSpacing) {
-            Text("Resume where you left off?")
-                .font(.subheadline.weight(.semibold))
-            HStack(spacing: GameDetailLayout.resumeButtonSpacing) {
-                Button("Start over") {
-                    onStartOver()
-                }
-                .buttonStyle(.bordered)
-                Button("Resume") {
-                    onResume()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(GameDetailLayout.resumePromptPadding)
-        .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
-        .overlay(Divider(), alignment: .bottom)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Resume where you left off?")
-    }
-
-    func resumeScroll(using proxy: ScrollViewProxy) {
-        guard let savedResumePlayIndex else {
-            shouldShowResumePrompt = false
-            isResumeTrackingEnabled = true
-            return
-        }
-        isFlowCardExpanded = true
-        isTimelineExpanded = true
-        selectedSection = .timeline
-
-        let scrollId: String
-        if savedResumePlayIndex <= -10000 {
-            // Quarter-level position (PBP)
-            let quarter = -(savedResumePlayIndex + 10000)
-            collapsedQuarters.remove(quarter)
-            scrollId = "quarter-\(quarter)"
-        } else if savedResumePlayIndex < 0 {
-            let blockIndex = -(savedResumePlayIndex + 1)
-            scrollId = "block-\(blockIndex)"
-        } else {
-            expandQuarter(for: savedResumePlayIndex)
-            scrollId = "play-\(savedResumePlayIndex)"
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.easeInOut) {
-                proxy.scrollTo(scrollId, anchor: .top)
-            }
-        }
-        shouldShowResumePrompt = false
-        isResumeTrackingEnabled = true
-    }
-
-    func startOver(using proxy: ScrollViewProxy) {
-        clearSavedResumeMarker()
-        shouldShowResumePrompt = false
-        isResumeTrackingEnabled = true
-        withAnimation(.easeInOut) {
-            proxy.scrollTo(GameSection.header, anchor: .top)
-        }
-    }
-
     func expandQuarter(for playIndex: Int) {
         guard let quarter = viewModel.detail?.plays.first(where: { $0.playIndex == playIndex })?.quarter else {
             return
         }
         collapsedQuarters.remove(quarter)
-    }
-
-    func loadResumeMarkerIfNeeded() {
-        guard !hasLoadedResumeMarker else { return }
-        guard viewModel.detail != nil else { return }
-        guard let position = ReadingPositionStore.shared.load(gameId: gameId) else {
-            hasLoadedResumeMarker = true
-            return
-        }
-
-        // Always restore displayed scores first — independent of play-index validity
-        if let away = position.awayScore, let home = position.homeScore {
-            displayedAwayScore = away
-            displayedHomeScore = home
-        }
-
-        // Score-only positions (e.g. from hold-to-reveal on home screen) have no
-        // timeline context — restore scores above but don't offer a resume prompt.
-        // Block-based positions always have a period, so this gate passes for them.
-        guard position.period != nil else {
-            hasLoadedResumeMarker = true
-            return
-        }
-
-        // Validate play index against current PBP data or flow block data
-        let storedPlayIndex = position.playIndex
-        let isValidPlay = storedPlayIndex >= 0 && viewModel.detail?.plays.contains(where: { $0.playIndex == storedPlayIndex }) == true
-        let isValidBlock = storedPlayIndex < 0 && storedPlayIndex > -10000 && (-(storedPlayIndex + 1)) < viewModel.blockDisplayModels.count
-        let isValidQuarter = storedPlayIndex <= -10000
-
-        // Block-based position but blocks haven't loaded yet — retry when they arrive
-        if storedPlayIndex < 0 && storedPlayIndex > -10000 && viewModel.blockDisplayModels.isEmpty {
-            return
-        }
-
-        hasLoadedResumeMarker = true
-        guard isValidPlay || isValidBlock || isValidQuarter else { return }
-        savedResumePlayIndex = storedPlayIndex
-        isResumeTrackingEnabled = false
-        if autoResumePosition {
-            pendingAutoScroll = true
-        } else {
-            shouldShowResumePrompt = true
-        }
-    }
-
-    func updateResumeMarkerIfNeeded() {
-        guard isResumeTrackingEnabled else { return }
-
-        // Try PBP play first (live games)
-        if let play = currentViewingPlay {
-            let playIndex = play.playIndex
-            guard playIndex != savedResumePlayIndex else { return }
-            savedResumePlayIndex = playIndex
-
-            let periodLabel: String? = {
-                guard let quarter = play.quarter else { return nil }
-                return quarterOrdinal(quarter)
-            }()
-            let timeLabel: String? = {
-                guard let quarter = play.quarter else { return nil }
-                let ordinal = quarterOrdinal(quarter)
-                if let clock = play.gameClock {
-                    return "\(ordinal) \(clock)"
-                }
-                return ordinal
-            }()
-            let position = ReadingPosition(
-                playIndex: playIndex,
-                period: play.quarter,
-                gameClock: play.gameClock,
-                periodLabel: periodLabel,
-                timeLabel: timeLabel,
-                savedAt: Date(),
-                homeScore: play.homeScore,
-                awayScore: play.awayScore
-            )
-            ReadingPositionStore.shared.save(gameId: gameId, position: position)
-
-            // Update displayed scores as user scrolls (only when scores are present)
-            if let away = play.awayScore, let home = play.homeScore {
-                displayedAwayScore = away
-                displayedHomeScore = home
-            }
-            return
-        }
-
-        // Try flow block (completed games)
-        if let block = currentViewingBlock {
-            let encodedIndex = -(block.blockIndex + 1)
-            guard encodedIndex != savedResumePlayIndex else { return }
-            savedResumePlayIndex = encodedIndex
-
-            let periodLabel = block.periodDisplay
-            let position = ReadingPosition(
-                playIndex: encodedIndex,
-                period: block.periodStart,
-                gameClock: block.endClock,
-                periodLabel: periodLabel,
-                timeLabel: periodLabel,
-                savedAt: Date(),
-                homeScore: block.endScore.home,
-                awayScore: block.endScore.away
-            )
-            ReadingPositionStore.shared.save(gameId: gameId, position: position)
-
-            displayedAwayScore = block.endScore.away
-            displayedHomeScore = block.endScore.home
-
-            // Auto-mark as read when user reaches the last flow block
-            if block.blockIndex == viewModel.blockDisplayModels.count - 1,
-               let status = viewModel.game?.status {
-                readStateStore.markRead(gameId: gameId, status: status)
-            }
-            return
-        }
-
-        // Try PBP quarter (inline timeline without individual play tracking)
-        guard let quarter = currentViewingQuarter else { return }
-        let encodedQuarter = -(10000 + quarter)
-        guard encodedQuarter != savedResumePlayIndex else { return }
-        savedResumePlayIndex = encodedQuarter
-
-        let sport = viewModel.game?.leagueCode ?? "NBA"
-        let label = Self.formatPeriodLabel(quarter, sport: sport)
-        let events = viewModel.unifiedTimelineEvents.filter { $0.period == quarter }
-        let lastScoringEvent = events.last(where: { $0.homeScore != nil && $0.awayScore != nil })
-
-        let position = ReadingPosition(
-            playIndex: encodedQuarter,
-            period: quarter,
-            gameClock: lastScoringEvent?.gameClock,
-            periodLabel: label,
-            timeLabel: lastScoringEvent?.gameClock.map { "\(label) \($0)" } ?? label,
-            savedAt: Date(),
-            homeScore: lastScoringEvent?.homeScore,
-            awayScore: lastScoringEvent?.awayScore
-        )
-        ReadingPositionStore.shared.save(gameId: gameId, position: position)
-
-        if let away = lastScoringEvent?.awayScore, let home = lastScoringEvent?.homeScore {
-            displayedAwayScore = away
-            displayedHomeScore = home
-        }
-    }
-
-    /// Current resume position as a quarter number (for passing to Full PBP popup)
-    var resumeQuarter: Int? {
-        if let idx = savedResumePlayIndex {
-            if idx <= -10000 {
-                return -(idx + 10000)
-            }
-            if idx < 0 {
-                let blockIndex = -(idx + 1)
-                guard blockIndex < viewModel.blockDisplayModels.count else { return nil }
-                return viewModel.blockDisplayModels[blockIndex].periodStart
-            }
-            return viewModel.detail?.plays.first(where: { $0.playIndex == idx })?.quarter
-        }
-        // Fall back to saved position from store
-        return ReadingPositionStore.shared.load(gameId: gameId)?.period
-    }
-
-    func clearSavedResumeMarker() {
-        savedResumePlayIndex = nil
-        ReadingPositionStore.shared.clear(gameId: gameId)
     }
 
     func scrollToQuarterHeader(_ quarter: Int, using proxy: ScrollViewProxy) {
@@ -589,7 +324,7 @@ extension GameDetailView {
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $showingFullPlayByPlay) {
-                    FullPlayByPlayView(viewModel: viewModel, initialQuarter: resumeQuarter)
+                    FullPlayByPlayView(viewModel: viewModel)
                 }
             }
         }
@@ -609,20 +344,20 @@ extension GameDetailView {
     func updateSelectedSectionFromScroll() {
         // Skip scroll-based updates during manual tab selection
         guard !isManualTabSelection else { return }
-        
+
         // Find the section whose top is closest to the top of the visible area
         // with a threshold to prevent jitter
         let threshold: CGFloat = 100
-        
+
         var bestSection: GameSection?
         var bestDistance: CGFloat = .infinity
-        
+
         for section in GameSection.navigationSections {
             guard let frame = sectionFrames[section] else { continue }
-            
+
             // Distance from section top to viewport top
             let distance = frame.minY
-            
+
             // Prefer sections that are at or just past the top
             if distance < threshold && distance > -frame.height * 0.5 {
                 let absDistance = abs(distance)
@@ -632,12 +367,12 @@ extension GameDetailView {
                 }
             }
         }
-        
+
         // Find most visible section if none near top
         if bestSection == nil {
             for section in GameSection.navigationSections {
                 guard let frame = sectionFrames[section] else { continue }
-                
+
                 // Section is visible if its top is above viewport bottom
                 if frame.minY < scrollViewFrame.height {
                     let distance = abs(frame.minY)
@@ -648,11 +383,10 @@ extension GameDetailView {
                 }
             }
         }
-        
+
         if let section = bestSection, section != selectedSection {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedSection = section
-            }
+            // No animation during scroll — avoids layout thrash and jitter
+            selectedSection = section
         }
     }
 }

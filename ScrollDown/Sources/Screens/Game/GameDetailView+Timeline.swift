@@ -215,12 +215,16 @@ extension GameDetailView {
         guard !hasInitializedQuarters else { return }
         hasInitializedQuarters = true
 
+        // Restore cached quarter state if available
+        if let cached = GameExpansionCache.loadQuarters(gameId: gameId) {
+            collapsedQuarters = cached
+            return
+        }
+
+        // Default: all quarters collapsed
         let quarters = groupedQuarters.map { $0.quarter }
         for quarter in quarters {
-            // Only collapse Q2 and later - keep Q1 expanded
-            if quarter > 1 {
-                collapsedQuarters.insert(quarter)
-            }
+            collapsedQuarters.insert(quarter)
         }
     }
 
