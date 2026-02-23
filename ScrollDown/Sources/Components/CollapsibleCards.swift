@@ -165,6 +165,65 @@ struct CollapsibleQuarterCard<Content: View>: View {
     }
 }
 
+// MARK: - Pinned Quarter Header
+
+/// A header-only view for quarter sections inside `LazyVStack(pinnedViews: [.sectionHeaders])`.
+/// Pins to the top of the scroll viewport so the user always sees which quarter they're in.
+struct PinnedQuarterHeader: View {
+    let title: String
+    let subtitle: String?
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.primary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption2)
+                            .foregroundColor(DesignSystem.TextColor.tertiary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(Color(.secondaryLabel))
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(InteractiveRowButtonStyle())
+        .padding(.horizontal, DesignSystem.Spacing.elementPadding)
+        .padding(.vertical, 8)
+        .background(DesignSystem.Colors.cardBackground)
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: DesignSystem.Radius.element,
+            bottomLeadingRadius: isExpanded ? 0 : DesignSystem.Radius.element,
+            bottomTrailingRadius: isExpanded ? 0 : DesignSystem.Radius.element,
+            topTrailingRadius: DesignSystem.Radius.element
+        ))
+        .shadow(
+            color: DesignSystem.Shadow.color,
+            radius: DesignSystem.Shadow.subtleRadius,
+            x: 0,
+            y: DesignSystem.Shadow.subtleY
+        )
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        .accessibilityLabel("\(title), \(isExpanded ? "expanded" : "collapsed")")
+        .accessibilityHint("Double tap to \(isExpanded ? "collapse" : "expand")")
+    }
+
+    private func toggle() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isExpanded.toggle()
+        }
+    }
+}
+
 // MARK: - Unified Interactive Button Styles
 /// Consistent tap feedback across all interactive elements
 

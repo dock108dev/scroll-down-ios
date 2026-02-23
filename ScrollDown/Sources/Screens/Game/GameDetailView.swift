@@ -321,9 +321,10 @@ struct GameDetailView: View {
                                     Color.clear.frame(height: 8)
                                 }
 
-                                // Game Flow / Live PBP section
-                                if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData) {
-                                    timelineSection(using: proxy)
+                                // Game Flow / Live PBP section(s)
+                                if viewModel.hasFlowData || (viewModel.game?.status.isLive == true && viewModel.hasPbpData)
+                                    || (!viewModel.hasFlowData && viewModel.hasPbpData) {
+                                    timelineSections(using: proxy)
                                         .background(sectionFrameTracker(for: .timeline))
                                 }
 
