@@ -16,7 +16,7 @@ export const useReadState = create<ReadState>()(
     (set, get) => ({
       readGameIds: new Set<number>(),
       isRead: (id) => get().readGameIds.has(id),
-      markRead: (id, _status) => {
+      markRead: (id) => {
         set((s) => ({ readGameIds: new Set(s.readGameIds).add(id) }));
       },
       markUnread: (id) => {

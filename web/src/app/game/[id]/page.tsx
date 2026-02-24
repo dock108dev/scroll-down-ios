@@ -17,28 +17,6 @@ import { useReadingPosition } from "@/stores/reading-position";
 import { useReadState } from "@/stores/read-state";
 import { useSettings } from "@/stores/settings";
 
-// ─── isGameTrulyCompleted ──────────────────────────────────────
-function isGameTrulyCompleted(data: GameDetailResponse): boolean {
-  // Prefer API-provided field
-  if (data.game.isTrulyCompleted !== undefined) return data.game.isTrulyCompleted;
-
-  // Fallback: final status + 3+ hours elapsed
-  const { game, derivedMetrics } = data;
-  if (!isFinal(game.status)) return false;
-
-  if (derivedMetrics && Object.keys(derivedMetrics).length > 0) {
-    const hasOutcomes =
-      "outcomes" in derivedMetrics ||
-      "winner" in derivedMetrics ||
-      "finalScore" in derivedMetrics;
-    if (hasOutcomes) return true;
-  }
-
-  const gameTime = new Date(game.gameDate).getTime();
-  const threeHoursMs = 3 * 60 * 60 * 1000;
-  return Date.now() - gameTime >= threeHoursMs;
-}
-
 // ─── Section definitions by status ─────────────────────────────
 function getSections(data: GameDetailResponse): string[] {
   const status = data.game.status;
@@ -93,13 +71,11 @@ function getDefaultExpanded(
 
 // ─── Collapsible Section Wrapper ───────────────────────────────
 function CollapsibleSection({
-  id,
   title,
   defaultOpen,
   onExpand,
   children,
 }: {
-  id: string;
   title: string;
   defaultOpen: boolean;
   onExpand?: () => void;
@@ -165,13 +141,6 @@ export default function GameDetailPage({
       markRead(data.game.id, data.game.status);
     }
   }, [data, markRead]);
-
-  // Set default active section when sections change
-  useEffect(() => {
-    if (sections.length > 0 && !activeSection) {
-      setActiveSection(getDefaultSection(sections));
-    }
-  }, [sections, activeSection]);
 
   // ─── Intersection Observer for active section tracking ─────
   useEffect(() => {
@@ -332,18 +301,13 @@ export default function GameDetailPage({
         awayScore: lastPlay.awayScore ?? data.game.awayScore,
       }
     : data.game;
-  const final = isFinal(game.status);
-  const live = isLive(game.status);
-  const pregame = isPregame(game.status);
-  const trulyCompleted = isGameTrulyCompleted(data);
-
   return (
     <div className="mx-auto max-w-5xl">
       <GameHeader game={game} />
 
       <SectionNav
         sections={sections}
-        active={activeSection}
+        active={activeSection || getDefaultSection(sections)}
         onSelect={setActiveSection}
       />
 
@@ -351,7 +315,6 @@ export default function GameDetailPage({
         {/* ─── Overview (Pregame only) ──────────────────── */}
         {sections.includes("Overview") && (
           <CollapsibleSection
-            id="overview"
             title="Overview"
             defaultOpen={getDefaultExpanded("Overview", hasFlow)}
           >
@@ -369,7 +332,6 @@ export default function GameDetailPage({
         {/* ─── Timeline ─────────────────────────────────── */}
         {sections.includes("Timeline") && (
           <CollapsibleSection
-            id="timeline"
             title="Timeline"
             defaultOpen={getDefaultExpanded("Timeline", hasFlow)}
           >
@@ -386,7 +348,6 @@ export default function GameDetailPage({
         {/* ─── Stats ────────────────────────────────────── */}
         {sections.includes("Stats") && (
           <CollapsibleSection
-            id="stats"
             title="Stats"
             defaultOpen={getDefaultExpanded("Stats", hasFlow)}
           >
@@ -407,7 +368,6 @@ export default function GameDetailPage({
         {/* ─── Odds ─────────────────────────────────────── */}
         {sections.includes("Odds") && (
           <CollapsibleSection
-            id="odds"
             title="Odds"
             defaultOpen={getDefaultExpanded("Odds", hasFlow)}
           >
@@ -418,7 +378,6 @@ export default function GameDetailPage({
         {/* ─── Wrap-Up (Final only) ─────────────────────── */}
         {sections.includes("Wrap-Up") && (
           <CollapsibleSection
-            id="wrap-up"
             title="Wrap-Up"
             defaultOpen={getDefaultExpanded("Wrap-Up", hasFlow)}
             onExpand={handleWrapUpExpand}

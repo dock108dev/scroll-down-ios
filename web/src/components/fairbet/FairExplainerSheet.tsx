@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { APIBet, ExplanationStep } from "@/lib/types";
+import type { APIBet } from "@/lib/types";
 import { cn, formatOdds } from "@/lib/utils";
 import { useSettings } from "@/stores/settings";
 import { FairBetTheme, bookAbbreviation } from "@/lib/theme";
@@ -27,9 +27,6 @@ export function FairExplainerSheet({
   if (!open || !bet) return null;
 
   const method = bet.ev_method;
-  const bestBook = bet.bestBook
-    ? bet.books.find((b) => b.book === bet.bestBook) ?? bet.books[0]
-    : bet.books[0];
   const fairProb = bet.true_prob ?? 0;
   const fairOdds = bet.fairAmericanOdds;
   const sharpRefPrice = bet.reference_price;

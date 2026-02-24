@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { APIBet, BookPrice } from "@/lib/types";
+import type { APIBet } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
 import { formatOdds, cn } from "@/lib/utils";
 import { FairBetTheme, bookAbbreviation } from "@/lib/theme";
@@ -14,7 +14,6 @@ import {
   getConfidenceColor,
   isConfidenceReliable,
   betId,
-  isReliablyPositive,
 } from "@/lib/fairbet-utils";
 
 interface BetCardProps {

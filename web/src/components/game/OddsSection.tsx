@@ -38,7 +38,7 @@ const MAINLINE_MARKET_LABELS: Record<string, string> = {
   team_total: "Team Total",
 };
 
-export function OddsSection({ odds, leagueCode }: OddsSectionProps) {
+export function OddsSection({ odds }: OddsSectionProps) {
   const hideLimitedData = useSettings((s) => s.hideLimitedData);
 
   // Determine available categories and sort them
@@ -59,55 +59,50 @@ export function OddsSection({ odds, leagueCode }: OddsSectionProps) {
 
   const [playerSearch, setPlayerSearch] = useState("");
 
-  if (odds.length === 0) {
-    return (
-      <div className="px-4 py-4 text-sm text-neutral-500">
-        No odds data available
-      </div>
-    );
-  }
-
-  // Filter by active category
-  let filtered = odds.filter(
-    (o) => (o.marketCategory ?? "mainline") === activeCategory,
-  );
-
-  // For player props, filter by search
-  if (activeCategory === "player_prop" && playerSearch.trim()) {
-    const query = playerSearch.toLowerCase();
-    filtered = filtered.filter(
-      (o) =>
-        o.playerName?.toLowerCase().includes(query) ||
-        o.description?.toLowerCase().includes(query),
-    );
-  }
-
-  // Optional: hide thin markets (fewer than 2 books)
-  if (hideLimitedData) {
-    const grouped: Record<string, OddsEntry[]> = {};
-    for (const o of filtered) {
-      const key = `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(o);
-    }
-    const thinKeys = new Set(
-      Object.entries(grouped)
-        .filter(([, entries]) => {
-          const uniqueBooks = new Set(entries.map((e) => e.book));
-          return uniqueBooks.size < 2;
-        })
-        .map(([k]) => k),
-    );
-    if (thinKeys.size > 0) {
-      filtered = filtered.filter((o) => {
-        const key = `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
-        return !thinKeys.has(key);
-      });
-    }
-  }
-
-  // For mainline, group by market type with headers
   const isMainline = activeCategory === "mainline";
+
+  // Filter by active category, search, and thin-market settings
+  const filtered = useMemo(() => {
+    let result = odds.filter(
+      (o) => (o.marketCategory ?? "mainline") === activeCategory,
+    );
+
+    // For player props, filter by search
+    if (activeCategory === "player_prop" && playerSearch.trim()) {
+      const query = playerSearch.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.playerName?.toLowerCase().includes(query) ||
+          o.description?.toLowerCase().includes(query),
+      );
+    }
+
+    // Optional: hide thin markets (fewer than 2 books)
+    if (hideLimitedData) {
+      const grouped: Record<string, OddsEntry[]> = {};
+      for (const o of result) {
+        const key = `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(o);
+      }
+      const thinKeys = new Set(
+        Object.entries(grouped)
+          .filter(([, entries]) => {
+            const uniqueBooks = new Set(entries.map((e) => e.book));
+            return uniqueBooks.size < 2;
+          })
+          .map(([k]) => k),
+      );
+      if (thinKeys.size > 0) {
+        result = result.filter((o) => {
+          const key = `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
+          return !thinKeys.has(key);
+        });
+      }
+    }
+
+    return result;
+  }, [odds, activeCategory, playerSearch, hideLimitedData]);
 
   const mainlineGroups = useMemo(() => {
     if (!isMainline) return [];
@@ -142,6 +137,14 @@ export function OddsSection({ odds, leagueCode }: OddsSectionProps) {
     }
     return groups;
   }, [isMainline, filtered]);
+
+  if (odds.length === 0) {
+    return (
+      <div className="px-4 py-4 text-sm text-neutral-500">
+        No odds data available
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 space-y-3">

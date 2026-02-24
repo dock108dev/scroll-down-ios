@@ -48,14 +48,15 @@ export function FlowContainer({ gameId, socialPosts }: FlowContainerProps) {
   const { data, loading, error } = useFlow(gameId);
 
   // Index plays by play_id for O(1) lookup
+  const plays = data?.plays;
   const playsById = useMemo(() => {
-    if (!data?.plays) return new Map<number, FlowPlay>();
+    if (!plays) return new Map<number, FlowPlay>();
     const map = new Map<number, FlowPlay>();
-    for (const p of data.plays) {
+    for (const p of plays) {
       map.set(p.play_id, p);
     }
     return map;
-  }, [data?.plays]);
+  }, [plays]);
 
   // Index social posts by id for embedded lookup
   const socialPostsById = useMemo(() => {

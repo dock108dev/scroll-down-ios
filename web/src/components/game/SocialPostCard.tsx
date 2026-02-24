@@ -138,6 +138,7 @@ export function SocialPostCard({ post, mode = "standard" }: SocialPostCardProps)
       {/* Image with optional video play badge */}
       {hasImage && (
         <div className="relative rounded-md overflow-hidden mb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={post.imageUrl!}
             alt=""

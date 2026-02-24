@@ -192,6 +192,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data-fetching-on-mount pattern requires setState for loading/error/data
     fetchOdds();
     return () => {
       abortRef.current?.abort();
@@ -388,10 +389,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
 
   // Call API when parlay legs change
   useEffect(() => {
-    if (parlayBets.length < 2) {
-      setParlayApiResult(null);
-      return;
-    }
+    if (parlayBets.length < 2) return;
 
     const legs = parlayBets.map((b) => ({
       game_id: b.game_id,
@@ -412,9 +410,9 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
     return () => { cancelled = true; };
   }, [parlayBets]);
 
-  const parlayFairProbability = parlayApiResult?.fair_probability ?? 0;
-  const parlayFairAmericanOdds = parlayApiResult?.fair_american_odds ?? 0;
-  const parlayConfidence = parlayApiResult?.confidence ?? "none";
+  const parlayFairProbability = parlayBets.length >= 2 ? (parlayApiResult?.fair_probability ?? 0) : 0;
+  const parlayFairAmericanOdds = parlayBets.length >= 2 ? (parlayApiResult?.fair_american_odds ?? 0) : 0;
+  const parlayConfidence = parlayBets.length >= 2 ? (parlayApiResult?.confidence ?? "none") : "none";
 
   const toggleParlay = useCallback((id: string) => {
     setParlayBetIds((prev) => {

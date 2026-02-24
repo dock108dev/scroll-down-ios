@@ -50,34 +50,31 @@ function StyledDescription({
 }) {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
 
-  // Reset regex state
-  STYLED_PATTERN.lastIndex = 0;
-
-  while ((match = STYLED_PATTERN.exec(text)) !== null) {
+  for (const match of text.matchAll(STYLED_PATTERN)) {
+    const idx = match.index!;
     // Push plain text before this match
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+    if (idx > lastIndex) {
+      parts.push(text.slice(lastIndex, idx));
     }
 
     if (match[1]) {
       // Bold keyword
       parts.push(
-        <span key={match.index} className="font-semibold">
+        <span key={idx} className="font-semibold">
           {match[0]}
         </span>,
       );
     } else if (match[2]) {
       // Parenthetical content - de-emphasized
       parts.push(
-        <span key={match.index} className="text-neutral-500">
+        <span key={idx} className="text-neutral-500">
           {match[0]}
         </span>,
       );
     }
 
-    lastIndex = match.index + match[0].length;
+    lastIndex = idx + match[0].length;
   }
 
   // Push remaining text
@@ -124,7 +121,6 @@ export function TimelineRow({
   awayTeamAbbr,
   homeColor,
   awayColor,
-  previousPlay,
 }: TimelineRowProps) {
   const tier = play.tier ?? 3;
   const accentColor = getAccentColor(
