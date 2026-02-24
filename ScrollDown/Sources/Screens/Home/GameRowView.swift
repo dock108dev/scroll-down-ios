@@ -23,7 +23,7 @@ struct GameRowView: View {
 
     /// Whether the user has read this game's wrap-up (only for final games)
     private var isRead: Bool {
-        guard game.status?.isFinal == true else { return false }
+        guard game.status.isFinal else { return false }
         return readStateStore.isRead(gameId: game.id)
     }
 
@@ -91,7 +91,7 @@ struct GameRowView: View {
                 .minimumScaleFactor(0.9)
 
             // Score display — always reserves space for games with score data to prevent card resizing
-            if resolvedScores != nil || game.homeScore != nil || game.status?.isLive == true {
+            if resolvedScores != nil || game.homeScore != nil || game.status.isLive {
                 VStack(alignment: .leading, spacing: 2) {
                     if let scores = resolvedScores {
                         HStack(spacing: 4) {
@@ -113,7 +113,7 @@ struct GameRowView: View {
                         Text(gameTime)
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary)
-                    } else if game.status?.isLive == true && resolvedScores == nil && readStateStore.scoreRevealMode != .always {
+                    } else if game.status.isLive && resolvedScores == nil && readStateStore.scoreRevealMode != .always {
                         Text("Hold to check score")
                             .font(.caption2)
                             .foregroundColor(DesignSystem.TextColor.tertiary.opacity(0.6))
@@ -216,7 +216,7 @@ struct GameRowView: View {
         if let stored = ReadingPositionStore.shared.gameTimeLabel(for: game.id) {
             return stored
         }
-        guard game.status?.isLive == true, let period = game.currentPeriod else { return nil }
+        guard game.status.isLive, let period = game.currentPeriod else { return nil }
         let periodLabel = GameDetailView.formatPeriodLabel(period, sport: game.leagueCode)
         if let clock = game.gameClock, !clock.isEmpty {
             return "@ \(periodLabel) \(clock)"

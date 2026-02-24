@@ -145,7 +145,9 @@ final class ModelDecodingTests: XCTestCase {
 
     func testGameSummaryStatus() {
         let noStatus = makeGameSummary()
-        XCTAssertNil(noStatus.status)
+        if case .unknown = noStatus.status {} else {
+            XCTFail("Expected .unknown status when no status provided, got \(noStatus.status)")
+        }
 
         let scheduled = makeGameSummary(status: .scheduled)
         XCTAssertEqual(scheduled.status, .scheduled)

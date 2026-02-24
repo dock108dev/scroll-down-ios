@@ -418,10 +418,10 @@ struct HomeView: View {
     /// Number of games the user hasn't caught up on yet (unread finals + unrevealed live)
     private var uncaughtUpCount: Int {
         allGames.filter { game in
-            if game.status?.isFinal == true {
+            if game.status.isFinal {
                 return !readStateStore.isRead(gameId: game.id)
             }
-            if game.status?.isLive == true {
+            if game.status.isLive {
                 return ReadingPositionStore.shared.savedScores(for: game.id) == nil
             }
             return false
@@ -431,10 +431,10 @@ struct HomeView: View {
     /// Number of games that have been caught up on (read finals + revealed live)
     private var caughtUpCount: Int {
         allGames.filter { game in
-            if game.status?.isFinal == true {
+            if game.status.isFinal {
                 return readStateStore.isRead(gameId: game.id)
             }
-            if game.status?.isLive == true {
+            if game.status.isLive {
                 return ReadingPositionStore.shared.savedScores(for: game.id) != nil
             }
             return false
@@ -449,7 +449,7 @@ struct HomeView: View {
     /// Catch up to live: mark all finals as read + reveal all live scores
     private func catchUpToLive() {
         readStateStore.markAllRead(gameIds: allCompletedGameIds)
-        for game in allGames where game.status?.isLive == true {
+        for game in allGames where game.status.isLive {
             if let away = game.awayScore, let home = game.homeScore {
                 let periodLabel = game.currentPeriod.map {
                     GameDetailView.formatPeriodLabel($0, sport: game.leagueCode)

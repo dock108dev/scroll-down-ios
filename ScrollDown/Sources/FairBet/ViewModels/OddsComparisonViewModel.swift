@@ -54,6 +54,7 @@ final class OddsComparisonViewModel: ObservableObject {
     // Parlay
     @Published var parlayBetIDs: Set<String> = []
     @Published var showParlaySheet: Bool = false
+    @Published var parlayApiResult: FairBetAPIClient.ParlayEvaluation?
 
     @Published var oddsFormat: OddsFormat = .american {
         didSet { saveOddsFormat() }
@@ -161,6 +162,7 @@ final class OddsComparisonViewModel: ObservableObject {
     var canShowParlay: Bool { parlayCount >= 2 }
 
     var parlayFairProbability: Double {
+        if let api = parlayApiResult { return api.fairProbability }
         let bets = parlayBets
         guard !bets.isEmpty else { return 0 }
         return bets.reduce(1.0) { result, bet in
@@ -170,6 +172,7 @@ final class OddsComparisonViewModel: ObservableObject {
     }
 
     var parlayFairAmericanOdds: Int {
+        if let api = parlayApiResult { return api.fairAmericanOdds }
         let prob = parlayFairProbability
         guard prob > 0 && prob < 1 else { return 100 }
         return OddsCalculator.probToAmerican(prob)
@@ -325,6 +328,7 @@ final class OddsComparisonViewModel: ObservableObject {
         } else {
             parlayBetIDs.insert(bet.id)
         }
+        Task { await evaluateParlayViaAPI() }
     }
 
     func isInParlay(_ bet: APIBet) -> Bool {
@@ -333,6 +337,32 @@ final class OddsComparisonViewModel: ObservableObject {
 
     func clearParlay() {
         parlayBetIDs.removeAll()
+        parlayApiResult = nil
+    }
+
+    /// Evaluate parlay via API, falling back to client-side math on failure
+    private func evaluateParlayViaAPI() async {
+        let bets = parlayBets
+        guard bets.count >= 2 else {
+            parlayApiResult = nil
+            return
+        }
+
+        let legs = bets.map { bet in
+            FairBetAPIClient.ParlayLeg(
+                gameId: bet.gameId,
+                marketKey: bet.marketKey,
+                selectionKey: bet.selectionKey,
+                lineValue: bet.lineValue
+            )
+        }
+
+        do {
+            parlayApiResult = try await apiClient.evaluateParlay(legs: legs)
+        } catch {
+            // Silently fall back to client-side math
+            parlayApiResult = nil
+        }
     }
 
     /// Load mock data for previews
@@ -486,7 +516,7 @@ final class OddsComparisonViewModel: ObservableObject {
             ev: bestServerBook.ev,
             confidence: confidence,
             fairProbability: fairProb,
-            fairAmericanOdds: OddsCalculator.probToAmerican(fairProb),
+            fairAmericanOdds: bet.fairAmericanOdds ?? OddsCalculator.probToAmerican(fairProb),
             referencePrice: bet.referencePrice,
             evDisabledReason: bet.evDisabledReason
         )

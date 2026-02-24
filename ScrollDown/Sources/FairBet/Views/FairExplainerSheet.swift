@@ -110,6 +110,9 @@ struct FairExplainerSheet: View {
     }
 
     private var methodExplanation: String {
+        // Prefer API-provided explanation
+        if let apiExplanation = bet.evMethodExplanation, !apiExplanation.isEmpty { return apiExplanation }
+
         guard let method = bet.evMethod?.lowercased() else {
             return "This is an estimate of the fair market price for this bet, calculated by comparing prices across multiple sportsbooks and removing each book's built-in margin (vig)."
         }
@@ -169,6 +172,9 @@ struct FairExplainerSheet: View {
     }
 
     private func methodDisplayName(_ method: String) -> String {
+        // Prefer API-provided display name
+        if let apiName = bet.evMethodDisplayName, !apiName.isEmpty { return apiName }
+
         switch method.lowercased() {
         case "pinnacle_devig":
             return "Pinnacle Devig (Shin's)"
@@ -648,6 +654,9 @@ struct FairExplainerSheet: View {
     }
 
     private var confidenceLabel: String {
+        // Prefer API-provided confidence display label
+        if let apiLabel = bet.confidenceDisplayLabel, !apiLabel.isEmpty { return apiLabel }
+
         switch confidence {
         case .high: return "Sharp"
         case .medium: return "Market"

@@ -196,6 +196,22 @@ struct BetsResponse: Codable {
     var gamesAvailable: [GameDropdown]? = nil
     var marketCategoriesAvailable: [String]? = nil
     var evDiagnostics: EVDiagnostics? = nil
+    var evConfig: EVConfig? = nil
+
+    struct EVConfig: Codable {
+        var minBooksForDisplay: Int?
+        var evColorThresholds: EVColorThresholds?
+
+        struct EVColorThresholds: Codable {
+            var strongPositive: Double?
+            var positive: Double?
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case minBooksForDisplay = "min_books_for_display"
+            case evColorThresholds = "ev_color_thresholds"
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
         case bets
@@ -204,6 +220,7 @@ struct BetsResponse: Codable {
         case gamesAvailable = "games_available"
         case marketCategoriesAvailable = "market_categories_available"
         case evDiagnostics = "ev_diagnostics"
+        case evConfig = "ev_config"
     }
 }
 
@@ -230,6 +247,15 @@ struct APIBet: Identifiable, Codable, Equatable {
     var referencePrice: Int? = nil
     var oppositeReferencePrice: Int? = nil
     var betDescription: String? = nil
+    // API-provided display fields (SSOT)
+    var fairAmericanOdds: Int? = nil
+    var selectionDisplayServer: String? = nil
+    var marketDisplayName: String? = nil
+    var bestBookName: String? = nil
+    var bestEvPercent: Double? = nil
+    var confidenceDisplayLabel: String? = nil
+    var evMethodDisplayName: String? = nil
+    var evMethodExplanation: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
@@ -251,6 +277,14 @@ struct APIBet: Identifiable, Codable, Equatable {
         case referencePrice = "reference_price"
         case oppositeReferencePrice = "opposite_reference_price"
         case betDescription = "bet_description"
+        case fairAmericanOdds = "fair_american_odds"
+        case selectionDisplayServer = "selection_display"
+        case marketDisplayName = "market_display_name"
+        case bestBookName = "best_book_name"
+        case bestEvPercent = "best_ev_percent"
+        case confidenceDisplayLabel = "confidence_display_label"
+        case evMethodDisplayName = "ev_method_display_name"
+        case evMethodExplanation = "ev_method_explanation"
     }
 
     /// Unique identifier for the bet
@@ -298,8 +332,10 @@ struct APIBet: Identifiable, Codable, Equatable {
     }
 
     /// Display string for the selection with line if applicable.
-    /// Enriched for player props, team props, and alternates.
+    /// Prefers API-provided `selectionDisplayServer`; falls back to client-side logic.
     var selectionDisplay: String {
+        if let server = selectionDisplayServer, !server.isEmpty { return server }
+
         let marketLabel = FairBetCopy.marketLabel(for: marketKey)
 
         // Player props: "Player Name Stat O/U Line"
@@ -361,6 +397,10 @@ struct BookPrice: Identifiable, Codable, Equatable {
     var isSharp: Bool? = nil
     var evMethod: String? = nil
     var evConfidenceTier: String? = nil
+    // API-provided SSOT fields
+    var bookAbbr: String? = nil
+    var priceDecimal: Double? = nil
+    var evTier: String? = nil
 
     var id: String { book }
 
@@ -380,6 +420,9 @@ struct BookPrice: Identifiable, Codable, Equatable {
         case isSharp = "is_sharp"
         case evMethod = "ev_method"
         case evConfidenceTier = "ev_confidence_tier"
+        case bookAbbr = "book_abbr"
+        case priceDecimal = "price_decimal"
+        case evTier = "ev_tier"
     }
 
     /// Convert American odds to AmericanOdds struct

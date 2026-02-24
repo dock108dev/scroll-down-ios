@@ -85,6 +85,12 @@ extension GameDetailView {
     }
 
     func periodDescriptor(for play: PlayEntry) -> String {
+        // Prefer API-provided periodLabel
+        if let label = play.periodLabel, !label.isEmpty {
+            let phase = periodPhaseForPlay(play)
+            return "\(phase) \(label)"
+        }
+
         guard let quarter = play.quarter else {
             return "Game"
         }
@@ -97,6 +103,16 @@ extension GameDetailView {
 
         let phase = periodPhaseLabel(minutesRemaining: minutesRemaining)
         return "\(phase) \(ordinal)"
+    }
+
+    /// Prefer API-provided phase, fall back to clock-based calculation
+    func periodPhaseForPlay(_ play: PlayEntry) -> String {
+        if let apiPhase = play.phase, !apiPhase.isEmpty { return apiPhase }
+        guard let clock = play.gameClock,
+              let minutesRemaining = Int(clock.split(separator: ":").first ?? "") else {
+            return ""
+        }
+        return periodPhaseLabel(minutesRemaining: minutesRemaining)
     }
 
     func periodPhaseLabel(minutesRemaining: Int) -> String {
@@ -112,6 +128,8 @@ extension GameDetailView {
 
     /// Compact period label for score context display (e.g. "Q2", "P1", "1st Half").
     /// Static so it can be called from closures without capturing `self`.
+    /// Deprecated: Callers should prefer API `currentPeriodLabel` when available.
+    @available(*, deprecated, message: "Use API currentPeriodLabel when available")
     static func formatPeriodLabel(_ quarter: Int, sport: String) -> String {
         switch sport {
         case "NCAAB":
@@ -137,6 +155,8 @@ extension GameDetailView {
     }
 
     /// Ordinal period label for viewing pill (e.g. "1st", "2nd", "P1", "1st Half").
+    /// Deprecated: Callers should prefer API `play.periodLabel` when available.
+    @available(*, deprecated, message: "Use API play.periodLabel when available")
     func quarterOrdinal(_ quarter: Int) -> String {
         let sport = viewModel.game?.leagueCode ?? "NBA"
         switch sport {

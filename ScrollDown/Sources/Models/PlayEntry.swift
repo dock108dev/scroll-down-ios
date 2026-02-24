@@ -16,6 +16,12 @@ struct PlayEntry: Codable, Identifiable, Equatable {
     let timeLabel: String?
     let tier: Int?
 
+    // API-provided SSOT fields
+    let scoreChanged: Bool?
+    let scoringTeamAbbr: String?
+    let pointsScored: Int?
+    let phase: String?
+
     var id: Int { playIndex }
 
     init(
@@ -30,7 +36,11 @@ struct PlayEntry: Codable, Identifiable, Equatable {
         awayScore: Int? = nil,
         periodLabel: String? = nil,
         timeLabel: String? = nil,
-        tier: Int? = nil
+        tier: Int? = nil,
+        scoreChanged: Bool? = nil,
+        scoringTeamAbbr: String? = nil,
+        pointsScored: Int? = nil,
+        phase: String? = nil
     ) {
         self.playIndex = playIndex
         self.quarter = quarter
@@ -44,5 +54,9 @@ struct PlayEntry: Codable, Identifiable, Equatable {
         self.periodLabel = periodLabel
         self.timeLabel = timeLabel
         self.tier = tier
+        self.scoreChanged = scoreChanged
+        self.scoringTeamAbbr = scoringTeamAbbr
+        self.pointsScored = pointsScored
+        self.phase = phase
     }
 }

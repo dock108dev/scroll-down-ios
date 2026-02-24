@@ -35,6 +35,13 @@ struct Game: Codable, Identifiable, Hashable {
     var lastSocialAt: String? = nil
     var lastOddsAt: String? = nil
 
+    // API-provided status flags (SSOT)
+    var isLiveBool: Bool? = nil
+    var isFinalBool: Bool? = nil
+    var isPregameBool: Bool? = nil
+    var isTrulyCompleted: Bool? = nil
+    var currentPeriodLabel: String? = nil
+
     enum CodingKeys: String, CodingKey {
         case id
         case leagueCode
@@ -68,6 +75,11 @@ struct Game: Codable, Identifiable, Hashable {
         case lastPbpAt
         case lastSocialAt
         case lastOddsAt
+        case isLiveBool = "isLive"
+        case isFinalBool = "isFinal"
+        case isPregameBool = "isPregame"
+        case isTrulyCompleted
+        case currentPeriodLabel
     }
 
     func hash(into hasher: inout Hasher) {

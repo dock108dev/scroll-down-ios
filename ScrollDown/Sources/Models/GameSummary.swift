@@ -9,6 +9,15 @@ struct GameSummary: Codable, Identifiable, Hashable {
     private let statusRaw: String?
     let homeTeam: String
 
+    // API-provided status flags (SSOT)
+    var isLive: Bool?
+    var isFinal: Bool?
+    var isPregame: Bool?
+    var isTrulyCompleted: Bool?
+    var readEligible: Bool?
+    var currentPeriodLabel: String?
+    var dateSection: String?
+
     enum CodingKeys: String, CodingKey {
         case id, leagueCode, gameDate, homeTeam, awayTeam
         case statusRaw = "status"
@@ -20,6 +29,8 @@ struct GameSummary: Codable, Identifiable, Hashable {
         case homeTeamColorLight, homeTeamColorDark, awayTeamColorLight, awayTeamColorDark
         case homeTeamAbbr, awayTeamAbbr
         case derivedMetrics
+        case isLive, isFinal, isPregame, isTrulyCompleted, readEligible
+        case currentPeriodLabel, dateSection
     }
     let awayTeam: String
     let homeScore: Int?
@@ -89,6 +100,13 @@ struct GameSummary: Codable, Identifiable, Hashable {
         homeTeamAbbr = try c.decodeIfPresent(String.self, forKey: .homeTeamAbbr)
         awayTeamAbbr = try c.decodeIfPresent(String.self, forKey: .awayTeamAbbr)
         derivedMetrics = try c.decodeIfPresent([String: AnyCodable].self, forKey: .derivedMetrics)
+        isLive = try c.decodeIfPresent(Bool.self, forKey: .isLive)
+        isFinal = try c.decodeIfPresent(Bool.self, forKey: .isFinal)
+        isPregame = try c.decodeIfPresent(Bool.self, forKey: .isPregame)
+        isTrulyCompleted = try c.decodeIfPresent(Bool.self, forKey: .isTrulyCompleted)
+        readEligible = try c.decodeIfPresent(Bool.self, forKey: .readEligible)
+        currentPeriodLabel = try c.decodeIfPresent(String.self, forKey: .currentPeriodLabel)
+        dateSection = try c.decodeIfPresent(String.self, forKey: .dateSection)
         _parsedGameDate = Self.parseGameDate(gameDate)
     }
 
@@ -125,6 +143,13 @@ struct GameSummary: Codable, Identifiable, Hashable {
         try c.encodeIfPresent(homeTeamAbbr, forKey: .homeTeamAbbr)
         try c.encodeIfPresent(awayTeamAbbr, forKey: .awayTeamAbbr)
         try c.encodeIfPresent(derivedMetrics, forKey: .derivedMetrics)
+        try c.encodeIfPresent(isLive, forKey: .isLive)
+        try c.encodeIfPresent(isFinal, forKey: .isFinal)
+        try c.encodeIfPresent(isPregame, forKey: .isPregame)
+        try c.encodeIfPresent(isTrulyCompleted, forKey: .isTrulyCompleted)
+        try c.encodeIfPresent(readEligible, forKey: .readEligible)
+        try c.encodeIfPresent(currentPeriodLabel, forKey: .currentPeriodLabel)
+        try c.encodeIfPresent(dateSection, forKey: .dateSection)
     }
 
     // Convenience init for mock data generation
@@ -188,6 +213,13 @@ struct GameSummary: Codable, Identifiable, Hashable {
         self.homeTeamAbbr = homeTeamAbbr
         self.awayTeamAbbr = awayTeamAbbr
         self.derivedMetrics = nil
+        self.isLive = nil
+        self.isFinal = nil
+        self.isPregame = nil
+        self.isTrulyCompleted = nil
+        self.readEligible = nil
+        self.currentPeriodLabel = nil
+        self.dateSection = nil
         self._parsedGameDate = Self.parseGameDate(gameDate)
     }
 
@@ -211,26 +243,16 @@ extension GameSummary {
         static let statusUnavailableText = "Status unavailable"
     }
 
-    /// Status from API string, or derived from data when absent.
-    var status: GameStatus? {
-        if let raw = statusRaw {
-            return GameStatus(rawValue: raw)
-        }
-        // Live game indicators take priority over score-based completion
-        if currentPeriod != nil || gameClock != nil {
-            return .live
-        }
-        if hasRequiredData == true || (homeScore != nil && awayScore != nil) {
-            return .completed
-        }
-        if let date = parsedGameDate, date > Date() {
-            return .scheduled
-        }
-        return nil
+    /// Status from API string. Prefers the API `statusRaw` directly; falls back to `.unknown` if missing.
+    var status: GameStatus {
+        if let raw = statusRaw, let s = GameStatus(rawValue: raw) { return s }
+        return .unknown("missing")
     }
 
-    /// Whether the API explicitly reports this game as final (not derived from data presence)
+    /// Whether the API explicitly reports this game as final.
+    /// Prefers the API `isFinal` flag; falls back to status enum check.
     var isExplicitlyFinal: Bool {
+        if let apiFinal = isFinal { return apiFinal }
         guard let raw = statusRaw,
               let status = GameStatus(rawValue: raw) else { return false }
         return status.isFinal
@@ -274,11 +296,6 @@ extension GameSummary {
     }
 
     var statusLine: String {
-        guard let status else {
-            GameStatusLogger.logMissingStatus(gameId: id, league: leagueCode)
-            return Formatting.statusUnavailableText
-        }
-
         switch status {
         case .scheduled, .pregame:
             guard let date = parsedGameDate else { return Formatting.startsAtPrefix + formattedDate }
@@ -292,6 +309,7 @@ extension GameSummary {
         case .canceled:
             return Formatting.canceledText
         case .unknown:
+            GameStatusLogger.logMissingStatus(gameId: id, league: leagueCode)
             return formattedDate
         }
     }

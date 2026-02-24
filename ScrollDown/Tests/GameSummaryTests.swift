@@ -5,9 +5,11 @@ final class GameSummaryTests: XCTestCase {
 
     // MARK: - status
 
-    func testStatusNilWhenMissing() {
+    func testStatusUnknownWhenMissing() {
         let game = TestFixtures.makeGameSummary()
-        XCTAssertNil(game.status)
+        if case .unknown = game.status {} else {
+            XCTFail("Expected .unknown status when no status provided, got \(game.status)")
+        }
     }
 
     func testStatusFromExplicitValue() {

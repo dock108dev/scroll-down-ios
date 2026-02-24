@@ -12,13 +12,15 @@ struct OddsEntry: Codable, Identifiable {
     var marketCategory: String? = nil
     var playerName: String? = nil
     var description: String? = nil
+    // API-provided SSOT field
+    var isBest: Bool? = nil
 
     var id: String {
         let player = playerName ?? "none"
         return "\(book)-\(marketType.rawValue)-\(side ?? "none")-\(player)"
     }
 
-    init(book: String, marketType: MarketType, side: String? = nil, line: Double? = nil, price: Double? = nil, isClosingLine: Bool = false, observedAt: String? = nil, marketCategory: String? = nil, playerName: String? = nil, description: String? = nil) {
+    init(book: String, marketType: MarketType, side: String? = nil, line: Double? = nil, price: Double? = nil, isClosingLine: Bool = false, observedAt: String? = nil, marketCategory: String? = nil, playerName: String? = nil, description: String? = nil, isBest: Bool? = nil) {
         self.book = book
         self.marketType = marketType
         self.side = side
@@ -29,6 +31,7 @@ struct OddsEntry: Codable, Identifiable {
         self.marketCategory = marketCategory
         self.playerName = playerName
         self.description = description
+        self.isBest = isBest
     }
 
     enum CodingKeys: String, CodingKey {
@@ -42,5 +45,6 @@ struct OddsEntry: Codable, Identifiable {
         case marketCategory
         case playerName
         case description
+        case isBest
     }
 }

@@ -212,8 +212,8 @@ extension HomeView {
     /// Sort today's games: live/upcoming first by time, then final games by time.
     func sortTodayGames(_ games: [GameSummary]) -> [GameSummary] {
         games.sorted { lhs, rhs in
-            let lhsFinal = lhs.status?.isFinal == true
-            let rhsFinal = rhs.status?.isFinal == true
+            let lhsFinal = lhs.status.isFinal
+            let rhsFinal = rhs.status.isFinal
             if lhsFinal != rhsFinal { return !lhsFinal }
             let lhsDate = lhs.parsedGameDate ?? .distantFuture
             let rhsDate = rhs.parsedGameDate ?? .distantFuture

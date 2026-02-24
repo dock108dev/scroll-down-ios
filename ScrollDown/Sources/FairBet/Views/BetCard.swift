@@ -28,7 +28,7 @@ struct BetCard: View {
     }
 
     private var fairAmericanOdds: Int {
-        evResult?.fairAmericanOdds ?? 0
+        bet.fairAmericanOdds ?? evResult?.fairAmericanOdds ?? 0
     }
 
     private var bestBook: BookPrice? {
@@ -152,7 +152,7 @@ struct BetCard: View {
 
                 HStack(spacing: 6) {
                     LeagueBadgeSmall(league: bet.league)
-                    Text(FairBetCopy.marketLabel(for: bet.market.rawValue))
+                    Text(FairBetCopy.marketLabel(for: bet.market.rawValue, apiLabel: bet.marketDisplayName))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
