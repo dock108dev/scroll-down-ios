@@ -191,12 +191,6 @@ export function GameCard({ game }: GameCardProps) {
           {pregame && (
             <span>{formatGameDateTime(game.gameDate)}</span>
           )}
-          {live && showScore && (
-            <span>
-              {getPeriodLabel(game)}
-              {game.gameClock ? ` ${game.gameClock}` : ""}
-            </span>
-          )}
           {live && !showScore && hasSavedScores && savedPosition?.timeLabel && (
             <span>@ {savedPosition.timeLabel}</span>
           )}
@@ -208,7 +202,7 @@ export function GameCard({ game }: GameCardProps) {
           {final && !read && (
             <button
               onClick={(e) => { e.stopPropagation(); markRead(game.id, game.status); }}
-              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Reveal
             </button>
@@ -216,7 +210,7 @@ export function GameCard({ game }: GameCardProps) {
           {final && read && (
             <button
               onClick={(e) => { e.stopPropagation(); markUnread(game.id); }}
-              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Hide
             </button>
@@ -224,7 +218,7 @@ export function GameCard({ game }: GameCardProps) {
           {live && !tempRevealed && (
             <button
               onClick={(e) => { e.stopPropagation(); setTempRevealed(true); }}
-              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Reveal
             </button>
@@ -232,7 +226,7 @@ export function GameCard({ game }: GameCardProps) {
           {live && tempRevealed && (
             <button
               onClick={(e) => { e.stopPropagation(); setTempRevealed(false); }}
-              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Hide
             </button>

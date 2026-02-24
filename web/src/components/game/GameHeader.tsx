@@ -12,6 +12,16 @@ interface GameHeaderProps {
   game: Game;
 }
 
+function getPeriodLabel(game: Game): string {
+  const league = game.leagueCode?.toLowerCase();
+  const period = game.currentPeriod;
+  if (!period) return "";
+  if (league === "nhl") return `P${period}`;
+  if (league === "nfl" || league === "ncaaf") return `Q${period}`;
+  if (league === "mlb") return period <= 9 ? `${period}` : `E${period - 9}`;
+  return `Q${period}`;
+}
+
 export function GameHeader({ game }: GameHeaderProps) {
   const { isRead, markRead, markUnread } = useReadState();
   const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
@@ -98,6 +108,11 @@ export function GameHeader({ game }: GameHeaderProps) {
           {showScore ? (
             <>
               <span className="text-neutral-600 text-sm font-medium">@</span>
+              {live && (game.currentPeriod || game.gameClock) && (
+                <p className="text-[11px] text-neutral-500 mt-0.5">
+                  {getPeriodLabel(game)}{game.gameClock ? ` ${game.gameClock}` : ""}
+                </p>
+              )}
               {scoreRevealMode !== "always" && (
                 <p className="text-[10px] text-neutral-700 mt-1 hover:text-neutral-500 transition-colors">
                   Hide score
