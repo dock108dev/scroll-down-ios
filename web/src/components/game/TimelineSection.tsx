@@ -26,7 +26,7 @@ type PeriodItem = { kind: "play"; play: PlayEntry; previousPlay?: PlayEntry };
 function groupByPeriod(plays: PlayEntry[]): Map<string, PlayEntry[]> {
   const map = new Map<string, PlayEntry[]>();
   for (const play of plays) {
-    const key = play.periodLabel ?? `Period ${play.quarter ?? "?"}`;
+    const key = play.periodLabel ?? "Unknown";
     const arr = map.get(key);
     if (arr) {
       arr.push(play);

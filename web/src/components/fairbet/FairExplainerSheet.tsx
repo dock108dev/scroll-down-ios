@@ -27,10 +27,9 @@ export function FairExplainerSheet({
   if (!open || !bet) return null;
 
   const method = bet.ev_method;
-  const bestBook = bet.books.reduce(
-    (best, b) => ((b.ev_percent ?? -999) > (best.ev_percent ?? -999) ? b : best),
-    bet.books[0],
-  );
+  const bestBook = bet.bestBook
+    ? bet.books.find((b) => b.book === bet.bestBook) ?? bet.books[0]
+    : bet.books[0];
   const fairProb = bet.true_prob ?? 0;
   const fairOdds = bet.fairAmericanOdds;
   const sharpRefPrice = bet.reference_price;

@@ -281,8 +281,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
     // Filter: +EV only (reliable positive EV)
     if (filters.evOnly) {
       result = result.filter((b) => {
-        const best = bestBookForBet(b);
-        return best && isReliablyPositive(best.ev_percent ?? 0, b.ev_confidence_tier);
+        return isReliablyPositive(bestEVForBet(b), b.ev_confidence_tier);
       });
     }
 
@@ -306,8 +305,8 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
     switch (filters.sort) {
       case "bestEV":
         result = [...result].sort((a, b) => {
-          const evA = bestBookForBet(a)?.ev_percent ?? -999;
-          const evB = bestBookForBet(b)?.ev_percent ?? -999;
+          const evA = bestEVForBet(a);
+          const evB = bestEVForBet(b);
           return evB - evA;
         });
         break;
@@ -321,8 +320,8 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
           const cmp = a.league_code.localeCompare(b.league_code);
           if (cmp !== 0) return cmp;
           // Secondary sort by EV within league
-          const evA = bestBookForBet(a)?.ev_percent ?? -999;
-          const evB = bestBookForBet(b)?.ev_percent ?? -999;
+          const evA = bestEVForBet(a);
+          const evB = bestEVForBet(b);
           return evB - evA;
         });
         break;
@@ -343,8 +342,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
   const positiveEVCount = useMemo(
     () =>
       betsWithEnoughBooks.filter((b) => {
-        const best = bestBookForBet(b);
-        return best && isReliablyPositive(best.ev_percent ?? 0, b.ev_confidence_tier);
+        return isReliablyPositive(bestEVForBet(b), b.ev_confidence_tier);
       }).length,
     [betsWithEnoughBooks],
   );
@@ -352,9 +350,9 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
   const bestEVAvailable = useMemo(() => {
     let best = 0;
     for (const b of betsWithEnoughBooks) {
-      const bp = bestBookForBet(b);
-      if (bp && (bp.ev_percent ?? 0) > best) {
-        best = bp.ev_percent ?? 0;
+      const ev = bestEVForBet(b);
+      if (ev > best) {
+        best = ev;
       }
     }
     return best;
@@ -365,8 +363,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
   const filteredPositiveEVCount = useMemo(
     () =>
       filteredBets.filter((b) => {
-        const best = bestBookForBet(b);
-        return best && isReliablyPositive(best.ev_percent ?? 0, b.ev_confidence_tier);
+        return isReliablyPositive(bestEVForBet(b), b.ev_confidence_tier);
       }).length,
     [filteredBets],
   );
@@ -415,38 +412,9 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
     return () => { cancelled = true; };
   }, [parlayBets]);
 
-  // Client-side fallback when API unavailable
-  const parlayFairProbability = useMemo(() => {
-    if (parlayApiResult) return parlayApiResult.fair_probability;
-    if (parlayBets.length === 0) return 0;
-    let prob = 1;
-    for (const b of parlayBets) {
-      prob *= b.true_prob ?? 0.5;
-    }
-    return prob;
-  }, [parlayBets, parlayApiResult]);
-
-  const parlayFairAmericanOdds = useMemo(() => {
-    if (parlayApiResult) return parlayApiResult.fair_american_odds;
-    if (parlayFairProbability <= 0 || parlayFairProbability >= 1) return 0;
-    if (parlayFairProbability >= 0.5) {
-      return Math.round((-parlayFairProbability / (1 - parlayFairProbability)) * 100);
-    }
-    return Math.round(((1 - parlayFairProbability) / parlayFairProbability) * 100);
-  }, [parlayFairProbability, parlayApiResult]);
-
-  const parlayConfidence = useMemo(() => {
-    if (parlayApiResult) return parlayApiResult.confidence;
-    if (parlayBets.length === 0) return "none";
-    const tiers = parlayBets.map((b) => b.ev_confidence_tier ?? "none");
-    const order = ["none", "thin", "market", "sharp"];
-    let minIndex = 3;
-    for (const tier of tiers) {
-      const idx = order.indexOf(tier);
-      if (idx < minIndex) minIndex = idx;
-    }
-    return order[minIndex];
-  }, [parlayBets, parlayApiResult]);
+  const parlayFairProbability = parlayApiResult?.fair_probability ?? 0;
+  const parlayFairAmericanOdds = parlayApiResult?.fair_american_odds ?? 0;
+  const parlayConfidence = parlayApiResult?.confidence ?? "none";
 
   const toggleParlay = useCallback((id: string) => {
     setParlayBetIds((prev) => {
@@ -519,10 +487,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-/** Get the book price with the highest EV for a bet. */
-function bestBookForBet(bet: APIBet) {
-  if (bet.books.length === 0) return null;
-  return bet.books.reduce((best, b) =>
-    (b.ev_percent ?? -999) > (best.ev_percent ?? -999) ? b : best,
-  );
+/** Get the best EV percent for a bet from the API field. */
+function bestEVForBet(bet: APIBet): number {
+  return bet.bestEvPercent ?? 0;
 }

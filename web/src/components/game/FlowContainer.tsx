@@ -10,20 +10,10 @@ interface FlowContainerProps {
   gameId: number;
 }
 
-/** Format period number by sport */
-function formatPeriod(period: number, league?: string): string {
-  const lc = league?.toLowerCase();
-  if (lc === "nhl") return `P${period}`;
-  if (lc === "ncaab" || lc === "ncaaw") return period <= 2 ? `H${period}` : `OT${period - 2}`;
-  // NBA, NFL, default
-  return period <= 4 ? `Q${period}` : `OT${period - 4}`;
-}
-
 /** Derive period display string for a block from its plays */
 function periodDisplay(
   block: FlowBlock,
   playsById: Map<number, FlowPlay>,
-  league?: string,
 ): string {
   // Get plays for this block, sorted by play_index
   const blockPlays = (block.play_ids ?? [])
@@ -34,8 +24,8 @@ function periodDisplay(
   const startClock = blockPlays[0]?.clock;
   const endClock = blockPlays[blockPlays.length - 1]?.clock;
 
-  const startPeriod = formatPeriod(block.period_start, league);
-  const endPeriod = formatPeriod(block.period_end, league);
+  const startPeriod = `Period ${block.period_start}`;
+  const endPeriod = `Period ${block.period_end}`;
 
   if (block.period_start === block.period_end) {
     if (startClock && endClock) {
@@ -91,7 +81,7 @@ export function FlowContainer({ gameId }: FlowContainerProps) {
             <FlowBlockCard
               key={block.block_index ?? i}
               block={block}
-              periodLabel={periodDisplay(block, playsById, data.league_code)}
+              periodLabel={periodDisplay(block, playsById)}
               scoreAfter={Array.isArray(block.score_after) ? block.score_after : undefined}
               homeTeam={data.home_team_abbr ?? data.home_team}
               awayTeam={data.away_team_abbr ?? data.away_team}

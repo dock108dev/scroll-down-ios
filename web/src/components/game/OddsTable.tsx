@@ -18,20 +18,10 @@ function rowKey(o: OddsEntry): string {
   return `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
 }
 
-/** Find the best (highest) price in a set of entries. Uses API isBest flag when available. */
+/** Find the best price in a set of entries using API isBest flag. */
 function findBestPrice(entries: OddsEntry[]): number | null {
-  // Prefer API-provided isBest flag
   const apiBest = entries.find((e) => e.isBest && e.price != null);
-  if (apiBest) return apiBest.price!;
-
-  // Fallback to local computation
-  let best: number | null = null;
-  for (const e of entries) {
-    if (e.price != null && (best === null || e.price > best)) {
-      best = e.price;
-    }
-  }
-  return best;
+  return apiBest?.price ?? null;
 }
 
 /** Group rows into side pairs for mainline markets */

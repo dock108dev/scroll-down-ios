@@ -35,12 +35,10 @@ export function BetCard({
   const [showOtherBooks, setShowOtherBooks] = useState(false);
   const [showFullBookName, setShowFullBookName] = useState(false);
 
-  // Best book by EV
-  const bestBook = bet.books.reduce<BookPrice | null>(
-    (best, b) =>
-      (b.ev_percent ?? -999) > ((best?.ev_percent) ?? -999) ? b : best,
-    null,
-  );
+  // Best book from API
+  const bestBook = bet.bestBook
+    ? bet.books.find((b) => b.book === bet.bestBook) ?? null
+    : null;
 
   // User's preferred book price (if different from best)
   const preferredBookPrice = preferredBook
