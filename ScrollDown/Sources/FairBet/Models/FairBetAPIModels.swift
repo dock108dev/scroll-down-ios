@@ -71,26 +71,9 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         }
     }
 
+    /// Delegates to FairBetCopy.marketLabel (SSOT for market display names)
     var displayName: String {
-        switch self {
-        case .h2h: return "Moneyline"
-        case .spreads: return "Spread"
-        case .totals: return "Total"
-        case .playerPoints: return "Player Points"
-        case .playerRebounds: return "Player Rebounds"
-        case .playerAssists: return "Player Assists"
-        case .playerThrees: return "Player Threes"
-        case .playerBlocks: return "Player Blocks"
-        case .playerSteals: return "Player Steals"
-        case .playerGoals: return "Player Goals"
-        case .playerShotsOnGoal: return "Shots on Goal"
-        case .playerTotalSaves: return "Goalie Saves"
-        case .playerPRA: return "PRA"
-        case .teamTotals: return "Team Total"
-        case .alternateSpreads: return "Alt Spread"
-        case .alternateTotals: return "Alt Total"
-        case .unknown(let val): return val.replacingOccurrences(of: "_", with: " ").capitalized
-        }
+        FairBetCopy.marketLabel(for: rawValue)
     }
 
     /// Known mainline markets for filtering UI
@@ -303,32 +286,23 @@ struct APIBet: Identifiable, Codable, Equatable {
     }
 
     /// Parse selection from selection_key (e.g., "team:los_angeles_lakers" -> "Los Angeles Lakers")
+    /// Used for opponent detection (BetCard) and search filtering; display prefers `selectionDisplayServer`.
     var selection: String {
         let parts = selectionKey.split(separator: ":")
         guard parts.count >= 2 else { return selectionKey }
 
         let rawSelection = String(parts[1...].joined(separator: ":"))
 
-        // Handle totals (over/under)
         if rawSelection == "over" { return "Over" }
         if rawSelection == "under" { return "Under" }
 
-        // Handle team names - convert from slug to display name
-        // e.g., "los_angeles_lakers" -> try to match with homeTeam/awayTeam
-        let normalized = rawSelection.replacingOccurrences(of: "_", with: " ")
+        // Exact match against normalized team names
+        let normalized = rawSelection.replacingOccurrences(of: "_", with: " ").lowercased()
+        if homeTeam.lowercased() == normalized { return homeTeam }
+        if awayTeam.lowercased() == normalized { return awayTeam }
 
-        // Check if it matches home or away team (case insensitive)
-        if homeTeam.lowercased().contains(normalized.lowercased()) ||
-           normalized.lowercased().contains(homeTeam.lowercased().split(separator: " ").last?.description ?? "") {
-            return homeTeam
-        }
-        if awayTeam.lowercased().contains(normalized.lowercased()) ||
-           normalized.lowercased().contains(awayTeam.lowercased().split(separator: " ").last?.description ?? "") {
-            return awayTeam
-        }
-
-        // No team match — capitalize each word
-        return normalized.capitalized
+        // Fallback: capitalize the slug
+        return rawSelection.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
     /// Display string for the selection with line if applicable.

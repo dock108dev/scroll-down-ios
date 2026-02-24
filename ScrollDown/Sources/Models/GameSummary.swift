@@ -240,7 +240,6 @@ extension GameSummary {
         static let completedText = "Final — recap available"
         static let postponedText = "Postponed"
         static let canceledText = "Canceled"
-        static let statusUnavailableText = "Status unavailable"
     }
 
     /// Status from API string. Prefers the API `statusRaw` directly; falls back to `.unknown` if missing.

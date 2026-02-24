@@ -120,14 +120,14 @@ extension HomeView {
             })
             .contextMenu {
                 if readStateStore.scoreRevealMode != .always,
-                   game.status.isLive || game.currentPeriod != nil || game.gameClock != nil {
+                   game.status.isLive {
                     Button {
                         rowView.updateToLiveScore()
                     } label: {
                         Label("Update Score", systemImage: "arrow.clockwise")
                     }
                 }
-                if game.status.isFinal && game.currentPeriod == nil && game.gameClock == nil {
+                if game.status.isFinal {
                     if readStateStore.isRead(gameId: game.id) {
                         Button(role: .destructive) {
                             readStateStore.markUnread(gameId: game.id)

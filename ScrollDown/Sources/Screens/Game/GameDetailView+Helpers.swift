@@ -126,11 +126,9 @@ extension GameDetailView {
         }
     }
 
-    /// Compact period label for score context display (e.g. "Q2", "P1", "1st Half").
-    /// Static so it can be called from closures without capturing `self`.
-    /// Deprecated: Callers should prefer API `currentPeriodLabel` when available.
-    @available(*, deprecated, message: "Use API currentPeriodLabel when available")
-    static func formatPeriodLabel(_ quarter: Int, sport: String) -> String {
+    /// Compact period label fallback (e.g. "Q2", "P1", "1st Half").
+    /// Callers must prefer API `currentPeriodLabel` before calling this.
+    static func periodLabel(_ quarter: Int, sport: String) -> String {
         switch sport {
         case "NCAAB":
             switch quarter {
@@ -154,9 +152,8 @@ extension GameDetailView {
         }
     }
 
-    /// Ordinal period label for viewing pill (e.g. "1st", "2nd", "P1", "1st Half").
-    /// Deprecated: Callers should prefer API `play.periodLabel` when available.
-    @available(*, deprecated, message: "Use API play.periodLabel when available")
+    /// Ordinal period label fallback (e.g. "1st", "2nd", "P1", "1st Half").
+    /// periodDescriptor prefers API `play.periodLabel` before calling this.
     func quarterOrdinal(_ quarter: Int) -> String {
         let sport = viewModel.game?.leagueCode ?? "NBA"
         switch sport {

@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scroll Down — Web App
 
-## Getting Started
+Next.js 16 web frontend for Scroll Down Sports. Deployed to Hetzner via Docker.
 
-First, run the development server:
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local   # Add your SPORTS_DATA_API_KEY
+npm install
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Development server with hot reload |
+| `npm run build` | Production build (standalone output) |
+| `npm start` | Start production server |
+| `npm run lint` | ESLint check |
+| `npx tsc --noEmit` | TypeScript type check |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Stack
 
-## Learn More
+- **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
+- **Zustand 5** for state management (persisted to localStorage)
+- **Tailwind CSS 4** for styling
+- **Docker** (node:22-alpine multi-stage) for deployment
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/              # Pages + API proxy routes
+│   ├── page.tsx      # Home (game feed)
+│   ├── game/[id]/    # Game detail
+│   ├── fairbet/      # FairBet odds comparison
+│   ├── settings/     # User preferences
+│   └── api/          # Server-side API proxies
+├── components/       # React components (home, game, fairbet, layout, shared)
+├── hooks/            # Data fetching hooks (useGames, useGame, useFlow, useFairBetOdds)
+├── stores/           # Zustand stores (settings, read-state, reading-position)
+└── lib/              # Types, API clients, utilities, constants
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+The web app is a **thin display layer**. All game data, EV calculations, and derived metrics come from the backend API. The Next.js API routes (`/api/*`) proxy requests to the backend, keeping the API key server-side.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For full documentation, see the [main README](../README.md), [Architecture](../docs/architecture.md), and [AGENTS.md](../AGENTS.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Client-side logic catalog: [APP_LOGIC.md](APP_LOGIC.md)

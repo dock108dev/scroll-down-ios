@@ -1,18 +1,21 @@
-# AGENTS.md — Scroll Down iOS
+# AGENTS.md — Scroll Down Sports
 
 > Context for AI agents (Claude, Cursor, Copilot) working on this codebase.
 
 ## Quick Context
 
-**What is this?** Native iOS client for Scroll Down Sports — catch up on games without immediate score reveals.
+**What is this?** Multi-platform client for Scroll Down Sports — catch up on games without immediate score reveals. Two frontends, same backend API, no backend code in this repo.
 
-**Tech Stack:** Swift 5.9+, SwiftUI, MVVM, iOS 17+
+| Platform | Directory | Tech Stack |
+|----------|-----------|------------|
+| iOS | `ScrollDown/` | Swift 5.9+, SwiftUI, MVVM, iOS 17+, zero external dependencies |
+| Web | `web/` | Next.js 16, React 19, TypeScript 5, Zustand 5, Tailwind CSS 4 |
 
-**No external dependencies.** Uses only Foundation and SwiftUI.
+`webapp/` is a legacy vanilla JS prototype — superseded by the Next.js web app, not actively maintained.
 
-**Architecture:** The app is a thin display layer. The backend (`sports-data-admin`) computes all derived data — period labels, play tiers, odds outcomes, team colors, and merged timelines. The iOS client reads pre-computed values from the API and renders them.
+**Architecture:** Both apps are thin display layers. The backend (`sports-data-admin`) computes all derived data — period labels, play tiers, odds outcomes, team colors, and merged timelines. Clients read pre-computed values from the API and render them.
 
-## Directory Layout
+## iOS Directory Layout
 
 ```
 ScrollDown/Sources/
@@ -294,6 +297,111 @@ xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 1
 # Run tests
 xcodebuild test -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
+
+---
+
+## Web App
+
+The web app mirrors iOS functionality using Next.js with server-side API proxying.
+
+### Web Directory Layout
+
+```
+web/src/
+├── app/                  # Next.js App Router pages + API proxy routes
+│   ├── page.tsx          # Home (game feed with date sections)
+│   ├── game/[id]/        # Game detail page
+│   ├── fairbet/          # FairBet odds comparison
+│   ├── settings/         # User preferences
+│   └── api/              # Server-side API proxy routes
+│       ├── games/        # GET /api/games → backend /api/admin/sports/games
+│       ├── teams/        # GET /api/teams → backend /api/admin/sports/teams
+│       └── fairbet/      # GET /api/fairbet/odds, POST /api/fairbet/parlay/evaluate
+├── components/
+│   ├── home/             # GameCard, GameSection, SearchBar, LeagueFilter
+│   ├── game/             # GameHeader, TimelineSection, FlowContainer, StatsSection, OddsSection, OddsTable, WrapUpSection, SectionNav
+│   ├── fairbet/          # BetCard, FairExplainerSheet, ParlaySheet, BookFilters, MiniBookChip
+│   ├── layout/           # TopNav, BottomTabs, ThemeProvider
+│   └── shared/           # CollapsibleCard, LoadingSkeleton, SectionHeader, TeamColorDot
+├── hooks/
+│   ├── useGames.ts       # Fetch game list, organize by date sections (Earlier/Yesterday/Today/Tomorrow)
+│   ├── useGame.ts        # Fetch single game, 5-min LRU cache (8 entries), 45s live polling
+│   ├── useFlow.ts        # Fetch game flow data
+│   └── useFairBetOdds.ts # Fetch + paginate FairBet odds (500/page, 3-concurrent)
+├── stores/               # Zustand state (all persisted to localStorage)
+│   ├── settings.ts       # Theme, odds format, score reveal, preferred sportsbook, auto-resume
+│   ├── read-state.ts     # Set<gameId> of read games
+│   └── reading-position.ts # Per-game scroll position with score snapshot
+└── lib/
+    ├── types.ts          # All TypeScript interfaces (GameSummary, GameDetailResponse, APIBet, etc.)
+    ├── api.ts            # Client-side fetch (proxied through /api/* routes)
+    ├── api-server.ts     # Server-side fetch (direct to backend with X-API-Key)
+    ├── utils.ts          # Formatting (odds, dates), helpers
+    ├── fairbet-utils.ts  # EV color mapping, confidence tiers
+    ├── constants.ts      # League options, breakpoints
+    └── theme.ts          # CSS variable names, color system
+```
+
+### Web API Proxy Pattern
+
+Client-side code never calls the backend directly. Next.js API routes (`/api/*`) proxy requests server-side, keeping the API key hidden:
+
+```
+Browser → /api/games → api-server.ts (X-API-Key) → sports-data-admin.dock108.ai
+```
+
+Each route supports ISR (Incremental Static Regeneration) via `revalidate` options (60s for game list, 30s for detail).
+
+### Web State Management
+
+Three Zustand stores, all persisted to `localStorage`:
+
+| Store | Key | Contents |
+|-------|-----|----------|
+| `settings` | `sd-settings` | Theme, odds format, score reveal mode, preferred sportsbook, auto-resume, expanded sections, FairBet sort option |
+| `read-state` | `sd-read-state` | Set of game IDs the user has marked as read |
+| `reading-position` | `sd-reading-position` | Per-game scroll position with score snapshot |
+
+### Web Data Fetching
+
+Custom hooks manage all data loading:
+
+- **`useGames`** — Organizes games into date sections (Earlier, Yesterday, Today, Tomorrow). Eastern timezone for date boundaries. Within Today: live games first, then pregame, then final.
+- **`useGame`** — 5-minute TTL, 8-entry LRU in-memory cache. 45-second polling interval for live games.
+- **`useFairBetOdds`** — Paginated loading (500 bets per page, max 3 concurrent requests). First page renders immediately, rest loads in background.
+
+### Web Pages
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | `page.tsx` | Home feed with date sections, league filter, search |
+| `/game/[id]` | `game/[id]/page.tsx` | Game detail with sections (Overview, Timeline, Stats, Odds, Wrap-Up) |
+| `/fairbet` | `fairbet/page.tsx` | FairBet odds comparison with filters and parlay builder |
+| `/settings` | `settings/page.tsx` | Theme, odds format, score reveal, preferred sportsbook |
+
+### Web Testing
+
+```bash
+cd web
+npm run lint          # ESLint
+npx tsc --noEmit      # TypeScript type check
+npm run build         # Production build (catches runtime issues)
+```
+
+### Web Deployment
+
+Docker-based, deployed to Hetzner VPS via GitHub Actions:
+
+1. Push to `main` with `web/**` changes triggers CI
+2. Web lint + typecheck + build
+3. Multi-stage Docker image built and pushed to GHCR
+4. SSH deploy to Hetzner: `docker pull` + `docker compose up`
+
+Container runs at `127.0.0.1:3000`, reverse-proxied to `scrolldownsports.dock108.dev`.
+
+See [docs/ci-cd.md](docs/ci-cd.md) for full pipeline documentation.
+
+---
 
 ## Do NOT
 

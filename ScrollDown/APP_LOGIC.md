@@ -66,7 +66,7 @@ Everything else should come from the API (Single Source of Truth).
 **Why client-side:** Visual step-by-step math breakdown showing how fair odds are calculated. Rich iOS-specific experience. **Pending:** Will migrate to API `explanation_steps` field when available.
 
 ## 16. Period Label Fallback
-**Location:** `GameDetailView+Helpers` (quarterTitle, formatPeriodLabel, quarterOrdinal)
+**Location:** `GameDetailView+Helpers` (quarterTitle, periodLabel, quarterOrdinal)
 **Why client-side:** Sport-based switch for period labels when API `currentPeriodLabel` or `play.periodLabel` is missing. Backward compatibility fallback.
 
 ## 17. Odds Table Best Price Fallback

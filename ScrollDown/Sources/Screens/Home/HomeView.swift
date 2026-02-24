@@ -451,9 +451,8 @@ struct HomeView: View {
         readStateStore.markAllRead(gameIds: allCompletedGameIds)
         for game in allGames where game.status.isLive {
             if let away = game.awayScore, let home = game.homeScore {
-                let periodLabel = game.currentPeriod.map {
-                    GameDetailView.formatPeriodLabel($0, sport: game.leagueCode)
-                }
+                let periodLabel = game.currentPeriodLabel
+                    ?? game.currentPeriod.map { GameDetailView.periodLabel($0, sport: game.leagueCode) }
                 ReadingPositionStore.shared.updateScores(
                     for: game.id,
                     awayScore: away,
