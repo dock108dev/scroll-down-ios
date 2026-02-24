@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { APIBet } from "@/lib/types";
 import {
   betId,
+  enrichBet,
   isReliablyPositive,
   marketKeyToCategory,
 } from "@/lib/fairbet-utils";
@@ -141,7 +142,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
       const total = firstPage.total ?? firstPage.bets.length;
       setTotalFromServer(total);
       setBooksAvailable(firstPage.books_available ?? []);
-      setAllBets(firstPage.bets);
+      setAllBets(firstPage.bets.map(enrichBet));
       setLoadedCount(firstPage.bets.length);
 
       // Done with initial load
@@ -178,7 +179,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
           }
           setLoadedCount(loaded);
           // Append incrementally
-          setAllBets((prev) => [...prev, ...results.flatMap((r) => r.bets)]);
+          setAllBets((prev) => [...prev, ...results.flatMap((r) => r.bets).map(enrichBet)]);
         }
 
         setIsLoadingMore(false);
