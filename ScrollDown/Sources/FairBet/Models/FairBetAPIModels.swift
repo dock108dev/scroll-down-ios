@@ -171,6 +171,31 @@ struct EVDiagnostics: Codable, Equatable {
     }
 }
 
+/// Step-by-step explanation from the API for the math walkthrough
+struct ExplanationStep: Codable {
+    let stepNumber: Int
+    let title: String
+    let description: String?
+    let detailRows: [DetailRow]?
+
+    struct DetailRow: Codable {
+        let label: String
+        let value: String
+        let isHighlight: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case label, value
+            case isHighlight = "is_highlight"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case stepNumber = "step_number"
+        case title, description
+        case detailRows = "detail_rows"
+    }
+}
+
 /// API response wrapper from /api/fairbet/odds
 struct BetsResponse: Codable {
     let bets: [APIBet]
@@ -239,6 +264,7 @@ struct APIBet: Identifiable, Codable, Equatable {
     var confidenceDisplayLabel: String? = nil
     var evMethodDisplayName: String? = nil
     var evMethodExplanation: String? = nil
+    var explanationSteps: [ExplanationStep]? = nil
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
@@ -268,6 +294,7 @@ struct APIBet: Identifiable, Codable, Equatable {
         case confidenceDisplayLabel = "confidence_display_label"
         case evMethodDisplayName = "ev_method_display_name"
         case evMethodExplanation = "ev_method_explanation"
+        case explanationSteps = "explanation_steps"
     }
 
     /// Unique identifier for the bet

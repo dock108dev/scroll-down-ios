@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { APIBet } from "@/lib/types";
+import type { APIBet, ExplanationStep } from "@/lib/types";
 import { cn, formatOdds } from "@/lib/utils";
 import { useSettings } from "@/stores/settings";
 import { FairBetTheme, bookAbbreviation } from "@/lib/theme";
@@ -101,6 +101,48 @@ export function FairExplainerSheet({
             {bet.evMethodDisplayName ?? method ?? "Unknown"}
           </div>
         </div>
+
+        {/* Step-by-step math walkthrough */}
+        {bet.explanation_steps && bet.explanation_steps.length > 0 && (
+          <div className="space-y-2">
+            {bet.explanation_steps.map((step) => (
+              <div
+                key={step.step_number}
+                className="rounded-lg p-3 space-y-1.5"
+                style={{
+                  backgroundColor: FairBetTheme.surfaceTint,
+                  border: `1px solid ${FairBetTheme.cardBorder}`,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                    style={{ backgroundColor: FairBetTheme.info }}
+                  >
+                    {step.step_number}
+                  </span>
+                  <span className="text-xs font-semibold text-white">{step.title}</span>
+                </div>
+                {step.description && (
+                  <p className="text-xs pl-7" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    {step.description}
+                  </p>
+                )}
+                {step.detail_rows?.map((row, i) => (
+                  <div key={i} className="flex justify-between pl-7 text-xs font-mono">
+                    <span style={{ color: "rgba(255,255,255,0.5)" }}>{row.label}</span>
+                    <span
+                      className={row.is_highlight ? "font-bold" : "font-semibold"}
+                      style={{ color: row.is_highlight ? FairBetTheme.positive : "white" }}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Per-book implied probabilities */}
         <div className="space-y-2">

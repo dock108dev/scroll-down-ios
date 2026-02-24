@@ -12,12 +12,6 @@ import Foundation
 struct AmericanOdds: Equatable, Hashable, Codable {
     let value: Int
 
-    /// Convert American odds to implied probability
-    var impliedProbability: Double {
-        if value < 0 { return Double(-value) / (Double(-value) + 100.0) }
-        return 100.0 / (Double(value) + 100.0)
-    }
-
     /// Display string with + or - prefix
     var displayString: String {
         value > 0 ? "+\(value)" : "\(value)"

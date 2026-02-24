@@ -27,18 +27,6 @@ final class AmericanOddsTests: XCTestCase {
         XCTAssertEqual(AmericanOdds(-100).value, -100)
     }
 
-    // MARK: - impliedProbability
-
-    func testImpliedProbabilityFavorite() {
-        let odds = AmericanOdds(-200)
-        XCTAssertEqual(odds.impliedProbability, 2.0 / 3.0, accuracy: 0.001)
-    }
-
-    func testImpliedProbabilityUnderdog() {
-        let odds = AmericanOdds(200)
-        XCTAssertEqual(odds.impliedProbability, 1.0 / 3.0, accuracy: 0.001)
-    }
-
     // MARK: - displayString
 
     func testDisplayStringPositive() {

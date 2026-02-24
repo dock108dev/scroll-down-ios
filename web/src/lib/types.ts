@@ -470,6 +470,14 @@ export interface APIBet {
   confidenceDisplayLabel?: string;
   evMethodDisplayName?: string;
   evMethodExplanation?: string;
+  explanation_steps?: ExplanationStep[] | null;
+}
+
+export interface ExplanationStep {
+  step_number: number;
+  title: string;
+  description?: string;
+  detail_rows?: { label: string; value: string; is_highlight?: boolean }[];
 }
 
 export interface BookPrice {

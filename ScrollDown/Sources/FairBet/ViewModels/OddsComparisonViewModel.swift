@@ -79,26 +79,6 @@ final class OddsComparisonViewModel: ObservableObject {
 
     private let apiClient: FairBetAPIClient
 
-    // MARK: - Cached Computations (for performance)
-
-    /// Cached EV results per bet ID (EV value + confidence)
-    private var cachedEVResults: [String: EVResult] = [:]
-
-    /// Result of EV calculation including confidence level and fair probability
-    struct EVResult {
-        let ev: Double
-        let confidence: FairOddsConfidence
-        let fairProbability: Double
-        let fairAmericanOdds: Int
-        var referencePrice: Int? = nil
-        var evDisabledReason: String? = nil
-
-        /// Only count as +EV if we have reliable data (medium+ confidence with vig removal)
-        var isReliablyPositive: Bool {
-            ev > 0 && (confidence == .high || confidence == .medium)
-        }
-    }
-
     // MARK: - Computed Properties (Global Stats)
 
     /// Bets with sufficient data (3+ books)
@@ -166,7 +146,7 @@ final class OddsComparisonViewModel: ObservableObject {
         let bets = parlayBets
         guard !bets.isEmpty else { return 0 }
         return bets.reduce(1.0) { result, bet in
-            let prob = cachedEVResults[bet.id]?.fairProbability ?? 0.5
+            let prob = bet.trueProb ?? 0.5
             return result * prob
         }
     }
@@ -179,7 +159,7 @@ final class OddsComparisonViewModel: ObservableObject {
     }
 
     var parlayConfidence: FairOddsConfidence {
-        let confidences = parlayBets.compactMap { cachedEVResults[$0.id]?.confidence }
+        let confidences = parlayBets.map { confidence(for: $0) }
         guard !confidences.isEmpty else { return .none }
         let order: [FairOddsConfidence] = [.none, .low, .medium, .high]
         return confidences.min(by: { order.firstIndex(of: $0)! < order.firstIndex(of: $1)! }) ?? .none
@@ -221,8 +201,6 @@ final class OddsComparisonViewModel: ObservableObject {
             marketCategoriesAvailable = firstResponse.marketCategoriesAvailable ?? []
             evDiagnostics = firstResponse.evDiagnostics
 
-            // Compute and display first page results immediately
-            computeAllEVs()
             applyFilters()
 
             isLoading = false
@@ -287,9 +265,7 @@ final class OddsComparisonViewModel: ObservableObject {
                 }
 
                 if !remainingBets.isEmpty {
-                    let insertionIndex = allBets.count
                     allBets.append(contentsOf: remainingBets)
-                    computeEVsForNewBets(startingAt: insertionIndex)
                     applyFilters()
                 }
             }
@@ -370,7 +346,6 @@ final class OddsComparisonViewModel: ObservableObject {
         let response = FairBetMockDataProvider.shared.getMockBetsResponse()
         allBets = response.bets
         booksAvailable = response.booksAvailable
-        computeAllEVs()
         applyFilters()
     }
 
@@ -390,7 +365,7 @@ final class OddsComparisonViewModel: ObservableObject {
         // Hide thin markets (low/none confidence)
         if hideLimitedData {
             filtered = filtered.filter { bet in
-                let conf = cachedEVResults[bet.id]?.confidence ?? .none
+                let conf = confidence(for: bet)
                 return conf == .high || conf == .medium
             }
         }
@@ -441,85 +416,25 @@ final class OddsComparisonViewModel: ObservableObject {
 
     /// Check if a bet has RELIABLE positive EV (medium/high confidence - for stats)
     private func betHasReliablePositiveEV(_ bet: APIBet) -> Bool {
-        if let cached = cachedEVResults[bet.id] {
-            return cached.isReliablyPositive
-        }
-        return false
+        let ev = bestEV(for: bet)
+        let conf = confidence(for: bet)
+        return ev > 0 && (conf == .high || conf == .medium)
     }
 
-    /// Get confidence level for a bet
+    /// Get confidence level for a bet from API tier
     func confidence(for bet: APIBet) -> FairOddsConfidence {
-        cachedEVResults[bet.id]?.confidence ?? .none
+        guard let tier = bet.evConfidenceTier else { return .none }
+        switch tier {
+        case "full": return .high
+        case "decent": return .medium
+        case "thin": return .low
+        default: return .none
+        }
     }
 
-    /// Get full EV result for a bet (for UI display)
-    func evResult(for bet: APIBet) -> EVResult? {
-        cachedEVResults[bet.id]
-    }
-
-    /// Get cached best EV for a bet (fast lookup)
+    /// Get best EV for a bet from API fields
     func bestEV(for bet: APIBet) -> Double {
-        if let cached = cachedEVResults[bet.id] {
-            return cached.ev
-        }
-        return computeEVResult(for: bet).ev
-    }
-
-    /// Pre-compute all EV values once after data loads
-    private func computeAllEVs() {
-        cachedEVResults.removeAll()
-        for bet in allBets {
-            cachedEVResults[bet.id] = computeEVResult(for: bet)
-        }
-    }
-
-    /// Compute EVs only for newly appended bets (avoids recomputing the entire cache)
-    private func computeEVsForNewBets(startingAt index: Int) {
-        guard index < allBets.count else { return }
-        for i in index..<allBets.count {
-            let bet = allBets[i]
-            cachedEVResults[bet.id] = computeEVResult(for: bet)
-        }
-    }
-
-    /// Calculate best EV for a single bet using server-side annotations exclusively.
-    private func computeEVResult(for bet: APIBet) -> EVResult {
-        // Use server-side EV annotations exclusively
-        guard let serverTier = bet.evConfidenceTier,
-              let bestServerBook = bet.books
-                  .compactMap({ b -> (book: BookPrice, ev: Double)? in
-                      guard let ev = b.evPercent else { return nil }
-                      return (b, ev)
-                  }).max(by: { $0.ev < $1.ev }),
-              let fairProb = bet.trueProb
-        else {
-            // Server didn't provide EV — return "not available"
-            return EVResult(
-                ev: 0,
-                confidence: .none,
-                fairProbability: 0,
-                fairAmericanOdds: 0,
-                referencePrice: bet.referencePrice,
-                evDisabledReason: bet.evDisabledReason ?? "Server EV not available"
-            )
-        }
-
-        let confidence: FairOddsConfidence
-        switch serverTier {
-        case "full": confidence = .high
-        case "decent": confidence = .medium
-        case "thin": confidence = .low
-        default: confidence = .none
-        }
-
-        return EVResult(
-            ev: bestServerBook.ev,
-            confidence: confidence,
-            fairProbability: fairProb,
-            fairAmericanOdds: bet.fairAmericanOdds ?? 0,
-            referencePrice: bet.referencePrice,
-            evDisabledReason: bet.evDisabledReason
-        )
+        bet.bestEvPercent ?? 0
     }
 
     private func loadOddsFormat() {

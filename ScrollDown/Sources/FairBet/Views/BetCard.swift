@@ -10,7 +10,6 @@ import SwiftUI
 struct BetCard: View {
     let bet: APIBet
     let oddsFormat: OddsFormat
-    let evResult: OddsComparisonViewModel.EVResult?
     var isInParlay: Bool = false
     var onToggleParlay: (() -> Void)?
 
@@ -24,11 +23,11 @@ struct BetCard: View {
     // MARK: - Computed Properties
 
     private var fairProbability: Double {
-        evResult?.fairProbability ?? 0.5
+        bet.trueProb ?? 0.5
     }
 
     private var fairAmericanOdds: Int {
-        bet.fairAmericanOdds ?? evResult?.fairAmericanOdds ?? 0
+        bet.fairAmericanOdds ?? 0
     }
 
     private var bestBook: BookPrice? {
@@ -36,11 +35,17 @@ struct BetCard: View {
     }
 
     private var bestBookEV: Double? {
-        evResult?.ev
+        bet.bestEvPercent
     }
 
     private var confidence: FairOddsConfidence {
-        evResult?.confidence ?? .none
+        guard let tier = bet.evConfidenceTier else { return .none }
+        switch tier {
+        case "full": return .high
+        case "decent": return .medium
+        case "thin": return .low
+        default: return .none
+        }
     }
 
     private var isHighValueBet: Bool {
@@ -133,7 +138,7 @@ struct BetCard: View {
                 .stroke(parlayBorderColor, lineWidth: isInParlay ? 1.5 : (isHighValueBet ? 1.5 : 1))
         )
         .sheet(isPresented: $showFairExplainer) {
-            FairExplainerSheet(bet: bet, evResult: evResult)
+            FairExplainerSheet(bet: bet)
         }
     }
 
