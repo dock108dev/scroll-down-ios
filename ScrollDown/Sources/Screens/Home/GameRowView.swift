@@ -43,7 +43,6 @@ struct GameRowView: View {
     func updateToLiveScore() {
         guard let away = game.awayScore, let home = game.homeScore else { return }
         let periodLabel = game.currentPeriodLabel
-            ?? game.currentPeriod.map { GameDetailView.periodLabel($0, sport: game.leagueCode) }
         ReadingPositionStore.shared.updateScores(
             for: game.id,
             awayScore: away,
@@ -216,7 +215,7 @@ struct GameRowView: View {
             return stored
         }
         guard game.status.isLive, let period = game.currentPeriod else { return nil }
-        let periodLabel = game.currentPeriodLabel ?? GameDetailView.periodLabel(period, sport: game.leagueCode)
+        let periodLabel = game.currentPeriodLabel ?? "Q\(period)"
         if let clock = game.gameClock, !clock.isEmpty {
             return "@ \(periodLabel) \(clock)"
         }

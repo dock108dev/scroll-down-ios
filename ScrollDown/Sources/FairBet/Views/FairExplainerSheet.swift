@@ -503,12 +503,15 @@ struct FairExplainerSheet: View {
     }
 
     private var bestBookForEV: BookPrice? {
-        bet.bestBook
+        bet.books.first(where: { $0.name == bet.bestBookName })
     }
 
     private var bestBookProfit: Double? {
         guard let book = bestBookForEV else { return nil }
-        return OddsCalculator.americanToProfit(book.price)
+        let price = book.price
+        if price > 0 { return Double(price) / 100.0 }
+        if price < 0 { return 100.0 / Double(abs(price)) }
+        return 0
     }
 
     private var isMedianConsensus: Bool {

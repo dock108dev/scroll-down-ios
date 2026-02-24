@@ -348,10 +348,6 @@ struct APIBet: Identifiable, Codable, Equatable {
         return selection
     }
 
-    /// The best price available across all books (highest decimal odds = best for bettor)
-    var bestBook: BookPrice? {
-        books.max { $0.price < $1.price }
-    }
 
     static func == (lhs: APIBet, rhs: APIBet) -> Bool {
         lhs.id == rhs.id

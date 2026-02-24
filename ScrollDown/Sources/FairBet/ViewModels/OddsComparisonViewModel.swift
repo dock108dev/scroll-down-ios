@@ -175,7 +175,7 @@ final class OddsComparisonViewModel: ObservableObject {
         if let api = parlayApiResult { return api.fairAmericanOdds }
         let prob = parlayFairProbability
         guard prob > 0 && prob < 1 else { return 100 }
-        return OddsCalculator.probToAmerican(prob)
+        return 100
     }
 
     var parlayConfidence: FairOddsConfidence {
@@ -516,7 +516,7 @@ final class OddsComparisonViewModel: ObservableObject {
             ev: bestServerBook.ev,
             confidence: confidence,
             fairProbability: fairProb,
-            fairAmericanOdds: bet.fairAmericanOdds ?? OddsCalculator.probToAmerican(fairProb),
+            fairAmericanOdds: bet.fairAmericanOdds ?? 0,
             referencePrice: bet.referencePrice,
             evDisabledReason: bet.evDisabledReason
         )

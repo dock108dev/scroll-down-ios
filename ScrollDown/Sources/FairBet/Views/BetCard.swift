@@ -32,7 +32,7 @@ struct BetCard: View {
     }
 
     private var bestBook: BookPrice? {
-        bet.bestBook
+        bet.books.first(where: { $0.name == bet.bestBookName })
     }
 
     private var bestBookEV: Double? {
@@ -327,7 +327,7 @@ struct BetCard: View {
                         ForEach(sortedBooks) { book in
                             MiniBookChip(
                                 book: book,
-                                isBest: book.price == bestBook?.price,
+                                isBest: book.name == bet.bestBookName,
                                 ev: computeEV(for: book)
                             )
                         }

@@ -1,8 +1,7 @@
 import SwiftUI
 
 extension GameDetailView {
-    /// Returns the period/quarter title, sport-aware.
-    /// NCAAB: "1st Half", "2nd Half", "OT"; NHL: "Period 1", "Period 2", "Period 3", "OT"; NBA: "Q1"-"Q4", "OT"
+    /// Returns the period/quarter title from the API-provided server label.
     func quarterTitle(_ quarter: Int, serverLabel: String? = nil) -> String {
         if quarter == 0 {
             return "Additional"
@@ -18,29 +17,7 @@ extension GameDetailView {
             default: return label
             }
         }
-        let sport = viewModel.game?.leagueCode ?? "NBA"
-        switch sport {
-        case "NCAAB":
-            switch quarter {
-            case 1: return "1st Half"
-            case 2: return "2nd Half"
-            case 3: return "OT"
-            default: return "\(quarter - 2)OT"
-            }
-        case "NHL":
-            switch quarter {
-            case 1...3: return "Period \(quarter)"
-            case 4: return "OT"
-            case 5: return "SO"
-            default: return "\(quarter - 3)OT"
-            }
-        default: // NBA and others
-            switch quarter {
-            case 1...4: return "Q\(quarter)"
-            case 5: return "OT"
-            default: return "\(quarter - 4)OT"
-            }
-        }
+        return "Period \(quarter)"
     }
 
     var viewingPillText: String? {
@@ -85,101 +62,16 @@ extension GameDetailView {
     }
 
     func periodDescriptor(for play: PlayEntry) -> String {
-        // Prefer API-provided periodLabel
         if let label = play.periodLabel, !label.isEmpty {
-            let phase = periodPhaseForPlay(play)
-            return "\(phase) \(label)"
+            if let phase = play.phase, !phase.isEmpty {
+                return "\(phase) \(label)"
+            }
+            return label
         }
-
         guard let quarter = play.quarter else {
             return "Game"
         }
-
-        let ordinal = quarterOrdinal(quarter)
-        guard let clock = play.gameClock,
-              let minutesRemaining = Int(clock.split(separator: ":").first ?? "") else {
-            return ordinal
-        }
-
-        let phase = periodPhaseLabel(minutesRemaining: minutesRemaining)
-        return "\(phase) \(ordinal)"
-    }
-
-    /// Prefer API-provided phase, fall back to clock-based calculation
-    func periodPhaseForPlay(_ play: PlayEntry) -> String {
-        if let apiPhase = play.phase, !apiPhase.isEmpty { return apiPhase }
-        guard let clock = play.gameClock,
-              let minutesRemaining = Int(clock.split(separator: ":").first ?? "") else {
-            return ""
-        }
-        return periodPhaseLabel(minutesRemaining: minutesRemaining)
-    }
-
-    func periodPhaseLabel(minutesRemaining: Int) -> String {
-        switch minutesRemaining {
-        case 8...:
-            return "Early"
-        case 4..<8:
-            return "Mid"
-        default:
-            return "Late"
-        }
-    }
-
-    /// Compact period label fallback (e.g. "Q2", "P1", "1st Half").
-    /// Callers must prefer API `currentPeriodLabel` before calling this.
-    static func periodLabel(_ quarter: Int, sport: String) -> String {
-        switch sport {
-        case "NCAAB":
-            switch quarter {
-            case 1: return "1st Half"
-            case 2: return "2nd Half"
-            case 3: return "OT"
-            default: return "\(quarter - 2)OT"
-            }
-        case "NHL":
-            switch quarter {
-            case 1...3: return "P\(quarter)"
-            case 4: return "OT"
-            default: return "\(quarter - 3)OT"
-            }
-        default: // NBA and others
-            switch quarter {
-            case 1...4: return "Q\(quarter)"
-            case 5: return "OT"
-            default: return "\(quarter - 4)OT"
-            }
-        }
-    }
-
-    /// Ordinal period label fallback (e.g. "1st", "2nd", "P1", "1st Half").
-    /// periodDescriptor prefers API `play.periodLabel` before calling this.
-    func quarterOrdinal(_ quarter: Int) -> String {
-        let sport = viewModel.game?.leagueCode ?? "NBA"
-        switch sport {
-        case "NCAAB":
-            switch quarter {
-            case 1: return "1st Half"
-            case 2: return "2nd Half"
-            case 3: return "OT"
-            default: return "\(quarter - 2)OT"
-            }
-        case "NHL":
-            switch quarter {
-            case 1...3: return "P\(quarter)"
-            case 4: return "OT"
-            default: return "\(quarter - 3)OT"
-            }
-        default:
-            switch quarter {
-            case 1: return "1st"
-            case 2: return "2nd"
-            case 3: return "3rd"
-            case 4: return "4th"
-            case 0: return "OT"
-            default: return "\(quarter)th"
-            }
-        }
+        return "Q\(quarter)"
     }
 
     func scoreDisplay(for play: PlayEntry) -> String? {
