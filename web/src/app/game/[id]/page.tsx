@@ -370,7 +370,6 @@ export default function GameDetailPage({
               awayTeamAbbr={game.awayTeamAbbr}
               homeColor={game.homeTeamColorDark}
               awayColor={game.awayTeamColorDark}
-              groupedPlays={data.groupedPlays}
             />
           </CollapsibleSection>
         )}

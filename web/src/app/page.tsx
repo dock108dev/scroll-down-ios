@@ -171,7 +171,7 @@ export default function HomePage() {
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                Catch up
+                Mark All Read
                 <span className="ml-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[10px]">
                   {unreadFinalCount}
                 </span>

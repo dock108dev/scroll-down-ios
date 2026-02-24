@@ -7,7 +7,7 @@ import { useReadState } from "@/stores/read-state";
 import { useSettings } from "@/stores/settings";
 import { TeamColorDot } from "@/components/shared/TeamColorDot";
 import { cn } from "@/lib/utils";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useReadingPosition } from "@/stores/reading-position";
 
 interface GameCardProps {
@@ -53,7 +53,6 @@ export function GameCard({ game }: GameCardProps) {
   const router = useRouter();
   const { isRead, markRead, markUnread } = useReadState();
   const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
-  // Temporary reveal state for live games (not persisted as "read")
   const [tempRevealed, setTempRevealed] = useState(false);
   const savedPosition = useReadingPosition((s) => s.getPosition)(game.id);
 
@@ -63,20 +62,13 @@ export function GameCard({ game }: GameCardProps) {
   const pregame = isPregame(game.status);
   const noData = hasNoData(game);
 
-  // Has actual score data from API
   const hasScoreData = game.homeScore != null && game.awayScore != null;
 
-  // Score visibility follows iOS logic exactly:
-  // - "always" mode: show if score data exists (any state)
-  // - "onMarkRead" mode: show only if game is marked read, OR temporarily revealed
-  // - Pregame: never (no scores exist)
-  // - Live games in onMarkRead: hidden until long-press to temp-reveal
   const showScore =
     !pregame &&
     hasScoreData &&
     (scoreRevealMode === "always" || read || tempRevealed);
 
-  // For live games with saved reading position, show cached scores
   const displayAwayScore = showScore
     ? game.awayScore
     : savedPosition?.awayScore != null && !pregame
@@ -89,102 +81,24 @@ export function GameCard({ game }: GameCardProps) {
       : null;
   const hasSavedScores = displayAwayScore != null && displayHomeScore != null;
 
-  // ── Long-press to toggle score reveal ─────────────────────────
-  // Final games: long-press toggles read/unread (persisted)
-  // Live games: long-press toggles temporary reveal
-  // Pregame: no-op
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLongPress = useRef(false);
-  const startPos = useRef<{ x: number; y: number } | null>(null);
-  const LONG_PRESS_MS = 500;
-  const MOVE_THRESHOLD = 10; // px — cancel if finger/cursor moves (scroll)
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  const cancelLongPress = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
-
-  const handleLongPress = useCallback(() => {
-    if (final) {
-      // Toggle read state — reveals/hides score persistently
-      if (read) {
-        markUnread(game.id);
-      } else {
-        markRead(game.id, game.status);
-      }
-    } else if (live) {
-      // Toggle temporary reveal
-      setTempRevealed((prev) => !prev);
-    }
-  }, [final, live, read, game.id, game.status, markRead, markUnread]);
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      didLongPress.current = false;
-      startPos.current = { x: e.clientX, y: e.clientY };
-      longPressTimer.current = setTimeout(() => {
-        didLongPress.current = true;
-        handleLongPress();
-      }, LONG_PRESS_MS);
-    },
-    [handleLongPress],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!startPos.current) return;
-      const dx = e.clientX - startPos.current.x;
-      const dy = e.clientY - startPos.current.y;
-      if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
-        cancelLongPress();
-      }
-    },
-    [cancelLongPress],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    cancelLongPress();
-    startPos.current = null;
-  }, [cancelLongPress]);
-
-  const handlePointerLeave = useCallback(() => {
-    cancelLongPress();
-    startPos.current = null;
-  }, [cancelLongPress]);
-
-  // Tap = navigate, long-press = toggle reveal (no <a> tag = no Safari preview hijack)
-  const handleClick = useCallback(() => {
-    if (didLongPress.current) {
-      didLongPress.current = false;
-      return;
-    }
+  const handleCardClick = () => {
     if (!noData) {
       router.push(`/game/${game.id}`);
     }
-  }, [noData, game.id, router]);
+  };
 
-  // Suppress native context menu
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-  }, []);
-
-  const card = (
+  return (
     <div
+      ref={cardRef}
+      onClick={handleCardClick}
       className={cn(
         "relative rounded-lg border border-neutral-800 bg-neutral-900 p-3 transition select-none",
         noData && "opacity-40 pointer-events-none",
         !noData && "cursor-pointer hover:border-neutral-700",
         read && final && "border-neutral-800/60",
       )}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onPointerCancel={handlePointerUp}
-      onContextMenu={handleContextMenu}
-      onClick={handleClick}
     >
       {/* Top bar: league badge + status */}
       <div className="flex items-center justify-between text-xs mb-2">
@@ -224,7 +138,6 @@ export function GameCard({ game }: GameCardProps) {
               {game.awayTeamAbbr ?? game.awayTeam}
             </span>
           </div>
-          {/* Score column */}
           {pregame ? (
             <span />
           ) : showScore || hasSavedScores ? (
@@ -232,10 +145,7 @@ export function GameCard({ game }: GameCardProps) {
               {displayAwayScore}
             </span>
           ) : hasScoreData ? (
-            /* Hidden score - clickable to reveal */
-            <span
-              className="text-sm font-mono tabular-nums blur-sm select-none"
-            >
+            <span className="text-sm font-mono tabular-nums blur-sm select-none">
               {game.awayScore}
             </span>
           ) : (
@@ -258,9 +168,7 @@ export function GameCard({ game }: GameCardProps) {
               {displayHomeScore}
             </span>
           ) : hasScoreData ? (
-            <span
-              className="text-sm font-mono tabular-nums blur-sm select-none"
-            >
+            <span className="text-sm font-mono tabular-nums blur-sm select-none">
               {game.homeScore}
             </span>
           ) : (
@@ -269,33 +177,68 @@ export function GameCard({ game }: GameCardProps) {
         </div>
       </div>
 
-      {/* Bottom info */}
-      <div className="mt-2 text-[11px] text-neutral-500 text-center">
-        {pregame && (
-          <span>{formatGameDateTime(game.gameDate)}</span>
-        )}
-        {live && showScore && (
-          <span>
-            {getPeriodLabel(game)}
-            {game.gameClock ? ` ${game.gameClock}` : ""}
-          </span>
-        )}
-        {live && !showScore && !hasSavedScores && (
-          <span className="text-neutral-600">Hold to reveal</span>
-        )}
-        {live && !showScore && hasSavedScores && savedPosition?.timeLabel && (
-          <span>@ {savedPosition.timeLabel}</span>
-        )}
-        {final && showScore && (
-          <span className="text-neutral-600">Final</span>
-        )}
-        {final && !showScore && (
-          <span className="text-neutral-600">Hold to reveal</span>
-        )}
-      </div>
+      {/* Game clock for live games */}
+      {live && showScore && (game.currentPeriod || game.gameClock) && (
+        <div className="mt-1 text-[10px] text-neutral-500 text-center">
+          @ {getPeriodLabel(game)}{game.gameClock ? ` ${game.gameClock}` : ""}
+        </div>
+      )}
 
+      {/* Bottom info */}
+      <div className="mt-2 flex items-center text-[11px] text-neutral-500">
+        <div className="flex-1" />
+        <div className="flex-1 text-center">
+          {pregame && (
+            <span>{formatGameDateTime(game.gameDate)}</span>
+          )}
+          {live && showScore && (
+            <span>
+              {getPeriodLabel(game)}
+              {game.gameClock ? ` ${game.gameClock}` : ""}
+            </span>
+          )}
+          {live && !showScore && hasSavedScores && savedPosition?.timeLabel && (
+            <span>@ {savedPosition.timeLabel}</span>
+          )}
+          {final && showScore && (
+            <span className="text-neutral-600">Final</span>
+          )}
+        </div>
+        <div className="flex-1 text-right">
+          {final && !read && (
+            <button
+              onClick={(e) => { e.stopPropagation(); markRead(game.id, game.status); }}
+              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+            >
+              Reveal
+            </button>
+          )}
+          {final && read && (
+            <button
+              onClick={(e) => { e.stopPropagation(); markUnread(game.id); }}
+              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+            >
+              Hide
+            </button>
+          )}
+          {live && !tempRevealed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setTempRevealed(true); }}
+              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+            >
+              Reveal
+            </button>
+          )}
+          {live && tempRevealed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setTempRevealed(false); }}
+              className="text-[10px] text-neutral-600 hover:text-neutral-400 transition"
+            >
+              Hide
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
-
-  return card;
 }

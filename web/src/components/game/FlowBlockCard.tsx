@@ -4,10 +4,13 @@ import { cn } from "@/lib/utils";
 
 interface FlowBlockCardProps {
   block: FlowBlock;
+  periodLabel?: string;
+  scoreAfter?: number[];
   homeTeam?: string;
   awayTeam?: string;
   homeColor?: string;
   awayColor?: string;
+  isFirstBlock?: boolean;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -21,17 +24,25 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function FlowBlockCard({
   block,
+  periodLabel,
+  scoreAfter,
   homeTeam,
   awayTeam,
   homeColor,
   awayColor,
+  isFirstBlock,
 }: FlowBlockCardProps) {
   const roleLabel = ROLE_LABELS[block.role] ?? "";
-  const scoreChange = block.score_after.join("-");
 
   return (
     <div className="ml-10 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      {/* Period label + role badge row */}
       <div className="flex items-center gap-2 mb-2">
+        {periodLabel && (
+          <span className="text-[11px] font-mono text-neutral-500">
+            {periodLabel}
+          </span>
+        )}
         {roleLabel && (
           <span
             className={cn(
@@ -49,9 +60,11 @@ export function FlowBlockCard({
             {roleLabel}
           </span>
         )}
-        <span className="text-xs text-neutral-500 ml-auto font-mono">
-          {scoreChange}
-        </span>
+        {scoreAfter && (
+          <span className="text-xs text-neutral-400 ml-auto font-mono tabular-nums">
+            {scoreAfter[0]}–{scoreAfter[1]}
+          </span>
+        )}
       </div>
 
       <p className="text-sm text-neutral-200 leading-relaxed">
@@ -61,10 +74,12 @@ export function FlowBlockCard({
       {block.mini_box && (
         <MiniBoxScore
           miniBox={block.mini_box}
+          scoreAfter={scoreAfter}
           homeTeam={homeTeam}
           awayTeam={awayTeam}
           homeColor={homeColor}
           awayColor={awayColor}
+          isFirstBlock={isFirstBlock}
         />
       )}
     </div>

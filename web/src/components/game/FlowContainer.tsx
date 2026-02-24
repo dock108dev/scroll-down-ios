@@ -1,15 +1,70 @@
 "use client";
 
+import { useMemo } from "react";
 import { useFlow } from "@/hooks/useFlow";
 import { FlowBlockCard } from "./FlowBlockCard";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import type { FlowBlock, FlowPlay } from "@/lib/types";
 
 interface FlowContainerProps {
   gameId: number;
 }
 
+/** Format period number by sport */
+function formatPeriod(period: number, league?: string): string {
+  const lc = league?.toLowerCase();
+  if (lc === "nhl") return `P${period}`;
+  if (lc === "ncaab" || lc === "ncaaw") return period <= 2 ? `H${period}` : `OT${period - 2}`;
+  // NBA, NFL, default
+  return period <= 4 ? `Q${period}` : `OT${period - 4}`;
+}
+
+/** Derive period display string for a block from its plays */
+function periodDisplay(
+  block: FlowBlock,
+  playsById: Map<number, FlowPlay>,
+  league?: string,
+): string {
+  // Get plays for this block, sorted by play_index
+  const blockPlays = (block.play_ids ?? [])
+    .map((id) => playsById.get(id))
+    .filter((p): p is FlowPlay => p != null)
+    .sort((a, b) => a.play_index - b.play_index);
+
+  const startClock = blockPlays[0]?.clock;
+  const endClock = blockPlays[blockPlays.length - 1]?.clock;
+
+  const startPeriod = formatPeriod(block.period_start, league);
+  const endPeriod = formatPeriod(block.period_end, league);
+
+  if (block.period_start === block.period_end) {
+    if (startClock && endClock) {
+      return `${startPeriod} · ${startClock}–${endClock}`;
+    }
+    return startPeriod;
+  }
+
+  // Crosses periods
+  const startTime = startClock ?? "";
+  const endTime = endClock ?? "";
+  if (startTime && endTime) {
+    return `${startPeriod} ${startTime} – ${endPeriod} ${endTime}`;
+  }
+  return `${startPeriod}–${endPeriod}`;
+}
+
 export function FlowContainer({ gameId }: FlowContainerProps) {
   const { data, loading, error } = useFlow(gameId);
+
+  // Index plays by play_id for O(1) lookup
+  const playsById = useMemo(() => {
+    if (!data?.plays) return new Map<number, FlowPlay>();
+    const map = new Map<number, FlowPlay>();
+    for (const p of data.plays) {
+      map.set(p.play_id, p);
+    }
+    return map;
+  }, [data?.plays]);
 
   if (loading) {
     return (
@@ -29,18 +84,20 @@ export function FlowContainer({ gameId }: FlowContainerProps) {
 
   return (
     <div className="px-4 space-y-0">
-      {/* Visual spine */}
       <div className="relative">
         <div className="absolute left-6 top-0 bottom-0 w-px bg-neutral-800" />
         <div className="space-y-4 relative">
-          {data.blocks.map((block) => (
+          {data.blocks.map((block, i) => (
             <FlowBlockCard
-              key={block.block_index}
+              key={block.block_index ?? i}
               block={block}
-              homeTeam={data.home_team}
-              awayTeam={data.away_team}
+              periodLabel={periodDisplay(block, playsById, data.league_code)}
+              scoreAfter={Array.isArray(block.score_after) ? block.score_after : undefined}
+              homeTeam={data.home_team_abbr ?? data.home_team}
+              awayTeam={data.away_team_abbr ?? data.away_team}
               homeColor={data.home_team_color_dark}
               awayColor={data.away_team_color_dark}
+              isFirstBlock={i === 0}
             />
           ))}
         </div>

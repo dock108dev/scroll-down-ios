@@ -2,67 +2,43 @@
 
 import type { GameDetailResponse, OddsEntry } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
-import { formatOdds, cn } from "@/lib/utils";
+import { formatOdds } from "@/lib/utils";
 
 interface WrapUpSectionProps {
   data: GameDetailResponse;
 }
 
-/** Known metric keys with special rendering */
-const OUTCOME_KEYS = [
+/** Outcome keys shown in the top section */
+const OUTCOME_KEYS = new Set([
   "winner",
-  "finalScore",
-  "margin",
-  "spreadResult",
-  "totalResult",
-  "moneylineResult",
-] as const;
+  "spread_outcome_label",
+  "total_outcome_label",
+  "ml_outcome_label",
+  "opening_spread_outcome_label",
+  "opening_total_outcome_label",
+  "opening_ml_outcome_label",
+  "moneyline_upset",
+]);
 
-const OUTCOME_LABELS: Record<string, string> = {
-  winner: "Winner",
-  finalScore: "Final Score",
-  margin: "Margin",
-  spreadResult: "Spread Result",
-  totalResult: "Total Result",
-  moneylineResult: "Moneyline Result",
-};
-
-/** Group remaining metrics into logical sections */
-function groupMetrics(
-  metrics: Record<string, unknown>,
-): { outcomes: [string, unknown][]; other: [string, unknown][] } {
-  const outcomeSet = new Set<string>(OUTCOME_KEYS);
-  const outcomes: [string, unknown][] = [];
-  const other: [string, unknown][] = [];
-
-  // Add outcome keys in preferred order
-  for (const key of OUTCOME_KEYS) {
-    if (key in metrics) {
-      outcomes.push([key, metrics[key]]);
-    }
-  }
-
-  // Add remaining keys
-  for (const [key, value] of Object.entries(metrics)) {
-    if (!outcomeSet.has(key)) {
-      other.push([key, value]);
-    }
-  }
-
-  return { outcomes, other };
+/** Human-readable label from a snake_case key */
+function humanLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Find opening and closing lines for comparison */
-function getLineComparison(odds: OddsEntry[]): {
-  opening: OddsEntry[];
-  closing: OddsEntry[];
-} {
-  const closing = odds.filter((o) => o.isClosingLine);
-  const opening = odds.filter((o) => !o.isClosingLine);
-  return { opening, closing };
+/** Format a metric value for display */
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") {
+    if (Number.isInteger(value)) return String(value);
+    return value.toFixed(value > 1 || value < -1 ? 1 : 4);
+  }
+  return String(value);
 }
 
-/** Get the best price from a set of odds entries for a given market */
+/** Get the best price for a market+side from a set of odds entries */
 function getBestForMarket(
   entries: OddsEntry[],
   marketType: string,
@@ -77,34 +53,16 @@ function getBestForMarket(
     .sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity))[0];
 }
 
-export function WrapUpSection({ data }: WrapUpSectionProps) {
-  const metrics = data.derivedMetrics;
-  const odds = data.odds;
-  const oddsFormat = useSettings((s) => s.oddsFormat);
-
-  if (
-    (!metrics || Object.keys(metrics).length === 0) &&
-    odds.length === 0
-  ) {
-    return (
-      <div className="px-4 py-4 text-sm text-neutral-500">
-        No wrap-up data available
-      </div>
-    );
-  }
-
-  const { outcomes, other } = metrics
-    ? groupMetrics(metrics)
-    : { outcomes: [], other: [] };
-
-  const { opening, closing } = getLineComparison(odds);
-
-  // Build line comparison data for mainline markets
-  const lineComparisons: {
-    label: string;
-    openPrice: number | undefined;
-    closePrice: number | undefined;
-  }[] = [];
+/** Build opening vs closing line comparisons from odds data */
+function buildLineComparisons(odds: OddsEntry[]): {
+  label: string;
+  openPrice?: number;
+  closePrice?: number;
+  line?: number;
+}[] {
+  const opening = odds.filter((o) => !o.isClosingLine);
+  const closing = odds.filter((o) => o.isClosingLine);
+  const results: { label: string; openPrice?: number; closePrice?: number; line?: number }[] = [];
 
   for (const mt of ["spread", "moneyline", "total"] as const) {
     for (const side of ["home", "away", "over", "under"]) {
@@ -113,44 +71,90 @@ export function WrapUpSection({ data }: WrapUpSectionProps) {
       if (openEntry?.price != null || closeEntry?.price != null) {
         const sideLabel = side.charAt(0).toUpperCase() + side.slice(1);
         const mtLabel = mt.charAt(0).toUpperCase() + mt.slice(1);
-        const lineStr =
-          (closeEntry ?? openEntry)?.line != null
-            ? ` ${(closeEntry ?? openEntry)!.line! > 0 ? "+" : ""}${(closeEntry ?? openEntry)!.line}`
-            : "";
-        lineComparisons.push({
-          label: `${sideLabel} ${mtLabel}${lineStr}`,
+        const entry = closeEntry ?? openEntry;
+        results.push({
+          label: `${sideLabel} ${mtLabel}`,
           openPrice: openEntry?.price ?? undefined,
           closePrice: closeEntry?.price ?? undefined,
+          line: entry?.line ?? undefined,
         });
       }
     }
   }
+
+  return results;
+}
+
+export function WrapUpSection({ data }: WrapUpSectionProps) {
+  const metrics = data.derivedMetrics;
+  const odds = data.odds;
+  const oddsFormat = useSettings((s) => s.oddsFormat);
+
+  const hasMetrics = metrics && Object.keys(metrics).length > 0;
+  const hasOdds = odds && odds.length > 0;
+
+  if (!hasMetrics && !hasOdds) {
+    return (
+      <div className="px-4 py-4 text-sm text-neutral-500">
+        No wrap-up data available
+      </div>
+    );
+  }
+
+  // derivedMetrics sections
+  const entries = hasMetrics ? Object.entries(metrics) : [];
+  const outcomes = entries.filter(([k]) => OUTCOME_KEYS.has(k));
+  const keyMetrics = entries.filter(([k]) => !OUTCOME_KEYS.has(k));
+
+  // Odds-based line comparisons (always show if odds exist)
+  const lineComparisons = hasOdds ? buildLineComparisons(odds) : [];
 
   return (
     <div className="px-4 space-y-4">
       {/* Outcomes */}
       {outcomes.length > 0 && (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-3">
             Outcomes
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {outcomes.map(([key, value]) => (
-              <OutcomeRow
-                key={key}
-                label={OUTCOME_LABELS[key] ?? key.replace(/_/g, " ")}
-                value={value}
-                metricKey={key}
-              />
+              <div key={key} className="flex items-center justify-between">
+                <span className="text-xs text-neutral-500">{humanLabel(key)}</span>
+                <span className="text-sm font-medium text-neutral-100">
+                  {formatValue(value)}
+                </span>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Opening vs Closing Lines */}
+      {/* Key Metrics — two-column grid matching iOS */}
+      {keyMetrics.length > 0 && (
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+            Key Metrics
+          </h3>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {keyMetrics.map(([key, value]) => (
+              <div key={key}>
+                <div className="text-[11px] text-neutral-500 leading-tight">
+                  {humanLabel(key)}
+                </div>
+                <div className="text-sm font-medium text-neutral-100 mt-0.5">
+                  {formatValue(value)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Opening vs Closing Lines (from odds data) */}
       {lineComparisons.length > 0 && (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-3">
             Opening vs Closing Lines
           </h3>
           <div className="space-y-1">
@@ -158,131 +162,35 @@ export function WrapUpSection({ data }: WrapUpSectionProps) {
               <span className="flex-1">Market</span>
               <span className="w-20 text-center">Open</span>
               <span className="w-20 text-center">Close</span>
-              <span className="w-16 text-center">Move</span>
             </div>
-            {lineComparisons.map((comp, i) => {
-              const diff =
-                comp.openPrice != null && comp.closePrice != null
-                  ? comp.closePrice - comp.openPrice
-                  : null;
-              return (
-                <div
-                  key={i}
-                  className="flex items-center py-1.5 text-sm border-t border-neutral-800/30"
-                >
-                  <span className="flex-1 text-neutral-300 text-xs truncate pr-2">
-                    {comp.label}
-                  </span>
-                  <span className="w-20 text-center font-mono text-xs text-neutral-400">
-                    {comp.openPrice != null
-                      ? formatOdds(comp.openPrice, oddsFormat)
-                      : "\u2014"}
-                  </span>
-                  <span className="w-20 text-center font-mono text-xs text-neutral-200">
-                    {comp.closePrice != null
-                      ? formatOdds(comp.closePrice, oddsFormat)
-                      : "\u2014"}
-                  </span>
-                  <span
-                    className={cn(
-                      "w-16 text-center font-mono text-xs",
-                      diff != null && diff > 0
-                        ? "text-green-400"
-                        : diff != null && diff < 0
-                          ? "text-red-400"
-                          : "text-neutral-500",
-                    )}
-                  >
-                    {diff != null
-                      ? `${diff > 0 ? "+" : ""}${diff}`
-                      : "\u2014"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Other Metrics */}
-      {other.length > 0 && (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">
-            Key Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {other.map(([key, value]) => (
-              <div key={key}>
-                <div className="text-xs text-neutral-500 capitalize mb-0.5">
-                  {key.replace(/_/g, " ")}
-                </div>
-                <div className="text-sm text-neutral-200">
-                  {typeof value === "string"
-                    ? value
-                    : typeof value === "number"
-                      ? String(value)
-                      : JSON.stringify(value)}
-                </div>
+            {lineComparisons.map((comp, i) => (
+              <div
+                key={i}
+                className="flex items-center py-1.5 text-sm border-t border-neutral-800/30"
+              >
+                <span className="flex-1 text-neutral-300 text-xs truncate pr-2">
+                  {comp.label}
+                  {comp.line != null && (
+                    <span className="text-neutral-500 ml-1">
+                      {comp.line > 0 ? "+" : ""}{comp.line}
+                    </span>
+                  )}
+                </span>
+                <span className="w-20 text-center font-mono text-xs text-neutral-400">
+                  {comp.openPrice != null
+                    ? formatOdds(comp.openPrice, oddsFormat)
+                    : "—"}
+                </span>
+                <span className="w-20 text-center font-mono text-xs text-neutral-200">
+                  {comp.closePrice != null
+                    ? formatOdds(comp.closePrice, oddsFormat)
+                    : "—"}
+                </span>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function OutcomeRow({
-  label,
-  value,
-  metricKey,
-}: {
-  label: string;
-  value: unknown;
-  metricKey: string;
-}) {
-  const displayValue =
-    typeof value === "string"
-      ? value
-      : typeof value === "number"
-        ? String(value)
-        : JSON.stringify(value);
-
-  // Special styling for known keys
-  const isResult =
-    metricKey === "spreadResult" ||
-    metricKey === "totalResult" ||
-    metricKey === "moneylineResult";
-
-  const resultColor =
-    isResult && typeof value === "string"
-      ? value.toLowerCase().includes("cover") ||
-        value.toLowerCase().includes("hit") ||
-        value.toLowerCase().includes("win") ||
-        value.toLowerCase().includes("over")
-        ? "text-green-400"
-        : value.toLowerCase().includes("push")
-          ? "text-amber-400"
-          : "text-red-400"
-      : "text-neutral-200";
-
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-neutral-500 capitalize">{label}</span>
-      <span
-        className={cn(
-          "text-sm font-medium",
-          metricKey === "winner"
-            ? "text-neutral-100"
-            : metricKey === "finalScore"
-              ? "text-neutral-100 font-mono"
-              : isResult
-                ? resultColor
-                : "text-neutral-200",
-        )}
-      >
-        {displayValue}
-      </span>
     </div>
   );
 }

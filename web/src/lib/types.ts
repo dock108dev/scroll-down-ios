@@ -130,6 +130,8 @@ export interface Game {
   homeScore?: number | null;
   awayScore?: number | null;
   status: GameStatus;
+  currentPeriod?: number;
+  gameClock?: string;
   scrapeVersion?: number;
   lastScrapedAt?: string;
   hasBoxscore?: boolean;

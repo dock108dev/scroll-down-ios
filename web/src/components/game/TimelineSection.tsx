@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { PlayEntry, ServerTieredPlayGroup } from "@/lib/types";
+import type { PlayEntry } from "@/lib/types";
 import { TimelineRow } from "./TimelineRow";
-import { CollapsedPlayGroup } from "./CollapsedPlayGroup";
 import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -14,13 +13,10 @@ interface TimelineSectionProps {
   awayTeamAbbr?: string;
   homeColor?: string;
   awayColor?: string;
-  groupedPlays?: ServerTieredPlayGroup[];
 }
 
-/** A renderable item inside a period: either a single play or a collapsed group. */
-type PeriodItem =
-  | { kind: "play"; play: PlayEntry; previousPlay?: PlayEntry }
-  | { kind: "group"; plays: PlayEntry[]; summaryLabel?: string };
+/** A renderable item inside a period. */
+type PeriodItem = { kind: "play"; play: PlayEntry; previousPlay?: PlayEntry };
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -42,99 +38,18 @@ function groupByPeriod(plays: PlayEntry[]): Map<string, PlayEntry[]> {
 }
 
 /**
- * Builds a lookup from playIndex to its server-provided group.
- */
-function buildGroupLookup(
-  groups: ServerTieredPlayGroup[] | undefined,
-): Map<number, ServerTieredPlayGroup> {
-  const lookup = new Map<number, ServerTieredPlayGroup>();
-  if (!groups) return lookup;
-  for (const g of groups) {
-    for (const idx of g.playIndices) {
-      lookup.set(idx, g);
-    }
-  }
-  return lookup;
-}
-
-/**
- * Converts an array of plays within a period into renderable items,
- * collapsing consecutive tier-3 plays into groups.
- *
- * When server-provided groupedPlays are available, those groupings and
- * summary labels are used. Otherwise, client-side grouping collapses
- * consecutive tier-3 plays.
+ * Converts an array of plays within a period into renderable items.
+ * All plays (including tier 3) are rendered individually for full clarity.
  */
 function buildPeriodItems(
   periodPlays: PlayEntry[],
   allPlays: PlayEntry[],
-  groupLookup: Map<number, ServerTieredPlayGroup>,
 ): PeriodItem[] {
-  const items: PeriodItem[] = [];
-  const usedServerGroups = new Set<ServerTieredPlayGroup>();
-
-  let i = 0;
-  while (i < periodPlays.length) {
-    const play = periodPlays[i];
-    const tier = play.tier ?? 3;
-
-    // Check for server-provided group
-    const serverGroup = groupLookup.get(play.playIndex);
-    if (serverGroup && !usedServerGroups.has(serverGroup)) {
-      usedServerGroups.add(serverGroup);
-
-      // Gather all plays belonging to this server group that are in this period
-      const groupPlays: PlayEntry[] = [];
-      const groupIndices = new Set(serverGroup.playIndices);
-      let j = i;
-      while (j < periodPlays.length && groupIndices.has(periodPlays[j].playIndex)) {
-        groupPlays.push(periodPlays[j]);
-        j++;
-      }
-
-      if (groupPlays.length > 0) {
-        items.push({
-          kind: "group",
-          plays: groupPlays,
-          summaryLabel: serverGroup.summaryLabel,
-        });
-        i = j;
-        continue;
-      }
-    }
-
-    // Client-side grouping: collapse consecutive tier-3 plays
-    if (tier === 3) {
-      const tier3Plays: PlayEntry[] = [play];
-      let j = i + 1;
-      while (j < periodPlays.length && (periodPlays[j].tier ?? 3) === 3) {
-        // Don't absorb plays that belong to a different server group
-        const nextServerGroup = groupLookup.get(periodPlays[j].playIndex);
-        if (nextServerGroup && !usedServerGroups.has(nextServerGroup)) break;
-        tier3Plays.push(periodPlays[j]);
-        j++;
-      }
-
-      if (tier3Plays.length >= 2) {
-        items.push({ kind: "group", plays: tier3Plays });
-      } else {
-        // Single tier-3 play: render inline
-        const prevIdx = play.playIndex - 1;
-        const prevPlay = allPlays.find((p) => p.playIndex === prevIdx);
-        items.push({ kind: "play", play, previousPlay: prevPlay });
-      }
-      i = j;
-      continue;
-    }
-
-    // Tier 1 or 2: render as individual play
+  return periodPlays.map((play) => {
     const prevIdx = play.playIndex - 1;
     const prevPlay = allPlays.find((p) => p.playIndex === prevIdx);
-    items.push({ kind: "play", play, previousPlay: prevPlay });
-    i++;
-  }
-
-  return items;
+    return { kind: "play" as const, play, previousPlay: prevPlay };
+  });
 }
 
 // ─── Period Card ────────────────────────────────────────────
@@ -192,32 +107,17 @@ function PeriodCard({
       >
         <div className="overflow-hidden">
           <div className="px-2 py-2 space-y-0.5">
-            {items.map((item, idx) => {
-              if (item.kind === "group") {
-                return (
-                  <CollapsedPlayGroup
-                    key={`group-${item.plays[0].playIndex}`}
-                    plays={item.plays}
-                    summaryLabel={item.summaryLabel}
-                    homeTeamAbbr={homeTeamAbbr}
-                    awayTeamAbbr={awayTeamAbbr}
-                    homeColor={homeColor}
-                    awayColor={awayColor}
-                  />
-                );
-              }
-              return (
-                <TimelineRow
-                  key={item.play.playIndex}
-                  play={item.play}
-                  previousPlay={item.previousPlay}
-                  homeTeamAbbr={homeTeamAbbr}
-                  awayTeamAbbr={awayTeamAbbr}
-                  homeColor={homeColor}
-                  awayColor={awayColor}
-                />
-              );
-            })}
+            {items.map((item) => (
+              <TimelineRow
+                key={item.play.playIndex}
+                play={item.play}
+                previousPlay={item.previousPlay}
+                homeTeamAbbr={homeTeamAbbr}
+                awayTeamAbbr={awayTeamAbbr}
+                homeColor={homeColor}
+                awayColor={awayColor}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -233,7 +133,6 @@ export function TimelineSection({
   awayTeamAbbr,
   homeColor,
   awayColor,
-  groupedPlays,
 }: TimelineSectionProps) {
   if (plays.length === 0) {
     return (
@@ -244,13 +143,12 @@ export function TimelineSection({
   }
 
   const periodMap = groupByPeriod(plays);
-  const groupLookup = buildGroupLookup(groupedPlays);
 
   // Build renderable items for each period
   const periods = Array.from(periodMap.entries()).map(
     ([period, periodPlays]) => ({
       period,
-      items: buildPeriodItems(periodPlays, plays, groupLookup),
+      items: buildPeriodItems(periodPlays, plays),
     }),
   );
 
