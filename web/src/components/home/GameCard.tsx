@@ -7,7 +7,7 @@ import { useReadState } from "@/stores/read-state";
 import { useSettings } from "@/stores/settings";
 import { TeamColorDot } from "@/components/shared/TeamColorDot";
 import { cn } from "@/lib/utils";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useReadingPosition } from "@/stores/reading-position";
 
 interface GameCardProps {
@@ -38,23 +38,35 @@ function formatGameDateTime(dateStr: string): string {
   return `${month} ${day} • ${time}`;
 }
 
-/** Get period label based on league */
+/** Get period label based on league (matches iOS formatting) */
 function getPeriodLabel(game: GameSummary): string {
-  const league = game.leagueCode?.toLowerCase();
+  const league = game.leagueCode?.toUpperCase();
   const period = game.currentPeriod;
   if (!period) return "";
-  if (league === "nhl") return `P${period}`;
-  if (league === "nfl" || league === "ncaaf") return `Q${period}`;
-  if (league === "mlb") return period <= 9 ? `${period}` : `E${period - 9}`;
-  return `Q${period}`;
+  if (league === "NCAAB") {
+    if (period === 1) return "H1";
+    if (period === 2) return "H2";
+    if (period === 3) return "OT";
+    return `${period - 2}OT`;
+  }
+  if (league === "NHL") {
+    if (period <= 3) return `P${period}`;
+    if (period === 4) return "OT";
+    return `${period - 3}OT`;
+  }
+  if (league === "MLB") return period <= 9 ? `${period}` : `E${period - 9}`;
+  // NBA and others
+  if (period <= 4) return `Q${period}`;
+  if (period === 5) return "OT";
+  return `${period - 4}OT`;
 }
 
 export function GameCard({ game }: GameCardProps) {
   const router = useRouter();
   const { isRead, markRead, markUnread } = useReadState();
   const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
-  const [tempRevealed, setTempRevealed] = useState(false);
   const savedPosition = useReadingPosition((s) => s.getPosition)(game.id);
+  const savePosition = useReadingPosition((s) => s.savePosition);
 
   const read = isRead(game.id);
   const final = isFinal(game.status);
@@ -67,7 +79,7 @@ export function GameCard({ game }: GameCardProps) {
   const showScore =
     !pregame &&
     hasScoreData &&
-    (scoreRevealMode === "always" || read || tempRevealed);
+    (scoreRevealMode === "always" || read);
 
   const displayAwayScore = showScore
     ? game.awayScore
@@ -87,6 +99,31 @@ export function GameCard({ game }: GameCardProps) {
     if (!noData) {
       router.push(`/game/${game.id}`);
     }
+  };
+
+  const handleReveal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markRead(game.id, game.status);
+    // Save current scores so the detail page shows the same values
+    if (hasScoreData) {
+      savePosition(game.id, {
+        playIndex: -1,
+        homeScore: game.homeScore ?? undefined,
+        awayScore: game.awayScore ?? undefined,
+        period: game.currentPeriod,
+        gameClock: game.gameClock,
+        periodLabel: game.currentPeriod ? getPeriodLabel(game) : undefined,
+        timeLabel: game.currentPeriod
+          ? `${getPeriodLabel(game)}${game.gameClock ? ` ${game.gameClock}` : ""}`
+          : undefined,
+        savedAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  const handleHide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markUnread(game.id);
   };
 
   return (
@@ -113,16 +150,6 @@ export function GameCard({ game }: GameCardProps) {
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" />
               </span>
               LIVE
-            </span>
-          )}
-          {final && !read && (
-            <span className="text-yellow-500 text-[10px] font-medium">NEW</span>
-          )}
-          {final && read && (
-            <span className="text-neutral-600">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
             </span>
           )}
         </div>
@@ -199,33 +226,17 @@ export function GameCard({ game }: GameCardProps) {
           )}
         </div>
         <div className="flex-1 text-right">
-          {final && !read && (
+          {(final || live) && !showScore && scoreRevealMode !== "always" && (
             <button
-              onClick={(e) => { e.stopPropagation(); markRead(game.id, game.status); }}
+              onClick={handleReveal}
               className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Reveal
             </button>
           )}
-          {final && read && (
+          {(final || live) && showScore && scoreRevealMode !== "always" && (
             <button
-              onClick={(e) => { e.stopPropagation(); markUnread(game.id); }}
-              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
-            >
-              Hide
-            </button>
-          )}
-          {live && !tempRevealed && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setTempRevealed(true); }}
-              className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
-            >
-              Reveal
-            </button>
-          )}
-          {live && tempRevealed && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setTempRevealed(false); }}
+              onClick={handleHide}
               className="text-[11px] text-neutral-400 hover:text-white transition underline underline-offset-2"
             >
               Hide

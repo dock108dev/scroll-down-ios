@@ -322,7 +322,19 @@ export default function GameDetailPage({
     );
   }
 
-  const game = data.game;
+  // Enrich game with clock + scores from latest PBP entry
+  const lastPlay = data.plays?.length
+    ? data.plays[data.plays.length - 1]
+    : null;
+  const game = lastPlay
+    ? {
+        ...data.game,
+        currentPeriod: lastPlay.quarter ?? data.game.currentPeriod,
+        gameClock: lastPlay.gameClock ?? data.game.gameClock,
+        homeScore: lastPlay.homeScore ?? data.game.homeScore,
+        awayScore: lastPlay.awayScore ?? data.game.awayScore,
+      }
+    : data.game;
   const final = isFinal(game.status);
   const live = isLive(game.status);
   const pregame = isPregame(game.status);

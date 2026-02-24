@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import type { Game } from "@/lib/types";
 import { isLive, isFinal, isPregame } from "@/lib/types";
 import { useReadState } from "@/stores/read-state";
 import { useSettings } from "@/stores/settings";
+import { useReadingPosition } from "@/stores/reading-position";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -13,19 +13,30 @@ interface GameHeaderProps {
 }
 
 function getPeriodLabel(game: Game): string {
-  const league = game.leagueCode?.toLowerCase();
+  const league = game.leagueCode?.toUpperCase();
   const period = game.currentPeriod;
   if (!period) return "";
-  if (league === "nhl") return `P${period}`;
-  if (league === "nfl" || league === "ncaaf") return `Q${period}`;
-  if (league === "mlb") return period <= 9 ? `${period}` : `E${period - 9}`;
-  return `Q${period}`;
+  if (league === "NCAAB") {
+    if (period === 1) return "H1";
+    if (period === 2) return "H2";
+    if (period === 3) return "OT";
+    return `${period - 2}OT`;
+  }
+  if (league === "NHL") {
+    if (period <= 3) return `P${period}`;
+    if (period === 4) return "OT";
+    return `${period - 3}OT`;
+  }
+  if (league === "MLB") return period <= 9 ? `${period}` : `E${period - 9}`;
+  if (period <= 4) return `Q${period}`;
+  if (period === 5) return "OT";
+  return `${period - 4}OT`;
 }
 
 export function GameHeader({ game }: GameHeaderProps) {
   const { isRead, markRead, markUnread } = useReadState();
   const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
-  const [tempRevealed, setTempRevealed] = useState(false);
+  const savedPosition = useReadingPosition((s) => s.getPosition)(game.id);
 
   const read = isRead(game.id);
   const live = isLive(game.status);
@@ -37,16 +48,16 @@ export function GameHeader({ game }: GameHeaderProps) {
   const showScore =
     !pregame &&
     hasScoreData &&
-    (scoreRevealMode === "always" || read || tempRevealed);
+    (scoreRevealMode === "always" || read);
+
+  // Use saved scores from card reveal if available, otherwise use API scores
+  const displayAwayScore = savedPosition?.awayScore ?? game.awayScore;
+  const displayHomeScore = savedPosition?.homeScore ?? game.homeScore;
 
   const handleScoreToggle = () => {
     if (!hasScoreData) return;
-    if (final) {
-      if (read) markUnread(game.id);
-      else markRead(game.id, game.status);
-    } else if (live) {
-      setTempRevealed((prev) => !prev);
-    }
+    if (read) markUnread(game.id);
+    else markRead(game.id, game.status);
   };
 
   const awayColor = game.awayTeamColorDark || "#888";
@@ -88,7 +99,7 @@ export function GameHeader({ game }: GameHeaderProps) {
           </div>
           {showScore ? (
             <div className="text-3xl font-bold font-mono tabular-nums mt-1">
-              {game.awayScore}
+              {displayAwayScore}
             </div>
           ) : (
             <div className="text-3xl font-bold font-mono tabular-nums mt-1 text-neutral-800">
@@ -108,9 +119,11 @@ export function GameHeader({ game }: GameHeaderProps) {
           {showScore ? (
             <>
               <span className="text-neutral-600 text-sm font-medium">@</span>
-              {live && (game.currentPeriod || game.gameClock) && (
+              {live && (game.currentPeriod || game.gameClock || savedPosition?.timeLabel) && (
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  {getPeriodLabel(game)}{game.gameClock ? ` ${game.gameClock}` : ""}
+                  {game.currentPeriod || game.gameClock
+                    ? `${getPeriodLabel(game)}${game.gameClock ? ` ${game.gameClock}` : ""}`
+                    : savedPosition?.timeLabel}
                 </p>
               )}
               {scoreRevealMode !== "always" && (
@@ -148,7 +161,7 @@ export function GameHeader({ game }: GameHeaderProps) {
           </div>
           {showScore ? (
             <div className="text-3xl font-bold font-mono tabular-nums mt-1">
-              {game.homeScore}
+              {displayHomeScore}
             </div>
           ) : (
             <div className="text-3xl font-bold font-mono tabular-nums mt-1 text-neutral-800">

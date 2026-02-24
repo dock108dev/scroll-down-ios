@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { GameSummary } from "@/lib/types";
+import { deriveGameStatus, isLive } from "@/lib/types";
 
 // ── Date helpers (US/Eastern) ──────────────────────────────
 
@@ -77,7 +78,60 @@ async function fetchSection(
   params.set("limit", "200");
   if (league) params.set("league", league);
   const data = await api.games(params);
-  return data.games;
+  return data.games.map((g) => ({ ...g, status: deriveGameStatus(g) }));
+}
+
+// ── Enrich live games with clock from PBP ─────────────────
+
+interface RawPbpPlay {
+  quarter?: number;
+  game_clock?: string;
+  home_score?: number;
+  away_score?: number;
+}
+
+async function fetchLastPlay(gameId: number): Promise<RawPbpPlay | null> {
+  try {
+    const res = await fetch(`/api/games/${gameId}/pbp`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const plays: RawPbpPlay[] = data.plays ?? data.events ?? [];
+    return plays.length > 0 ? plays[plays.length - 1] : null;
+  } catch {
+    return null;
+  }
+}
+
+async function enrichLiveGames(games: GameSummary[]): Promise<GameSummary[]> {
+  const liveGames = games.filter((g) => isLive(g.status));
+  if (liveGames.length === 0) return games;
+
+  const clockData = await Promise.all(
+    liveGames.map(async (g) => {
+      const play = await fetchLastPlay(g.id);
+      return { id: g.id, play };
+    }),
+  );
+
+  const clockMap = new Map(
+    clockData
+      .filter((c) => c.play !== null)
+      .map((c) => [c.id, c.play!]),
+  );
+
+  if (clockMap.size === 0) return games;
+
+  return games.map((g) => {
+    const play = clockMap.get(g.id);
+    if (!play) return g;
+    return {
+      ...g,
+      currentPeriod: play.quarter ?? g.currentPeriod,
+      gameClock: play.game_clock ?? g.gameClock,
+      homeScore: play.home_score ?? g.homeScore,
+      awayScore: play.away_score ?? g.awayScore,
+    };
+  });
 }
 
 // ── Client-side search filter ──────────────────────────────
@@ -147,16 +201,17 @@ export function useGames(league?: string, search?: string): UseGamesReturn {
       }));
       setLoading(false);
 
-      // Phase 2: fetch Earlier + Tomorrow in parallel
-      const [earlier, tomorrow] = await Promise.all([
+      // Phase 2: fetch Earlier + Tomorrow in parallel, enrich live games with clock
+      const [earlier, tomorrow, enrichedToday] = await Promise.all([
         fetchSection(ranges.Earlier, league),
         fetchSection(ranges.Tomorrow, league),
+        enrichLiveGames(today),
       ]);
 
       setSectionMap({
         Earlier: earlier,
         Yesterday: yesterday,
-        Today: today,
+        Today: enrichedToday,
         Tomorrow: tomorrow,
       });
     } catch (err) {

@@ -509,3 +509,53 @@ export function isFinal(status: GameStatus): boolean {
 export function isPregame(status: GameStatus): boolean {
   return status === "pregame" || status === "scheduled";
 }
+
+/**
+ * Derive game status when the API doesn't return one.
+ * Priority (matching iOS logic):
+ *  1. If currentPeriod or gameClock present → "in_progress"
+ *  2. If game date is in the future → "scheduled"
+ *  3. If game has play data AND started within last 5 hours → "in_progress"
+ *  4. If game has scores → "completed"
+ *  5. Fallback → "scheduled"
+ */
+const MAX_GAME_DURATION_MS = 5 * 60 * 60 * 1000; // 5 hours
+
+export function deriveGameStatus(game: {
+  status?: GameStatus;
+  currentPeriod?: number;
+  gameClock?: string;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  gameDate: string;
+  playCount?: number;
+  hasPbp?: boolean;
+}): GameStatus {
+  // If the API already provides a status, use it
+  if (game.status) return game.status;
+
+  // Live indicators (currentPeriod / gameClock from API)
+  if (game.currentPeriod != null || game.gameClock != null) {
+    return "in_progress";
+  }
+
+  const gameTime = new Date(game.gameDate).getTime();
+  const now = Date.now();
+
+  // Game hasn't started yet
+  if (gameTime > now) return "scheduled";
+
+  const elapsed = now - gameTime;
+
+  // Game started recently and has play-by-play data → in progress
+  if ((game.playCount ?? 0) > 0 && elapsed < MAX_GAME_DURATION_MS) {
+    return "in_progress";
+  }
+
+  // Game has scores → completed
+  if (game.homeScore != null && game.awayScore != null) {
+    return "completed";
+  }
+
+  return "scheduled";
+}

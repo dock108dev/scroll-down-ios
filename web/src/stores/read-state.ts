@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { GameStatus } from "@/lib/types";
-import { isFinal } from "@/lib/types";
 
 interface ReadState {
   readGameIds: Set<number>;
@@ -17,8 +16,7 @@ export const useReadState = create<ReadState>()(
     (set, get) => ({
       readGameIds: new Set<number>(),
       isRead: (id) => get().readGameIds.has(id),
-      markRead: (id, status) => {
-        if (!isFinal(status)) return;
+      markRead: (id, _status) => {
         set((s) => ({ readGameIds: new Set(s.readGameIds).add(id) }));
       },
       markUnread: (id) => {
