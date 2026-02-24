@@ -1,5 +1,6 @@
-import type { FlowBlock } from "@/lib/types";
+import type { FlowBlock, SocialPostEntry } from "@/lib/types";
 import { MiniBoxScore } from "./MiniBoxScore";
+import { SocialPostCard } from "./SocialPostCard";
 import { cn } from "@/lib/utils";
 
 interface FlowBlockCardProps {
@@ -11,6 +12,7 @@ interface FlowBlockCardProps {
   homeColor?: string;
   awayColor?: string;
   isFirstBlock?: boolean;
+  embeddedSocialPost?: SocialPostEntry;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -31,6 +33,7 @@ export function FlowBlockCard({
   homeColor,
   awayColor,
   isFirstBlock,
+  embeddedSocialPost,
 }: FlowBlockCardProps) {
   const roleLabel = ROLE_LABELS[block.role] ?? "";
 
@@ -81,6 +84,12 @@ export function FlowBlockCard({
           awayColor={awayColor}
           isFirstBlock={isFirstBlock}
         />
+      )}
+
+      {embeddedSocialPost && (
+        <div className="mt-3">
+          <SocialPostCard post={embeddedSocialPost} mode="embedded" />
+        </div>
       )}
     </div>
   );

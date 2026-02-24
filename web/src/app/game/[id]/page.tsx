@@ -362,7 +362,7 @@ export default function GameDetailPage({
         {/* ─── Flow (Final only, always expanded) ───────── */}
         {sections.includes("Flow") && (
           <div id="section-Flow" className="scroll-mt-24">
-            <FlowContainer gameId={gameId} />
+            <FlowContainer gameId={gameId} socialPosts={data.socialPosts} />
           </div>
         )}
 

@@ -3,6 +3,7 @@
 import type { GameDetailResponse, OddsEntry } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
 import { formatOdds, formatDate, formatTime, cn } from "@/lib/utils";
+import { SocialSection } from "./SocialSection";
 
 interface OverviewSectionProps {
   data: GameDetailResponse;
@@ -191,6 +192,9 @@ export function OverviewSection({ data }: OverviewSectionProps) {
           </div>
         </div>
       )}
+
+      {/* Pregame Social Posts */}
+      <SocialSection posts={data.socialPosts} phase="pregame" outcomeRevealed={false} />
     </div>
   );
 }

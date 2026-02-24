@@ -2,7 +2,9 @@
 
 import type { GameDetailResponse, OddsEntry } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
+import { useReadState } from "@/stores/read-state";
 import { formatOdds } from "@/lib/utils";
+import { SocialSection } from "./SocialSection";
 
 interface WrapUpSectionProps {
   data: GameDetailResponse;
@@ -89,6 +91,9 @@ export function WrapUpSection({ data }: WrapUpSectionProps) {
   const metrics = data.derivedMetrics;
   const odds = data.odds;
   const oddsFormat = useSettings((s) => s.oddsFormat);
+  const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
+  const isRead = useReadState((s) => s.isRead);
+  const outcomeRevealed = scoreRevealMode === "always" || isRead(data.game.id);
 
   const hasMetrics = metrics && Object.keys(metrics).length > 0;
   const hasOdds = odds && odds.length > 0;
@@ -191,6 +196,9 @@ export function WrapUpSection({ data }: WrapUpSectionProps) {
           </div>
         </div>
       )}
+
+      {/* Postgame Reactions */}
+      <SocialSection posts={data.socialPosts} phase="postgame" outcomeRevealed={outcomeRevealed} />
     </div>
   );
 }

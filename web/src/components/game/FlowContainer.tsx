@@ -4,10 +4,11 @@ import { useMemo } from "react";
 import { useFlow } from "@/hooks/useFlow";
 import { FlowBlockCard } from "./FlowBlockCard";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
-import type { FlowBlock, FlowPlay } from "@/lib/types";
+import type { FlowBlock, FlowPlay, SocialPostEntry } from "@/lib/types";
 
 interface FlowContainerProps {
   gameId: number;
+  socialPosts?: SocialPostEntry[];
 }
 
 /** Derive period display string for a block from its plays */
@@ -43,7 +44,7 @@ function periodDisplay(
   return `${startPeriod}–${endPeriod}`;
 }
 
-export function FlowContainer({ gameId }: FlowContainerProps) {
+export function FlowContainer({ gameId, socialPosts }: FlowContainerProps) {
   const { data, loading, error } = useFlow(gameId);
 
   // Index plays by play_id for O(1) lookup
@@ -55,6 +56,12 @@ export function FlowContainer({ gameId }: FlowContainerProps) {
     }
     return map;
   }, [data?.plays]);
+
+  // Index social posts by id for embedded lookup
+  const socialPostsById = useMemo(() => {
+    if (!socialPosts) return new Map<number, SocialPostEntry>();
+    return new Map(socialPosts.map((p) => [p.id, p]));
+  }, [socialPosts]);
 
   if (loading) {
     return (
@@ -88,6 +95,11 @@ export function FlowContainer({ gameId }: FlowContainerProps) {
               homeColor={data.home_team_color_dark}
               awayColor={data.away_team_color_dark}
               isFirstBlock={i === 0}
+              embeddedSocialPost={
+                block.embedded_social_post_id != null
+                  ? socialPostsById.get(block.embedded_social_post_id)
+                  : undefined
+              }
             />
           ))}
         </div>

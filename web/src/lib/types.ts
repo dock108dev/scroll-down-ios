@@ -291,6 +291,7 @@ export interface SocialPostEntry {
   sourceHandle?: string;
   mediaType?: MediaType;
   gamePhase?: string;
+  revealLevel?: string; // "pre" | "post" — for spoiler gating
   likesCount?: number;
   retweetsCount?: number;
   repliesCount?: number;
