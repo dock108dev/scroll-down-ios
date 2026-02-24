@@ -174,11 +174,7 @@ final class AppConfig: ObservableObject {
         
         // Snapshot mode: exclude live games
         let filtered = games.filter { game in
-            guard let status = game.status else {
-                return false
-            }
-            
-            switch status {
+            switch game.status {
             case .completed, .final, .archived, .scheduled, .pregame, .postponed, .canceled:
                 return true // Safe for snapshot mode
             case .inProgress, .live:

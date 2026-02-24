@@ -170,7 +170,7 @@ struct GameDetailView: View {
             return "@ \(periodLabel)"
         }
         if let q = latestPlay.quarter {
-            let label = Self.formatPeriodLabel(q, sport: game.leagueCode)
+            let label = game.currentPeriodLabel ?? "Q\(q)"
             if let clock = latestPlay.gameClock { return "@ \(label) \(clock)" }
             return "@ \(label)"
         }
@@ -279,13 +279,11 @@ struct GameDetailView: View {
                                             // Find latest play with score for game position context
                                             let latestPlay = (viewModel.detail?.plays ?? [])
                                                 .last(where: { $0.homeScore != nil && $0.awayScore != nil })
-                                            let sport = game.leagueCode
                                             let pLabel = latestPlay?.periodLabel
-                                                ?? latestPlay?.quarter.map { Self.formatPeriodLabel($0, sport: sport) }
+                                                ?? game.currentPeriodLabel
                                             let tLabel = latestPlay?.timeLabel
                                                 ?? latestPlay.flatMap { play in
-                                                    guard let q = play.quarter else { return nil }
-                                                    let label = Self.formatPeriodLabel(q, sport: sport)
+                                                    guard let label = play.periodLabel ?? game.currentPeriodLabel else { return nil }
                                                     if let clock = play.gameClock { return "\(label) \(clock)" }
                                                     return label
                                                 }

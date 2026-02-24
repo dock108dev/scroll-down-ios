@@ -183,7 +183,7 @@ enum MockDataGenerator {
     // MARK: - Game Detail Generator
 
     static func generateGameDetail(from summary: GameSummary) -> GameDetailResponse {
-        let status = summary.status ?? .scheduled
+        let status = summary.status
         let hasData = status.isFinal || status.isLive
 
         // Build the full Game object

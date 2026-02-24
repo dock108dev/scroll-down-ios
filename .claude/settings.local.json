@@ -16,7 +16,8 @@
       "Bash(plutil:*)",
       "Bash(find:*)",
       "Bash(ruby:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(tail:*)"
     ]
   }
 }

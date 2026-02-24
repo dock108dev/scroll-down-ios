@@ -71,26 +71,9 @@ enum MarketKey: Identifiable, Codable, Equatable, Hashable {
         }
     }
 
+    /// Delegates to FairBetCopy.marketLabel (SSOT for market display names)
     var displayName: String {
-        switch self {
-        case .h2h: return "Moneyline"
-        case .spreads: return "Spread"
-        case .totals: return "Total"
-        case .playerPoints: return "Player Points"
-        case .playerRebounds: return "Player Rebounds"
-        case .playerAssists: return "Player Assists"
-        case .playerThrees: return "Player Threes"
-        case .playerBlocks: return "Player Blocks"
-        case .playerSteals: return "Player Steals"
-        case .playerGoals: return "Player Goals"
-        case .playerShotsOnGoal: return "Shots on Goal"
-        case .playerTotalSaves: return "Goalie Saves"
-        case .playerPRA: return "PRA"
-        case .teamTotals: return "Team Total"
-        case .alternateSpreads: return "Alt Spread"
-        case .alternateTotals: return "Alt Total"
-        case .unknown(let val): return val.replacingOccurrences(of: "_", with: " ").capitalized
-        }
+        FairBetCopy.marketLabel(for: rawValue)
     }
 
     /// Known mainline markets for filtering UI
@@ -188,6 +171,31 @@ struct EVDiagnostics: Codable, Equatable {
     }
 }
 
+/// Step-by-step explanation from the API for the math walkthrough
+struct ExplanationStep: Codable {
+    let stepNumber: Int
+    let title: String
+    let description: String?
+    let detailRows: [DetailRow]?
+
+    struct DetailRow: Codable {
+        let label: String
+        let value: String
+        let isHighlight: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case label, value
+            case isHighlight = "is_highlight"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case stepNumber = "step_number"
+        case title, description
+        case detailRows = "detail_rows"
+    }
+}
+
 /// API response wrapper from /api/fairbet/odds
 struct BetsResponse: Codable {
     let bets: [APIBet]
@@ -196,6 +204,22 @@ struct BetsResponse: Codable {
     var gamesAvailable: [GameDropdown]? = nil
     var marketCategoriesAvailable: [String]? = nil
     var evDiagnostics: EVDiagnostics? = nil
+    var evConfig: EVConfig? = nil
+
+    struct EVConfig: Codable {
+        var minBooksForDisplay: Int?
+        var evColorThresholds: EVColorThresholds?
+
+        struct EVColorThresholds: Codable {
+            var strongPositive: Double?
+            var positive: Double?
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case minBooksForDisplay = "min_books_for_display"
+            case evColorThresholds = "ev_color_thresholds"
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
         case bets
@@ -204,6 +228,7 @@ struct BetsResponse: Codable {
         case gamesAvailable = "games_available"
         case marketCategoriesAvailable = "market_categories_available"
         case evDiagnostics = "ev_diagnostics"
+        case evConfig = "ev_config"
     }
 }
 
@@ -230,6 +255,16 @@ struct APIBet: Identifiable, Codable, Equatable {
     var referencePrice: Int? = nil
     var oppositeReferencePrice: Int? = nil
     var betDescription: String? = nil
+    // API-provided display fields (SSOT)
+    var fairAmericanOdds: Int? = nil
+    var selectionDisplayServer: String? = nil
+    var marketDisplayName: String? = nil
+    var bestBookName: String? = nil
+    var bestEvPercent: Double? = nil
+    var confidenceDisplayLabel: String? = nil
+    var evMethodDisplayName: String? = nil
+    var evMethodExplanation: String? = nil
+    var explanationSteps: [ExplanationStep]? = nil
 
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
@@ -251,6 +286,15 @@ struct APIBet: Identifiable, Codable, Equatable {
         case referencePrice = "reference_price"
         case oppositeReferencePrice = "opposite_reference_price"
         case betDescription = "bet_description"
+        case fairAmericanOdds = "fair_american_odds"
+        case selectionDisplayServer = "selection_display"
+        case marketDisplayName = "market_display_name"
+        case bestBookName = "best_book_name"
+        case bestEvPercent = "best_ev_percent"
+        case confidenceDisplayLabel = "confidence_display_label"
+        case evMethodDisplayName = "ev_method_display_name"
+        case evMethodExplanation = "ev_method_explanation"
+        case explanationSteps = "explanation_steps"
     }
 
     /// Unique identifier for the bet
@@ -269,37 +313,30 @@ struct APIBet: Identifiable, Codable, Equatable {
     }
 
     /// Parse selection from selection_key (e.g., "team:los_angeles_lakers" -> "Los Angeles Lakers")
+    /// Used for opponent detection (BetCard) and search filtering; display prefers `selectionDisplayServer`.
     var selection: String {
         let parts = selectionKey.split(separator: ":")
         guard parts.count >= 2 else { return selectionKey }
 
         let rawSelection = String(parts[1...].joined(separator: ":"))
 
-        // Handle totals (over/under)
         if rawSelection == "over" { return "Over" }
         if rawSelection == "under" { return "Under" }
 
-        // Handle team names - convert from slug to display name
-        // e.g., "los_angeles_lakers" -> try to match with homeTeam/awayTeam
-        let normalized = rawSelection.replacingOccurrences(of: "_", with: " ")
+        // Exact match against normalized team names
+        let normalized = rawSelection.replacingOccurrences(of: "_", with: " ").lowercased()
+        if homeTeam.lowercased() == normalized { return homeTeam }
+        if awayTeam.lowercased() == normalized { return awayTeam }
 
-        // Check if it matches home or away team (case insensitive)
-        if homeTeam.lowercased().contains(normalized.lowercased()) ||
-           normalized.lowercased().contains(homeTeam.lowercased().split(separator: " ").last?.description ?? "") {
-            return homeTeam
-        }
-        if awayTeam.lowercased().contains(normalized.lowercased()) ||
-           normalized.lowercased().contains(awayTeam.lowercased().split(separator: " ").last?.description ?? "") {
-            return awayTeam
-        }
-
-        // No team match — capitalize each word
-        return normalized.capitalized
+        // Fallback: capitalize the slug
+        return rawSelection.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
     /// Display string for the selection with line if applicable.
-    /// Enriched for player props, team props, and alternates.
+    /// Prefers API-provided `selectionDisplayServer`; falls back to client-side logic.
     var selectionDisplay: String {
+        if let server = selectionDisplayServer, !server.isEmpty { return server }
+
         let marketLabel = FairBetCopy.marketLabel(for: marketKey)
 
         // Player props: "Player Name Stat O/U Line"
@@ -338,10 +375,6 @@ struct APIBet: Identifiable, Codable, Equatable {
         return selection
     }
 
-    /// The best price available across all books (highest decimal odds = best for bettor)
-    var bestBook: BookPrice? {
-        books.max { $0.price < $1.price }
-    }
 
     static func == (lhs: APIBet, rhs: APIBet) -> Bool {
         lhs.id == rhs.id
@@ -361,6 +394,10 @@ struct BookPrice: Identifiable, Codable, Equatable {
     var isSharp: Bool? = nil
     var evMethod: String? = nil
     var evConfidenceTier: String? = nil
+    // API-provided SSOT fields
+    var bookAbbr: String? = nil
+    var priceDecimal: Double? = nil
+    var evTier: String? = nil
 
     var id: String { book }
 
@@ -380,6 +417,9 @@ struct BookPrice: Identifiable, Codable, Equatable {
         case isSharp = "is_sharp"
         case evMethod = "ev_method"
         case evConfidenceTier = "ev_confidence_tier"
+        case bookAbbr = "book_abbr"
+        case priceDecimal = "price_decimal"
+        case evTier = "ev_tier"
     }
 
     /// Convert American odds to AmericanOdds struct

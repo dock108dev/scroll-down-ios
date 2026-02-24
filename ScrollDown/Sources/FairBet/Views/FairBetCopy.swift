@@ -111,7 +111,8 @@ enum FairBetCopy {
 
     // MARK: - Market Labels
 
-    static func marketLabel(for marketKey: String) -> String {
+    static func marketLabel(for marketKey: String, apiLabel: String? = nil) -> String {
+        if let label = apiLabel, !label.isEmpty { return label }
         switch marketKey.lowercased() {
         case "h2h": return "Moneyline"
         case "spread", "spreads": return "Spread"

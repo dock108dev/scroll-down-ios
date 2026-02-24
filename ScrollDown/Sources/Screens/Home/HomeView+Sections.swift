@@ -120,14 +120,14 @@ extension HomeView {
             })
             .contextMenu {
                 if readStateStore.scoreRevealMode != .always,
-                   game.status?.isLive == true || game.currentPeriod != nil || game.gameClock != nil {
+                   game.status.isLive {
                     Button {
                         rowView.updateToLiveScore()
                     } label: {
                         Label("Update Score", systemImage: "arrow.clockwise")
                     }
                 }
-                if game.status?.isFinal == true && game.currentPeriod == nil && game.gameClock == nil {
+                if game.status.isFinal {
                     if readStateStore.isRead(gameId: game.id) {
                         Button(role: .destructive) {
                             readStateStore.markUnread(gameId: game.id)
@@ -136,9 +136,7 @@ extension HomeView {
                         }
                     } else {
                         Button {
-                            if let status = game.status {
-                                readStateStore.markRead(gameId: game.id, status: status)
-                            }
+                            readStateStore.markRead(gameId: game.id, status: game.status)
                         } label: {
                             Label("Mark as Read", systemImage: "eye")
                         }
@@ -187,7 +185,7 @@ extension HomeView {
     // MARK: - Feedback
 
     func triggerHapticIfNeeded(for game: GameSummary) {
-        guard game.status?.isFinal == true else { return }
+        guard game.status.isFinal else { return }
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred()
     }

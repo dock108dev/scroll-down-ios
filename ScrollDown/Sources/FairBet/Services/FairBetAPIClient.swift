@@ -26,6 +26,36 @@ actor FairBetAPIClient {
         self.decoder = decoder
     }
 
+    // MARK: - Parlay Types
+
+    struct ParlayLeg: Codable {
+        let gameId: Int
+        let marketKey: String
+        let selectionKey: String
+        let lineValue: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case gameId = "game_id"
+            case marketKey = "market_key"
+            case selectionKey = "selection_key"
+            case lineValue = "line_value"
+        }
+    }
+
+    struct ParlayEvaluation: Codable {
+        let fairProbability: Double
+        let fairAmericanOdds: Int
+        let confidence: String
+        let legCount: Int
+
+        enum CodingKeys: String, CodingKey {
+            case fairProbability = "fair_probability"
+            case fairAmericanOdds = "fair_american_odds"
+            case confidence
+            case legCount = "leg_count"
+        }
+    }
+
     /// Errors that can occur during API calls
     enum APIError: Error, LocalizedError {
         case invalidURL
@@ -164,6 +194,57 @@ actor FairBetAPIClient {
 
         do {
             return try decoder.decode(BetsResponse.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+    }
+
+    /// Evaluate a parlay via the API
+    /// - Parameter legs: The parlay legs to evaluate
+    /// - Returns: ParlayEvaluation with fair probability and odds
+    func evaluateParlay(legs: [ParlayLeg]) async throws -> ParlayEvaluation {
+        let baseURL = AppConfig.shared.apiBaseURL
+
+        guard let url = URL(string: "/api/fairbet/parlay/evaluate", relativeTo: baseURL) else {
+            throw APIError.invalidURL
+        }
+
+        guard let apiKey = APIConfiguration.apiKey(for: AppConfig.shared.environment) else {
+            throw APIError.missingAPIKey
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeaderName)
+
+        let encoder = JSONEncoder()
+        request.httpBody = try encoder.encode(["legs": legs])
+
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        if httpResponse.statusCode == 401 {
+            throw APIError.unauthorized
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.serverError(httpResponse.statusCode)
+        }
+
+        do {
+            return try decoder.decode(ParlayEvaluation.self, from: data)
         } catch {
             throw APIError.decodingError(error)
         }

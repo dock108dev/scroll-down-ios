@@ -10,7 +10,6 @@ import SwiftUI
 struct BetCard: View {
     let bet: APIBet
     let oddsFormat: OddsFormat
-    let evResult: OddsComparisonViewModel.EVResult?
     var isInParlay: Bool = false
     var onToggleParlay: (() -> Void)?
 
@@ -24,23 +23,29 @@ struct BetCard: View {
     // MARK: - Computed Properties
 
     private var fairProbability: Double {
-        evResult?.fairProbability ?? 0.5
+        bet.trueProb ?? 0.5
     }
 
     private var fairAmericanOdds: Int {
-        evResult?.fairAmericanOdds ?? 0
+        bet.fairAmericanOdds ?? 0
     }
 
     private var bestBook: BookPrice? {
-        bet.bestBook
+        bet.books.first(where: { $0.name == bet.bestBookName })
     }
 
     private var bestBookEV: Double? {
-        evResult?.ev
+        bet.bestEvPercent
     }
 
     private var confidence: FairOddsConfidence {
-        evResult?.confidence ?? .none
+        guard let tier = bet.evConfidenceTier else { return .none }
+        switch tier {
+        case "full": return .high
+        case "decent": return .medium
+        case "thin": return .low
+        default: return .none
+        }
     }
 
     private var isHighValueBet: Bool {
@@ -133,7 +138,7 @@ struct BetCard: View {
                 .stroke(parlayBorderColor, lineWidth: isInParlay ? 1.5 : (isHighValueBet ? 1.5 : 1))
         )
         .sheet(isPresented: $showFairExplainer) {
-            FairExplainerSheet(bet: bet, evResult: evResult)
+            FairExplainerSheet(bet: bet)
         }
     }
 
@@ -152,7 +157,7 @@ struct BetCard: View {
 
                 HStack(spacing: 6) {
                     LeagueBadgeSmall(league: bet.league)
-                    Text(FairBetCopy.marketLabel(for: bet.market.rawValue))
+                    Text(FairBetCopy.marketLabel(for: bet.market.rawValue, apiLabel: bet.marketDisplayName))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -327,7 +332,7 @@ struct BetCard: View {
                         ForEach(sortedBooks) { book in
                             MiniBookChip(
                                 book: book,
-                                isBest: book.price == bestBook?.price,
+                                isBest: book.name == bet.bestBookName,
                                 ev: computeEV(for: book)
                             )
                         }

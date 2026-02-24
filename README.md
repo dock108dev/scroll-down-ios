@@ -1,6 +1,6 @@
-# Scroll Down — iOS App
+# Scroll Down Sports
 
-Native iOS client for **Scroll Down Sports** — catch up on games without immediate score reveals.
+Multi-platform client for **Scroll Down Sports** — catch up on games without immediate score reveals.
 
 ## The Concept
 
@@ -11,27 +11,20 @@ Sports fans don't always watch games live. Most apps immediately show final scor
 - **Context first.** See matchups and game flow before outcomes
 - **Reveal on your terms.** You decide when to uncover scores
 
-## Features
+## Platforms
 
-| Feature | Status |
-|---------|--------|
-| Home feed (Earlier/Yesterday/Today/Tomorrow) | Live |
-| Game search by team name | Live |
-| Game detail with collapsible sections | Live |
-| Flow-based timeline with narrative blocks | Live |
-| Tiered play-by-play with team badges | Live |
-| FairBet odds comparison with EV analysis | Live |
-| Game detail cross-book odds table | Live |
-| NHL skater/goalie stats | Live |
-| Team page navigation | Live |
-| Theme selection (system/light/dark) | Live |
-| Live game viewing with auto-polling PBP | Live |
-| Reading position tracking with resume | Live |
-| Score reveal preference (spoiler-free / always show) | Live |
-| iPad adaptive layout | Live |
-| Snapshot mode (beta time override) | Live |
+| Platform | Directory | Tech Stack | Status |
+|----------|-----------|------------|--------|
+| iOS | `ScrollDown/` | Swift 5.9+, SwiftUI, MVVM | Live |
+| Web | `web/` | Next.js 16, React 19, Zustand, Tailwind | Live |
+
+Both clients consume the same backend API (`sports-data-admin.dock108.ai`). No backend code lives in this repository — it is purely a client layer.
+
+`webapp/` contains a legacy vanilla HTML/JS/CSS prototype, superseded by the Next.js web app.
 
 ## Quick Start
+
+### iOS
 
 **Requirements:** Xcode 16+, iOS 17+
 
@@ -41,23 +34,51 @@ open ScrollDown.xcodeproj
 xcodebuild -scheme ScrollDown -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
-## Environments
+### Web
 
-| Mode | Description |
-|------|-------------|
-| `.live` | Production API at `sports-data-admin.dock108.ai` (default) |
-| `.localhost` | Local server at `localhost:8000` |
-| `.mock` | Offline with generated data via `MockGameService` |
+**Requirements:** Node 22+
 
-Set via `AppConfig.shared.environment` or Admin Settings (debug builds).
+```bash
+cd web
+cp .env.local.example .env.local   # Add your API key
+npm install
+npm run dev                         # http://localhost:3000
+```
+
+## Features
+
+| Feature | iOS | Web |
+|---------|-----|-----|
+| Home feed (Earlier/Yesterday/Today/Tomorrow) | Yes | Yes |
+| Game search by team name | Yes | Yes |
+| Game detail with collapsible sections | Yes | Yes |
+| Flow-based narrative timeline | Yes | Yes |
+| Tiered play-by-play | Yes | Yes |
+| Cross-book odds table | Yes | Yes |
+| FairBet odds comparison with EV | Yes | Yes |
+| Score reveal preference (spoiler-free) | Yes | Yes |
+| Reading position tracking with resume | Yes | Yes |
+| Theme selection (system/light/dark) | Yes | Yes |
+| Live game auto-polling | Yes | Yes |
+| NHL skater/goalie stats | Yes | Yes |
+| iPad adaptive layout | Yes | — |
+| Snapshot mode (beta time override) | Yes | — |
+
+## Architecture
+
+Both apps follow the same principle: the app is a **thin display layer**. The backend computes all derived data — period labels, play tiers, odds outcomes, team colors, merged timelines. Clients read pre-computed values and render them.
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Architecture](docs/architecture.md) | MVVM structure, data flow, design patterns |
+| [AGENTS.md](AGENTS.md) | AI agent context (both platforms) |
+| [Architecture](docs/architecture.md) | System architecture and data flow |
 | [Development](docs/development.md) | Local dev, testing, debugging |
-| [Snapshot Mode](docs/beta-time-override.md) | Time override for historical testing |
-| [Changelog](docs/CHANGELOG.md) | Feature history |
+| [CI/CD](docs/ci-cd.md) | GitHub Actions, Docker, deployment |
+| [Snapshot Mode](docs/beta-time-override.md) | iOS time override for historical testing |
+| [Changelog](docs/CHANGELOG.md) | iOS feature history |
 
-For AI agent context, see [AGENTS.md](AGENTS.md).
+Client-side logic catalogs:
+- [iOS APP_LOGIC.md](ScrollDown/APP_LOGIC.md) — What intentionally stays on-device
+- [Web APP_LOGIC.md](web/APP_LOGIC.md) — What intentionally stays in-browser

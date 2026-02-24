@@ -12,24 +12,9 @@ import Foundation
 struct AmericanOdds: Equatable, Hashable, Codable {
     let value: Int
 
-    /// Convert American odds to implied probability
-    var impliedProbability: Double {
-        OddsCalculator.impliedProbability(for: self)
-    }
-
-    /// Convert American odds to decimal odds
-    var decimalOdds: Double {
-        OddsCalculator.decimalOdds(for: self)
-    }
-
     /// Display string with + or - prefix
     var displayString: String {
         value > 0 ? "+\(value)" : "\(value)"
-    }
-
-    /// Check if this value represents valid American odds
-    var isValid: Bool {
-        OddsCalculator.isValidAmericanOdds(value)
     }
 
     /// Initialize with auto-correction for invalid values.
@@ -52,16 +37,6 @@ struct AmericanOdds: Equatable, Hashable, Codable {
         } else {
             return -100 // -99 to -1 -> -100
         }
-    }
-
-    /// Create from decimal odds
-    static func fromDecimal(_ decimal: Double) -> AmericanOdds {
-        OddsCalculator.americanOdds(fromDecimal: decimal)
-    }
-
-    /// Create from implied probability
-    static func fromProbability(_ probability: Double) -> AmericanOdds {
-        OddsCalculator.americanOdds(fromProbability: probability)
     }
 }
 

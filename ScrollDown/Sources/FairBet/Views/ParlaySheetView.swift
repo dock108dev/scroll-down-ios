@@ -148,14 +148,12 @@ struct ParlaySheetView: View {
 
             // Per-leg fair odds & probability
             VStack(alignment: .trailing, spacing: 2) {
-                if let evResult = viewModel.evResult(for: bet) {
-                    Text(FairBetCopy.formatOdds(evResult.fairAmericanOdds))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                    Text(FairBetCopy.formatProbability(evResult.fairProbability))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                Text(FairBetCopy.formatOdds(bet.fairAmericanOdds ?? 0))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                Text(FairBetCopy.formatProbability(bet.trueProb ?? 0.5))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             // Remove button

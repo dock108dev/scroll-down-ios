@@ -1,6 +1,6 @@
 # Changelog
 
-Notable changes to the Scroll Down iOS app.
+Notable changes to the Scroll Down iOS app. Web app changes are tracked separately in the web branch.
 
 ## [Unreleased]
 

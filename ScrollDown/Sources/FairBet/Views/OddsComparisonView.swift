@@ -41,7 +41,6 @@ struct OddsComparisonView: View {
                             BetCard(
                                 bet: bet,
                                 oddsFormat: viewModel.oddsFormat,
-                                evResult: viewModel.evResult(for: bet),
                                 isInParlay: viewModel.isInParlay(bet),
                                 onToggleParlay: { viewModel.toggleParlay(bet) }
                             )
