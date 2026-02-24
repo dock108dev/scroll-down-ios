@@ -9,8 +9,8 @@ import type {
   BetsResponse,
 } from "./types";
 
-async function fetchApi<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init);
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
   return res.json();
 }
@@ -29,5 +29,14 @@ export const api = {
   fairbetOdds: (params?: URLSearchParams) =>
     fetchApi<BetsResponse>(
       `/api/fairbet/odds${params ? `?${params}` : ""}`,
+    ),
+  parlayEvaluate: (legs: { game_id: number; market_key: string; selection_key: string; line_value?: number }[]) =>
+    fetchApi<{ fair_probability: number; fair_american_odds: number; confidence: string; leg_count: number }>(
+      "/api/fairbet/parlay/evaluate",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ legs }),
+      },
     ),
 };

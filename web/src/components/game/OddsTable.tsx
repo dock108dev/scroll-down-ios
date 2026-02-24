@@ -3,7 +3,7 @@
 import type { OddsEntry } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
 import { formatOdds, cn } from "@/lib/utils";
-import { BOOK_ABBREVIATIONS } from "@/lib/constants";
+import { bookAbbreviation } from "@/lib/theme";
 
 interface OddsTableProps {
   odds: OddsEntry[];
@@ -18,8 +18,13 @@ function rowKey(o: OddsEntry): string {
   return `${o.marketType}|${o.side ?? ""}|${o.line ?? ""}|${o.playerName ?? ""}`;
 }
 
-/** Find the best (highest) price in a set of entries */
+/** Find the best (highest) price in a set of entries. Uses API isBest flag when available. */
 function findBestPrice(entries: OddsEntry[]): number | null {
+  // Prefer API-provided isBest flag
+  const apiBest = entries.find((e) => e.isBest && e.price != null);
+  if (apiBest) return apiBest.price!;
+
+  // Fallback to local computation
   let best: number | null = null;
   for (const e of entries) {
     if (e.price != null && (best === null || e.price > best)) {
@@ -78,7 +83,7 @@ export function OddsTable({ odds, groupSides, showPlayerNames }: OddsTableProps)
               Market
             </th>
             {books.map((book) => {
-              const abbr = BOOK_ABBREVIATIONS[book] ?? book.slice(0, 3).toUpperCase();
+              const abbr = bookAbbreviation(book);
               const isPreferred =
                 preferredBook !== "" &&
                 book.toLowerCase().replace(/\s+/g, "") === preferredBook;

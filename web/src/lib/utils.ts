@@ -42,29 +42,6 @@ function greatestCommonDivisor(a: number, b: number): number {
   return b === 0 ? a : greatestCommonDivisor(b, a % b);
 }
 
-export function formatEV(ev: number): string {
-  const sign = ev > 0 ? "+" : "";
-  return `${sign}${ev.toFixed(1)}%`;
-}
-
-export function classifyDateSection(dateStr: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const date = new Date(dateStr);
-  date.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round(
-    (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (diffDays < -1) return "Earlier";
-  if (diffDays === -1) return "Yesterday";
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  return "Upcoming";
-}
-
 export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }

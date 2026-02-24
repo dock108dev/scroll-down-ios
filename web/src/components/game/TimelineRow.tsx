@@ -7,7 +7,7 @@ interface TimelineRowProps {
   awayTeamAbbr?: string;
   homeColor?: string;
   awayColor?: string;
-  /** Previous play in sequence, used to detect score changes */
+  /** @deprecated No longer needed — use play.scoreChanged instead */
   previousPlay?: PlayEntry;
 }
 
@@ -116,18 +116,6 @@ function getAccentColor(
   return "#525252";
 }
 
-/**
- * Detects if this play changed the score compared to the previous play.
- */
-function isScoreChange(play: PlayEntry, prev?: PlayEntry): boolean {
-  if (play.homeScore == null || play.awayScore == null) return false;
-  if (!prev || prev.homeScore == null || prev.awayScore == null) {
-    // First play with a score counts as a score change if scores > 0
-    return (play.homeScore ?? 0) > 0 || (play.awayScore ?? 0) > 0;
-  }
-  return play.homeScore !== prev.homeScore || play.awayScore !== prev.awayScore;
-}
-
 // ─── Main component ─────────────────────────────────────────
 
 export function TimelineRow({
@@ -146,7 +134,7 @@ export function TimelineRow({
     homeColor,
     awayColor,
   );
-  const scoreChanged = tier === 1 && isScoreChange(play, previousPlay);
+  const scoreChanged = tier === 1 && (play.scoreChanged ?? false);
 
   // ── Tier 1: Primary / high-impact ──
   if (tier === 1) {

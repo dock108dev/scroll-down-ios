@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import type { APIBet, BetsResponse } from "@/lib/types";
+import type { APIBet } from "@/lib/types";
 import {
   betId,
   isReliablyPositive,
@@ -381,28 +381,64 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
   const parlayCount = parlayBetIds.size;
   const canShowParlay = parlayCount >= 2;
 
+  // ── Parlay evaluation (API with client-side fallback) ──────────
+
+  const [parlayApiResult, setParlayApiResult] = useState<{
+    fair_probability: number;
+    fair_american_odds: number;
+    confidence: string;
+  } | null>(null);
+
+  // Call API when parlay legs change
+  useEffect(() => {
+    if (parlayBets.length < 2) {
+      setParlayApiResult(null);
+      return;
+    }
+
+    const legs = parlayBets.map((b) => ({
+      game_id: b.game_id,
+      market_key: b.market_key,
+      selection_key: b.selection_key,
+      line_value: b.line_value,
+    }));
+
+    let cancelled = false;
+    api.parlayEvaluate(legs)
+      .then((result) => {
+        if (!cancelled) setParlayApiResult(result);
+      })
+      .catch(() => {
+        if (!cancelled) setParlayApiResult(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [parlayBets]);
+
+  // Client-side fallback when API unavailable
   const parlayFairProbability = useMemo(() => {
+    if (parlayApiResult) return parlayApiResult.fair_probability;
     if (parlayBets.length === 0) return 0;
     let prob = 1;
     for (const b of parlayBets) {
-      const fairProb = b.true_prob ?? 0.5;
-      prob *= fairProb;
+      prob *= b.true_prob ?? 0.5;
     }
     return prob;
-  }, [parlayBets]);
+  }, [parlayBets, parlayApiResult]);
 
   const parlayFairAmericanOdds = useMemo(() => {
+    if (parlayApiResult) return parlayApiResult.fair_american_odds;
     if (parlayFairProbability <= 0 || parlayFairProbability >= 1) return 0;
     if (parlayFairProbability >= 0.5) {
       return Math.round((-parlayFairProbability / (1 - parlayFairProbability)) * 100);
     }
     return Math.round(((1 - parlayFairProbability) / parlayFairProbability) * 100);
-  }, [parlayFairProbability]);
+  }, [parlayFairProbability, parlayApiResult]);
 
   const parlayConfidence = useMemo(() => {
+    if (parlayApiResult) return parlayApiResult.confidence;
     if (parlayBets.length === 0) return "none";
     const tiers = parlayBets.map((b) => b.ev_confidence_tier ?? "none");
-    // min confidence: sharp > market > thin > none
     const order = ["none", "thin", "market", "sharp"];
     let minIndex = 3;
     for (const tier of tiers) {
@@ -410,7 +446,7 @@ export function useFairBetOdds(): UseFairBetOddsReturn {
       if (idx < minIndex) minIndex = idx;
     }
     return order[minIndex];
-  }, [parlayBets]);
+  }, [parlayBets, parlayApiResult]);
 
   const toggleParlay = useCallback((id: string) => {
     setParlayBetIds((prev) => {

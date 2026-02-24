@@ -38,29 +38,6 @@ function formatGameDateTime(dateStr: string): string {
   return `${month} ${day} • ${time}`;
 }
 
-/** Get period label based on league (matches iOS formatting) */
-function getPeriodLabel(game: GameSummary): string {
-  const league = game.leagueCode?.toUpperCase();
-  const period = game.currentPeriod;
-  if (!period) return "";
-  if (league === "NCAAB") {
-    if (period === 1) return "H1";
-    if (period === 2) return "H2";
-    if (period === 3) return "OT";
-    return `${period - 2}OT`;
-  }
-  if (league === "NHL") {
-    if (period <= 3) return `P${period}`;
-    if (period === 4) return "OT";
-    return `${period - 3}OT`;
-  }
-  if (league === "MLB") return period <= 9 ? `${period}` : `E${period - 9}`;
-  // NBA and others
-  if (period <= 4) return `Q${period}`;
-  if (period === 5) return "OT";
-  return `${period - 4}OT`;
-}
-
 export function GameCard({ game }: GameCardProps) {
   const router = useRouter();
   const { isRead, markRead, markUnread } = useReadState();
@@ -112,9 +89,9 @@ export function GameCard({ game }: GameCardProps) {
         awayScore: game.awayScore ?? undefined,
         period: game.currentPeriod,
         gameClock: game.gameClock,
-        periodLabel: game.currentPeriod ? getPeriodLabel(game) : undefined,
-        timeLabel: game.currentPeriod
-          ? `${getPeriodLabel(game)}${game.gameClock ? ` ${game.gameClock}` : ""}`
+        periodLabel: game.currentPeriodLabel ?? undefined,
+        timeLabel: game.currentPeriodLabel
+          ? `${game.currentPeriodLabel}${game.gameClock ? ` ${game.gameClock}` : ""}`
           : undefined,
         savedAt: new Date().toISOString(),
       });
@@ -205,9 +182,9 @@ export function GameCard({ game }: GameCardProps) {
       </div>
 
       {/* Game clock for live games */}
-      {live && showScore && (game.currentPeriod || game.gameClock) && (
+      {live && showScore && (game.currentPeriodLabel || game.gameClock) && (
         <div className="mt-1 text-[10px] text-neutral-500 text-center">
-          @ {getPeriodLabel(game)}{game.gameClock ? ` ${game.gameClock}` : ""}
+          @ {game.currentPeriodLabel ?? ""}{game.gameClock ? ` ${game.gameClock}` : ""}
         </div>
       )}
 

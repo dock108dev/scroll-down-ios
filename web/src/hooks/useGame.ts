@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { GameDetailResponse } from "@/lib/types";
-import { isLive, isFinal, deriveGameStatus } from "@/lib/types";
+import { isLive, isFinal } from "@/lib/types";
 
 // ─── In-memory cache (5-min TTL, max 8 entries) ────────────────
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -68,7 +68,6 @@ export function useGame(id: number) {
           }
         }
         const result = await api.game(id);
-        result.game.status = deriveGameStatus(result.game);
         setCache(id, result);
         setData(result);
         return result;

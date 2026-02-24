@@ -11,14 +11,10 @@ import {
   formatEV,
   formatProbability,
   getEVColor,
-  getConfidenceLabel,
   getConfidenceColor,
   isConfidenceReliable,
-  selectionDisplay,
-  marketKeyToLabel,
   betId,
   isReliablyPositive,
-  fairAmericanOdds,
 } from "@/lib/fairbet-utils";
 
 interface BetCardProps {
@@ -107,12 +103,12 @@ export function BetCard({
         {/* Row 1: Selection + League badge + Market */}
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-white truncate">
-            {selectionDisplay(bet)}
+            {bet.selectionDisplay ?? bet.selection_key}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             <LeagueBadge league={bet.league_code} />
             <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {marketKeyToLabel(bet.market_key)}
+              {bet.marketDisplayName ?? bet.market_key}
             </span>
           </div>
         </div>
@@ -174,7 +170,7 @@ export function BetCard({
                   backgroundColor: `${getConfidenceColor(bet.ev_confidence_tier)}1A`,
                 }}
               >
-                {getConfidenceLabel(bet.ev_confidence_tier)}
+                {bet.confidenceDisplayLabel ?? "N/A"}
               </span>
             )}
           </div>
@@ -201,39 +197,38 @@ export function BetCard({
           </div>
         )}
 
-        {/* Fair Reference Row - shows fair odds derived from true_prob, NOT reference_price */}
-        {bet.has_fair && bet.true_prob != null && (() => {
-          const fairOdds = fairAmericanOdds(bet);
-          return fairOdds != null ? (
-            <button
-              onClick={() => onShowExplainer?.(bet)}
-              className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg w-full text-left"
-              style={{
-                backgroundColor: FairBetTheme.surfaceTint,
-                border: `1px solid ${FairBetTheme.borderSubtle}`,
-              }}
-            >
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>Est. fair</span>
-              <span className="font-semibold text-white">
-                {formatOdds(fairOdds, oddsFormat)}
-              </span>
+        {/* Fair Reference Row - shows fair odds from API */}
+        {bet.has_fair && bet.fairAmericanOdds != null && (
+          <button
+            onClick={() => onShowExplainer?.(bet)}
+            className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg w-full text-left"
+            style={{
+              backgroundColor: FairBetTheme.surfaceTint,
+              border: `1px solid ${FairBetTheme.borderSubtle}`,
+            }}
+          >
+            <span style={{ color: "rgba(255,255,255,0.5)" }}>Est. fair</span>
+            <span className="font-semibold text-white">
+              {formatOdds(bet.fairAmericanOdds, oddsFormat)}
+            </span>
+            {bet.true_prob != null && (
               <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-                ({formatProbability(bet.true_prob!)})
+                ({formatProbability(bet.true_prob)})
               </span>
-              <svg
-                className="ml-auto w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-                style={{ color: FairBetTheme.info }}
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
-            </button>
-          ) : null;
-        })()}
+            )}
+            <svg
+              className="ml-auto w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+              style={{ color: FairBetTheme.info }}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+          </button>
+        )}
 
         {/* Other Books Disclosure */}
         {otherBooksCount > 0 && (

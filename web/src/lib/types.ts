@@ -100,6 +100,14 @@ export interface GameSummary {
   homeTeamAbbr?: string;
   awayTeamAbbr?: string;
   derivedMetrics?: Record<string, unknown>;
+  isLive?: boolean;
+  isFinal?: boolean;
+  isPregame?: boolean;
+  isTrulyCompleted?: boolean;
+  readEligible?: boolean;
+  currentPeriodLabel?: string;
+  dateSection?: string;
+  liveSnapshot?: { periodLabel?: string; timeLabel?: string; homeScore?: number; awayScore?: number; gameClock?: string } | null;
 }
 
 // ─── Game Detail ────────────────────────────────────────
@@ -154,6 +162,14 @@ export interface Game {
   lastPbpAt?: string;
   lastSocialAt?: string;
   lastOddsAt?: string;
+  isLive?: boolean;
+  isFinal?: boolean;
+  isPregame?: boolean;
+  isTrulyCompleted?: boolean;
+  readEligible?: boolean;
+  currentPeriodLabel?: string;
+  dateSection?: string;
+  liveSnapshot?: { periodLabel?: string; timeLabel?: string; homeScore?: number; awayScore?: number; gameClock?: string } | null;
 }
 
 // ─── Stats ──────────────────────────────────────────────
@@ -232,6 +248,10 @@ export interface PlayEntry {
   periodLabel?: string;
   timeLabel?: string;
   tier?: number;
+  scoreChanged?: boolean;
+  scoringTeamAbbr?: string;
+  pointsScored?: number;
+  phase?: string;
 }
 
 export interface ServerTieredPlayGroup {
@@ -254,6 +274,7 @@ export interface OddsEntry {
   price?: number;
   isClosingLine: boolean;
   observedAt?: string;
+  isBest?: boolean;
 }
 
 // ─── Social ─────────────────────────────────────────────
@@ -417,6 +438,7 @@ export interface BetsResponse {
   games_available?: GameDropdown[];
   market_categories_available?: string[];
   ev_diagnostics?: EVDiagnostics;
+  ev_config?: { min_books_for_display?: number; ev_color_thresholds?: { strong_positive?: number; positive?: number } };
 }
 
 export interface APIBet {
@@ -440,6 +462,14 @@ export interface APIBet {
   opposite_reference_price?: number;
   bet_description?: string;
   description?: string;
+  fairAmericanOdds?: number;
+  selectionDisplay?: string;
+  marketDisplayName?: string;
+  bestBook?: string;
+  bestEvPercent?: number;
+  confidenceDisplayLabel?: string;
+  evMethodDisplayName?: string;
+  evMethodExplanation?: string;
 }
 
 export interface BookPrice {
@@ -453,6 +483,9 @@ export interface BookPrice {
   is_sharp?: boolean;
   ev_method?: string;
   ev_confidence_tier?: string;
+  bookAbbr?: string;
+  priceDecimal?: number;
+  evTier?: string;
 }
 
 export interface GameDropdown {
@@ -498,64 +531,17 @@ export interface SocialPostResponse {
 
 // ─── Helpers ────────────────────────────────────────────
 
-export function isLive(status: GameStatus): boolean {
+export function isLive(status: GameStatus, game?: { isLive?: boolean }): boolean {
+  if (game?.isLive !== undefined) return game.isLive;
   return status === "live" || status === "in_progress";
 }
 
-export function isFinal(status: GameStatus): boolean {
+export function isFinal(status: GameStatus, game?: { isFinal?: boolean }): boolean {
+  if (game?.isFinal !== undefined) return game.isFinal;
   return status === "final" || status === "completed" || status === "archived";
 }
 
-export function isPregame(status: GameStatus): boolean {
+export function isPregame(status: GameStatus, game?: { isPregame?: boolean }): boolean {
+  if (game?.isPregame !== undefined) return game.isPregame;
   return status === "pregame" || status === "scheduled";
-}
-
-/**
- * Derive game status when the API doesn't return one.
- * Priority (matching iOS logic):
- *  1. If currentPeriod or gameClock present → "in_progress"
- *  2. If game date is in the future → "scheduled"
- *  3. If game has play data AND started within last 5 hours → "in_progress"
- *  4. If game has scores → "completed"
- *  5. Fallback → "scheduled"
- */
-const MAX_GAME_DURATION_MS = 5 * 60 * 60 * 1000; // 5 hours
-
-export function deriveGameStatus(game: {
-  status?: GameStatus;
-  currentPeriod?: number;
-  gameClock?: string;
-  homeScore?: number | null;
-  awayScore?: number | null;
-  gameDate: string;
-  playCount?: number;
-  hasPbp?: boolean;
-}): GameStatus {
-  // If the API already provides a status, use it
-  if (game.status) return game.status;
-
-  // Live indicators (currentPeriod / gameClock from API)
-  if (game.currentPeriod != null || game.gameClock != null) {
-    return "in_progress";
-  }
-
-  const gameTime = new Date(game.gameDate).getTime();
-  const now = Date.now();
-
-  // Game hasn't started yet
-  if (gameTime > now) return "scheduled";
-
-  const elapsed = now - gameTime;
-
-  // Game started recently and has play-by-play data → in progress
-  if ((game.playCount ?? 0) > 0 && elapsed < MAX_GAME_DURATION_MS) {
-    return "in_progress";
-  }
-
-  // Game has scores → completed
-  if (game.homeScore != null && game.awayScore != null) {
-    return "completed";
-  }
-
-  return "scheduled";
 }

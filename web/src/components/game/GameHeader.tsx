@@ -12,27 +12,6 @@ interface GameHeaderProps {
   game: Game;
 }
 
-function getPeriodLabel(game: Game): string {
-  const league = game.leagueCode?.toUpperCase();
-  const period = game.currentPeriod;
-  if (!period) return "";
-  if (league === "NCAAB") {
-    if (period === 1) return "H1";
-    if (period === 2) return "H2";
-    if (period === 3) return "OT";
-    return `${period - 2}OT`;
-  }
-  if (league === "NHL") {
-    if (period <= 3) return `P${period}`;
-    if (period === 4) return "OT";
-    return `${period - 3}OT`;
-  }
-  if (league === "MLB") return period <= 9 ? `${period}` : `E${period - 9}`;
-  if (period <= 4) return `Q${period}`;
-  if (period === 5) return "OT";
-  return `${period - 4}OT`;
-}
-
 export function GameHeader({ game }: GameHeaderProps) {
   const { isRead, markRead, markUnread } = useReadState();
   const scoreRevealMode = useSettings((s) => s.scoreRevealMode);
@@ -119,10 +98,10 @@ export function GameHeader({ game }: GameHeaderProps) {
           {showScore ? (
             <>
               <span className="text-neutral-600 text-sm font-medium">@</span>
-              {live && (game.currentPeriod || game.gameClock || savedPosition?.timeLabel) && (
+              {live && (game.currentPeriodLabel || game.gameClock || savedPosition?.timeLabel) && (
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  {game.currentPeriod || game.gameClock
-                    ? `${getPeriodLabel(game)}${game.gameClock ? ` ${game.gameClock}` : ""}`
+                  {game.currentPeriodLabel || game.gameClock
+                    ? `${game.currentPeriodLabel ?? ""}${game.gameClock ? ` ${game.gameClock}` : ""}`
                     : savedPosition?.timeLabel}
                 </p>
               )}

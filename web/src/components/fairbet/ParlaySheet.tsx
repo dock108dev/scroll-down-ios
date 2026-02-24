@@ -7,8 +7,6 @@ import { FairBetTheme } from "@/lib/theme";
 import { LeagueBadge } from "./LeagueBadge";
 import {
   formatProbability,
-  selectionDisplay,
-  getConfidenceLabel,
   getConfidenceColor,
   betId,
 } from "@/lib/fairbet-utils";
@@ -100,7 +98,7 @@ export function ParlaySheet({
                     className="text-sm font-semibold"
                     style={{ color: getConfidenceColor(parlayConfidence) }}
                   >
-                    {getConfidenceLabel(parlayConfidence)}
+                    {parlayConfidence}
                   </span>
                 </div>
               </div>
@@ -138,7 +136,7 @@ export function ParlaySheet({
                     <div className="flex items-center gap-2">
                       <LeagueBadge league={bet.league_code} />
                       <span className="text-xs font-semibold text-white truncate">
-                        {selectionDisplay(bet)}
+                        {bet.selectionDisplay ?? bet.selection_key}
                       </span>
                     </div>
                     <div className="text-[10px]" style={{ color: "rgba(255,255,255,0.5)" }}>

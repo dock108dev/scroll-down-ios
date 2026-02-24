@@ -7,25 +7,6 @@ export const LEAGUE_OPTIONS = [
   { code: "nhl", label: "NHL" },
 ] as const;
 
-export const BOOK_ABBREVIATIONS: Record<string, string> = {
-  draftkings: "DK",
-  fanduel: "FD",
-  betmgm: "MGM",
-  caesars: "CZR",
-  espnbet: "ESPN",
-  fanatics: "FAN",
-  "hard rock bet": "HR",
-  pinnacle: "PIN",
-  bet365: "365",
-  betrivers: "BR",
-  "william hill": "WH",
-  "888sport": "888",
-  // legacy
-  pointsbet: "PB",
-  wynnbet: "WYNN",
-  bovada: "BOV",
-};
-
 export const BREAKPOINTS = {
   mobile: 0,
   tablet: 768,

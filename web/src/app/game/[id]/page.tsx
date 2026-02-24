@@ -18,14 +18,14 @@ import { useReadState } from "@/stores/read-state";
 import { useSettings } from "@/stores/settings";
 
 // ─── isGameTrulyCompleted ──────────────────────────────────────
-// A game is "truly completed" when status is final AND either:
-//   - derivedMetrics has outcomes, OR
-//   - 3+ hours have elapsed since gameDate
 function isGameTrulyCompleted(data: GameDetailResponse): boolean {
+  // Prefer API-provided field
+  if (data.game.isTrulyCompleted !== undefined) return data.game.isTrulyCompleted;
+
+  // Fallback: final status + 3+ hours elapsed
   const { game, derivedMetrics } = data;
   if (!isFinal(game.status)) return false;
 
-  // Check derivedMetrics for outcomes
   if (derivedMetrics && Object.keys(derivedMetrics).length > 0) {
     const hasOutcomes =
       "outcomes" in derivedMetrics ||
@@ -34,12 +34,9 @@ function isGameTrulyCompleted(data: GameDetailResponse): boolean {
     if (hasOutcomes) return true;
   }
 
-  // Fallback: 3+ hours since gameDate
   const gameTime = new Date(game.gameDate).getTime();
   const threeHoursMs = 3 * 60 * 60 * 1000;
-  if (Date.now() - gameTime >= threeHoursMs) return true;
-
-  return false;
+  return Date.now() - gameTime >= threeHoursMs;
 }
 
 // ─── Section definitions by status ─────────────────────────────
