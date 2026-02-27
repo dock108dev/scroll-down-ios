@@ -1,8 +1,6 @@
 # Architecture
 
-System architecture, data flow, and design principles for both iOS and web apps.
-
-For directory layouts, data models, API endpoints, and environment reference, see [AGENTS.md](../AGENTS.md).
+System architecture, data flow, and design principles for the iOS app.
 
 ## iOS MVVM Data Flow
 
@@ -261,65 +259,3 @@ All interactive elements use consistent patterns:
 | Expand animation | `spring(response: 0.3, dampingFraction: 0.8)` |
 | Transitions | Asymmetric (opacity + move from top) |
 
----
-
-## Web App Architecture
-
-### Data Flow
-
-```
-Browser (React)
-    ↓ fetch("/api/games")
-Next.js API Route (server-side)
-    ↓ apiFetch() with X-API-Key header
-Backend API (sports-data-admin.dock108.ai)
-    ↓ JSON response
-Next.js API Route
-    ↓ NextResponse.json()
-Browser → React hook (useGames/useGame) → Component re-render
-```
-
-The web app uses **Next.js API routes as a proxy layer**. Client-side code calls local `/api/*` routes, which forward requests to the backend with authentication. This keeps the API key server-side.
-
-### Component Architecture
-
-Pages are thin orchestrators. Components handle rendering:
-
-```
-page.tsx (route)
-    ├─ useGames() / useGame() / useFairBetOdds()    # Data fetching
-    ├─ useSettingsStore() / useReadStateStore()       # Zustand state
-    └─ <GameSection> / <GameHeader> / <BetCard>      # Components
-```
-
-Components are organized by feature area (`home/`, `game/`, `fairbet/`, `layout/`, `shared/`). See [AGENTS.md — Web Directory Layout](../AGENTS.md) for the full tree.
-
-### State Management
-
-Three Zustand stores persist to `localStorage`:
-
-| Store | Purpose | Persistence Key |
-|-------|---------|-----------------|
-| `settings` | Theme, odds format, score reveal, preferred book, sort option | `sd-settings` |
-| `read-state` | Which games the user has marked as read | `sd-read-state` |
-| `reading-position` | Per-game scroll position and score snapshot | `sd-reading-position` |
-
-### Caching
-
-- **In-memory LRU** — `useGame` maintains a 5-minute TTL cache with max 8 entries for game detail responses
-- **ISR** — Next.js API routes use `revalidate` for server-side caching (60s game list, 30s game detail)
-- **No service worker** — Cache is in-memory only, cleared on page reload
-
-### Server-Driven Display
-
-The same principle as iOS: the backend computes all derived data. The web app renders pre-computed values (period labels, play tiers, odds outcomes, team colors). See [AGENTS.md — What the Server Provides](../AGENTS.md).
-
-### Deployment
-
-Docker-based, deployed to Hetzner VPS:
-
-```
-GitHub Push (main) → CI (lint + build) → Docker Build → GHCR Push → SSH Deploy to Hetzner
-```
-
-The container runs at `127.0.0.1:3000` and is reverse-proxied to `scrolldownsports.dock108.dev`. See [ci-cd.md](ci-cd.md) for the full pipeline.

@@ -1,12 +1,10 @@
 # Development
 
-Guide for local development, testing, and debugging across both platforms.
+Guide for local development, testing, and debugging.
 
 ---
 
-## iOS
-
-### Environments
+## Environments
 
 The iOS app supports three runtime environments via `AppConfig.shared.environment`:
 
@@ -137,73 +135,3 @@ Filter by subsystem `com.scrolldown.app` in Console.app:
 - Verify `/api/admin/sports/games/{id}/timeline` returns a `TimelineArtifactResponse` with `timelineJson`
 - Not all games have timeline artifacts generated
 - Flow-based timeline (`buildUnifiedTimelineFromFlow`) is the primary PBP source for completed games
-
----
-
-## Web
-
-### Setup
-
-```bash
-cd web
-cp .env.local.example .env.local   # Add your SPORTS_DATA_API_KEY
-npm install
-npm run dev                         # http://localhost:3000
-```
-
-### Environment Variables
-
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend API base URL |
-| `SPORTS_DATA_API_KEY` | Yes | API authentication (server-side only, never exposed to browser) |
-
-See `web/.env.local.example` for local development and `web/.env.production.example` for production.
-
-### Commands
-
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Development server with hot reload |
-| `npm run build` | Production build (standalone output) |
-| `npm start` | Start production server |
-| `npm run lint` | ESLint check |
-| `npx tsc --noEmit` | TypeScript type check |
-
-### Docker (Local)
-
-```bash
-cd web
-docker build -t scrolldown-web .
-docker run -p 3000:3000 --env-file .env.local scrolldown-web
-```
-
-### Web QA Checklist
-
-- [ ] Home page loads with date sections (Earlier, Yesterday, Today, Tomorrow)
-- [ ] League filter works (All, NBA, NCAAB, NHL)
-- [ ] Search filters by team name
-- [ ] Game card taps navigate to game detail
-- [ ] Game detail sections render (Overview, Timeline, Stats, Odds, Wrap-Up)
-- [ ] Flow blocks display for completed games
-- [ ] FairBet page loads odds with progressive pagination
-- [ ] BetCard shows EV, fair odds, book chips
-- [ ] FairExplainer sheet opens on fair odds tap
-- [ ] Theme toggle works (system, light, dark)
-- [ ] Score reveal mode toggle works
-- [ ] Reading position saves and restores on return
-
-### Web Common Issues
-
-**API errors (500):**
-- Check `SPORTS_DATA_API_KEY` is set in `.env.local`
-- Check `NEXT_PUBLIC_API_BASE_URL` points to a running backend
-- Check browser Network tab for the failing `/api/*` request
-
-**Stale data after code changes:**
-- `npm run dev` hot-reloads components but API route changes may need a server restart
-- Delete `.next/` directory for a clean build if caching issues persist
-
-**Type errors:**
-- Run `npx tsc --noEmit` to check all types
-- Web types are in `web/src/lib/types.ts` — keep in sync with API responses
