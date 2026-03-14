@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var readStateStore: ReadStateStore
+    @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject var oddsViewModel: OddsComparisonViewModel
     @AppStorage("appTheme") private var appTheme = "system"
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
@@ -108,10 +109,45 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            // Account section
+            Section("Account") {
+                if authViewModel.isAuthenticated {
+                    NavigationLink {
+                        AccountView(authViewModel: authViewModel)
+                    } label: {
+                        HStack {
+                            Image(systemName: "person.circle.fill")
+                                .foregroundStyle(GameTheme.accentColor)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(authViewModel.displayName)
+                                    .font(.subheadline.weight(.medium))
+                                Text(authViewModel.role.displayName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } else {
+                    NavigationLink("Sign In / Create Account") {
+                        LoginView(authViewModel: authViewModel)
+                    }
+                }
+            }
+
+            // Admin features (role-gated)
+            if authViewModel.isAdmin {
+                Section("Admin") {
+                    NavigationLink("Game History") {
+                        HistoryView()
+                    }
+                }
+            }
             #if DEBUG
-            Section("Admin") {
-                NavigationLink("Game History") {
-                    HistoryView()
+            if !authViewModel.isAdmin {
+                Section("Admin (Debug)") {
+                    NavigationLink("Game History") {
+                        HistoryView()
+                    }
                 }
             }
             #endif

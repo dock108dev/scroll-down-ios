@@ -10,6 +10,7 @@ import SwiftUI
 enum FairBetSubTab: String, CaseIterable {
     case pregame = "Pre-game"
     case live = "Live"
+    case calculator = "Calc"
 }
 
 struct FairBetHeaderView: View {

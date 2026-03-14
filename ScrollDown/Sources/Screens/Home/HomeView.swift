@@ -263,6 +263,9 @@ struct HomeView: View {
             if viewMode == .odds && fairbetSubTab == .live {
                 LiveOddsView(viewModel: liveOddsViewModel)
             }
+            if viewMode == .odds && fairbetSubTab == .calculator {
+                ParlayCalculatorView()
+            }
             if viewMode == .simulator {
                 MLBSimulatorView(viewModel: simulatorViewModel)
             }

@@ -12,6 +12,9 @@ struct SimulatorResultsView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            // Game Playback Visualization (the showpiece!)
+            GameSimPlaybackView(result: result)
+
             // Win Probability
             WinProbabilityBarView(
                 homeProb: result.homeWinProbability,
