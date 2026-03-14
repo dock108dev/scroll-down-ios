@@ -149,6 +149,7 @@
 		F4559E567A96FDEA5FB63CAA /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB98FFC1387873F5F9D612A8 /* AccountView.swift */; };
 		F565F95EAD2D1AB1CDC547AF /* ScrollDownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880FB613006C951586FFDA0D /* ScrollDownApp.swift */; };
 		F6CF1CD4AD36C010A0D6E118 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589342DA26AB1E4514A712D6 /* Typography.swift */; };
+		F775E5BA471685B30DD700BA /* KnownStatDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F53422E931C1D646EC3BAE /* KnownStatDefinitions.swift */; };
 		F98C436ED7A622E4D44E5F43 /* ParlayCalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02227F5601EA70C581EC059C /* ParlayCalculatorView.swift */; };
 		FB3A5E4C6AC86BB7B18E47D4 /* HapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA19063BAFEA9FA03DF2461 /* HapticService.swift */; };
 		FE1D381FDC873B5BAB938189 /* game-001.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C3E1CA0DC85903F544E917 /* game-001.json */; };
@@ -201,6 +202,7 @@
 		14C3E1CA0DC85903F544E917 /* game-001.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "game-001.json"; sourceTree = "<group>"; };
 		1C44CFE6E65A8CFA9D20B226 /* MockDataGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
 		1FF54D8613A14C7DC72803F5 /* FairBetAPIModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FairBetAPIModels.swift; sourceTree = "<group>"; };
+		27F53422E931C1D646EC3BAE /* KnownStatDefinitions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KnownStatDefinitions.swift; sourceTree = "<group>"; };
 		2A559A6168E5070C31AE5166 /* DerivedMetrics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DerivedMetrics.swift; sourceTree = "<group>"; };
 		2F1AF2DDC4CA675DE7A95D1B /* LiveGameHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveGameHeader.swift; sourceTree = "<group>"; };
 		316F37C3E2239DCFF3AE9F92 /* LoginView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -505,6 +507,7 @@
 				D2C6F6304A70D3F957CFCB26 /* GameDetailViewModel+Odds.swift */,
 				B884933AA48960B74270148E /* GameDetailViewModel+Timeline.swift */,
 				06FCE25ECEF979990391D9A2 /* HistoryViewModel.swift */,
+				27F53422E931C1D646EC3BAE /* KnownStatDefinitions.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -1137,6 +1140,7 @@
 				BA482D82C0623BBFF67B01E0 /* SimFrameGenerator.swift in Sources */,
 				089A4D17627F4943F471090F /* DiamondFieldView.swift in Sources */,
 				D5FD74C72022463C74FDD1B0 /* SimScoreboardView.swift in Sources */,
+				F775E5BA471685B30DD700BA /* KnownStatDefinitions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,7 +2,7 @@
 
 System architecture, data flow, and design principles for the iOS app.
 
-## iOS MVVM Data Flow
+## iOS Data Flow
 
 ```mermaid
 graph TD
@@ -11,18 +11,32 @@ graph TD
         GDV[GameDetailView]
         GFV[GameFlowView]
         OCV[OddsComparisonView]
+        LOV[LiveOddsView]
+        SIM[MLBSimulatorView]
         SV[SettingsView]
+        LV[LoginView]
+        HIS[HistoryView]
+        PC[ParlayCalculatorView]
     end
 
     subgraph ViewModels
         GDVM[GameDetailViewModel]
         OCVM[OddsComparisonViewModel]
+        LOVM[LiveOddsViewModel]
+        SIMVM[MLBSimulatorViewModel]
+        AVM[AuthViewModel]
+        HISVM[HistoryViewModel]
     end
 
     subgraph Services
         GS[GameService Protocol]
         RGS[RealGameService]
         MGS[MockGameService]
+        FBAPI[FairBetAPIClient]
+        SAPI[SimulatorAPIClient]
+        AUTH[AuthService]
+        RT[RealtimeService]
+        HS[HapticService]
     end
 
     subgraph Stores
@@ -36,18 +50,28 @@ graph TD
         GAMES["/games"]
         DETAIL["/games/{id}"]
         FLOW["/games/{id}/flow"]
-        PBP["/pbp/game/{id}"]
-        TEAMS["/teams"]
         ODDS["/fairbet/odds"]
+        LIVE["/fairbet/live"]
+        TEAMS_API["/analytics/mlb-teams"]
+        ROSTER["/analytics/mlb-roster"]
+        SIMULATE["/analytics/simulate"]
+        AUTHEP["/auth/*"]
+        WS["wss://ws"]
     end
 
     HV -->|observes| GDVM
     GDV -->|observes| GDVM
-    GFV -->|observes| GDVM
     OCV -->|observes| OCVM
+    LOV -->|observes| LOVM
+    SIM -->|observes| SIMVM
+    LV -->|observes| AVM
+    HIS -->|observes| HISVM
 
     GDVM -->|calls| GS
-    OCVM -->|calls| ODDS
+    OCVM -->|calls| FBAPI
+    LOVM -->|calls| FBAPI
+    SIMVM -->|calls| SAPI
+    AVM -->|calls| AUTH
 
     GS -.->|impl| RGS
     GS -.->|impl| MGS
@@ -55,207 +79,170 @@ graph TD
     RGS --> GAMES
     RGS --> DETAIL
     RGS --> FLOW
-    RGS --> PBP
-    RGS --> TEAMS
-
-    GDV -->|reads/writes| RPS
-    GDV -->|reads/writes| RSS
-    HV -->|reads| RPS
-    HV -->|reads/writes| HGC
-    HV -->|reads| RSS
+    FBAPI --> ODDS
+    FBAPI --> LIVE
+    SAPI --> TEAMS_API
+    SAPI --> ROSTER
+    SAPI --> SIMULATE
+    AUTH --> AUTHEP
+    RT --> WS
 ```
 
 Views never call services directly. ViewModels mediate all data access.
 
-The app is a **thin display layer**. The backend computes all derived data (period labels, play tiers, odds outcomes, team colors, merged timelines). The ViewModel reads these pre-computed values and exposes them to views.
+The app is a **thin display layer**. The backend computes all derived data (period labels, play tiers, odds outcomes, team colors, merged timelines). ViewModels read pre-computed values and expose them to views.
 
 ## Core Principles
 
-See [AGENTS.md — Core Principles](../AGENTS.md) for Progressive Disclosure, the Reveal Principle, and User-Controlled Pacing.
+- **Progressive Disclosure** — reveal information in layers, not all at once
+- **Reveal Principle** — scores are hidden by default; user controls when to see them
+- **User-Controlled Pacing** — scroll through a game at your own speed
+- **Server-Driven Data** — the backend is the SSOT for all derived computation
 
-## Server-Driven Data
+## API Endpoints
 
-See [AGENTS.md — Server-Driven Data](../AGENTS.md) for the full list of server-provided values.
+All requests use `X-API-Key` header. Base URL: `sports-data-admin.dock108.ai`.
 
-### Team Color System
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/admin/sports/games` | GET | Game list (league, date filters) |
+| `/api/admin/sports/games/{id}` | GET | Full game detail |
+| `/api/admin/sports/games/{id}/flow` | GET | Narrative flow blocks |
+| `/api/admin/sports/games/{id}/pbp` | GET | Play-by-play events |
+| `/api/admin/sports/teams` | GET | Team list with colors |
+| `/api/fairbet/odds` | GET | Pre-game odds with EV |
+| `/api/fairbet/live/games` | GET | Live games with odds |
+| `/api/fairbet/live` | GET | Live odds for a game |
+| `/api/fairbet/parlay/evaluate` | POST | Parlay fair odds evaluation |
+| `/api/analytics/mlb-teams` | GET | MLB teams for simulator |
+| `/api/analytics/mlb-roster` | GET | Team roster (batters + pitchers) |
+| `/api/analytics/simulate` | POST | Monte Carlo simulation (10K iterations) |
+| `/auth/login` | POST | Email/password login → JWT |
+| `/auth/signup` | POST | Account creation → JWT |
+| `/auth/me` | GET | Current user profile |
+
+### Authentication
+
+Two auth mechanisms:
+- **API Key** (`X-API-Key` header) — used for all game/odds/simulator endpoints. Key stored in `Info.plist` as `SPORTS_DATA_API_KEY`.
+- **JWT Bearer** (`Authorization: Bearer <token>` header) — used for `/auth/*` endpoints. Token stored in Keychain.
+
+## Team Color System
 
 Team colors come from two sources:
 1. **Bulk fetch** — `TeamColorCache.loadCachedOrFetch()` on app launch, cached in UserDefaults (7-day TTL)
-2. **Per-game injection** — API responses include `homeTeamColorLight`/`homeTeamColorDark` fields, injected into `TeamColorCache` on load
-
-```
-App Launch → TeamColorCache.loadCachedOrFetch()
-                    │
-                    ├─ Disk cache valid? → Use cached colors
-                    └─ Expired/empty?    → GET /api/admin/sports/teams → cache
-
-Game Detail / Flow / Home Feed → inject(teamName:lightHex:darkHex:)
-                                     │
-DesignSystem.TeamColors.color(for:) → TeamColorCache.color(for:)
-                                         │
-                                         ├─ Exact match? → (light, dark) UIColor pair
-                                         ├─ Prefix match? → (light, dark) UIColor pair
-                                         └─ Unknown? → .systemIndigo
-```
+2. **Per-game injection** — API responses include `homeTeamColorLight`/`homeTeamColorDark` fields
 
 Color clash detection prevents two similar team colors in matchup views.
 
 ## Flow Rendering
 
-See [AGENTS.md — Flow Architecture](../AGENTS.md) for the blocks/FlowAdapter/views overview.
-
-### Block Structure
-
 Each `FlowBlock` contains:
-- `blockIndex` — Position in the flow (0 to N-1)
-- `role` — Server-provided semantic role (SETUP, MOMENTUM_SHIFT, etc.) — not displayed
-- `narrative` — 1-2 sentence description (~35 words)
-- `miniBox` — Player stats for this segment with `blockStars` array
-- `periodStart`/`periodEnd` — Period range covered
-- `scoreBefore`/`scoreAfter` — Score progression as `[away, home]`
-- `keyPlayIds` — Plays explicitly mentioned in narrative
-
-### NHL-Specific Models
-
-| Model | Description |
-|-------|-------------|
-| `NHLSkaterStat` | Skater stats (TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM) |
-| `NHLGoalieStat` | Goalie stats (TOI, SA, SV, GA, SV%) |
-
-## Team Stats
-
-See [AGENTS.md — Team Stats](../AGENTS.md) for the KnownStat pattern overview.
-
-```
-API Response (JSONB stats dict)
-     │
-     ▼
-KnownStat definitions (ordered list)
-     │ For each: try keys[0], keys[1], ... against stats dict
-     ▼
-TeamComparisonStat (name, homeValue, awayValue, formatted display)
-     │
-     ▼
-TeamStatsContainer → grouped by Overview / Shooting / Extra
-```
-
-Each `KnownStat` lists all possible API key variants for a stat, a display label, a group, and whether it's a percentage. Stats only appear if the API returned data for at least one key variant. No client-side derived stats.
-
-Player stats use direct key lookup against `PlayerStat.rawStats`.
+- `blockIndex` — position in the flow
+- `role` — server-provided semantic role (SETUP, MOMENTUM_SHIFT, etc.)
+- `narrative` — 1-2 sentence description
+- `miniBox` — player stats for this segment with `blockStars`
+- `scoreBefore`/`scoreAfter` — score progression as `[away, home]`
 
 ## FairBet Architecture
 
-See [AGENTS.md — FairBet](../AGENTS.md) for the pipeline overview.
-
 **Server-side EV (preferred):**
-- The server computes `trueProb` via Pinnacle devig and provides per-bet `evConfidenceTier` (`full`/`decent`/`low`)
+- The server computes `trueProb` via Pinnacle devig and provides per-bet `evConfidenceTier` (`full`/`decent`/`thin`)
 - Per-book `evPercent` and `isSharp` annotations enable direct EV display without client computation
-- `referencePrice` and `evDisabledReason` provide transparency about the fair odds source
-- `OddsComparisonViewModel.computeEVResult()` checks for server annotations first
 
-**Client-side EV (fallback):**
-- `BetPairing` pairs opposite sides via sharp book (Pinnacle, Circa, BetCris) vig-removal and median aggregation
-- Confidence levels: high (2+ sharp books), medium (1 sharp book), low (no sharp books)
-- Per-book EV using fair probability via `EVCalculator`
-- Fee model supports `percentOnWinnings` for future P2P/exchange integration
+**Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages concurrently (max 3 in-flight via `TaskGroup`).
 
-**Progressive loading:** `OddsComparisonViewModel.loadAllData()` fetches the first 500-bet page and displays immediately, then loads remaining pages concurrently (max 3 in-flight via `TaskGroup`) with incremental EV computation (`computeEVsForNewBets`). A "Loading more bets…" indicator shows at the bottom of the list during background loading.
+**FairBet sub-tabs:**
+- **Pre-game** — standard odds comparison with league/market filters
+- **Live** — in-game odds grouped by game with 30s polling refresh
+- **Calc** — standalone parlay calculator (manual odds input, EV computation, payout display)
 
-**FairExplainerSheet — "Show the Math":**
-`FairExplainerSheet` (opened by tapping the FAIR card on any bet) presents a numbered step-by-step math walkthrough:
-1. Convert reference odds to implied probabilities (total > 100% reveals the vig)
-2. Identify the vig (total implied vs. 100%)
-3. Remove the vig via normalization to get fair probability and odds
-4. Calculate EV at the best book price with full dollar math
+**Parlay builder:**
+- Users add legs from the pre-game odds view
+- `ParlayCorrelation` detects same-game legs and opposing sides
+- EV calculation: user inputs book's offered parlay odds, app computes `(fairProb × decimalOffered - 1) × 100`
+- Fair probability: independent multiplication of leg probabilities
+- Confidence: degrades for correlated legs (same `gameId`) or 4+ legs
 
-Median/consensus bets simplify to 2 steps. Missing data (no opposite reference price, no EV) falls back gracefully. Per-book implied probabilities are available in a disclosure group below the walkthrough.
+## MLB Simulator Architecture
+
+```
+User selects teams → fetchRoster() for each
+    → Optional lineup customization (9 batters + SP)
+    → POST /api/analytics/simulate (10K iterations)
+    → SimulatorResult with:
+        - Win probabilities
+        - Expected scores
+        - Most common final scores
+        - PA outcome distributions
+        - Pitcher profiles (raw + adjusted)
+```
+
+**Game playback visualization:** `SimFrameGenerator` creates a frame-by-frame game replay from the simulation's PA probability distributions, targeting the most likely final score. `DiamondFieldView` renders an animated baseball diamond with player silhouettes, base runners, and outcome labels. Playback supports play/pause, step forward/back, with haptic feedback.
+
+## Realtime Architecture
+
+`RealtimeService` manages a WebSocket connection to `wss://sports-data-admin.dock108.ai/v1/ws`.
+
+- Exponential backoff reconnect (1s initial, 30s max)
+- Channel-based subscriptions: `games:{league}:{date}`, `game:{id}:summary`, `fairbet:odds`
+- Degrades to `ConnectionState.degraded` after 2 failures within 60s
+- Initialized on app launch in `ScrollDownApp`
+
+## Auth Architecture
+
+`AuthService` (actor) handles all auth API calls. JWT tokens stored in Keychain.
+
+`AuthViewModel` (singleton, `@MainActor`):
+- Validates existing session on app launch
+- Manages login/signup/logout flows
+- Exposes `role: UserRole` (.guest/.user/.admin) for feature gating
+
+Role-based gating:
+- Admin features (history browsing) gated by `authViewModel.isAdmin`
+- Guest users see full app with sign-in prompt in Settings
+
+## Sport-Specific Models
+
+| Model | Sport | Fields |
+|-------|-------|--------|
+| `NHLSkaterStat` | NHL | TOI, G, A, PTS, +/-, SOG, HIT, BLK, PIM |
+| `NHLGoalieStat` | NHL | TOI, SA, SV, GA, SV% |
+| `MLBBatterStat` | MLB | AB, H, R, RBI, HR, BB, K, SB, AVG, OBP, SLG, OPS |
+| `MLBPitcherStat` | MLB | IP, H, R, ER, BB, K, HR, ERA, pitch count |
+| `MLBAdvancedTeamStats` | MLB | Pitches, BIP, exit velo, hard hit%, barrel%, z-swing%, o-swing%, z-contact% |
 
 ## Configuration
-
-The app uses `AppConfig` to manage runtime behavior:
 
 ```swift
 AppConfig.shared.environment  // .live (default), .localhost, or .mock
 AppConfig.shared.gameService  // Returns appropriate service implementation
+AppConfig.shared.apiBaseURL   // Environment-specific base URL
 ```
-
-### Dev Clock
-
-`AppDate.now()` provides consistent timestamps:
-- **Mock mode:** Fixed to November 12, 2024
-- **Snapshot mode:** Frozen to user-specified date
-- **Live mode:** Real system time
 
 ## Game Status Lifecycle
 
-See [AGENTS.md — Game Status & Lifecycle](../AGENTS.md) for the full `GameStatus` enum, computed properties (`isLive`, `isFinal`, `isPregame`), and SSOT rules.
-
 Key behavior:
-- **Live games:** ViewModel polls every ~45s (`startLivePolling`), shows PBP as primary content, auto-stops on dismiss or final transition
+- **Live games:** ViewModel polls every ~45s, shows PBP as primary content, auto-stops on dismiss or final transition
 - **Final games:** Shows Game Flow as primary content (falls back to PBP if no flow data)
-- **Content switching:** When a live game transitions to final, polling stops automatically. The view re-renders based on the updated `game.status` — if flow data was already loaded, it displays; otherwise PBP remains as fallback. No automatic flow fetch is triggered on transition.
-- **PBP access:** A "PBP" button in the section navigation bar (top right) opens the full play-by-play sheet. Available whenever PBP or unified timeline data exists, including when Game Flow is the primary view.
 - **Read state gating:** `markRead` requires a `GameStatus` and silently ignores non-final games
 
-## Reading Position Tracking
+## Haptic Feedback
 
-Local-only (UserDefaults-backed) tracking of where the user stopped reading a game's PBP or Game Flow.
+All haptic feedback goes through `HapticService` (centralized SSOT):
+- `HapticService.impact(.medium)` — button presses, score reveals
+- `HapticService.notification(.success)` — simulation complete
+- `HapticService.selection()` — tab switches, stepper changes
 
-```
-User scrolls PBP/Flow → updateResumeMarkerIfNeeded()
-                              │
-                              ├─ PBP play visible?  → save playIndex (positive)
-                              └─ Flow block visible? → save -(blockIndex+1) (negative)
-                              │
-                              ▼
-                    ReadingPositionStore.save()
-                        (playIndex, period, gameClock, labels)
-                              │
-User returns to game ─────────┘
-                              │
-                              ▼
-                    loadResumeMarkerIfNeeded()
-                              │
-                              ├─ Position found + autoResumePosition ON?  → Auto-scroll to saved play/block
-                              ├─ Position found + autoResumePosition OFF? → Show resume prompt
-                              └─ No position?   → Start from top
-```
+No direct `UIImpactFeedbackGenerator` calls outside `HapticService`.
 
-Flow blocks use negative-encoded `playIndex` values (`-(blockIndex + 1)`) to share the same `ReadingPosition` model and `PlayRowFramePreferenceKey` infrastructure as PBP plays. `resumeScroll()` decodes the sign to determine the scroll ID format (`"block-N"` vs `"play-N"`).
+## Home View Tabs
 
-`ReadingPositionStore` is the SSOT for resume position and saved scores. Uses an in-memory `scoreCache` to avoid repeated UserDefaults reads; `preload(gameIds:)` warms the cache for batch scenarios. `gameTimeLabel(for:)` is the SSOT display method — returns game-time strings (e.g., "@ Q3 5:42") shown under scores in the game header and home card. Methods: `savedScores(for:)`, `updateScores(for:awayScore:homeScore:)`, `gameTimeLabel(for:)`, `preload(gameIds:)`.
+`HomeViewMode` enum controls the main segmented picker:
 
-## Score Reveal Preference
-
-`ScoreRevealMode` (stored in `ReadStateStore.scoreRevealMode`):
-
-| Mode | Behavior |
-|------|----------|
-| `.onMarkRead` | Spoiler-free: show score only after explicitly marking as read or hold-to-reveal (default) |
-| `.always` | Always show scores on cards and headers |
-
-Hold-to-reveal (long press on score area) lets users check scores without changing preference. Live games support hold-to-update for fresh scores.
-
-## Game Detail View Structure
-
-`GameDetailView` is split into focused extensions. See [AGENTS.md](../AGENTS.md) for the full file table.
-
-Sections render inside a `LazyVStack(pinnedViews: [.sectionHeaders])`. Each section uses `PinnedSectionHeader` for a sticky header that pins when scrolled past, paired with `.sectionCardBody()` for content styling. Content renders conditionally based on game status and data availability:
-- **Pregame (Overview):** Matchup context
-- **Timeline:** Live PBP (for live games) or Flow blocks (for final games); falls back to PBP if no flow data
-- **Stats:** Player stats + team comparison
-- **NHL Stats:** Sport-specific skater/goalie tables
-- **Odds:** Cross-book comparison table with category tabs and collapsible grouped rendering (mainline grouped by Moneyline/Spread/Total, team props by team, player props by player+stat) — shown when `hasOddsData` is true
-- **Wrap-Up:** Post-game final score, highlights (only for truly completed games with confirmation signals)
-
-## Interaction Patterns
-
-All interactive elements use consistent patterns:
-
-| Pattern | Implementation |
-|---------|----------------|
-| Tap feedback | `InteractiveRowButtonStyle` (opacity 0.6 + scale 0.98) |
-| Chevron rotation | `chevron.right` with 0°→90° on expand |
-| Expand animation | `spring(response: 0.3, dampingFraction: 0.8)` |
-| Transitions | Asymmetric (opacity + move from top) |
-
+| Tab | Content | ViewModel |
+|-----|---------|-----------|
+| Games | Game list with date sections | HomeView state |
+| FairBet | Odds comparison (pre-game/live/calc sub-tabs) | OddsComparisonViewModel, LiveOddsViewModel |
+| Simulator | MLB Monte Carlo simulator | MLBSimulatorViewModel |
+| Settings | Preferences, account, admin features | AuthViewModel |

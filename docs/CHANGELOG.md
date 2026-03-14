@@ -4,6 +4,96 @@ Notable changes to the Scroll Down iOS app.
 
 ## [Unreleased]
 
+### Added — Web Feature Parity + Premium Upgrade (Mar 2025)
+
+**MLB Monte Carlo Simulator (14 new files):**
+- `SimulatorAPIClient` (actor) for teams, roster, and simulation endpoints
+- `MLBSimulatorViewModel` — team selection, roster loading, lineup building, simulation state
+- `MLBSimulatorView` — top-level container
+- `TeamPickerView` — side-by-side away/home team selection
+- `LineupBuilderView` — 9-slot batting order + starter pitcher customization
+- Results visualizations: `WinProbabilityBarView` (gradient bars with glow), `ExpectedScoreView` (animated count-up), `ScoreCardView` (staggered entry), `PABreakdownView` (donut charts via Circle().trim()), `PitcherProfileView` (4-axis spider chart via Path)
+- `SimulatorLoadingView` — baseball orbiting diamond path
+- `SimulatorTheme` — colors, gradients, chart palette
+
+**Animated game playback visualization (5 new files):**
+- `SimFrame` — frame model (inning, outs, runners, PA outcome, silhouette states)
+- `SimFrameGenerator` — generates plausible frame-by-frame replay from PA probabilities targeting most likely final score
+- `DiamondFieldView` — animated baseball diamond with player silhouettes, base runners, outcome labels
+- `SimScoreboardView` — inning indicator with animated numeric score transitions
+- `GameSimPlaybackView` — play/pause/step controls with haptic feedback
+
+**Authentication system (6 new files):**
+- `AuthModels` — UserRole (guest/user/admin), login/signup/password request/response types, UserProfile
+- `AuthService` (actor) — JWT auth with Keychain token storage, login, signup, profile, password reset, account deletion
+- `AuthViewModel` — session validation on launch, login/signup/logout flows, role-based feature gating
+- `LoginView` — email/password with forgot password sheet
+- `SignupView` — account creation with password confirmation
+- `AccountView` — profile display, role badge, password change, sign out, account deletion
+
+**FairBet live odds (4 new files):**
+- `LiveBetModels` — LiveGameInfo, FairbetLiveResponse, LiveGameGroup
+- `LiveOddsViewModel` — 30s polling-based refresh
+- `LiveOddsView` — grouped by game with pull-to-refresh
+- `LiveGameHeader` — matchup with pulsing live dot and bet count
+- `FairBetAPIClient` expanded with `fetchLiveGames()` and `fetchLiveOdds()`
+- Pre-game/Live/Calc sub-tab toggle in FairBet header
+
+**Standalone parlay calculator (1 new file):**
+- `ParlayCalculatorView` — manual leg input, combined fair odds, probability, book odds EV calculation, payout display
+
+**Parlay correlation detection (1 new file):**
+- `ParlayCorrelation` — same-game detection, opposing sides check, warning generation
+- `ParlaySheetView` enhanced with correlation warnings, book odds input field, EV calculation
+
+**MLB league support in FairBet:**
+- `.mlb` case added to `FairBetLeague` with baseball icon
+- MLB color added to `LeagueBadgeSmall`
+- MLB-specific market labels (Hits, HRs, RBIs, Stolen Bases, Pitcher Ks, Total Bases)
+
+**MLB advanced stats:**
+- `MLBBatterStat`, `MLBPitcherStat`, `MLBAdvancedTeamStats` models added to `GameDetailResponse`
+- `GameDetailView+MLBStats` — Statcast metrics grid (exit velo, hard hit%, barrel%, z-swing%, etc.)
+
+**Realtime WebSocket (2 new files):**
+- `RealtimeService` — WebSocket connection with exponential backoff reconnect
+- `RealtimeModels` — event types and channel helpers
+- Initialized on app launch in ScrollDownApp
+
+**UI polish:**
+- `HapticService` — centralized haptic feedback (replaces all direct UIKit calls)
+- `PulsingDotView` — reusable live indicator
+- `MiniScorebarView` — sticky score bar for game detail
+- `ConnectionStatusView` — green/yellow/red connection dot
+- `LoadingSkeletonView` upgraded with diagonal shimmer gradient
+- `BetCard` — left accent stripe on high-EV cards, scale-on-appear spring animation
+- `FairBetTheme` — added liveIndicator, mlbColor, shimmerGradient, highEVAccent
+
+**History browsing (3 new files):**
+- `HistoryViewModel` — date range, league filters
+- `HistoryView` — date picker, league filters, reuses GameRowView
+- `DateNavigatorView` — forward/back date navigation
+- Entry point in Settings, gated by admin role
+
+**Home view:**
+- `HomeViewMode` expanded: Games / FairBet / Simulator / Settings
+- Simulator tab with `@StateObject` for MLBSimulatorViewModel
+- FairBet content split by sub-tab (pre-game, live, calculator)
+
+**Configuration:**
+- `Info.plist` API key updated to match web app
+
+**Files added:** 41 new Swift files
+**Files modified:** 14 existing Swift files
+
+### Changed — Legacy Cleanup & SSOT Enforcement (Mar 2025)
+
+- Replaced 5 direct `UIImpactFeedbackGenerator` calls with `HapticService` SSOT (HomeView, HomeView+Sections, GameHeaderView)
+- Removed dead `import UIKit` from HomeView.swift and HomeView+Sections.swift
+- Fixed `parlayFairAmericanOdds` fallback — was always returning 100 (unreachable dead code); now computes proper American odds from probability
+- Removed redundant `#if DEBUG` admin section in SettingsView — duplicated role-based `authViewModel.isAdmin` gate
+- Fixed misleading "legacy paths" comment in GameDetailView+Timeline
+
 ### Changed — Consolidate HomeTheme into GameTheme (Feb 22, 2025)
 
 - Merged `HomeTheme` (33-line duplicate of `GameTheme`) into `GameTheme`
