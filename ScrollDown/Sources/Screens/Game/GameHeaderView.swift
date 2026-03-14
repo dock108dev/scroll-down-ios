@@ -92,7 +92,7 @@ struct GameHeaderView: View {
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.5) {
                             guard game.status.isLive, scoreRevealMode != .always else { return }
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            HapticService.impact(.medium)
                             onRevealScore?()
                         }
                     } else {
@@ -112,7 +112,7 @@ struct GameHeaderView: View {
                         .onLongPressGesture(minimumDuration: 0.5) {
                             guard scoreRevealMode != .always,
                                   game.awayScore != nil || game.status.isLive else { return }
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            HapticService.impact(.medium)
                             onRevealScore?()
                         }
                     }

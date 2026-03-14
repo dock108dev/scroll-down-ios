@@ -142,16 +142,6 @@ struct SettingsView: View {
                     }
                 }
             }
-            #if DEBUG
-            if !authViewModel.isAdmin {
-                Section("Admin (Debug)") {
-                    NavigationLink("Game History") {
-                        HistoryView()
-                    }
-                }
-            }
-            #endif
-
             Section {
                 RealityAndFeedbackView()
             }

@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 // MARK: - Section Rendering
 
@@ -186,7 +185,6 @@ extension HomeView {
 
     func triggerHapticIfNeeded(for game: GameSummary) {
         guard game.status.isFinal else { return }
-        let generator = UIImpactFeedbackGenerator(style: .soft)
-        generator.impactOccurred()
+        HapticService.impact(.soft)
     }
 }

@@ -1,6 +1,5 @@
 import Combine
 import SwiftUI
-import UIKit
 
 /// Main home screen displaying list of games
 /// iPad: Wider layout with constrained content width for optimal readability
@@ -477,7 +476,7 @@ struct HomeView: View {
                 )
             }
         }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        HapticService.impact(.medium)
     }
 
     /// Reset all: mark everything unread + clear saved scores
@@ -487,7 +486,7 @@ struct HomeView: View {
         for id in allIds {
             ReadingPositionStore.shared.clear(gameId: id)
         }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        HapticService.impact(.light)
     }
 
     // MARK: - Adaptive Layout

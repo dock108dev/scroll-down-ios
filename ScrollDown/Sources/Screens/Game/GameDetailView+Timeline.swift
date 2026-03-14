@@ -138,7 +138,7 @@ extension GameDetailView {
         }
     }
 
-    /// Build tiered groups for a quarter (shared between inline and legacy paths)
+    /// Build tiered groups for a quarter (uses server groupings if available, else client-side)
     private func buildTieredGroups(for group: QuarterGroup) -> [TieredPlayGroup] {
         if viewModel.hasServerGroupings {
             let periodPlayIndices = Set(group.events.compactMap { event -> Int? in

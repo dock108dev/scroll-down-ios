@@ -155,7 +155,12 @@ final class OddsComparisonViewModel: ObservableObject {
         if let api = parlayApiResult { return api.fairAmericanOdds }
         let prob = parlayFairProbability
         guard prob > 0 && prob < 1 else { return 100 }
-        return 100
+        let decimal = 1.0 / prob
+        if decimal >= 2.0 {
+            return Int((decimal - 1.0) * 100)
+        } else {
+            return Int(-100.0 / (decimal - 1.0))
+        }
     }
 
     var parlayConfidence: FairOddsConfidence {
