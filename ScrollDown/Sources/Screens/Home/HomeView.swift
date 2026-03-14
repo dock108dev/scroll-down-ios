@@ -21,6 +21,9 @@ struct HomeView: View {
     @State private var viewMode: HomeViewMode = .recaps
     @State var searchText = ""
     @StateObject private var oddsViewModel = OddsComparisonViewModel()
+    @StateObject private var simulatorViewModel = MLBSimulatorViewModel()
+    @StateObject private var liveOddsViewModel = LiveOddsViewModel()
+    @State private var fairbetSubTab: FairBetSubTab = .pregame
     @State private var selectedOddsLeague: FairBetLeague?
     @State private var selectedMarketFilter: MarketFilter?
     @State private var loadTask: Task<Void, Never>?
@@ -209,10 +212,12 @@ struct HomeView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.bottom, 4)
             } else if viewMode == .odds {
+                // FairBet-specific filters
                 FairBetHeaderView(
                     viewModel: oddsViewModel,
                     selectedLeague: $selectedOddsLeague,
                     selectedMarket: $selectedMarketFilter,
+                    selectedSubTab: $fairbetSubTab,
                     horizontalPadding: horizontalPadding
                 )
             }
@@ -252,9 +257,15 @@ struct HomeView: View {
                     gameListView
                 }
             }
-            OddsComparisonView(viewModel: oddsViewModel)
-                .opacity(viewMode == .odds ? 1 : 0)
-                .allowsHitTesting(viewMode == .odds)
+            if viewMode == .odds && fairbetSubTab == .pregame {
+                OddsComparisonView(viewModel: oddsViewModel)
+            }
+            if viewMode == .odds && fairbetSubTab == .live {
+                LiveOddsView(viewModel: liveOddsViewModel)
+            }
+            if viewMode == .simulator {
+                MLBSimulatorView(viewModel: simulatorViewModel)
+            }
             if viewMode == .settings {
                 SettingsView(oddsViewModel: oddsViewModel)
             }

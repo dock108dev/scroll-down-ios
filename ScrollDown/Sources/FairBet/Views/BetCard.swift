@@ -17,6 +17,7 @@ struct BetCard: View {
     @AppStorage("preferredSportsbook") private var preferredSportsbook = ""
     @State private var isExpanded = false
     @State private var showFairExplainer = false
+    @State private var appeared = false
 
     private var isCompact: Bool { horizontalSizeClass == .compact }
 
@@ -137,9 +138,22 @@ struct BetCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(parlayBorderColor, lineWidth: isInParlay ? 1.5 : (isHighValueBet ? 1.5 : 1))
         )
+        .overlay(alignment: .leading) {
+            // Left accent stripe on high-EV cards
+            if isHighValueBet {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(FairBetTheme.highEVAccent)
+                    .frame(width: 3)
+                    .padding(.vertical, 8)
+                    .padding(.leading, 2)
+            }
+        }
+        .scaleEffect(appeared ? 1 : 0.95)
+        .opacity(appeared ? 1 : 0)
         .sheet(isPresented: $showFairExplainer) {
             FairExplainerSheet(bet: bet)
         }
+        .onAppear { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { appeared = true } }
     }
 
     // MARK: - Bet Description (Row 1-2)

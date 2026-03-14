@@ -75,4 +75,26 @@ enum FairBetTheme {
             ? UIColor.white.withAlphaComponent(0.12)
             : UIColor.black.withAlphaComponent(0.10)
     })
+
+    // MARK: - Live & MLB Colors
+
+    /// Live indicator red
+    static let liveIndicator = Color.red
+
+    /// MLB deep blue
+    static let mlbColor = Color(red: 0.0, green: 0.20, blue: 0.55)
+
+    /// Shimmer gradient for loading states
+    static let shimmerGradient = LinearGradient(
+        colors: [
+            Color.white.opacity(0.0),
+            Color.white.opacity(0.3),
+            Color.white.opacity(0.0)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    /// High-EV accent stripe color
+    static let highEVAccent = Color(red: 0.18, green: 0.72, blue: 0.45)
 }

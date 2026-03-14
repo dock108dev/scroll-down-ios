@@ -18,6 +18,11 @@ struct GameDetailResponse: Codable {
     let nhlGoalies: [NHLGoalieStat]?
     let dataHealth: NHLDataHealth?
 
+    // MLB-specific fields
+    let mlbBatters: [MLBBatterStat]?
+    let mlbPitchers: [MLBPitcherStat]?
+    let mlbAdvancedStats: [MLBAdvancedTeamStats]?
+
     enum CodingKeys: String, CodingKey {
         case game
         case teamStats
@@ -31,6 +36,9 @@ struct GameDetailResponse: Codable {
         case nhlSkaters
         case nhlGoalies
         case dataHealth
+        case mlbBatters
+        case mlbPitchers
+        case mlbAdvancedStats
     }
 
     init(from decoder: Decoder) throws {
@@ -48,6 +56,9 @@ struct GameDetailResponse: Codable {
         nhlSkaters = try container.decodeIfPresent([NHLSkaterStat].self, forKey: .nhlSkaters)
         nhlGoalies = try container.decodeIfPresent([NHLGoalieStat].self, forKey: .nhlGoalies)
         dataHealth = try container.decodeIfPresent(NHLDataHealth.self, forKey: .dataHealth)
+        mlbBatters = try container.decodeIfPresent([MLBBatterStat].self, forKey: .mlbBatters)
+        mlbPitchers = try container.decodeIfPresent([MLBPitcherStat].self, forKey: .mlbPitchers)
+        mlbAdvancedStats = try container.decodeIfPresent([MLBAdvancedTeamStats].self, forKey: .mlbAdvancedStats)
     }
 
     init(
@@ -62,7 +73,10 @@ struct GameDetailResponse: Codable {
         groupedPlays: [ServerTieredPlayGroup]? = nil,
         nhlSkaters: [NHLSkaterStat]? = nil,
         nhlGoalies: [NHLGoalieStat]? = nil,
-        dataHealth: NHLDataHealth? = nil
+        dataHealth: NHLDataHealth? = nil,
+        mlbBatters: [MLBBatterStat]? = nil,
+        mlbPitchers: [MLBPitcherStat]? = nil,
+        mlbAdvancedStats: [MLBAdvancedTeamStats]? = nil
     ) {
         self.game = game
         self.teamStats = teamStats
@@ -76,7 +90,67 @@ struct GameDetailResponse: Codable {
         self.nhlSkaters = nhlSkaters
         self.nhlGoalies = nhlGoalies
         self.dataHealth = dataHealth
+        self.mlbBatters = mlbBatters
+        self.mlbPitchers = mlbPitchers
+        self.mlbAdvancedStats = mlbAdvancedStats
     }
+}
+
+// MARK: - MLB Batter Stats
+
+struct MLBBatterStat: Codable, Identifiable {
+    let team: String
+    let playerName: String
+    let position: String?
+    let atBats: Int?
+    let hits: Int?
+    let runs: Int?
+    let rbi: Int?
+    let homeRuns: Int?
+    let baseOnBalls: Int?
+    let strikeOuts: Int?
+    let stolenBases: Int?
+    let avg: String?
+    let obp: String?
+    let slg: String?
+    let ops: String?
+
+    var id: String { "\(team)-\(playerName)" }
+}
+
+// MARK: - MLB Pitcher Stats
+
+struct MLBPitcherStat: Codable, Identifiable {
+    let team: String
+    let playerName: String
+    let inningsPitched: String?
+    let hits: Int?
+    let runs: Int?
+    let earnedRuns: Int?
+    let baseOnBalls: Int?
+    let strikeOuts: Int?
+    let homeRuns: Int?
+    let era: String?
+    let pitchCount: Int?
+    let strikes: Int?
+
+    var id: String { "\(team)-\(playerName)" }
+}
+
+// MARK: - MLB Advanced Team Stats
+
+struct MLBAdvancedTeamStats: Codable {
+    let team: String
+    let isHome: Bool
+    let totalPitches: Int
+    let ballsInPlay: Int
+    let zSwingPct: Double?
+    let oSwingPct: Double?
+    let zContactPct: Double?
+    let oContactPct: Double?
+    let avgExitVelo: Double?
+    let hardHitPct: Double?
+    let barrelPct: Double?
 }
 
 // MARK: - NHL Skater Stats

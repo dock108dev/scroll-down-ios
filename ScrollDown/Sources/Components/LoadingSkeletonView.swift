@@ -120,7 +120,19 @@ struct LoadingSkeletonView: View {
             .fill(Color(.systemGray5))
             .frame(width: width, height: height)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
-            .opacity(isAnimating ? 0.5 : 1.0)
+            .overlay(
+                GeometryReader { geo in
+                    LinearGradient(
+                        colors: [.clear, Color.white.opacity(0.3), .clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: geo.size.width * 0.6)
+                    .offset(x: isAnimating ? geo.size.width : -geo.size.width * 0.6)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: Layout.skeletonCornerRadius))
+            )
+            .opacity(isAnimating ? 0.7 : 1.0)
     }
 }
 

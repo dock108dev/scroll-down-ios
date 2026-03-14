@@ -6,6 +6,7 @@ import SwiftUI
 enum HomeViewMode: String, CaseIterable, Identifiable {
     case recaps = "Games"
     case odds = "FairBet"
+    case simulator = "Simulator"
     case settings = "Settings"
 
     var id: String { rawValue }

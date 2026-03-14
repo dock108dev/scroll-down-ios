@@ -23,6 +23,7 @@ struct ScrollDownApp: App {
                 .tint(GameTheme.accentColor)
                 .task {
                     await TeamColorCache.shared.loadCachedOrFetch(service: appConfig.gameService)
+                    RealtimeService.shared.connect()
                 }
         }
     }

@@ -10,13 +10,70 @@ import SwiftUI
 struct ParlaySheetView: View {
     @ObservedObject var viewModel: OddsComparisonViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var bookOddsText: String = ""
+
+    private var correlationWarnings: [String] {
+        ParlayCorrelation.warnings(for: viewModel.parlayBets)
+    }
+
+    private var parlayEV: Double? {
+        guard let odds = Int(bookOddsText), odds != 0 else { return nil }
+        let prob = viewModel.parlayFairProbability
+        guard prob > 0, prob < 1 else { return nil }
+        let decimal = odds > 0 ? (Double(odds) / 100.0 + 1.0) : (100.0 / Double(abs(odds)) + 1.0)
+        return (prob * decimal - 1.0) * 100.0
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Correlation warnings
+                    ForEach(correlationWarnings, id: \.self) { warning in
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                            Text(warning)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+
                     // Combined result card
                     combinedResultCard
+
+                    // Book odds input for EV calculation
+                    VStack(spacing: 8) {
+                        Text("Your Book's Parlay Odds")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        HStack(spacing: 8) {
+                            TextField("+450", text: $bookOddsText)
+                                .font(.title3.weight(.semibold).monospacedDigit())
+                                .keyboardType(.numbersAndPunctuation)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 120)
+                                .padding(.vertical, 8)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            if let ev = parlayEV {
+                                Text(FairBetCopy.formatEV(ev))
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(ev > 0 ? FairBetTheme.positive : FairBetTheme.negative)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.secondarySystemBackground))
+                    )
 
                     // Leg list
                     VStack(spacing: 0) {

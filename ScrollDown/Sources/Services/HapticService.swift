@@ -1,0 +1,22 @@
+//
+//  HapticService.swift
+//  ScrollDown
+//
+//  Centralized haptic feedback service.
+//
+
+import UIKit
+
+enum HapticService {
+    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+
+    static func notification(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(type)
+    }
+
+    static func selection() {
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+}

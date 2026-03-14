@@ -199,6 +199,80 @@ actor FairBetAPIClient {
         }
     }
 
+    // MARK: - Live Odds
+
+    /// Fetch live games that have in-play odds
+    func fetchLiveGames(league: FairBetLeague? = nil) async throws -> [LiveGameInfo] {
+        let baseURL = AppConfig.shared.apiBaseURL
+        guard var components = URLComponents(url: baseURL.appendingPathComponent("/api/fairbet/live/games"), resolvingAgainstBaseURL: true) else {
+            throw APIError.invalidURL
+        }
+        if let league {
+            components.queryItems = [URLQueryItem(name: "league", value: league.rawValue)]
+        }
+        guard let url = components.url else { throw APIError.invalidURL }
+        guard let apiKey = APIConfiguration.apiKey(for: AppConfig.shared.environment) else {
+            throw APIError.missingAPIKey
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeaderName)
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        if httpResponse.statusCode == 401 { throw APIError.unauthorized }
+        guard (200...299).contains(httpResponse.statusCode) else { throw APIError.serverError(httpResponse.statusCode) }
+
+        do {
+            return try decoder.decode([LiveGameInfo].self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+    }
+
+    /// Fetch live odds for a specific game
+    func fetchLiveOdds(gameId: Int) async throws -> FairbetLiveResponse {
+        let baseURL = AppConfig.shared.apiBaseURL
+        guard var components = URLComponents(url: baseURL.appendingPathComponent("/api/fairbet/live"), resolvingAgainstBaseURL: true) else {
+            throw APIError.invalidURL
+        }
+        components.queryItems = [URLQueryItem(name: "game_id", value: String(gameId))]
+        guard let url = components.url else { throw APIError.invalidURL }
+        guard let apiKey = APIConfiguration.apiKey(for: AppConfig.shared.environment) else {
+            throw APIError.missingAPIKey
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(apiKey, forHTTPHeaderField: Self.apiKeyHeaderName)
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        if httpResponse.statusCode == 401 { throw APIError.unauthorized }
+        guard (200...299).contains(httpResponse.statusCode) else { throw APIError.serverError(httpResponse.statusCode) }
+
+        do {
+            return try decoder.decode(FairbetLiveResponse.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+    }
+
     /// Evaluate a parlay via the API
     /// - Parameter legs: The parlay legs to evaluate
     /// - Returns: ParlayEvaluation with fair probability and odds

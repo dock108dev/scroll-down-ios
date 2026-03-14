@@ -7,10 +7,16 @@
 
 import SwiftUI
 
+enum FairBetSubTab: String, CaseIterable {
+    case pregame = "Pre-game"
+    case live = "Live"
+}
+
 struct FairBetHeaderView: View {
     @ObservedObject var viewModel: OddsComparisonViewModel
     @Binding var selectedLeague: FairBetLeague?
     @Binding var selectedMarket: MarketFilter?
+    @Binding var selectedSubTab: FairBetSubTab
     let horizontalPadding: CGFloat
 
     /// Leagues that have at least one bet in the loaded data
@@ -33,6 +39,33 @@ struct FairBetHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Pre-game / Live toggle
+            HStack(spacing: 0) {
+                ForEach(FairBetSubTab.allCases, id: \.self) { tab in
+                    Button {
+                        selectedSubTab = tab
+                        HapticService.selection()
+                    } label: {
+                        HStack(spacing: 4) {
+                            if tab == .live {
+                                PulsingDotView()
+                            }
+                            Text(tab.rawValue)
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(selectedSubTab == tab ? GameTheme.accentColor : Color.clear)
+                        .foregroundColor(selectedSubTab == tab ? .white : .secondary)
+                    }
+                }
+            }
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, 6)
+
+            if selectedSubTab == .pregame {
             // Combined filter bar: league pills, separator, market pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -164,6 +197,7 @@ struct FairBetHeaderView: View {
             }
             .padding(.horizontal, horizontalPadding)
             .padding(.bottom, 6)
+            } // end if selectedSubTab == .pregame
         }
         .onChange(of: viewModel.allBets) {
             // Reset stale league selection if the selected league no longer has bets

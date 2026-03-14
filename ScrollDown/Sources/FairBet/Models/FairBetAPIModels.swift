@@ -13,6 +13,7 @@ enum FairBetLeague: String, CaseIterable, Identifiable, Codable {
     case nba = "NBA"
     case nhl = "NHL"
     case ncaab = "NCAAB"
+    case mlb = "MLB"
 
     var id: String { rawValue }
 
@@ -20,6 +21,7 @@ enum FairBetLeague: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .nba, .ncaab: return "basketball.fill"
         case .nhl: return "hockey.puck.fill"
+        case .mlb: return "baseball.fill"
         }
     }
 

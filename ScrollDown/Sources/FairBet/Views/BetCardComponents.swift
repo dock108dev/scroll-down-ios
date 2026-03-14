@@ -107,6 +107,7 @@ struct LeagueBadgeSmall: View {
         case .nba: return Color(red: 0.77, green: 0.36, blue: 0.15)
         case .nhl: return Color(red: 0.0, green: 0.27, blue: 0.55)
         case .ncaab: return Color(red: 0.13, green: 0.55, blue: 0.13)
+        case .mlb: return Color(red: 0.0, green: 0.20, blue: 0.55)
         }
     }
 }

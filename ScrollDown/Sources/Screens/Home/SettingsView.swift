@@ -108,6 +108,14 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            #if DEBUG
+            Section("Admin") {
+                NavigationLink("Game History") {
+                    HistoryView()
+                }
+            }
+            #endif
+
             Section {
                 RealityAndFeedbackView()
             }
