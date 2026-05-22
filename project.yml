@@ -1,0 +1,55 @@
+name: ScrollDownSports
+options:
+  bundleIdPrefix: com.dock108
+  deploymentTarget:
+    iOS: "18.0"
+  disabledValidations:
+    - missingConfigFiles
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  ScrollDownSports:
+    type: application
+    platform: iOS
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    sources:
+      - path: ScrollDownSports
+        excludes:
+          - Resources/Info.plist
+    settings:
+      base:
+        INFOPLIST_FILE: ScrollDownSports/Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.dock108.scrolldownsports
+        PRODUCT_MODULE_NAME: ScrollDownSports
+        PRODUCT_NAME: ScrollDownSports
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+    entitlements:
+      path: ScrollDownSports/Resources/ScrollDownSports.entitlements
+      properties: {}
+  ScrollDownSportsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ScrollDownSportsTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.dock108.scrolldownsports.tests
+    dependencies:
+      - target: ScrollDownSports
+schemes:
+  ScrollDownSports:
+    build:
+      targets:
+        ScrollDownSports: all
+    test:
+      targets:
+        - ScrollDownSportsTests
