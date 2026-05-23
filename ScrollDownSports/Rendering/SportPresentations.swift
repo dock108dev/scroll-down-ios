@@ -25,13 +25,13 @@ struct GameHeaderPresentation {
 
 struct GameEventPresentation {
     var clockText: String
-    let headline: String
+    var headline: String
     let detail: String?
-    let eventLabel: String?
+    var eventLabel: String?
     let teamAbbreviation: String?
     let teamLabel: String?
     let scoringLabel: String?
-    let scoreLabel: String?
+    var scoreLabel: String?
     let rawFeedText: String?
     let rawFeedSource: String?
     let accessibilityLabel: String?
@@ -47,17 +47,65 @@ extension GameEventPresentation {
         let isScoring = event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil
         self.init(
             clockText: clockText ?? event.clockText,
-            headline: event.headline,
+            headline: event.headline.customerFacingPlayText,
             detail: detail ?? event.detail,
-            eventLabel: event.presentation?.eventTypeLabel ?? event.presentation?.primaryLabel ?? event.eventType,
+            eventLabel: (event.presentation?.eventTypeLabel ?? event.presentation?.primaryLabel ?? event.eventType)?.customerFacingEventLabel,
             teamAbbreviation: event.teamAbbreviation,
             teamLabel: event.presentation?.teamLabel,
-            scoringLabel: isScoring ? event.presentation?.primaryLabel ?? scoringFallbackLabel : nil,
+            scoringLabel: isScoring ? scoringFallbackLabel : nil,
             scoreLabel: event.presentation?.scoreLabel,
             rawFeedText: event.displayRawFeedText,
             rawFeedSource: event.rawFeedSource,
             accessibilityLabel: event.presentation?.accessibilityLabel
         )
+    }
+}
+
+private extension String {
+    var customerFacingEventLabel: String? {
+        let normalized = trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return nil }
+        switch normalized.uppercased() {
+        case "HOME_RUN":
+            return "Home run"
+        case "FIELD_OUT", "GROUND_OUT", "FLY_OUT", "POP_OUT", "LINE_OUT":
+            return "Out"
+        case "FORCE_OUT":
+            return "Force out"
+        case "STRIKEOUT", "STRIKE_OUT":
+            return "Strikeout"
+        case "SINGLE":
+            return "Single"
+        case "DOUBLE":
+            return "Double"
+        case "TRIPLE":
+            return "Triple"
+        case "WALK", "BASE_ON_BALLS":
+            return "Walk"
+        case "HIT_BY_PITCH":
+            return "Hit by pitch"
+        case "STOLEN_BASE":
+            return "Stolen base"
+        case "SAC_FLY", "SACRIFICE_FLY":
+            return "Sac fly"
+        case "PLAY", "GAME_UPDATE":
+            return nil
+        default:
+            if normalized.contains("_") || normalized == normalized.uppercased() {
+                return normalized
+                    .replacingOccurrences(of: "_", with: " ")
+                    .lowercased()
+                    .capitalized
+            }
+            return normalized
+        }
+    }
+
+    var customerFacingPlayText: String {
+        guard contains("_") || self == uppercased() else { return self }
+        return replacingOccurrences(of: "_", with: " ")
+            .lowercased()
+            .capitalized
     }
 }
 

@@ -12,6 +12,4 @@ xcuserdata/
 Config/Local.xcconfig
 
 # AIDLC working directory
-.aidlc/runs/
-.aidlc/reports/
-.aidlc/_archive/
+.aidlc/

@@ -84,7 +84,7 @@ struct GenericSportRenderer: SportRenderer {
             revealTitle: "Score hidden",
             revealDescription: "Reveal only when you are ready to see the current or final box score.",
             revealButtonTitle: "Reveal box score",
-            hideButtonTitle: "Hide score",
+            hideButtonTitle: "Hide",
             rows: scoreboardRows(for: game),
             segments: scoreboardSegments(for: game),
             totalHeader: totalHeader(for: game),
@@ -102,16 +102,14 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     func periodClockText(periodOrdinal: Int?, periodLabel: String?, clockLabel: String?) -> String {
-        [
-            normalizedPeriodLabel(periodOrdinal: periodOrdinal, periodLabel: periodLabel),
-            clockLabel?.nilIfEmpty
-        ]
-        .compactMap { $0 }
-        .joined(separator: " ")
+        normalizedPeriodClockText(
+            periodLabel: normalizedPeriodLabel(periodOrdinal: periodOrdinal, periodLabel: periodLabel),
+            clockLabel: clockLabel
+        ) ?? ""
     }
 
     func normalizedPeriodLabel(periodOrdinal: Int?, periodLabel: String?) -> String? {
-        if let periodLabel = cleanedLabel(periodLabel) {
+        if let periodLabel = periodLabel?.cleanDisplayLabel {
             return periodLabel
         }
         return periodOrdinal.map { fallbackPeriodLabel(for: $0) }
@@ -236,13 +234,7 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     private func cleanedLabel(_ value: String?) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !trimmed.isEmpty,
-              trimmed != "-"
-        else {
-            return nil
-        }
-        return trimmed
+        value?.cleanDisplayLabel
     }
 
     private func scoreboardStateText(for game: Game) -> String? {
@@ -321,26 +313,6 @@ private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 
     var normalizedPeriodKey: String {
-        trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .lowercased()
-    }
-
-    func removingPeriodPrefix(_ period: String) -> String {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        let periodTrimmed = period.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !periodTrimmed.isEmpty else { return trimmed }
-        if trimmed == periodTrimmed {
-            return ""
-        }
-
-        for separator in [" · ", " - ", ": ", " "] {
-            let prefix = periodTrimmed + separator
-            if trimmed.hasPrefix(prefix) {
-                return String(trimmed.dropFirst(prefix.count))
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
-        return trimmed
+        normalizedLabelKey
     }
 }

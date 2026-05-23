@@ -9,7 +9,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
         let state = HomeGameCardState(item: item)
         let presentation = SportRendererRegistry.renderer(for: game).gameCardPresentation(for: game)
 
-        XCTAssertEqual(state.scoreCueText, "Score at bottom")
+        XCTAssertEqual(state.scoreCueText, "score at bottom")
         XCTAssertFalse(state.showsScoreRows)
         assertNoScoreLeak(
             texts: [
@@ -110,6 +110,25 @@ final class ProductPresentationInvariantTests: XCTestCase {
             viewModel.setReachedScoreboard(true)
         }
         XCTAssertTrue(store.progress(for: 900)?.reachedScoreboard == true)
+    }
+
+    func testStreamModesAndEventLabelsUseCustomerLanguage() {
+        XCTAssertEqual(DetailStreamMode.allCases.map(\.title), ["Important", "Standard", "All Plays"])
+
+        let homeRun = TestFixtures.makeEvent(sequence: 1, eventType: "HOME_RUN")
+        let fieldOut = TestFixtures.makeEvent(sequence: 2, eventType: "FIELD_OUT")
+        let renderer = GenericSportRenderer(leagueCode: "mlb")
+
+        XCTAssertEqual(renderer.eventPresentation(for: homeRun).eventLabel, "Home run")
+        XCTAssertEqual(renderer.eventPresentation(for: fieldOut).eventLabel, "Out")
+        XCTAssertEqual(homeRun.visualImportance.title, "")
+
+        let duplicatedClock = TestFixtures.makeEvent(
+            sequence: 3,
+            periodLabel: "6th",
+            clockLabel: "6th"
+        )
+        XCTAssertEqual(duplicatedClock.clockText, "6th")
     }
 
     private func assertNoScoreLeak(texts: [String?], forbidden: [String], file: StaticString = #filePath, line: UInt = #line) {

@@ -2,55 +2,63 @@ import SwiftUI
 
 struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
+    @State private var lastAppliedInitialAnchorKey: String?
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                if viewModel.loading && !viewModel.hasAnyHomeSourceGames {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
-                } else if let error = viewModel.errorMessage, !viewModel.hasAnyHomeSourceGames {
-                    ErrorState(message: error) {
-                        Task { await viewModel.refresh() }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 220)
-                } else if viewModel.showsFilteredEmptyState {
-                    FilteredEmptyState {
-                        viewModel.clearFilters()
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 220)
-                } else {
-                    if let error = viewModel.errorMessage {
-                        InlineErrorState(message: error) {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 14) {
+                    if viewModel.loading && !viewModel.hasAnyHomeSourceGames {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+                    } else if let error = viewModel.errorMessage, !viewModel.hasAnyHomeSourceGames {
+                        ErrorState(message: error) {
                             Task { await viewModel.refresh() }
                         }
-                    }
+                        .frame(maxWidth: .infinity, minHeight: 220)
+                    } else if viewModel.showsFilteredEmptyState {
+                        FilteredEmptyState {
+                            viewModel.clearFilters()
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 220)
+                    } else {
+                        if let error = viewModel.errorMessage {
+                            InlineErrorState(message: error) {
+                                Task { await viewModel.refresh() }
+                            }
+                        }
 
-                    ForEach(viewModel.filteredHomeSections) { section in
-                        switch section {
-                        case .pinned(let pinned):
-                            PinnedSectionView(section: pinned) { item in
-                                gameLink(for: item)
-                            }
-                        case .today(let today):
-                            TodaySectionView(
-                                section: today,
-                                hasActiveFilters: viewModel.hasActiveFilters,
-                                clearFilters: viewModel.clearFilters
-                            ) { item in
-                                gameLink(for: item)
-                            }
-                        case .earlier(let earlier):
-                            EarlierSectionView(section: earlier) { item in
-                                gameLink(for: item)
+                        ForEach(viewModel.filteredHomeSections) { section in
+                            switch section {
+                            case .pinned(let pinned):
+                                PinnedSectionView(section: pinned) { item in
+                                    gameLink(for: item)
+                                }
+                            case .timeline(let timeline):
+                                TimelineSectionView(
+                                    section: timeline,
+                                    hasActiveFilters: viewModel.hasActiveFilters,
+                                    clearFilters: viewModel.clearFilters
+                                ) { item in
+                                    gameLink(for: item)
+                                }
                             }
                         }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 24)
+            .onAppear {
+                scrollToInitialHomeAnchor(proxy)
+            }
+            .onChange(of: viewModel.initialHomeAnchorID) { _, _ in
+                scrollToInitialHomeAnchor(proxy)
+            }
+            .onChange(of: viewModel.filteredVisibleGameCount) { _, _ in
+                scrollToInitialHomeAnchor(proxy)
+            }
         }
         .background(
             SportsTheme.Background.page
@@ -87,6 +95,24 @@ struct HomeView: View {
         }
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(SportsTheme.Colors.paper, for: .navigationBar)
+    }
+
+    private func scrollToInitialHomeAnchor(_ proxy: ScrollViewProxy) {
+        guard let anchorID = viewModel.initialHomeAnchorID else { return }
+        let key = [
+            anchorID,
+            String(viewModel.filteredVisibleGameCount),
+            viewModel.league.rawValue,
+            viewModel.teamQuery
+        ].joined(separator: ":")
+        guard key != lastAppliedInitialAnchorKey else { return }
+        lastAppliedInitialAnchorKey = key
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            proxy.scrollTo(anchorID, anchor: .center)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                proxy.scrollTo(anchorID, anchor: .center)
+            }
+        }
     }
 
     private func gameLink(for item: HomeGameItem) -> some View {
@@ -191,48 +217,32 @@ private struct PinnedSectionView<Row: View>: View {
     }
 }
 
-private struct TodaySectionView<Row: View>: View {
-    let section: HomeTodaySection
+private struct TimelineSectionView<Row: View>: View {
+    let section: HomeTimelineFeedSection
     let hasActiveFilters: Bool
     let clearFilters: () -> Void
     let row: (HomeGameItem) -> Row
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HomeSectionHeader(title: section.title, subtitle: section.subtitle, systemImage: "sun.max.fill")
-                .id(section.id)
+            HomeSectionHeader(title: section.title, subtitle: "Last 72 hours", systemImage: "clock.arrow.circlepath")
+                .id("timeline")
 
-            if section.games.isEmpty {
+            if section.dateSections.isEmpty {
                 TodayEmptyRow(hasActiveFilters: hasActiveFilters, clearFilters: clearFilters)
             } else {
-                ForEach(section.games) { item in
-                    row(item)
+                ForEach(section.dateSections) { dateSection in
+                    NestedDateHeader(section: dateSection)
+                        .id(dateSection.id)
+                        .padding(.top, 6)
+
+                    ForEach(dateSection.games) { item in
+                        row(item)
+                    }
                 }
             }
         }
         .padding(.top, 8)
-    }
-}
-
-private struct EarlierSectionView<Row: View>: View {
-    let section: HomeEarlierSection
-    let row: (HomeGameItem) -> Row
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HomeSectionHeader(title: section.title, subtitle: "Recent catch-up", systemImage: "clock.arrow.circlepath")
-
-            ForEach(section.dateSections) { dateSection in
-                NestedDateHeader(section: dateSection)
-                    .id(dateSection.id)
-                    .padding(.top, 6)
-
-                ForEach(dateSection.games) { item in
-                    row(item)
-                }
-            }
-        }
-        .padding(.top, 16)
     }
 }
 

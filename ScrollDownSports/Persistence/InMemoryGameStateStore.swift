@@ -70,7 +70,6 @@ final class InMemoryGameStateStore: GameStateStore {
         mutate { state in
             state.markViewed(gameId: gameId, now: now)
         }
-        updatePinnedProgressMirror(gameId: gameId)
     }
 
     func recordKnownEventCount(gameId: Int, count: Int) {

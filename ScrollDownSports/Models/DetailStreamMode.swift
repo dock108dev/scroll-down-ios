@@ -10,44 +10,44 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
     var title: String {
         switch self {
         case .key:
-            return "Key"
+            return "Important"
         case .flow:
-            return "Flow"
+            return "Standard"
         case .full:
-            return "Full"
+            return "All Plays"
         }
     }
 
     var sectionTitle: String {
         switch self {
         case .key:
-            return "Key Moments"
+            return "Important Plays"
         case .flow:
-            return "Game Flow"
+            return "Standard Stream"
         case .full:
-            return "Full Play-by-Play"
+            return "All Plays"
         }
     }
 
     var emptyStateMessage: String {
         switch self {
         case .key:
-            return "No key moments are available in this view. Full Play-by-Play still shows every logged event."
+            return "No important plays are available in this view."
         case .flow:
-            return "No flow plays are available in this view. Full Play-by-Play still shows every logged event."
+            return "No standard stream is available for this game."
         case .full:
-            return "No logged plays are available yet."
+            return "No plays are available yet."
         }
     }
 
     var summary: String {
         switch self {
         case .key:
-            return "Fastest view"
+            return "Important"
         case .flow:
-            return "Momentum view"
+            return "Standard"
         case .full:
-            return "Every logged play"
+            return "All Plays"
         }
     }
 
@@ -201,14 +201,14 @@ struct GameDetailRestoreTargetResolver {
     }
 
     static func resumeDescription(target: GameEvent, newPlayCount: Int) -> String {
-        let position = target.clockText.isEmpty ? "your saved play" : target.clockText
+        let position = target.resumePositionText.cleanDisplayLabel ?? "your saved play"
         if newPlayCount == 1 {
-            return "Saved at \(position). 1 new play is waiting."
+            return "Resume from \(position) · 1 new"
         }
         if newPlayCount > 1 {
-            return "Saved at \(position). \(newPlayCount) new plays are waiting."
+            return "Resume from \(position) · \(newPlayCount) new"
         }
-        return "Saved at \(position)."
+        return "Resume from \(position)"
     }
 }
 
@@ -220,9 +220,9 @@ enum DetailEventBand: Hashable {
     var title: String {
         switch self {
         case .key:
-            return "Key"
+            return "Important"
         case .flow:
-            return "Flow"
+            return "Standard"
         case .play:
             return "Play"
         }
@@ -237,10 +237,10 @@ enum EventVisualImportance: Hashable {
 
     var title: String {
         switch self {
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .critical: return "Critical"
+        case .low: return ""
+        case .medium: return "Notable"
+        case .high: return "Key play"
+        case .critical: return "Big moment"
         }
     }
 }
@@ -308,6 +308,36 @@ extension GameEvent {
         }
         return .low
     }
+
+    var resumePositionText: String {
+        let candidate = presentation?.timeLabel?.cleanDisplayLabel ?? normalizedPeriodClockText(
+            periodLabel: periodLabel,
+            clockLabel: clockLabel
+        )
+        return candidate ?? ""
+    }
+}
+
+func normalizedPeriodClockText(periodLabel: String?, clockLabel: String?) -> String? {
+    let period = periodLabel?.cleanDisplayLabel
+    let clock = clockLabel?.cleanDisplayLabel
+
+    switch (period, clock) {
+    case (.none, .none):
+        return nil
+    case (.some(let period), .none):
+        return period
+    case (.none, .some(let clock)):
+        return clock
+    case (.some(let period), .some(let clock)):
+        if period.normalizedLabelKey == clock.normalizedLabelKey {
+            return period
+        }
+        if clock.removingPeriodPrefix(period).isEmpty {
+            return period
+        }
+        return "\(period) · \(clock.removingPeriodPrefix(period))"
+    }
 }
 
 private extension EventImportanceData {
@@ -337,6 +367,44 @@ private extension EventImportanceData {
             return .low
         }
         return nil
+    }
+}
+
+extension String {
+    var cleanDisplayLabel: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        guard !trimmed.isEmpty, trimmed != "-" else { return nil }
+
+        let parts = trimmed.split(separator: " ")
+        guard parts.count == 2, parts[0].lowercased() == parts[1].lowercased() else {
+            return trimmed
+        }
+        return String(parts[0])
+    }
+
+    var normalizedLabelKey: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .lowercased()
+    }
+
+    func removingPeriodPrefix(_ period: String) -> String {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        let periodTrimmed = period.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !periodTrimmed.isEmpty else { return trimmed }
+        if trimmed.normalizedLabelKey == periodTrimmed.normalizedLabelKey {
+            return ""
+        }
+
+        for separator in [" · ", " - ", ": ", " "] {
+            let prefix = periodTrimmed + separator
+            if trimmed.hasPrefix(prefix) {
+                return String(trimmed.dropFirst(prefix.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return trimmed
     }
 }
 

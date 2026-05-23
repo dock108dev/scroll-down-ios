@@ -46,7 +46,25 @@ final class GameDetailViewModelTests: XCTestCase {
         let viewModel = GameDetailViewModel(gameId: 503, gameStateStore: store)
 
         XCTAssertEqual(viewModel.openingNewEventCount, 3)
-        XCTAssertEqual(store.progress(for: 503)?.newEventCount, 0)
+        XCTAssertEqual(store.progress(for: 503)?.newEventCount, 3)
+    }
+
+    func testVisibleReadProgressMovesForwardOnlyAndShrinksUnreadCount() {
+        let store = InMemoryGameStateStore()
+        let viewModel = GameDetailViewModel(gameId: 503, gameStateStore: store)
+
+        viewModel.recordReadEvent(eventIndex: 0, eventID: "event-1", knownEventCount: 8)
+        XCTAssertEqual(store.progress(for: 503)?.newEventCount, 7)
+
+        viewModel.recordReadEvent(eventIndex: 4, eventID: "event-5", knownEventCount: 8)
+        XCTAssertEqual(store.progress(for: 503)?.lastReadEventID, "event-5")
+        XCTAssertEqual(store.progress(for: 503)?.lastReadEventIndex, 4)
+        XCTAssertEqual(store.progress(for: 503)?.newEventCount, 3)
+
+        viewModel.recordReadEvent(eventIndex: 2, eventID: "event-3", knownEventCount: 8)
+        XCTAssertEqual(store.progress(for: 503)?.lastReadEventID, "event-5")
+        XCTAssertEqual(store.progress(for: 503)?.lastReadEventIndex, 4)
+        XCTAssertEqual(store.progress(for: 503)?.newEventCount, 3)
     }
 
     func testOpeningPinnedGameHydratesPersistedDetailAndClearsUnseenCount() throws {
@@ -73,6 +91,7 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.detail?.events.map(\.id), ["event-1", "event-2", "event-3"])
         XCTAssertEqual(viewModel.openingNewEventCount, 1)
         XCTAssertEqual(store.snapshot.pinnedGamesById[504]?.newEventCount, 0)
+        XCTAssertEqual(viewModel.localProgress?.newEventCount, 1)
         XCTAssertTrue(store.isPinned(gameId: 504))
     }
 

@@ -17,8 +17,11 @@ struct GameDetailView: View {
     @State private var visibilityTrackingSuppressed = true
     @State private var liveEdgeMode: DetailLiveEdgeMode = .following
     @State private var isNearLiveEdge = true
+    @State private var isTopChromeVisible = true
     @State private var programmaticScrollInFlight = false
     @State private var lastUserScrollAt = Date.distantPast
+    @State private var currentVisibleEvent: DetailVisibleEventState?
+    @State private var returnAnchor: DetailVisibleEventState?
 
     private let playerStatsSectionID = "player-stats"
     private let teamStatsSectionID = "team-stats"
@@ -44,6 +47,9 @@ struct GameDetailView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 18, pinnedViews: []) {
                         if let detail = viewModel.detail {
+                            Color.clear
+                                .frame(height: 1)
+                                .id(GameDetailScrollAnchor.top)
                             let renderer = SportRendererRegistry.renderer(for: detail.game)
                             GameHeaderView(
                                 game: detail.game,
@@ -58,12 +64,12 @@ struct GameDetailView: View {
                                         visibilityTrackingSuppressed = false
                                         scrollToResume(proxy, resumeState: resumeState, events: detail.events)
                                     },
-                                    onJumpLatest: {
-                                        visibilityTrackingSuppressed = false
-                                        scrollToLatest(proxy)
-                                    },
-                                    onStartOver: {
-                                        showStartOverConfirmation = true
+                                onJumpLatest: {
+                                    visibilityTrackingSuppressed = false
+                                    scrollToEndOrLatest(proxy)
+                                },
+                                onStartOver: {
+                                    showStartOverConfirmation = true
                                     }
                                 )
                             }
@@ -97,9 +103,19 @@ struct GameDetailView: View {
                                 },
                                 onJumpLatest: {
                                     visibilityTrackingSuppressed = false
-                                    scrollToLatest(proxy)
+                                    scrollToEndOrLatest(proxy)
                                 }
                             )
+                            Color.clear
+                                .frame(height: 1)
+                                .background {
+                                    GeometryReader { geometry in
+                                        Color.clear.preference(
+                                            key: DetailTopChromePreferenceKey.self,
+                                            value: geometry.frame(in: .named("game-detail-scroll"))
+                                        )
+                                    }
+                                }
                             if let errorMessage = viewModel.errorMessage {
                                 DetailRefreshErrorBanner(message: errorMessage) {
                                     Task { await viewModel.refresh() }
@@ -158,11 +174,25 @@ struct GameDetailView: View {
                 }
                 .coordinateSpace(name: "game-detail-scroll")
                 .background(SportsTheme.Background.page)
+                .safeAreaInset(edge: .top) {
+                    if let stickyNavigationTitle, !isTopChromeVisible {
+                        DetailStickyNavigationBar(
+                            title: stickyNavigationTitle,
+                            endLabel: detailEndLabel,
+                            returnLabel: stickyReturnLabel,
+                            onTop: { scrollToTop(proxy) },
+                            onEnd: { scrollToEndOrLatest(proxy) },
+                            onReturn: { scrollToReturnAnchor(proxy) }
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                    }
+                }
                 .safeAreaInset(edge: .bottom) {
                     if showsNewPlaysAffordance {
                         NewPlaysAffordance(count: pendingNewPlayCount) {
                             visibilityTrackingSuppressed = false
-                            scrollToLatest(proxy)
+                            scrollToEndOrLatest(proxy)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -176,6 +206,9 @@ struct GameDetailView: View {
                 }
                 .onPreferenceChange(DetailLatestAnchorPreferenceKey.self) { anchorY in
                     updateLiveEdgeDistance(anchorY: anchorY, viewportHeight: viewport.size.height)
+                }
+                .onPreferenceChange(DetailTopChromePreferenceKey.self) { frame in
+                    isTopChromeVisible = (frame?.maxY ?? 0) > 20
                 }
                 .simultaneousGesture(
                     DragGesture().onChanged { _ in
@@ -237,7 +270,27 @@ struct GameDetailView: View {
     }
 
     private var showsNewPlaysAffordance: Bool {
-        pendingNewPlayCount > 0 && liveEdgeMode == .reading && !viewModel.isFollowingLiveEdge
+        guard viewModel.detail?.game.status.isLive == true else { return false }
+        return pendingNewPlayCount > 0 && resumeState == nil && liveEdgeMode == .reading && !viewModel.isFollowingLiveEdge
+    }
+
+    private var stickyNavigationTitle: String? {
+        guard let detail = viewModel.detail, let currentVisibleEvent else { return nil }
+        let total = max(DetailStreamMode.dedupedEvents(from: detail.events).count, 1)
+        let readCount = min(total, max(1, currentVisibleEvent.readIndex + 1))
+        if detail.game.status.isLive, pendingNewPlayCount > 0 {
+            return "\(currentVisibleEvent.label) · \(pendingNewPlayCount) new"
+        }
+        return "\(currentVisibleEvent.label) · \(readCount)/\(total) read"
+    }
+
+    private var stickyReturnLabel: String? {
+        guard let returnAnchor else { return nil }
+        return "Back to \(returnAnchor.label)"
+    }
+
+    private var detailEndLabel: String {
+        viewModel.detail?.game.status.isLive == true ? "Latest" : "End"
     }
 
     private var resumeState: DetailResumeState? {
@@ -259,14 +312,17 @@ struct GameDetailView: View {
             target: target,
             description: GameDetailRestoreTargetResolver.resumeDescription(
                 target: target,
-                newPlayCount: max(progress.newEventCount, viewModel.openingNewEventCount)
+                newPlayCount: progress.newEventCount
             )
         )
     }
 
-    private func scrollToLatest(_ proxy: ScrollViewProxy) {
+    private func scrollToLatest(_ proxy: ScrollViewProxy, preservesReturnAnchor: Bool = true) {
         guard let detail = viewModel.detail else { return }
         let target = DetailStreamMode.dedupedEvents(from: detail.events).last
+        if preservesReturnAnchor {
+            rememberReturnAnchor()
+        }
         if let target {
             let mode = GameDetailRestoreTargetResolver.streamModeToReveal(
                 target: target,
@@ -287,6 +343,43 @@ struct GameDetailView: View {
                 proxy.scrollTo(GameDetailScrollAnchor.latest, anchor: .bottom)
             }
         }
+    }
+
+    private func scrollToEndOrLatest(_ proxy: ScrollViewProxy) {
+        guard let detail = viewModel.detail else { return }
+        rememberReturnAnchor()
+        if detail.game.status.isLive {
+            scrollToLatest(proxy, preservesReturnAnchor: false)
+            return
+        }
+
+        viewModel.recordLatestEventRead(events: detail.events)
+        performProgrammaticScroll {
+            proxy.scrollTo(GameDetailScrollAnchor.scoreboard, anchor: .bottom)
+        }
+    }
+
+    private func scrollToTop(_ proxy: ScrollViewProxy) {
+        rememberReturnAnchor()
+        viewModel.setFollowingLiveEdge(false)
+        performProgrammaticScroll {
+            proxy.scrollTo(GameDetailScrollAnchor.top, anchor: .top)
+        }
+    }
+
+    private func scrollToReturnAnchor(_ proxy: ScrollViewProxy) {
+        guard let anchor = returnAnchor else { return }
+        viewModel.setFollowingLiveEdge(false)
+        streamOrientationAnchorID = anchor.anchorID
+        performProgrammaticScroll {
+            proxy.scrollTo(GameDetailScrollAnchor.event(anchor.anchorID), anchor: .center)
+        }
+        returnAnchor = nil
+    }
+
+    private func rememberReturnAnchor() {
+        guard let currentVisibleEvent else { return }
+        returnAnchor = currentVisibleEvent
     }
 
     private func restoreReaderAnchor(_ proxy: ScrollViewProxy) {
@@ -311,7 +404,7 @@ struct GameDetailView: View {
         let shouldFollowLatest = viewModel.isFollowingLiveEdge && isNearLiveEdge
         if shouldFollowLatest, viewModel.detail?.game.status.isLive == true {
             visibilityTrackingSuppressed = false
-            scrollToLatest(proxy)
+            scrollToLatest(proxy, preservesReturnAnchor: false)
             return
         }
 
@@ -382,10 +475,15 @@ struct GameDetailView: View {
 
     private func updateVisibleEvent(from frames: [DetailEventVisibilityFrame], viewportHeight: CGFloat) {
         guard
-            !visibilityTrackingSuppressed,
-            !viewModel.isFollowingLiveEdge,
             let detail = viewModel.detail,
             let frame = visibleCandidate(from: frames, viewportHeight: viewportHeight)
+        else { return }
+
+        currentVisibleEvent = DetailVisibleEventState(frame: frame)
+
+        guard
+            !visibilityTrackingSuppressed,
+            !viewModel.isFollowingLiveEdge
         else { return }
 
         let now = Date()
@@ -431,6 +529,9 @@ struct GameDetailView: View {
         guard viewModel.localProgress?.reachedScoreboard != true, let frame else { return }
         let viewportFrame = CGRect(x: 0, y: 0, width: frame.width, height: viewportHeight)
         if hasScoreboardEnteredViewport(itemFrame: frame, viewportFrame: viewportFrame) {
+            if let events = viewModel.detail?.events {
+                viewModel.recordLatestEventRead(events: events)
+            }
             viewModel.setReachedScoreboard(true)
         }
     }
@@ -487,5 +588,19 @@ struct GameDetailView: View {
             }
             return lhs.sequence < rhs.sequence
         }?.detailAnchorID
+    }
+}
+
+private struct DetailVisibleEventState: Equatable {
+    let anchorID: String
+    let readIndex: Int
+    let sequence: Int
+    let label: String
+
+    init(frame: DetailEventVisibilityFrame) {
+        self.anchorID = frame.anchorID
+        self.readIndex = frame.readIndex
+        self.sequence = frame.sequence
+        self.label = frame.label.cleanDisplayLabel ?? "spot"
     }
 }

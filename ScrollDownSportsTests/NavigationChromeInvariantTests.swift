@@ -31,6 +31,18 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertTrue(source.contains(".accessibilityLabel(\"Refresh game\")"))
     }
 
+    func testDetailScreenHasStickyProgressNavigationWithoutLargeDuplicateCard() throws {
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let streamSource = try repoFile("ScrollDownSports/Views/CatchUpSections.swift")
+
+        XCTAssertTrue(detailSource.contains("DetailStickyNavigationBar("))
+        XCTAssertTrue(detailSource.contains("scrollToTop(proxy)"))
+        XCTAssertTrue(detailSource.contains("scrollToReturnAnchor(proxy)"))
+        XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
+        XCTAssertTrue(detailSource.contains("Back to"))
+        XCTAssertTrue(streamSource.contains("Capsule()"))
+    }
+
     func testSportsNativeControlsUseSharedStyleAndFeedback() throws {
         let themeSource = try repoFile("ScrollDownSports/DesignSystem/SportsTheme.swift")
         XCTAssertTrue(themeSource.contains("struct SportsControlButtonStyle"))
@@ -56,8 +68,8 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertTrue(streamSource.contains("PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)"))
         XCTAssertTrue(streamSource.contains("StreamTerminalMarker(game: game)"))
         XCTAssertTrue(polishSource.contains("Live edge"))
-        XCTAssertTrue(polishSource.contains("End of play stream"))
-        XCTAssertTrue(polishSource.contains("Stats and the scoreboard payoff follow."))
+        XCTAssertTrue(polishSource.contains("End of stream"))
+        XCTAssertFalse(polishSource.contains("Stats and the scoreboard payoff follow."))
     }
 
     func testGreenIsNotARepeatedChromeAccent() throws {

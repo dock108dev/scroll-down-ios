@@ -56,6 +56,7 @@ struct HomeGameCardState: Equatable {
         if game.status.isLive { return .live }
         if game.status.isFinal { return .final }
         if game.status.isPregame { return .scheduled }
+        if game.scheduledStart > Date() { return .scheduled }
         return .other
     }
 
@@ -96,6 +97,9 @@ struct HomeGameCardState: Equatable {
         phase: HomeGameCardPhase,
         capability: HomeGameCardCapability
     ) -> String {
+        if phase == .scheduled {
+            return "Preview"
+        }
         if let backendLabel = item.game.presentation?.primaryActionLabel?.nilIfBlank,
            labelIsAllowed(backendLabel, phase: phase, capability: capability) {
             return backendLabel
@@ -150,68 +154,78 @@ struct HomeGameCardState: Equatable {
         phase: HomeGameCardPhase,
         capability: HomeGameCardCapability
     ) -> String {
-        if let backendContext = item.game.presentation?.secondaryContextLabel?.nilIfBlank {
-            return backendContext
+        if capability.canResume {
+            return compactResumeText(for: item, capability: capability)
         }
         if let newPlayText = newPlayText(for: item, capability: capability) {
             return newPlayText
         }
-        if capability.canResume {
-            return "Saved progress"
-        }
         if phase == .live && capability.canOpenPlayableStream {
-            return "Follow new plays as they land"
+            return "Live stream"
         }
         if phase == .final && capability.canCatchUp {
-            return "Replay the game without top-line spoilers"
+            if capability.shouldHideScoreBehindCue {
+                return "Catch up · score at bottom"
+            }
+            if let readCount = item.progress?.readEventCount, readCount > 0 {
+                return "\(readCount) plays read"
+            }
+            return "Recap"
         }
         if phase == .final && item.game.availableFeatures.hasScoreboard {
-            return "Final box score available"
+            return "Box score"
         }
         if phase == .scheduled {
-            return "Starts \(DateFormatters.timeOnly.string(from: item.game.scheduledStart))"
+            return "Preview"
         }
-        return "Game detail available"
+        return "Details"
     }
 
     private static func metadataText(for game: Game, phase: HomeGameCardPhase) -> String {
-        let league = game.leagueCode.uppercased()
         switch phase {
         case .scheduled:
-            return "\(league) · \(DateFormatters.shortTime.string(from: game.scheduledStart))"
+            return DateFormatters.timeOnly.string(from: game.scheduledStart)
         case .live:
-            return "\(league) · Live now"
+            return "Live"
         case .final:
-            return "\(league) · Final"
+            return "Final"
         case .other:
-            return "\(league) · \(DateFormatters.shortTime.string(from: game.scheduledStart))"
+            return DateFormatters.timeOnly.string(from: game.scheduledStart)
         }
     }
 
     private static func progressText(for item: HomeGameItem, capability: HomeGameCardCapability) -> String? {
         guard capability.canResume else { return nil }
         if let displayText = item.game.progress.displayText.nilIfBlank {
-            return "Resume \(displayText)"
+            return "Resume from \(displayText)"
         }
         if let readCount = item.progress?.readEventCount,
            readCount > 0 {
             return "\(readCount) plays read"
         }
-        return "Resume saved spot"
+        return "Resume"
+    }
+
+    private static func compactResumeText(for item: HomeGameItem, capability: HomeGameCardCapability) -> String {
+        var parts = [progressText(for: item, capability: capability) ?? "Resume"]
+        if let newPlayText = newPlayText(for: item, capability: capability) {
+            parts.append(newPlayText.replacingOccurrences(of: " plays", with: ""))
+        }
+        return parts.joined(separator: " · ")
     }
 
     private static func newPlayText(for item: HomeGameItem, capability: HomeGameCardCapability) -> String? {
         guard capability.canShowNewPlayCount, item.newEventCount > 0 else { return nil }
-        return item.newEventCount == 1 ? "1 new play" : "\(item.newEventCount) new plays"
+        return item.newEventCount == 1 ? "1 new" : "\(item.newEventCount) new"
     }
 
     private static func scoreCueText(for phase: HomeGameCardPhase, capability: HomeGameCardCapability) -> String? {
         guard capability.shouldHideScoreBehindCue else { return nil }
         switch phase {
         case .final:
-            return "Score at bottom"
+            return "score at bottom"
         case .live, .other:
-            return capability.canCatchUp ? "Score at bottom" : nil
+            return capability.canCatchUp ? "score at bottom" : nil
         case .scheduled:
             return nil
         }

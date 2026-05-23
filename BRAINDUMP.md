@@ -1,1837 +1,1187 @@
-# Scroll Down Sports — Complete Product + Visual Braindump
-## Context
-The current app is functionally headed in the right direction, but the visuals and product model need a major upgrade.
-The app should not feel like a generic sports data list. It should feel like a **persistent sports stream** where users can pin games, follow live play-by-play, catch up from where they left off, and scroll down through the game story until they reach the scoreboard/result at the bottom.
-This is not just an MLB app. MLB is the first proof point, but the foundation needs to work across sports.
-The current visuals are too flat, too generic, too much like raw data/debug UI, and not enough like a polished sports product.
+# Scroll Down Sports — Full Testing + CI Braindump
+## Goal
+Build a real testing and CI safety net for Scroll Down Sports so future visual/product passes stop breaking core behavior.
+The app is now complex enough that manual screenshot review is not enough. We need automated tests across:
+- data normalization
+- game timeline ordering
+- pinned games
+- resume progress
+- score-at-bottom behavior
+- play-by-play rendering
+- stats/scoreboard sections
+- UI navigation
+- visual regressions
+- fake/mock data leakage
+- accessibility
+- CI quality gates
+Target: **80%+ meaningful coverage where line/branch coverage makes sense**, and equivalent scenario/screen/flow coverage where traditional percentage coverage is the wrong metric.
 ---
-# 1. Product North Star
-## What the app is
-**Scroll Down Sports is a sports catch-up and live-follow app where the user scrolls through the game story.**
-The scoreboard/result belongs at the bottom.
-The interaction itself creates the suspense:
-> If the user wants the result, they scroll down to it.  
-> If they want the story, they consume the play-by-play on the way.
-No artificial spoiler-gating is required as long as the UI respects this layout.
-## Core experience
-A user should be able to:
-1. Open the app.
-2. See today’s games.
-3. Pin a game they care about.
-4. Open a game and scroll through the PBP/story.
-5. Leave the game.
-6. Come back later and resume exactly where they stopped.
-7. See how many new plays happened since they left.
-8. Stream live PBP without the app hijacking their scroll.
-9. Reach the bottom to see the scoreboard/result/stats.
+# 1. Testing Philosophy
+## Core rule
+Do not optimize for fake green checkmarks.
+Optimize for catching the kinds of bugs we are actually seeing:
+- stale resume state
+- duplicated innings/quarters
+- raw enum labels leaking
+- fake pinned games
+- wrong home timeline anchor
+- TBD placeholder games showing
+- score revealing in the wrong place
+- score not appearing during scoring plays
+- floating `new` pill lingering incorrectly
+- inconsistent card sizing
+- bad truncation
+- broken scroll restore
+- duplicated team names after score is known
+Coverage is useful, but only if it covers product behavior.
 ---
-# 2. Core Product Invariants
-These should be treated as design and engineering rules.
-## Invariant 1 — Scoreboard at the bottom
-The top of a game page should not reveal the final score by default.
-The scoreboard/result lives at the bottom of the scroll.
-Valid top states:
+# 2. Test Pyramid
+## Layer 1 — Unit tests
+Fast, deterministic, high coverage.
+Test pure logic:
+- date grouping
+- 72-hour timeline range
+- home anchor selection
+- placeholder/TBD filtering
+- pinned-game filtering
+- game progress updates
+- unread/new count calculation
+- period label formatting
+- event type label mapping
+- score progression logic
+- card display-state logic
+- stat formatting
+- team abbreviation handling
+Target:
 ```text
-ATL vs MIA
-Final · Catch up available
-36 plays
-Score at bottom
+Unit test coverage: 85%+ for business/domain logic
 
-Invalid top state:
-
-ATL 9
-MIA 3
-
-Exception:
-
-If the user has already reached the scoreboard before, we can optionally allow future opens to show the score. But the default product behavior should preserve the scroll-down experience.
+This is where normal code coverage is most useful.
 
 ⸻
 
-Invariant 2 — Remember the user’s place
+Layer 2 — Component/render tests
 
-Every game should remember:
+Test UI components with deterministic props.
 
-* last read event
-* last scroll position
-* selected view mode
-* whether the scoreboard was reached
-* expanded/collapsed sections
-* whether the game is pinned
-* last viewed timestamp
-* new events since last view
+Targets:
 
-This is not a bonus feature. This is core to the app.
+* GameCard
+* HomeTimelineSection
+* GameHeaderCard
+* ResumeBar
+* StickyProgressBar
+* PlayDetailControl
+* EventCard
+* ScoreboardCard
+* PlayerStatsSection
+* TeamStatsSection
+* EmptyState
+* PinnedSection
 
-⸻
+Target:
 
-Invariant 3 — Pinning is first-class
+Component coverage: 80%+ for rendered branches/states
 
-Pinning a game should mean:
-
-* game appears in a pinned section
-* user can resume quickly
-* new play count is tracked
-* live games can stream updates
-* pinned games remain easy to find after leaving the screen
-
-A pin is not just a saved icon state. It is a lightweight “follow this game” mode.
+This should catch bad labels, missing states, duplicate strings, and wrong conditional rendering.
 
 ⸻
 
-Invariant 4 — Live streams must not hijack the user
+Layer 3 — Integration tests
 
-If the user is reading older plays and new PBP arrives, the screen should not jump.
+Test how state, data, and UI behavior work together.
 
-Behavior:
+Targets:
 
-If user is near live edge and Follow Live is ON:
-  append new plays and keep user at live edge.
-If user has scrolled up:
-  append new plays silently.
-  show "8 new plays" floating button.
-  only jump when user taps it.
+* open game → scroll → progress saves
+* resume updates as user scrolls
+* new count decreases as events are read
+* reaching end clears unread count
+* score remains absent from top header
+* score appears after scoring events
+* final score remains at bottom
+* home feed anchors to recent catch-up
+* pinned section only shows real pinned games
+* no fake/demo games mixed into production feed
 
-No surprise teleporting.
+Target:
 
-⸻
+Integration coverage: cover all critical state machines and data flows
 
-Invariant 5 — All-sports foundation
-
-MLB can ship first, but the model cannot be baseball-only.
-
-Core app language should use generic sports terms:
-
-* game
-* event
-* moment
-* period
-* clock
-* score state
-* timeline
-* stream
-* stats
-* scoreboard
-* pin
-* progress
-
-Baseball-specific concepts like innings, outs, count, bases, and pitchers should live in baseball renderers/adapters.
+Do not worry about a line percentage here. The equivalent is state transition coverage.
 
 ⸻
 
-3. Current Visual Problems
+Layer 4 — UI / E2E tests
 
-Problem A — Too generic
+Run against the app in simulator/emulator/browser depending on stack.
 
-The screenshots currently feel like:
+Critical user flows:
 
-iOS list + white cards + green accent + sports data
+1. first launch
+2. home feed opens around recent catch-up
+3. scroll up to older games
+4. scroll down to today/upcoming
+5. open final game
+6. verify top does not show final score
+7. scroll through play stream
+8. verify score appears after scoring play
+9. verify final score at bottom
+10. leave and return
+11. resume from correct event
+12. jump top/end and back to spot
+13. pin/unpin real game
+14. verify no fake pinned games
+15. filter sport/team
+16. verify TBD games hidden
 
-That is clean, but it is not memorable.
+Target:
 
-It could be a health app, calendar app, CRM, or habit tracker.
+E2E coverage: 100% of critical paths
 
-The app needs a sports-native identity.
-
-⸻
-
-Problem B — Too much green
-
-Green is being used for:
-
-* MLB label
-* section titles
-* game card rail
-* icons
-* borders
-* stats headings
-* timeline accents
-
-This makes the whole product feel like a generic “green app” instead of a sports app.
-
-Green should be used intentionally, not everywhere.
-
-Suggested use:
-
-* league/sport accent
-* success/live state where appropriate
-* small metadata
-* not every heading/card/border
+For UI/E2E, do not chase 80% line coverage. The equivalent is critical flow coverage.
 
 ⸻
 
-Problem C — Raw feed prose dominates
+Layer 5 — Visual regression tests
 
-The PBP currently reads like raw MLB API text dumped into a mobile list.
+Use screenshots to catch layout/theme/card-size regressions.
+
+Target screens:
+
+* home with no pinned games
+* home with pinned games
+* home anchored at recent catch-up
+* home with live games
+* home with upcoming games
+* game detail top
+* game detail stream
+* game detail after scoring play
+* game detail bottom scoreboard
+* expanded player stats
+* expanded team stats
+* empty PBP state
+* dark mode if supported
+* small device width
+* large accessibility text if supported
+
+Target:
+
+Visual coverage: approved baseline screenshots for every major screen state
+
+This catches “everything technically works but yikes.”
+
+⸻
+
+Layer 6 — Accessibility tests
+
+Minimum automated checks:
+
+* labels exist for buttons/icons
+* controls are reachable
+* tap targets are large enough
+* text contrast passes
+* dynamic type does not destroy layout
+* screen reader names are not raw enum values
+* no duplicate inaccessible buttons
+
+Target:
+
+Accessibility: zero critical violations
+
+⸻
+
+3. Immediate Test Inventory Pass
+
+Before adding new tests, find what exists.
+
+Task
+
+Audit the repo for existing test setup.
+
+Search for:
+
+__tests__/
+*.test.*
+*.spec.*
+jest.config.*
+vitest.config.*
+playwright.config.*
+detox.config.*
+maestro/
+xcuitest/
+*.snap
+coverage/
+.github/workflows/
+
+Also inspect package scripts:
+
+test
+test:unit
+test:watch
+test:coverage
+lint
+typecheck
+e2e
+ui-test
+build
+
+Output of audit
+
+Produce a short testing inventory:
+
+## Current Test Inventory
+### Existing tools
+- Unit:
+- Component:
+- E2E/UI:
+- Visual:
+- Coverage:
+- CI:
+### Existing tests
+- Domain logic:
+- Components:
+- Screens:
+- Flows:
+### Gaps
+- Resume progress:
+- Home timeline anchor:
+- Score-at-bottom:
+- Fake data leakage:
+- Period formatting:
+- Raw enum mapping:
+- Visual regression:
+
+Do not start blindly adding tests until the existing structure is understood.
+
+⸻
+
+4. Domain Logic Tests
+
+These are the most important first tests because they catch product bugs cheaply.
+
+Home timeline tests
+
+Test:
+
+loads last 72 hours only
+does not treat 72 hours as 72 days
+filters TBD games
+filters missing participants
+orders timeline correctly
+chooses recent catch-up anchor in morning
+chooses pinned unread game first
+chooses live game when no catch-up exists
+keeps older games accessible above anchor
+keeps today/upcoming below anchor
+
+Example cases:
+
+describe("home timeline", () => {
+  it("filters out TBD placeholder games")
+  it("uses 72-hour lookback, not 72 days")
+  it("anchors to yesterday catch-up in the morning")
+  it("keeps older catch-up above the anchor")
+  it("keeps future games below the anchor")
+  it("does not render fake pinned games")
+})
+
+⸻
+
+Game progress tests
+
+Test:
+
+progress updates as visible event advances
+progress is monotonic for final games
+progress does not move backward when user scrolls up
+resume uses furthestReadEventId
+currentVisibleEventId is separate from furthestReadEventId
+returnAnchorEventId is set before jump-to-top
+returnAnchorEventId is set before jump-to-end
+new count decreases as plays are read
+new count clears at end of stream
 
 Example:
 
-Michael Harris II homers (10) on a fly ball to center field. Ronald Acuña Jr. scores.
-
-That is accurate, but not good product copy.
-
-Better:
-
-2-run homer
-Michael Harris II sends one to center.
-Acuña scores.
-ATL · Top 1st
-
-Raw feed text can exist, but it should be secondary/detail text.
+describe("game progress", () => {
+  it("updates furthest read event while scrolling")
+  it("does not lock resume to the first event")
+  it("does not move furthest read backward")
+  it("calculates unread events after furthest read")
+  it("clears unread count at stream end")
+  it("stores return anchor before jumping to top")
+})
 
 ⸻
 
-Problem D — P1/P2/P3 is internal language
+Period formatter tests
 
-The current P1, P2, P3 mode chips feel like debug tiers.
+Centralize and test.
 
-Replace with user-facing modes:
+Inputs:
 
-Key Moments
-Game Flow
-Full Play-by-Play
+MLB inning + half
+NFL quarter + clock
+NBA quarter + clock
+NHL period
+Soccer minute
 
-or shorter:
+Expected:
 
-Key
-Flow
-Full
-
-These modes work across sports.
-
-⸻
-
-Problem E — Player stats are too bulky
-
-The player stat screen is a wall of identical stat pills.
-
-That makes every player look equally important.
-
-Instead:
-
-1. Show impact players first.
-2. Then show compact stat tables.
-3. Let full stats be expandable.
-
-Pills are useful for highlights. They are bad for dense data.
-
-⸻
-
-Problem F — Header blur looks broken
-
-The glass header currently allows background text to ghost behind the nav/title area. It makes screenshots look accidentally broken.
-
-Fix:
-
-* use an opaque or mostly opaque sticky header
-* reduce blur
-* ensure content cannot visibly pass behind title/buttons
-* standardize nav button size/spacing
-* handle scroll transitions deliberately
-
-⸻
-
-4. Updated Visual Direction
-
-Desired feel
-
-The app should feel like:
-
-modern sports reader
-+ live game stream
-+ scoreboard tape
-+ collectible game card
-+ old-school sports-page hierarchy
-
-Not:
-
-generic iOS list with sports data
-
-Good references conceptually
-
-Do not copy directly, but borrow principles from:
-
-* Apple Sports: clean, restrained hierarchy
-* The Athletic: strong editorial hierarchy
-* MLB/NBA/NFL gamecast: event structure
-* old stadium scoreboards: bottom scoreboard treatment
-* baseball cards / program sheets: team/player presentation
-* live blogs: persistent stream + new update behavior
-
-Visual metaphor
-
-The app should feel like a vertical sports tape.
-
-The user scrolls through:
-
-Game setup
-↓
-Early action
-↓
-Middle-game context
-↓
-Turning points
-↓
-Late-game finish
-↓
-Scoreboard/result
-
-The verticality is the product.
-
-⸻
-
-5. Design System Reset
-
-Before tweaking individual screens, define the shared design language.
-
-Colors
-
-Base palette
-
-Use a warmer, more deliberate base:
-
-Background: off-white / warm paper / very light gray
-Primary text: near-black or dark navy
-Secondary text: muted gray
-Card background: white or slightly elevated warm white
-Borders: subtle neutral
-
-Event colors
-
-Use event colors based on meaning:
-
-Scoring: gold/orange
-Live/new: red or bright accent
-Pitching/defense: teal/blue
-Critical/late drama: crimson
-Neutral event: gray/navy
-Final: dark scoreboard tone
-
-Team colors
-
-Team colors should be used carefully:
-
-* small accent rail
-* team abbreviation chip
-* moment ownership indicator
-* scoreboard row
-* not giant full-card backgrounds by default
-
-Sport colors
-
-Each sport may have a subtle identity color, but the app should not be hardcoded as “green MLB app.”
-
-⸻
-
-Typography
-
-Current type is too large and too uniform.
-
-Suggested hierarchy:
-
-Element	Treatment
-App title	bold, restrained
-Section title	22–28, bold
-Team names	22–30, bold
-Game metadata	12–14, muted
-Moment headline	18–22, semibold/bold
-Moment detail	15–17, regular
-Raw feed text	13–15, muted
-Stats table	13–15, compact
-Status pill	11–13, uppercase or semibold
-
-The PBP should not feel like reading giant paragraphs.
-
-⸻
-
-Surfaces
-
-Define these shared surface types:
-
-1. Game Card
-
-Used on home screen and pinned games.
-
-Must support:
-
-* scheduled
-* live
-* final
-* pinned
-* resume available
-* new plays
-* catch-up available
-* score hidden by default
-* sport-neutral metadata
-
-2. Game Header Card
-
-Used at top of game detail screen.
-
-Must support:
-
-* teams
-* sport/league
-* date/time
-* status
-* catch-up metadata
-* pinned state
-* score-at-bottom note
-* no final score by default
-
-3. Event Card
-
-Used in the PBP stream.
-
-Must support:
-
-* sport-specific metadata
-* event type
-* importance
-* headline
-* detail
-* team ownership
-* score delta if appropriate
-* raw feed expansion
-* timestamp/period
-
-4. Stream Control Bar
-
-Used near top of detail screen.
-
-Must support:
-
-* pin/unpin
-* follow live on/off
-* resume
-* jump to latest
-* new play count
-* selected mode
-
-5. Scoreboard Card
-
-Always near bottom.
-
-Must support:
-
-* sport-specific scoreboard
-* final/current score
-* box score/grid where applicable
-* stats summary
-* reached-scoreboard progress update
-
-6. Stat Summary
-
-Used after stream but before scoreboard or near bottom.
-
-Must support:
-
-* impact players
-* team stat summary
-* full expandable tables
-
-⸻
-
-6. Home Screen Redesign
-
-Current issue
-
-The current home screen shows games, but it does not give the user enough reason to care or understand what to do next.
-
-Cards look too identical.
-
-Desired structure
-
-Scroll Down
-Pinned
-[game]
-[game]
-Today
-[game]
-[game]
-[game]
-Earlier
-[game]
-[game]
-
-If there are no pinned games, omit the pinned section.
-
-Home game card requirements
-
-Each card should answer:
-
-* What sport/league is this?
-* Who is playing?
-* Is it scheduled/live/final?
-* Can I catch up?
-* Did I already start this game?
-* Are there new plays?
-* Is this pinned?
-* Is the score hidden until bottom?
-
-Example card states
-
-Scheduled
-
-MLB · 6:40 PM
-STL    St. Louis Cardinals
-CIN    Cincinnati Reds
-Catch up available at first pitch
-
-Live, unpinned
-
-LIVE · 6th
-CLE    Cleveland Guardians
-PHI    Philadelphia Phillies
-Open stream
-
-Live, pinned
-
-PINNED · LIVE · 6th
-CLE    Cleveland Guardians
-PHI    Philadelphia Phillies
-12 new plays · Resume from 4th
-
-Final, not started
-
-FINAL
-ATL    Atlanta Braves
-MIA    Miami Marlins
-Catch up · 36 plays · Score at bottom
-
-Final, partially read
-
-FINAL
-ATL    Atlanta Braves
-MIA    Miami Marlins
-Resume from 7th · Score at bottom
-
-Final, scoreboard already reached
-
-FINAL
-ATL    Atlanta Braves
-MIA    Miami Marlins
-Viewed · Open recap
-
-Score can be shown only if we choose to allow score visibility after the user has already reached the bottom.
-
-⸻
-
-7. Pinned Games
-
-Pin behavior
-
-Pinning should persist locally for MVP.
-
-When a game is pinned:
-
-* appears in pinned section
-* tracks last-read event
-* tracks new event count
-* can be unpinned
-* can stream live updates
-* remains available after final
-* can still be resumed after final
-
-Pin icon
-
-The current pin icon is okay as a starting affordance, but active/inactive state needs to be obvious.
-
-Possible active treatment:
-
-* filled pin icon
-* pinned badge on card
-* pinned section
-* subtle card emphasis
-
-Pinned game object
-
-type PinnedGame = {
-  gameId: string
-  sport: Sport
-  pinned: boolean
-  pinnedAt: string
-  lastViewedAt?: string
-  lastReadEventId?: string
-  lastReadEventIndex?: number
-  lastScrollOffset?: number
-  newEventCount: number
-  followLiveEnabled: boolean
-}
-
-⸻
-
-8. Remembering Game Progress
-
-Why this matters
-
-This is one of the most important product behaviors.
-
-The app is called Scroll Down. If the user scrolls through a game, leaves, and comes back to the top every time, the whole thing feels broken.
-
-Store per-game progress
-
-type GameProgress = {
-  gameId: string
-  sport: Sport
-  lastReadEventId?: string
-  lastReadEventIndex?: number
-  lastScrollOffset?: number
-  selectedMode: "key" | "flow" | "full"
-  expandedSectionIds: string[]
-  reachedScoreboard: boolean
-  scoreboardReachedAt?: string
-  lastViewedAt: string
-  updatedAt: string
-}
-
-Resume rules
-
-When opening a game:
-
-1. If no progress exists, start at the top.
-2. If progress exists and scoreboard was not reached, show resume banner.
-3. If new events exist, show new count.
-4. If the game is live and pinned, offer resume or jump latest.
-5. If scoreboard was reached, open normally or optionally show viewed state.
-
-Resume banner
-
-Resume from Top 5th
-11 new plays since you left.
-[Resume] [Jump to Latest] [Start Over]
-
-Important restore behavior
-
-Prefer restoring by eventId over raw pixel offset where possible.
-
-Pixel offsets can become stale if:
-
-* new events arrive
-* text wraps differently
-* device size changes
-* mode changes
-* stats load later
-
-Better approach:
-
-Scroll to lastReadEventId.
-Then apply small offset adjustment if needed.
-
-⸻
-
-9. Live PBP Streaming
-
-Two modes
-
-Catch-up mode
-
-Used for final or in-progress games where the user is reading history.
-
-Stream mode
-
-Used for pinned/live games where events continue arriving.
-
-Follow Live behavior
-
-type FollowLiveMode = {
-  enabled: boolean
-  userNearLiveEdge: boolean
-  pendingNewEvents: number
-}
-
-Rules:
-
-If Follow Live is ON and user is near live edge:
-  append new events and keep user attached to latest.
-If user scrolls away from live edge:
-  pause auto-follow.
-  show new plays button.
-If user taps Jump to Latest:
-  scroll to latest event.
-  clear pending count.
-  re-enable live edge tracking.
-
-Floating new events button
-
-8 new plays
-Jump to latest
-
-This should appear above the bottom area, not over important text.
-
-Refresh behavior
-
-Manual refresh should:
-
-* fetch new events
-* preserve scroll position
-* update new count
-* not reset the stream
-
-⸻
-
-10. Game Detail Screen Redesign
-
-Current issue
-
-The current catch-up screen is too much like:
-
-header card
-key moments list
-stats
-box score
-
-It needs to become:
-
-game header
-stream controls
-sports story stream
-supporting stats
-scoreboard at bottom
-
-Proposed structure
-
-Sticky Header
-- Back
-- Title
-- Pin
-- Refresh
-Game Header Card
-- league/sport
-- teams
-- date/status
-- catch-up/live metadata
-- no top score by default
-Stream Control Bar
-- Key / Flow / Full
-- Follow Live toggle if live
-- Resume / Jump Latest if relevant
-Game Stream
-- grouped by period/inning/quarter
-- event cards
-- importance styling
-- new play separators
-Stats Summary
-- impact players
-- team stat highlights
-- expandable full stats
-Scoreboard / Box Score
-- final/current score
-- sport-specific scoreboard
-
-⸻
-
-11. Timeline / Stream Modes
-
-Replace current mode chips.
-
-Recommended labels
-
-Key
-Flow
-Full
-
-Expanded descriptions:
-
-Key
-
-Major events only.
-
-Examples:
-
-* scoring plays
-* lead changes
-* late-game swing
-* major turnover
-* red card
-* goal
-* home run
-* game-ending play
-
-Flow
-
-Enough events to understand the game.
-
-Examples:
-
-* scoring plays
-* threats
-* key outs/stops
-* possession changes
-* important drives
-* momentum swings
-
-Full
-
-Every play/event.
-
-This is the live PBP stream mode.
-
-UI treatment
-
-Current chips should become cleaner segmented controls.
-
-Example:
-
-Key 9 | Flow 29 | Full 36
-
-No P1/P2/P3.
-
-⸻
-
-12. Event Card Design
-
-Current issue
-
-Events are mostly raw text rows with small chips.
-
-Need headline-first sports cards.
-
-Generic event card anatomy
-
-[Period / Clock] [Team] [Event Type]
-Headline
-Description / supporting detail
-Optional:
-- score delta
-- possession/base/field context
-- raw feed expand
-
-Baseball scoring example
-
-Top 1st · ATL
-2-run homer
-Michael Harris II sends one to center.
-Acuña scores.
-ATL +2
-
-Baseball non-scoring example
-
-Bottom 4th · MIA
-Double play ends the threat
-Otto Lopez grounds into two.
-Edwards out at second, Lopez out at first.
-
-Football example
-
-Q4 · 2:14 · DAL 42
-3rd & 7 conversion
-Prescott finds Lamb across the middle.
-Drive stays alive.
-
-Basketball example
-
-Q3 · 4:22
-12–2 run
-Boston flips the quarter with three straight stops.
-
-Soccer example
-
+Top 1st
+Bottom 6th
+Q2 · 4:13
+Q3 · 7:02
+2nd period
 67'
-Goal
-Liverpool finally break through after sustained pressure.
 
-Hockey example
+Explicitly test against:
 
-P2 · 08:13
-Power-play goal
-Toronto cashes in before the penalty expires.
+1st 1st
+6th 6th
+Q2 Q2
 
-⸻
-
-13. Event Importance
-
-Every event should have importance.
-
-type EventImportance = "low" | "medium" | "high" | "critical"
-
-Visual impact:
-
-Importance	Treatment
-low	compact row
-medium	normal event card
-high	emphasized headline/card
-critical	larger card, stronger color, possible animation/haptic
-
-This prevents every strikeout, single, timeout, and substitution from looking equally important.
+Those should never appear.
 
 ⸻
 
-14. Period Grouping
+Event label mapping tests
 
-The stream should be grouped by sport-specific periods.
+No raw enum leakage.
 
-Examples:
+Test mapping:
 
-MLB: Top 1st, Bottom 1st, Top 2nd...
-NFL: Q1, Q2, Halftime, Q3...
-NBA: Q1, Q2, Q3, Q4...
-NHL: Period 1, Period 2...
-Soccer: First Half, Second Half, Stoppage...
-Golf: Round 1, Hole 7...
-Tennis: Set 1, Game 4...
+HOME_RUN -> Home run
+FIELD_OUT -> Out
+FORCE_OUT -> Force out
+STRIKEOUT -> Strikeout
+SINGLE -> Single
+DOUBLE -> Double
+WALK -> Walk
 
-Use a generic period model:
+Also test unknown enum fallback:
 
-type GamePeriod = {
-  id: string
-  label: string
-  sortOrder: number
-  sportMetadata?: Record<string, unknown>
-}
+SOME_UNKNOWN_EVENT -> Other play
+
+Never render raw SOME_UNKNOWN_EVENT.
 
 ⸻
 
-15. Stats Redesign
+Score progression tests
 
-Current issue
+Test:
 
-Player stats are too large and repetitive.
-
-New hierarchy
-
-Stats should come after the stream, near the bottom.
-
-Order:
-
-Impact Players
-Team Stats
-Full Player Stats
-Scoreboard
-
-Or:
-
-Impact Players
-Scoreboard
-Full Stats
-
-Depending on sport.
-
-Impact Players
-
-Show only the players who mattered.
-
-Example:
-
-Impact Players
-Kyle Stowers
-2 HR · 2 RBI · 2 R
-Michael Harris II
-2 HR · 3 RBI
-Ronald Acuña Jr.
-2 R · 1 RBI
-
-Full stats
-
-Use compact tables.
-
-Baseball example:
-
-Player              AB  H  R  RBI  HR  BB  K
-Kyle Stowers         4  2  2   2   2   0  2
-Christopher Morel    3  1  0   0   0   1  2
-
-Football example:
-
-Passing             C/ATT  YDS  TD  INT
-Jalen Hurts          21/29  244   2   0
-
-Basketball example:
-
-Player              PTS  REB  AST  STL  BLK
-Tatum                31    8    5    1    1
-
-Dense stats belong in tables, not large pill grids.
+top header hides final score before user reaches bottom
+scoring event shows scoreAfter
+non-scoring event does not need scoreAfter
+bottom scoreboard shows final score
+read/scored game home card may show score
+unread final game home card does not show final score
 
 ⸻
 
-16. Scoreboard at Bottom
+5. Component Tests
 
-The bottom scoreboard should feel intentional
+GameCard
 
-This is the payoff.
+States to cover:
 
-It should be visually stronger than the current plain score card.
+scheduled real teams
+live
+final unread
+final read
+resume available
+pinned
+unpinned
+no pinned games
+score hidden
+score visible after read
+placeholder hidden
 
-MLB scoreboard
+Assertions:
 
-Preferred if inning data is available:
-
-        1  2  3  4  5  6  7  8  9   R  H  E
-ATL     2  1  0  0  2  0  1  0  3   9 12  0
-MIA     0  0  1  1  0  0  0  1  0   3  7  1
-
-Fallback:
-
-        R  H  E
-ATL     9 12  0
-MIA     3  7  1
-
-Other sports
-
-Football:
-
-        Q1 Q2 Q3 Q4  F
-DAL      7  3  7  0 17
-PHI      3 14  0  7 24
-
-Basketball:
-
-        Q1 Q2 Q3 Q4  F
-BOS     28 24 31 26 109
-MIA     24 29 20 22  95
-
-Soccer:
-
-LIV 2
-ARS 1
-Goals:
-23' Salah
-61' Saka
-84' Núñez
-
-Golf needs a leaderboard-style result instead of a two-team scoreboard.
+* no duplicate team names
+* no ugly ellipses in core labels
+* no fake demo teams
+* no TBD
+* no Game detail available
+* no big Score at bottom banner
+* no duplicated score module after read state
 
 ⸻
 
-17. All-Sports Architecture
+GameDetailHeader
 
-Core types
+Test:
 
-Use sport-neutral core types.
-
-type Sport =
-  | "mlb"
-  | "nfl"
-  | "nba"
-  | "nhl"
-  | "soccer"
-  | "golf"
-  | "tennis"
-  | "other";
-type Game = {
-  id: string
-  sport: Sport
-  league: string
-  status: "scheduled" | "live" | "final" | "postponed" | "cancelled"
-  startTime: string
-  participants: GameParticipant[]
-  eventCount?: number
-  keyEventCount?: number
-  flowEventCount?: number
-  hasCatchUp: boolean
-  isPinned?: boolean
-  userProgress?: GameProgress
-}
-type GameParticipant = {
-  id: string
-  name: string
-  abbreviation: string
-  role?: "home" | "away" | "player" | "team"
-  colors?: {
-    primary?: string
-    secondary?: string
-  }
-}
-type GameEvent = {
-  id: string
-  gameId: string
-  sport: Sport
-  sequence: number
-  periodId: string
-  periodLabel: string
-  clockLabel?: string
-  teamId?: string
-  teamAbbr?: string
-  eventType: string
-  importance: "low" | "medium" | "high" | "critical"
-  modeEligibility: {
-    key: boolean
-    flow: boolean
-    full: boolean
-  }
-  headline: string
-  description?: string
-  rawDescription?: string
-  scoreBefore?: ScoreState
-  scoreAfter?: ScoreState
-  scoreDelta?: ScoreDelta
-  metadata?: Record<string, unknown>
-}
-type ScoreState = {
-  participants: {
-    participantId: string
-    score: number
-  }[]
-}
-type ScoreDelta = {
-  participantId: string
-  points: number
-  label?: string
-}
+* displays teams
+* displays league/date/status
+* does not show final score by default
+* shows compact score only if user already reached scoreboard and product allows it
+* no huge repeated matchup title
+* no duplicate team rows
 
 ⸻
 
-18. Sport Renderers
+ResumeBar
 
-Each sport should own its own display logic.
+Test:
 
-type SportRenderer = {
-  renderGameCard(game: Game): ReactNode
-  renderGameHeader(game: Game): ReactNode
-  renderEvent(event: GameEvent): ReactNode
-  renderScoreboard(game: Game): ReactNode
-  renderStats(game: Game): ReactNode
-}
-
-Initial implementation can use shared components with sport-specific helpers.
-
-Baseball renderer owns
-
-* innings
-* top/bottom labels
-* bases
-* count
-* outs
-* batting/pitching stats
-* inning box score
-
-Football renderer owns
-
-* quarters
-* drives
-* down/distance
-* yard line
-* possession
-* scoring summary
-
-Basketball renderer owns
-
-* quarters
-* clock
-* runs
-* possession if available
-* player/team stat leaders
-
-Soccer renderer owns
-
-* minute
-* stoppage
-* goals/cards/subs
-* aggregate/extra time where relevant
-
-Golf renderer owns
-
-* tournament/round/hole
-* leaderboard
-* player score to par
-* shot-level or hole-level events
-
-This prevents baseball assumptions from leaking everywhere.
+* hidden when no progress
+* shows correct clean period label
+* updates when progress changes
+* no 1st 1st
+* shows Resume from 3rd
+* menu contains secondary actions
+* no giant duplicated buttons
 
 ⸻
 
-19. Backend/Data Enrichment Needed
+StickyProgressBar
 
-The frontend should not have to infer everything from raw play strings.
+Test:
 
-Add presentation-friendly fields server-side or in a normalization layer.
-
-For each event
-
-type PresentedEvent = {
-  id: string
-  gameId: string
-  sport: Sport
-  sequence: number
-  periodLabel: string
-  clockLabel?: string
-  teamAbbr?: string
-  teamName?: string
-  eventType: string
-  importance: "low" | "medium" | "high" | "critical"
-  headline: string
-  description: string
-  rawDescription: string
-  belongsToModes: {
-    key: boolean
-    flow: boolean
-    full: boolean
-  }
-  scoreBefore?: ScoreState
-  scoreAfter?: ScoreState
-  scoreDelta?: ScoreDelta
-  metadata?: Record<string, unknown>
-}
-
-For each game
-
-type GamePresentation = {
-  gameId: string
-  sport: Sport
-  league: string
-  status: "scheduled" | "live" | "final"
-  participants: GameParticipant[]
-  startTime: string
-  catchUpAvailable: boolean
-  eventCounts: {
-    key: number
-    flow: number
-    full: number
-  }
-  displayLabels: {
-    status: string
-    primaryAction: string
-    secondaryContext?: string
-  }
-  scoreboardPlacement: "bottom"
-}
-
-For game progress
-
-This can start locally.
-
-type LocalGameProgress = {
-  gameId: string
-  sport: Sport
-  selectedMode: "key" | "flow" | "full"
-  lastReadEventId?: string
-  lastReadEventSequence?: number
-  lastScrollOffset?: number
-  reachedScoreboard: boolean
-  updatedAt: string
-}
+* appears after header scroll threshold
+* shows current position
+* top action works
+* end/latest action works
+* back-to-spot appears after jump
+* hidden near top if redundant
+* does not overlap final score or stats incorrectly
 
 ⸻
 
-20. Specific Fixes from Current Screenshots
+EventCard
 
-Home screen
+Test:
 
-Current:
-
-* cards are too samey
-* all cards have similar green rail
-* live games do not feel alive
-* catch-up text is passive
-* no pin/resume/new-play state
-* no visual reason to choose one game over another
-
-Fix:
-
-* introduce pinned section
-* stronger live badges
-* sport/league label
-* resume/new play labels
-* score-at-bottom indicator
-* varied state-specific card styling
+* maps event type labels
+* hides raw enums
+* shows score after scoring play
+* does not show final score too early
+* card size/class variant consistent
+* no raw High / Medium unless mapped
+* raw provider text is not the only headline if generated headline exists
 
 ⸻
-
-Catch-up timeline
-
-Current:
-
-* P1/P2/P3 is unclear
-* 1st 1st duplication looks broken
-* long raw play text dominates
-* scoring moments are not special enough
-* timeline rail is thin/generic
-* game story lacks pacing
-
-Fix:
-
-* rename modes to Key / Flow / Full
-* fix period labels
-* convert raw descriptions to headline + detail
-* use event importance styling
-* group by period
-* scoring/critical moments get stronger treatment
-* raw feed text hidden behind details/expand
-
-⸻
-
-Player stats
-
-Current:
-
-* giant repeated pill wall
-* too much vertical space
-* no impact hierarchy
-* every player looks equally important
-
-Fix:
-
-* show impact players first
-* compact full stat table
-* use pills only for standout stats
-* collapse full stats by default if long
-
-⸻
-
-Box score
-
-Current:
-
-* visually too plain
-* score at bottom is correct direction but needs more payoff
-
-Fix:
-
-* scoreboard grid
-* sport-specific table
-* stronger final/current state
-* team color rows
-* stats summary nearby
-
-⸻
-
-Header
-
-Current:
-
-* ghosted text behind nav/title looks broken
-* nav buttons float but not in a polished way
-
-Fix:
-
-* opaque or mostly opaque sticky header
-* consistent nav icon containers
-* avoid blurred text behind controls
-* title can shrink/change on scroll
-
-⸻
-
-21. Interaction Details
-
-Opening a game
-
-From home:
-
-* tap card
-* open game detail
-* if progress exists, restore/resume
-* if no progress, start at top
-* if pinned/live, enable stream behavior
-
-Pinning
-
-* user taps pin
-* game enters pinned section
-* local pinned state saved
-* pinned card shows resume/new plays
-
-Refreshing
-
-Manual refresh:
-
-* fetch latest game/events
-* preserve scroll
-* update new play count
-* do not jump
-
-New event streaming
-
-When new PBP arrives:
-
-* append to data source
-* if user at live edge, follow
-* otherwise show floating new count
-
-Reaching scoreboard
-
-When scoreboard enters viewport:
-
-* set reachedScoreboard = true
-* optionally mark game as “viewed”
-* future home card may show viewed/open recap state
-
-Start over
-
-User can reset progress:
-
-* clears last read event
-* clears scroll position
-* does not unpin
-* does not clear scoreboard reached unless explicitly intended
-
-⸻
-
-22. Visual Polish Ideas
-
-Sports tape timeline
-
-The stream should feel like a continuous sports tape.
-
-Ideas:
-
-* subtle vertical rail
-* period dividers
-* event cards attached to rail
-* thicker rail for high-importance stretches
-* team-color dots/markers
-* “new plays” separator
-
-New plays separator
-
-— 8 new plays since you left —
-
-Live edge marker
-
-Live Edge
-
-Bottom payoff marker
-
-Before scoreboard:
-
-End of stream
-Scoreboard below
-
-Then show scoreboard.
-
-Haptics
-
-Small haptics only for:
-
-* pin/unpin
-* jump to latest
-* scoring event reveal if animated
-* reaching live edge
-
-Do not overdo this.
-
-Motion
-
-Motion should reinforce state changes:
-
-* card expands into game detail
-* new plays slide in
-* jump-to-latest scrolls smoothly
-* score delta pulses lightly
-* pin icon snaps/fills
-
-No casino nonsense.
-
-⸻
-
-23. MVP Implementation Plan
-
-Phase 1 — Product behavior reset
-
-Goal:
-
-Make the app behave like Scroll Down Sports, not generic sports recap.
-
-Tasks:
-
-* move final/current scoreboard to bottom only
-* remove top-score assumptions
-* rename modes from P1/P2/P3 to Key/Flow/Full
-* add local game progress persistence
-* restore last-read event on open
-* add reachedScoreboard tracking
-* preserve scroll on refresh
-* add basic pin/unpin persistence
-
-Exit criteria:
-
-* user can open a game, scroll halfway, leave, return, and resume
-* scoreboard is not shown at top by default
-* mode labels are user-facing
-* pinned games persist locally
-
-⸻
-
-Phase 2 — Home screen rebuild
-
-Goal:
-
-Make the entry point feel like a real sports app.
-
-Tasks:
-
-* add pinned section
-* add state-specific game cards
-* show resume state
-* show new play count
-* show live/final/scheduled states clearly
-* show score-at-bottom label for final games
-* reduce generic green styling
-
-Exit criteria:
-
-* pinned games appear first
-* live games are visually distinct
-* final catch-up games say score is at bottom
-* user can tell where they left off
-
-⸻
-
-Phase 3 — Game detail stream rebuild
-
-Goal:
-
-Make the game page feel like a sports story stream.
-
-Tasks:
-
-* build stream control bar
-* implement Key/Flow/Full segmented control
-* group events by period
-* convert event rows to event cards
-* add headline/detail/raw-feed hierarchy
-* add importance styling
-* add new plays button
-* add live edge behavior
-* add scoreboard bottom section
-
-Exit criteria:
-
-* timeline no longer feels like raw database rows
-* scoring/key events stand out
-* live updates do not hijack scroll
-* user can jump to latest
-
-⸻
-
-Phase 4 — Stats and scoreboard polish
-
-Goal:
-
-Make stats useful without overwhelming the stream.
-
-Tasks:
-
-* replace player stat pill wall
-* add impact players section
-* add compact full stats table
-* add sport-specific scoreboard card
-* add MLB inning grid where data exists
-* move stats near bottom
-
-Exit criteria:
-
-* Kyle Stowers-type performances pop
-* full stats are readable and compact
-* scoreboard feels like payoff, not an afterthought
-
-⸻
-
-Phase 5 — All-sports renderer abstraction
-
-Goal:
-
-Avoid MLB-only architecture.
-
-Tasks:
-
-* define sport-neutral Game, GameEvent, GameProgress
-* add sport renderer interface
-* move baseball-specific display logic into baseball renderer
-* ensure home cards work for all sports
-* ensure timeline modes are sport-neutral
-* ensure scoreboard is sport-specific
-
-Exit criteria:
-
-* adding NFL/NBA/etc. does not require rewriting core screens
-* baseball metadata does not leak into generic components
-* all sports can use pin/progress/live stream behavior
-
-⸻
-
-Phase 6 — Visual identity pass
-
-Goal:
-
-Make the app look exponentially better.
-
-Tasks:
-
-* define color tokens
-* define typography scale
-* define card surfaces
-* define event importance styles
-* define pinned/live/final states
-* polish sticky header
-* add subtle motion
-* reduce overuse of green
-* add sport-native scoreboard styling
-
-Exit criteria:
-
-* screenshots no longer look like a generic iOS list
-* app has a recognizable sports product identity
-* important events are visually obvious
-* the stream feels intentional and polished
-
-⸻
-
-24. Acceptance Criteria
-
-Product behavior
-
-* Any game can be pinned.
-* Pinned games persist.
-* Pinned games show at top of home.
-* User progress is saved per game.
-* User can resume where they left off.
-* App tracks new plays since last view.
-* Live PBP can stream down the page.
-* New plays do not hijack scroll.
-* User can jump to latest.
-* Scoreboard/result is at bottom.
-* Final score is not shown at top by default.
-
-Visuals
-
-* App feels sports-native.
-* Home cards are state-aware and visually distinct.
-* Catch-up page feels like a game stream, not a raw log.
-* Event hierarchy is clear.
-* Key moments stand out.
-* Full PBP remains readable.
-* Stats are compact.
-* Scoreboard feels like a payoff.
-* Header no longer has ghosted content behind it.
-* Green is no longer overused.
-
-Architecture
-
-* Core UI is sport-neutral.
-* Sport-specific rendering is isolated.
-* MLB works first.
-* Other sports can be added through adapters/renderers.
-* Progress/pin/live behavior works across all sports.
-
-⸻
-
-25. Testing Plan
-
-Manual scenarios
-
-Scenario 1 — First open, final game
-
-1. Open app.
-2. Tap final game.
-3. Confirm top does not show final score.
-4. Scroll through game.
-5. Confirm scoreboard appears at bottom.
-6. Leave game.
-7. Reopen game.
-8. Confirm resume behavior.
-
-Scenario 2 — Partial read
-
-1. Open final game.
-2. Scroll halfway.
-3. Leave.
-4. Reopen.
-5. Confirm resume banner appears.
-6. Tap resume.
-7. Confirm position restores.
-
-Scenario 3 — Pin live game
-
-1. Open live game.
-2. Tap pin.
-3. Return home.
-4. Confirm game appears in pinned section.
-5. Simulate new events.
-6. Confirm new event count appears.
-
-Scenario 4 — Live stream while reading
-
-1. Open pinned live game.
-2. Scroll up away from latest.
-3. Simulate new events.
-4. Confirm screen does not jump.
-5. Confirm “new plays” button appears.
-6. Tap jump latest.
-7. Confirm latest event visible.
-
-Scenario 5 — Refresh
-
-1. Open game.
-2. Scroll to middle.
-3. Tap refresh.
-4. Confirm scroll does not reset.
-5. Confirm new plays are appended or counted.
-
-Scenario 6 — Mode switching
-
-1. Open game.
-2. Switch Key/Flow/Full.
-3. Confirm mode persists.
-4. Leave and return.
-5. Confirm selected mode restores.
-
-Scenario 7 — Scoreboard reached
-
-1. Open final game.
-2. Scroll to scoreboard.
-3. Confirm reachedScoreboard is set.
-4. Return home.
-5. Confirm card can show viewed/open recap state.
-
-⸻
-
-26. Engineering Notes
-
-Use local persistence first
-
-MVP does not need account sync.
-
-Use local storage / SQLite / app storage depending on stack.
-
-Need to persist:
-
-pinned games
-game progress
-selected modes
-last read event
-scoreboard reached
-follow live preference
-
-Prefer event ID over scroll offset
-
-Scroll offset alone is fragile.
-
-Primary restore key:
-
-lastReadEventId
-
-Secondary:
-
-lastScrollOffset
-
-Do not couple scoreboard visibility to spoiler logic
-
-The rule is layout-based:
-
-Scoreboard goes at bottom.
-
-Not:
-
-Hide score using reveal gate.
-
-Do not hardcode baseball into core UI
-
-Avoid generic core names like:
-
-inning
-outs
-bases
-batter
-pitcher
-boxScore
-
-Use these only inside baseball-specific renderer/components.
-
-⸻
-
-27. One-Shot Agent Prompt
-
-Goal
-
-Rework Scroll Down Sports from a generic MLB catch-up list into a polished all-sports game stream experience.
-
-The app should support pinned games, remembered game progress, live play-by-play streaming, user-facing timeline modes, and a bottom-positioned scoreboard/result.
-
-Scope
-
-Implement the next major product/visual pass.
-
-Focus on:
-
-1. Product behavior correctness.
-2. Home screen state model.
-3. Game detail stream model.
-4. Pin/progress persistence.
-5. All-sports-friendly abstractions.
-6. Visual hierarchy improvements.
-
-Do not treat this as a small styling tweak pass.
-
-Non-negotiable rules
-
-* The scoreboard/result belongs at the bottom of the game detail page.
-* Do not show final score at the top by default.
-* Replace P1/P2/P3 with user-facing modes.
-* User progress must be remembered per game.
-* Pinned games must persist.
-* Live PBP updates must not hijack scroll.
-* Core UI should be sport-neutral.
-* MLB-specific logic belongs in MLB-specific rendering/helpers.
-* Avoid overusing the current green accent.
-* Raw PBP text should not be the primary UX headline.
-
-Required features
-
-Home
-
-* Add pinned games section.
-* Add state-aware game cards.
-* Support scheduled/live/final states.
-* Show resume state when applicable.
-* Show new play count when applicable.
-* Show “score at bottom” for final games where user has not reached scoreboard.
-* Pin/unpin games.
-
-Game detail
-
-* Add game header card without top score by default.
-* Add stream controls.
-* Rename timeline modes to Key / Flow / Full.
-* Remember selected mode.
-* Restore last read position.
-* Support new play count.
-* Add jump-to-latest behavior.
-* Keep scoreboard at bottom.
-* Mark scoreboard as reached when viewed.
-
-Event stream
-
-* Group events by period.
-* Render headline-first event cards.
-* Support event importance.
-* Show raw feed text as secondary/expandable detail.
-* Make scoring/critical events visually distinct.
-* Avoid duplicated period labels like 1st 1st.
 
 Stats
 
-* Replace player stat pill wall with impact players + compact tables.
-* Keep stats below the main stream.
-* Use sport-specific stat rendering.
+Test:
 
-Architecture
+* impact players max 3–5
+* table uses team abbreviations
+* no Baltimo...
+* no duplicate R/H/E blocks without added value
+* columns fit expected widths
+* collapsed and expanded states
 
-* Add or enforce sport-neutral game/event/progress models.
-* Add sport renderer/adaptor pattern.
-* Keep baseball-specific metadata in baseball renderer.
+⸻
 
-Validation loop
+6. Integration Tests
 
-After implementation, run through these checks:
+Flow 1 — Final game catch-up
 
-1. Open a final game. Confirm no final score appears at top.
-2. Scroll to middle, leave, return. Confirm resume works.
-3. Pin a live game. Confirm it appears in pinned section.
-4. Simulate new live events while user is scrolled up. Confirm no jump.
-5. Tap jump latest. Confirm latest event appears.
-6. Switch Key/Flow/Full. Confirm selected mode persists.
-7. Scroll to bottom. Confirm scoreboard appears and reached state saves.
-8. Review screenshots. Confirm app no longer looks like a generic green iOS list.
-9. Confirm MLB-specific terms are not hardcoded into core cross-sport components.
-10. Confirm raw PBP is not the main visual headline when a better headline exists.
+Given a final game with 79 plays
+When user opens the game
+Then header does not show final score
+And Important/Standard/All Plays control exists
+When user scrolls through scoring play
+Then score-after appears
+When user reaches bottom
+Then final score appears
+And reachedScoreboard is saved
+
+Flow 2 — Resume progress
+
+Open final game
+Scroll to 3rd inning
+Leave game
+Reopen game
+Verify resume says 3rd
+Tap resume
+Verify screen returns to 3rd
+
+Flow 3 — New count decreases
+
+Open game with 77 unread plays
+Scroll through first 20 plays
+Verify unread count decreases
+Reach end of stream
+Verify unread count clears
+Verify floating new pill disappears
+
+Flow 4 — Top/end/back-to-spot
+
+Open game
+Scroll to 5th inning
+Tap Top
+Verify top visible
+Verify sticky bar says Back to 5th
+Tap Back to 5th
+Verify 5th inning visible
+Tap End
+Verify final score visible
+Tap Back to 5th
+Verify 5th inning visible
+
+Flow 5 — Home timeline anchor
+
+Given current time is 9 AM
+And games exist from last 72 hours
+And today upcoming games exist
+When home loads
+Then initial viewport is recent catch-up/yesterday
+When user scrolls up
+Then older games appear
+When user scrolls down
+Then today/live/upcoming games appear
+
+Flow 6 — Fake data prevention
+
+Given no real pinned games
+When home loads
+Then pinned section is hidden
+And no synthetic NFL/NBA games appear
+
+⸻
+
+7. UI / E2E Testing Options
+
+Depends on the stack.
+
+If React Native
+
+Consider:
+
+* Jest + React Native Testing Library for components
+* Detox for simulator E2E
+* Maestro for lower-friction flow testing
+* Percy/Chromatic-style screenshot testing if available
+* native screenshot comparison in CI if needed
+
+If SwiftUI/iOS native
+
+Consider:
+
+* XCTest for unit tests
+* XCUITest for UI flows
+* SnapshotTesting / iOSSnapshotTestCase for visual regression
+* xcodebuild test in CI
+* coverage via xccov
+
+If Expo
+
+Consider:
+
+* Jest + React Native Testing Library
+* Maestro for app flows
+* Detox if fully configured
+* EAS build/test workflows if appropriate
+
+If web/Next.js wrapper exists
+
+Consider:
+
+* Vitest/Jest for unit/component
+* Playwright for E2E
+* Playwright screenshots for visual regression
+* Istanbul/nyc/c8 coverage
+
+The agent should inspect the repo and choose based on what already exists. Do not force a new framework if the repo already has a viable one.
+
+⸻
+
+8. CI Pipeline
+
+Required CI stages
+
+1. install/cache dependencies
+2. lint
+3. typecheck
+4. unit tests
+5. component tests
+6. integration tests
+7. coverage report
+8. build
+9. UI/E2E smoke tests
+10. visual regression tests
+11. artifact upload
+
+Pull request gate
+
+PR should fail on:
+
+* lint failure
+* typecheck failure
+* unit/component/integration failure
+* coverage below threshold
+* build failure
+* critical UI smoke failure
+* fake/demo data appearing in production fixture test
+* raw enum labels appearing in rendered UI tests
+
+Nightly gate
+
+Nightly can run heavier tests:
+
+* full E2E suite
+* visual regression suite
+* multiple device sizes
+* accessibility scan
+* performance smoke
+* slow network/load state tests
+
+⸻
+
+9. Coverage Thresholds
+
+Recommended thresholds
+
+Global unit/component coverage: 80%
+Domain logic coverage: 90%
+Formatting/mapping utilities: 95%+
+Critical state machines: 90%+
+UI/E2E: critical path coverage, not line coverage
+Visual: baseline scenario coverage, not line coverage
+Accessibility: zero critical violations
+
+Do not fake coverage
+
+Exclude from coverage where appropriate:
+
+* generated files
+* DTO/type-only files
+* static config
+* build artifacts
+* test fixtures
+* mocks
+* storybook/demo-only files
+
+But do not exclude real logic just because it is hard to test. Very brave. Very useless.
+
+⸻
+
+10. Test Data / Fixtures
+
+Create deterministic fixtures.
+
+Fixture categories
+
+final_mlb_game_full_pbp.json
+final_mlb_game_scoring_progression.json
+final_mlb_game_no_pbp.json
+live_game_with_new_events.json
+scheduled_game_real_teams.json
+placeholder_tbd_game.json
+pinned_games_real.json
+pinned_games_empty.json
+home_72h_timeline.json
+stats_batting_pitching.json
+
+Fixture rules
+
+* no fake teams in production fixtures unless clearly marked test-only
+* fake/demo teams must never appear in real app state
+* all fixture files should live under test fixtures
+* fixture mode must be isolated from normal app feed
+
+Add a test that explicitly fails if known demo names appear in non-test UI/feed:
+
+Dallas Wolves
+Seattle Sound
+New York Knights
+Bay City Bridges
+
+⸻
+
+11. Visual Regression Coverage
+
+Baseline screenshot matrix
+
+At minimum:
+
+Home
+
+* no pinned games
+* with real pinned games
+* recent catch-up anchor
+* older games above anchor
+* today/upcoming below anchor
+* sport filter active
+* team search active
+* no TBD games
+
+Game detail
+
+* top header
+* resume bar
+* sticky progress bar
+* important plays mode
+* standard mode
+* all plays mode
+* scoring play with score progression
+* end of stream
+* final score
+* player stats expanded
+* team stats expanded
+* empty PBP state
+
+Devices
+
+* small iPhone width
+* current target iPhone
+* large iPhone
+* large text if supported
+
+Visual tests should catch:
+
+* card size explosions
+* repeated beige boxes
+* text clipping
+* ellipses in core labels
+* header overlap
+* floating pill over scoreboard
+* duplicated controls
+
+⸻
+
+12. Accessibility Test Targets
+
+Automated and manual checks:
+
+* every button has accessible label
+* pin/unpin says correct state
+* refresh button labeled
+* segmented control labels are clear
+* no raw enum labels are read aloud
+* score rows are understandable
+* event cards read in logical order
+* sticky bar does not trap focus
+* dynamic text does not destroy layout
+* contrast passes for muted text and badges
+
+⸻
+
+13. Performance Smoke Tests
+
+The play stream can get long. Test it.
+
+Cases
+
+* 80 events
+* 150 events
+* live append while scrolled up
+* jump to event by ID
+* restore to event by ID
+* stats table expansion
+* repeated filter changes on home
+
+Metrics:
+
+* no obvious jank
+* no multi-second render stall
+* scroll restore works
+* memory does not grow endlessly after refresh/live append
+
+⸻
+
+14. CI Artifacts
+
+Every CI run should upload useful artifacts on failure:
+
+* coverage report
+* test results
+* E2E screenshots
+* visual diff screenshots
+* simulator logs
+* failing fixture name
+* rendered accessibility tree if available
+
+A failed UI test without screenshots is basically a fortune cookie with stack traces.
+
+⸻
+
+15. Implementation Order
+
+Phase 1 — Test inventory and CI baseline
+
+Goal:
+
+Know what exists and make CI run it.
+
+Tasks:
+
+* inspect current test setup
+* document existing scripts/tools
+* add missing CI workflow if absent
+* run lint/typecheck/test/build in CI
+* upload coverage artifact
+* set initial coverage reporting without strict gate if repo is far below target
+
+Exit criteria:
+
+* CI runs on PR
+* current tests are visible
+* coverage report exists
+* failures block merge for basic checks
+
+⸻
+
+Phase 2 — Domain tests for broken product logic
+
+Goal:
+
+Lock down the recurring bugs.
+
+Add tests for:
+
+* 72-hour timeline
+* initial home anchor
+* TBD filtering
+* fake pinned game prevention
+* period formatting
+* event label mapping
+* score progression
+* resume progress
+* unread count
+
+Exit criteria:
+
+* core logic covered
+* duplicated period bug has a test
+* raw enum leakage has a test
+* fake pinned games have a test
+* stale resume has a test
+
+⸻
+
+Phase 3 — Component tests
+
+Goal:
+
+Catch bad rendered states.
+
+Add tests for:
+
+* GameCard
+* ResumeBar
+* StickyProgressBar
+* EventCard
+* ScoreboardCard
+* Stats tables
+
+Exit criteria:
+
+* rendered output does not include raw enums
+* cards render expected states
+* read/scored cards are compact
+* stats do not truncate core labels
+
+⸻
+
+Phase 4 — Integration tests
+
+Goal:
+
+Cover cross-component behavior.
+
+Add tests for:
+
+* open → scroll → save progress → reopen
+* scoring play shows score progression
+* final score at bottom
+* home anchor behavior
+* jump top/end/back-to-spot
+* new count decreases
+
+Exit criteria:
+
+* product behavior covered end-to-end at state/UI integration level
+
+⸻
+
+Phase 5 — UI/E2E tests
+
+Goal:
+
+Cover critical user flows in simulator.
+
+Start with 5 smoke tests:
+
+1. home opens around recent catch-up
+2. no fake pinned games
+3. open final game and no top score
+4. scroll to final score at bottom
+5. resume from later inning after leaving/reopening
+
+Then expand.
+
+Exit criteria:
+
+* CI can run smoke UI tests
+* screenshots are captured on failure
+* critical flows are protected
+
+⸻
+
+Phase 6 — Visual regression
+
+Goal:
+
+Stop “technically correct but visually awful” regressions.
+
+Add baselines for:
+
+* home
+* game detail top
+* stream
+* stats
+* final score
+
+Exit criteria:
+
+* visual diffs show in CI
+* baseline updates are explicit
+* major layout regressions fail PR
+
+⸻
+
+Phase 7 — Enforce thresholds
+
+Goal:
+
+Move from visibility to enforcement.
+
+Suggested progression:
+
+Week 1: report only
+Week 2: 70% global gate
+Week 3: 80% global gate
+Immediately: 90%+ gate for new domain utilities
+
+Do not block early if the repo has no tests yet, but do block regressions after baseline is established.
+
+⸻
+
+16. One-Shot Agent Prompt
+
+Goal
+
+Build a full testing and CI safety net for Scroll Down Sports.
+
+The app now has enough product complexity that we need automated validation across unit tests, component tests, integration tests, UI/E2E tests, visual regression, and coverage reporting.
+
+Target 80%+ meaningful coverage where code coverage applies, and equivalent critical-flow/screen-state coverage where line coverage is not the right metric.
+
+First step
+
+Audit the repo before changing anything.
+
+Find:
+
+* existing test framework
+* package scripts
+* CI workflows
+* coverage config
+* UI/E2E tooling
+* visual/snapshot tooling
+* existing tests
+* fixture data
+
+Produce a short inventory in the PR summary.
+
+Required CI pipeline
+
+Add or update CI to run:
+
+1. dependency install/cache
+2. lint
+3. typecheck
+4. unit tests
+5. component tests
+6. integration tests
+7. coverage report
+8. build
+9. UI/E2E smoke tests if tool exists or can be added cleanly
+10. upload artifacts on failure
+
+Required test coverage areas
+
+Domain logic
+
+Add tests for:
+
+* 72-hour timeline range
+* home initial anchor selection
+* TBD/placeholder filtering
+* fake pinned game prevention
+* pinned games from real data only
+* period/quarter/inning formatting
+* no duplicate labels like 1st 1st
+* event type display mapping
+* no raw enum labels like FIELD_OUT
+* score progression during scoring plays
+* final score at bottom behavior
+* resume progress updates while scrolling
+* unread/new count calculation
+* return anchor for top/end/back-to-spot
+
+Components
+
+Add tests for:
+
+* GameCard
+* GameDetailHeader
+* ResumeBar
+* StickyProgressBar
+* PlayDetailControl
+* EventCard
+* ScoreboardCard
+* PlayerStatsSection
+* TeamStatsSection
+
+Assertions should check:
+
+* no raw backend enum strings
+* no fake demo teams
+* no TBD games by default
+* no duplicate team-name blocks after score is known
+* no ugly team truncation in stat tables
+* proper compact/read state
+* proper score-hidden/score-visible state
+
+Integration
+
+Add tests for:
+
+* opening final game without top score
+* scrolling through scoring event and seeing score-after
+* reaching bottom final score
+* resume after leaving/reopening
+* new count decreasing as plays are read
+* jump top/end/back-to-spot
+* home anchor around recent catch-up
+* older games above anchor and future games below
+
+UI/E2E
+
+Add simulator smoke tests for:
+
+* home loads
+* no fake pinned games
+* no TBD placeholders
+* open final game
+* no score at top
+* score appears in stream after scoring play
+* final score at bottom
+* resume updates after scrolling
+* sticky top/end/back-to-spot works
+
+Visual regression
+
+Add screenshot baselines for:
+
+* home no pinned
+* home with real pinned
+* home anchored at recent catch-up
+* game detail top
+* play stream
+* scoring event
+* stats expanded
+* final score
+* small device width
+
+Coverage gates
+
+Use these targets:
+
+* domain logic: 90%+
+* utility formatters/mappers: 95%+
+* unit/component global: 80%+
+* integration: critical state-machine coverage
+* UI/E2E: critical path coverage
+* visual: major screen-state coverage
+* accessibility: zero critical violations
+
+If current coverage is far below target, introduce gates in phases:
+
+1. report only
+2. prevent coverage decrease
+3. enforce 70%
+4. enforce 80%
+5. enforce stricter thresholds for new files/domain logic
+
+Fixture rules
+
+Create deterministic fixtures for:
+
+* final MLB full PBP
+* final MLB scoring progression
+* live game with new events
+* scheduled real teams
+* placeholder TBD game
+* home 72-hour timeline
+* pinned real games
+* no pinned games
+* stats data
+
+Fake/demo teams must never appear in real app state.
+
+Add a test that fails if these names render outside test/demo mode:
+
+* Dallas Wolves
+* Seattle Sound
+* New York Knights
+* Bay City Bridges
+
+Validation checklist
+
+Before completing:
+
+1. CI runs on PR.
+2. Coverage report is generated.
+3. Domain tests cover 72-hour timeline and resume progress.
+4. Component tests catch raw enum labels.
+5. Integration tests cover score-at-bottom and score progression.
+6. UI smoke tests open the app and navigate a game.
+7. Visual baselines exist for major screens.
+8. Fake/demo games cannot leak into normal UI.
+9. TBD placeholder games are hidden by default.
+10. 1st 1st / duplicate period labels are covered by tests.
+11. Resume updates as user scrolls.
+12. New count decreases as user reads.
+13. Final score remains at bottom.
+14. Artifacts are uploaded on CI failure.
+15. Test commands are documented in README or a testing doc.
 
 Expected outcome
 
-The app should feel like:
+After this work, future agents should not be able to “successfully” ship a pass that:
 
-A persistent sports stream where users pin games, catch up from where they left off, follow live play-by-play, and scroll down to the scoreboard.
+* adds fake games
+* breaks resume
+* leaks raw enums
+* duplicates innings
+* starts home at the wrong anchor
+* shows TBD games
+* hides score progression
+* bloats cards
+* breaks final-score placement
 
-Not:
+without CI catching it.
 
-A generic sports data list with white cards and green accents.
+# Short operational version
+Build the safety net in this order:
+```text
+1. Inventory existing tests/CI
+2. Add CI baseline
+3. Add domain tests for known bugs
+4. Add component tests for rendered states
+5. Add integration tests for scroll/progress/score behavior
+6. Add UI smoke tests
+7. Add visual regression
+8. Ratchet coverage to 80%+
+
+The biggest risk is chasing generic coverage while missing the actual product failures. Test the product rules first; coverage follows.

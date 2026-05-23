@@ -20,8 +20,18 @@ struct HomeTimelineSection: Identifiable, Equatable {
     let date: Date
     let title: String
     let subtitle: String
+    let anchorRole: HomeTimelineAnchorRole
     let isToday: Bool
     let games: [HomeGameItem]
+}
+
+enum HomeTimelineAnchorRole: Equatable {
+    case olderCatchUp
+    case yesterday
+    case today
+    case live
+    case laterToday
+    case upcoming
 }
 
 struct HomeGameItem: Identifiable, Equatable {
@@ -51,17 +61,14 @@ struct HomeGameItem: Identifiable, Equatable {
 
 enum HomeSection: Identifiable, Equatable {
     case pinned(HomePinnedSection)
-    case today(HomeTodaySection)
-    case earlier(HomeEarlierSection)
+    case timeline(HomeTimelineFeedSection)
 
     var id: String {
         switch self {
         case .pinned:
             return "pinned"
-        case .today:
-            return "today"
-        case .earlier:
-            return "earlier"
+        case .timeline:
+            return "timeline"
         }
     }
 
@@ -69,9 +76,7 @@ enum HomeSection: Identifiable, Equatable {
         switch self {
         case .pinned(let section):
             return section.games.count
-        case .today(let section):
-            return section.games.count
-        case .earlier(let section):
+        case .timeline(let section):
             return section.dateSections.reduce(0) { $0 + $1.games.count }
         }
     }
@@ -82,15 +87,7 @@ struct HomePinnedSection: Equatable {
     let games: [HomeGameItem]
 }
 
-struct HomeTodaySection: Equatable {
-    let id: String
-    let date: Date
-    let title: String
-    let subtitle: String
-    let games: [HomeGameItem]
-}
-
-struct HomeEarlierSection: Equatable {
+struct HomeTimelineFeedSection: Equatable {
     let title: String
     let dateSections: [HomeTimelineSection]
 }
@@ -126,7 +123,11 @@ final class HomeViewModel: ObservableObject {
     }
 
     var todaySectionID: String {
-        "today"
+        "timeline-today"
+    }
+
+    var initialHomeAnchorID: String? {
+        homeAnchorID(for: filteredHomeSections)
     }
 
     var filteredHomeSections: [HomeSection] {
@@ -166,11 +167,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private var mergedGames: [Game] {
-        var gamesById = Dictionary(uniqueKeysWithValues: games.map { ($0.id, $0) })
-        for record in pinnedGameRecords where gamesById[record.gameId] == nil {
-            gamesById[record.gameId] = Game(pinnedRecord: record)
-        }
-        return Array(gamesById.values).sorted { left, right in
+        games.sorted { left, right in
             if left.scheduledStart != right.scheduledStart {
                 return left.scheduledStart < right.scheduledStart
             }
@@ -272,71 +269,229 @@ final class HomeViewModel: ObservableObject {
 
     private func homeSections(for games: [Game]) -> [HomeSection] {
         let today = startOfDay(nowProvider())
-        let tomorrow = Calendar.sda.date(byAdding: .day, value: 1, to: today) ?? today.addingTimeInterval(24 * 60 * 60)
+        let visibleGames = games.filter(isVisibleInDefaultHomeTimeline)
 
-        let pinned = games
+        let pinned = visibleGames
             .filter { pinnedGameIds.contains($0.id) }
             .map(homeItem(for:))
             .sorted(by: sortPinnedItems)
         let pinnedIDs = Set(pinned.map(\.id))
 
-        let nonFutureGames = games.filter { $0.scheduledStart < tomorrow }
-        let todayGames = nonFutureGames
-            .filter { Calendar.sda.isDate($0.scheduledStart, inSameDayAs: today) }
+        let timelineGames = visibleGames
             .filter { !pinnedIDs.contains($0.id) }
-            .sorted(by: sortTodayGames)
-            .map(homeItem(for:))
-
-        let earlierGames = nonFutureGames
-            .filter { $0.scheduledStart < today }
-            .filter { !pinnedIDs.contains($0.id) }
-        let earlier = earlierSections(for: earlierGames, today: today)
+        let timeline = timelineSections(for: timelineGames, today: today)
 
         var sections: [HomeSection] = []
         if !pinned.isEmpty {
             sections.append(.pinned(HomePinnedSection(title: "Pinned", games: pinned)))
         }
         sections.append(
-            .today(
-                HomeTodaySection(
-                    id: todaySectionID,
-                    date: today,
-                    title: "Today",
-                    subtitle: DateFormatters.daySubtitle.string(from: today),
-                    games: todayGames
+            .timeline(
+                HomeTimelineFeedSection(
+                    title: "Timeline",
+                    dateSections: timeline
                 )
             )
         )
-        if !earlier.isEmpty {
-            sections.append(.earlier(HomeEarlierSection(title: "Earlier", dateSections: earlier)))
-        }
         return sections
     }
 
-    private func earlierSections(for games: [Game], today: Date) -> [HomeTimelineSection] {
-        let grouped = Dictionary(grouping: games) { game in
-            startOfDay(game.scheduledStart)
+    private func timelineSections(for games: [Game], today: Date) -> [HomeTimelineSection] {
+        let yesterday = Calendar.sda.date(byAdding: .day, value: -1, to: today) ?? today.addingTimeInterval(-24 * 60 * 60)
+        let tomorrow = Calendar.sda.date(byAdding: .day, value: 1, to: today) ?? today.addingTimeInterval(24 * 60 * 60)
+        let now = nowProvider()
+
+        let older = games.filter { $0.scheduledStart < yesterday && !$0.status.isPregame }
+        let yesterdayGames = games.filter { Calendar.sda.isDate($0.scheduledStart, inSameDayAs: yesterday) && !$0.status.isPregame }
+        let todayCatchUp = games.filter {
+            Calendar.sda.isDate($0.scheduledStart, inSameDayAs: today)
+                && !$0.status.isLive
+                && !$0.status.isPregame
         }
+        let live = games.filter(\.status.isLive)
+        let laterToday = games.filter {
+            Calendar.sda.isDate($0.scheduledStart, inSameDayAs: today)
+                && $0.status.isPregame
+                && $0.scheduledStart >= now
+        }
+        let upcoming = games.filter { $0.scheduledStart >= tomorrow && $0.status.isPregame }
 
-        return grouped.keys.sorted(by: >).map { date in
-            let gamesForDate = (grouped[date] ?? [])
-                .sorted { left, right in
-                    if left.scheduledStart != right.scheduledStart {
-                        return left.scheduledStart > right.scheduledStart
-                    }
-                    return left.id < right.id
-                }
-                .map(homeItem(for:))
-
-            return HomeTimelineSection(
-                id: "earlier-\(sectionID(for: date))",
-                date: date,
-                title: title(for: date, today: today),
-                subtitle: DateFormatters.daySubtitle.string(from: date),
-                isToday: false,
-                games: gamesForDate
+        return [
+            makeTimelineSection(
+                id: "timeline-older",
+                title: "Older Catch-Up",
+                subtitle: "Last 72 Hours",
+                date: yesterday,
+                anchorRole: .olderCatchUp,
+                games: older
+            ),
+            makeTimelineSection(
+                id: "timeline-yesterday",
+                title: "Yesterday",
+                subtitle: DateFormatters.daySubtitle.string(from: yesterday),
+                date: yesterday,
+                anchorRole: .yesterday,
+                games: yesterdayGames
+            ),
+            makeTimelineSection(
+                id: todaySectionID,
+                title: "Today",
+                subtitle: DateFormatters.daySubtitle.string(from: today),
+                date: today,
+                anchorRole: .today,
+                games: todayCatchUp
+            ),
+            makeTimelineSection(
+                id: "timeline-live",
+                title: "Live Now",
+                subtitle: DateFormatters.daySubtitle.string(from: today),
+                date: today,
+                anchorRole: .live,
+                games: live
+            ),
+            makeTimelineSection(
+                id: "timeline-later-today",
+                title: "Later Today",
+                subtitle: DateFormatters.daySubtitle.string(from: today),
+                date: today,
+                anchorRole: .laterToday,
+                games: laterToday
+            ),
+            makeTimelineSection(
+                id: "timeline-upcoming",
+                title: "Upcoming",
+                subtitle: DateFormatters.daySubtitle.string(from: tomorrow),
+                date: tomorrow,
+                anchorRole: .upcoming,
+                games: upcoming
             )
+        ]
+        .compactMap { $0 }
+    }
+
+    private func makeTimelineSection(
+        id: String,
+        title: String,
+        subtitle: String,
+        date: Date,
+        anchorRole: HomeTimelineAnchorRole,
+        games: [Game]
+    ) -> HomeTimelineSection? {
+        let items = games
+            .sorted(by: sortTimelineGames)
+            .map(homeItem(for:))
+
+        guard !items.isEmpty else { return nil }
+
+        return HomeTimelineSection(
+            id: id,
+            date: date,
+            title: title,
+            subtitle: subtitle,
+            anchorRole: anchorRole,
+            isToday: Calendar.sda.isDate(date, inSameDayAs: startOfDay(nowProvider())),
+            games: items
+        )
+    }
+
+    private func homeAnchorID(for sections: [HomeSection]) -> String? {
+        let pinnedSection: HomePinnedSection? = sections.compactMap { section in
+            if case .pinned(let pinned) = section {
+                return pinned
+            }
+            return nil
+        }.first
+
+        if pinnedSection?.games.contains(where: { $0.newEventCount > 0 }) == true {
+            return "pinned"
         }
+
+        let timelineSections = sections.compactMap { section in
+            if case .timeline(let timeline) = section {
+                return timeline.dateSections
+            }
+            return nil
+        }.flatMap { $0 }
+
+        if let yesterday = timelineSections.first(where: { $0.anchorRole == .yesterday }) {
+            return yesterday.id
+        }
+
+        let finalSections = timelineSections.filter { section in
+            section.games.contains { $0.game.status.isFinal }
+        }
+        if let recentFinal = finalSections.max(by: { left, right in
+            let leftDate = left.games.filter { $0.game.status.isFinal }.map(\.game.scheduledStart).max() ?? left.date
+            let rightDate = right.games.filter { $0.game.status.isFinal }.map(\.game.scheduledStart).max() ?? right.date
+            return leftDate < rightDate
+        }) {
+            return recentFinal.id
+        }
+
+        if pinnedSection?.games.isEmpty == false {
+            return "pinned"
+        }
+
+        for role in [HomeTimelineAnchorRole.live, .today, .laterToday, .upcoming, .olderCatchUp] {
+            if let section = timelineSections.first(where: { $0.anchorRole == role }) {
+                return section.id
+            }
+        }
+
+        return nil
+    }
+
+    private func isVisibleInDefaultHomeTimeline(_ game: Game) -> Bool {
+        guard hasConcreteParticipants(game) else { return false }
+        if game.status.isPregame {
+            return game.scheduledStart >= nowProvider() && hasUsefulPregamePreview(game)
+        }
+        if game.status.isLive {
+            return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
+        }
+        if game.status.isFinal {
+            return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
+        }
+        return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
+    }
+
+    private func hasConcreteParticipants(_ game: Game) -> Bool {
+        guard let away = game.awayParticipant,
+              let home = game.homeParticipant else {
+            return false
+        }
+        return isConcreteParticipant(away) && isConcreteParticipant(home)
+    }
+
+    private func isConcreteParticipant(_ participant: GameParticipant) -> Bool {
+        let name = participant.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let abbreviation = participant.abbreviation?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let placeholderNames: Set<String> = ["", "tbd", "to be determined"]
+        let placeholderAbbreviations: Set<String> = ["", "tbd", "tt"]
+        if placeholderNames.contains(name) {
+            return false
+        }
+        if let abbreviation,
+           placeholderAbbreviations.contains(abbreviation) {
+            return false
+        }
+        return true
+    }
+
+    private func hasUsefulPregamePreview(_ game: Game) -> Bool {
+        if game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore {
+            return true
+        }
+        if let presentation = game.presentation {
+            return [
+                presentation.headline,
+                presentation.shortHeadline,
+                presentation.subheadline,
+                presentation.primaryActionLabel,
+                presentation.secondaryContextLabel
+            ].contains { $0?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
+        }
+        return false
     }
 
     private func homeItem(for game: Game) -> HomeGameItem {
@@ -373,36 +528,11 @@ final class HomeViewModel: ObservableObject {
         return liveWeight + todayWeight + catchupWeight + recencyWeight + unreadWeight
     }
 
-    private func sortTodayGames(_ left: Game, _ right: Game) -> Bool {
-        let leftRank = todayRank(left)
-        let rightRank = todayRank(right)
-
-        if leftRank != rightRank {
-            return leftRank < rightRank
+    private func sortTimelineGames(_ left: Game, _ right: Game) -> Bool {
+        if left.scheduledStart != right.scheduledStart {
+            return left.scheduledStart < right.scheduledStart
         }
-
-        switch leftRank {
-        case 0, 2:
-            if left.scheduledStart != right.scheduledStart {
-                return left.scheduledStart < right.scheduledStart
-            }
-        default:
-            if left.scheduledStart != right.scheduledStart {
-                return left.scheduledStart > right.scheduledStart
-            }
-        }
-
         return left.id < right.id
-    }
-
-    private func todayRank(_ game: Game) -> Int {
-        if game.status.isLive {
-            return 0
-        }
-        if !game.status.isPregame {
-            return 1
-        }
-        return 2
     }
 
     private func matchesSelectedLeague(_ game: Game) -> Bool {
@@ -412,10 +542,6 @@ final class HomeViewModel: ObservableObject {
 
     private func startOfDay(_ date: Date) -> Date {
         Calendar.sda.startOfDay(for: date)
-    }
-
-    private func sectionID(for date: Date) -> String {
-        DateFormatters.queryDate.string(from: startOfDay(date))
     }
 
     private func title(for date: Date, today: Date) -> String {

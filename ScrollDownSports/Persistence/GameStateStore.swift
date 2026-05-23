@@ -168,14 +168,18 @@ extension LocalGameStateSnapshot {
     }
 
     mutating func markViewed(gameId: Int, now: () -> Date) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
-            let date = now()
             progress.firstViewedAt = progress.firstViewedAt ?? date
             progress.lastViewedAt = date
-            progress.newEventCount = 0
             progress.eventIdentityBaseline = nil
         }
-        clearPinnedUnseenCount(gameId: gameId)
+        if var record = pinnedGamesById[gameId] {
+            record.lastViewedAt = date
+            record.newEventCount = 0
+            record.lastSeenPlayCursor = record.latestPlayCursor
+            pinnedGamesById[gameId] = record
+        }
     }
 
     mutating func recordKnownEventCount(gameId: Int, count: Int, now: () -> Date) {
@@ -214,10 +218,14 @@ extension LocalGameStateSnapshot {
         now: () -> Date
     ) {
         mutateProgress(gameId: gameId, now: now) { progress in
+            let existingIndex = progress.lastReadEventIndex ?? -1
             if let eventIndex {
-                progress.lastReadEventIndex = eventIndex
-            }
-            if let eventID {
+                let nextIndex = max(existingIndex, eventIndex)
+                progress.lastReadEventIndex = nextIndex
+                if eventIndex >= existingIndex, let eventID {
+                    progress.lastReadEventID = eventID
+                }
+            } else if let eventID {
                 progress.lastReadEventID = eventID
             }
             if let knownEventCount {
@@ -270,10 +278,22 @@ extension LocalGameStateSnapshot {
     }
 
     mutating func pruneProgress(now: Date) {
+        pruneFixtureState()
         let pinnedIds = Set(pinnedGamesById.keys)
         progressByGameId = progressByGameId.filter { gameId, progress in
             pinnedIds.contains(gameId) || now.timeIntervalSince(progress.updatedAt) < 30 * 24 * 60 * 60
         }
+    }
+
+    mutating func pruneFixtureState() {
+        let fixturePinnedIds = Set(
+            pinnedGamesById
+                .filter { _, record in record.containsFixtureData }
+                .map(\.key)
+        )
+        guard !fixturePinnedIds.isEmpty else { return }
+        pinnedGamesById = pinnedGamesById.filter { !fixturePinnedIds.contains($0.key) }
+        progressByGameId = progressByGameId.filter { !fixturePinnedIds.contains($0.key) }
     }
 
     mutating func mirrorProgressToPinnedGame(gameId: Int) {
@@ -298,6 +318,30 @@ extension LocalGameStateSnapshot {
         update(&progress)
         progress.updatedAt = now()
         progressByGameId[gameId] = progress
+    }
+}
+
+private extension PinnedGameRecord {
+    var containsFixtureData: Bool {
+        let names = [homeTeam, awayTeam].map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+        let syntheticNames: Set<String> = [
+            "dallas wolves",
+            "seattle sound",
+            "new york knights",
+            "bay city bridges"
+        ]
+        if names.contains(where: syntheticNames.contains) {
+            return true
+        }
+
+        if latestDetail?.events.contains(where: { event in
+            event.rawFeedSource?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "fixture"
+                || event.sourceEventID?.hasPrefix("fixture-") == true
+        }) == true {
+            return true
+        }
+
+        return gameId <= 0
     }
 }
 

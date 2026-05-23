@@ -82,7 +82,6 @@ final class UserDefaultsGameStateStore: GameStateStore {
         mutate { state in
             state.markViewed(gameId: gameId, now: now)
         }
-        updatePinnedProgressMirror(gameId: gameId)
     }
 
     func recordKnownEventCount(gameId: Int, count: Int) {
@@ -195,7 +194,14 @@ final class UserDefaultsGameStateStore: GameStateStore {
         }
 
         do {
-            return migrate(try decoder.decode(LocalGameStateSnapshot.self, from: data), now: now())
+            let decoded = try decoder.decode(LocalGameStateSnapshot.self, from: data)
+            var snapshot = migrate(decoded, now: now())
+            snapshot.pruneFixtureState()
+            if snapshot != decoded,
+               let sanitizedData = try? encoder.encode(snapshot) {
+                defaults.set(sanitizedData, forKey: key)
+            }
+            return snapshot
         } catch {
             defaults.set(data, forKey: Constants.corruptBackupKey)
             defaults.removeObject(forKey: key)

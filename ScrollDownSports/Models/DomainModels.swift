@@ -191,12 +191,7 @@ struct GameProgress: Codable, Hashable {
     let persistence: GameProgressPersistence?
 
     var displayText: String {
-        return [periodLabel, clockLabel]
-            .compactMap { value in
-                guard let value, !value.isEmpty else { return nil }
-                return value
-            }
-            .joined(separator: " ")
+        normalizedPeriodClockText(periodLabel: periodLabel, clockLabel: clockLabel) ?? ""
     }
 }
 
@@ -238,12 +233,7 @@ struct GameEvent: Codable, Identifiable, Hashable {
         if let timeLabel = presentation?.timeLabel?.nilIfBlank {
             return timeLabel
         }
-        return [periodLabel, clockLabel]
-            .compactMap { value in
-                guard let value, !value.isEmpty else { return nil }
-                return value
-            }
-            .joined(separator: " ")
+        return normalizedPeriodClockText(periodLabel: periodLabel, clockLabel: clockLabel) ?? ""
     }
 
     var normalizedSourceEventID: String? {

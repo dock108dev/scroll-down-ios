@@ -35,12 +35,13 @@ enum StatPresentationBuilder {
 
         let scoredBatters = batters.map { ScoredBatter(player: $0, score: batterImpactScore($0)) }
         let scoredPitchers = pitchers.map { ScoredPitcher(player: $0, score: pitcherImpactScore($0)) }
+        let teamAbbreviations = teamAbbreviations(for: detail)
         var tables: [StatTablePresentation] = []
         if !scoredBatters.isEmpty {
-            tables.append(baseballBatterTable(from: scoredBatters))
+            tables.append(baseballBatterTable(from: scoredBatters, teamAbbreviations: teamAbbreviations))
         }
         if !scoredPitchers.isEmpty {
-            tables.append(baseballPitcherTable(from: scoredPitchers))
+            tables.append(baseballPitcherTable(from: scoredPitchers, teamAbbreviations: teamAbbreviations))
         }
 
         return [
@@ -64,12 +65,13 @@ enum StatPresentationBuilder {
 
         let scoredSkaters = skaters.map { ScoredNHLPlayer(player: $0, role: "Skater", score: skaterImpactScore($0)) }
         let scoredGoalies = goalies.map { ScoredNHLPlayer(player: $0, role: "Goalie", score: goalieImpactScore($0)) }
+        let teamAbbreviations = teamAbbreviations(for: detail)
         var tables: [StatTablePresentation] = []
         if !scoredSkaters.isEmpty {
-            tables.append(hockeySkaterTable(from: scoredSkaters))
+            tables.append(hockeySkaterTable(from: scoredSkaters, teamAbbreviations: teamAbbreviations))
         }
         if !scoredGoalies.isEmpty {
-            tables.append(hockeyGoalieTable(from: scoredGoalies))
+            tables.append(hockeyGoalieTable(from: scoredGoalies, teamAbbreviations: teamAbbreviations))
         }
 
         return [
@@ -102,6 +104,13 @@ enum StatPresentationBuilder {
             tables: [teamStatTable(for: detail.teamStats)],
             emptyMessage: nil
         )
+    }
+
+    static func teamAbbreviations(for detail: GameDetail) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: detail.game.participants.map { participant in
+            let abbreviation = participant.abbreviation ?? String(participant.name.prefix(3)).uppercased()
+            return (participant.name, abbreviation)
+        })
     }
 
     static func outs(from inningsPitched: String?) -> Int {

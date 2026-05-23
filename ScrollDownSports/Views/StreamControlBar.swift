@@ -15,102 +15,95 @@ struct StreamControlBar: View {
     let onJumpLatest: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Button {
-                    SportsFeedback.selection()
-                    onToggleGamePin()
-                } label: {
-                    Label(isGamePinned ? "Unpin game" : "Pin game", systemImage: isGamePinned ? "pin.slash" : "pin")
-                }
-                .buttonStyle(.sportsControl(tone: .pinned, filled: isGamePinned, compact: true))
-                .accessibilityLabel(isGamePinned ? "Unpin game" : "Pin game")
-                .scaleEffect(isGamePinned ? 1.03 : 1)
-                .animation(.snappy(duration: 0.22), value: isGamePinned)
-
-                if newPlayCount > 0 {
-                    SportsBadge(text: "\(newPlayCount) new", tone: .newPlay)
-                }
-
-                Spacer(minLength: 0)
-
-                if canResume {
-                    Button {
-                        SportsFeedback.impact()
-                        onResume()
-                    } label: {
-                        Label("Resume", systemImage: "arrow.uturn.forward")
-                    }
-                    .buttonStyle(.sportsControl(tone: .newPlay, compact: true))
-                }
-
-                Button {
-                    SportsFeedback.impact()
-                    onJumpLatest()
-                } label: {
-                    Label("Jump latest", systemImage: "arrow.down.to.line")
-                }
-                .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
-                .accessibilityLabel("Jump to latest")
-            }
-
+        VStack(alignment: .leading, spacing: 8) {
             Picker("Stream mode", selection: $selectedMode) {
                 ForEach(DetailStreamMode.allCases) { mode in
-                    Text("\(mode.title) \(mode.count(in: events, game: game))")
+                    Text(mode.title)
                         .tag(mode)
                 }
             }
             .pickerStyle(.segmented)
 
             HStack(spacing: 8) {
-                if game.status.isLive {
-                    Button {
-                        SportsFeedback.selection()
-                        onToggleFollowLive()
-                    } label: {
-                        Label(
-                            isFollowingLiveEdge ? "Stop following" : "Follow live",
-                            systemImage: isFollowingLiveEdge ? "pause.circle" : "dot.radiowaves.left.and.right"
-                        )
-                    }
-                    .buttonStyle(.sportsControl(tone: .live, filled: isFollowingLiveEdge))
-                    .accessibilityLabel(isFollowingLiveEdge ? "Stop following" : "Follow live")
-                    .animation(.snappy(duration: 0.22), value: isFollowingLiveEdge)
-                } else {
-                    Text(followUnavailableCopy)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                }
+                Text(contextLine)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(contextColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
 
                 Spacer(minLength: 0)
 
-                Text(modeSummary)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                if showsInlineJumpLatest {
+                    Button {
+                        SportsFeedback.impact()
+                        onJumpLatest()
+                    } label: {
+                        Text("Jump latest")
+                    }
+                    .buttonStyle(.sportsControl(tone: .newPlay, compact: true))
+                    .accessibilityLabel("Jump to latest")
+                }
+
+                Menu {
+                    Button {
+                        SportsFeedback.selection()
+                        onToggleGamePin()
+                    } label: {
+                        Label(isGamePinned ? "Unpin game" : "Pin game", systemImage: isGamePinned ? "pin.slash" : "pin")
+                    }
+
+                    if game.status.isLive {
+                        Button {
+                            SportsFeedback.selection()
+                            onToggleFollowLive()
+                        } label: {
+                            Label(
+                                isFollowingLiveEdge ? "Stop following" : "Follow live",
+                                systemImage: isFollowingLiveEdge ? "pause.circle" : "dot.radiowaves.left.and.right"
+                            )
+                        }
+                    }
+                } label: {
+                    Image(systemName: isGamePinned ? "pin.fill" : "ellipsis")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(isGamePinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Colors.secondaryInk)
+                        .frame(width: 28, height: 28)
+                        .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
+                }
             }
         }
         .sportsSurface(.streamControlBar, accent: renderer.theme.accentColor)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var followUnavailableCopy: String {
+    private var showsInlineJumpLatest: Bool {
+        newPlayCount > 0 && !canResume
+    }
+
+    private var contextLine: String {
+        if newPlayCount > 0 {
+            return "\(newPlayCount) new"
+        }
+        let count = selectedMode.count(in: events, game: game)
+        if count > 0 {
+            return count == 1 ? "\(selectedMode.title) · 1 play" : "\(selectedMode.title) · \(count) plays"
+        }
+        if game.status.isLive {
+            if isGamePinned && isFollowingLiveEdge {
+                return "Pinned · following live"
+            }
+            return isFollowingLiveEdge ? "Following live" : "Live stream"
+        }
         if game.status.isFinal {
             return "Final stream"
         }
         if game.status.isPregame {
-            return "Follow live when game starts"
+            return "Preview"
         }
-        return "Live follow unavailable"
+        return isGamePinned ? "Pinned" : "Stream"
     }
 
-    private var modeSummary: String {
-        switch selectedMode {
-        case .full:
-            return "\(selectedMode.summary) · Score at bottom"
-        case .key, .flow:
-            return "\(selectedMode.summary) · Full has every play"
-        }
+    private var contextColor: Color {
+        newPlayCount > 0 ? SportsTheme.Tone.newPlay.accent : SportsTheme.Colors.secondaryInk
     }
 }

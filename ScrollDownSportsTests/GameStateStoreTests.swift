@@ -145,6 +145,36 @@ final class GameStateStoreTests: XCTestCase {
         XCTAssertNil(defaults.data(forKey: "game-state-test"))
     }
 
+    func testFixturePinnedDataIsPurgedFromPersistedState() throws {
+        let defaults = try makeDefaults()
+        let now = TestFixtures.fixedDate("2026-05-22T12:00:00Z")
+        let fakeGame = TestFixtures.makeGame(
+            id: 101,
+            leagueCode: "nfl",
+            scheduledStart: now,
+            awayName: "Dallas Wolves",
+            awayAbbreviation: "DAL",
+            homeName: "Seattle Sound",
+            homeAbbreviation: "SEA"
+        )
+        var snapshot = LocalGameStateSnapshot.empty(now: now)
+        snapshot.pin(fakeGame, now: { now }, preserveMirroredProgressFields: true)
+        snapshot.recordReadEvent(gameId: fakeGame.id, eventID: "fixture-1", eventIndex: 0, knownEventCount: 4, now: { now })
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        defaults.set(try encoder.encode(snapshot), forKey: "game-state-test")
+
+        let store = UserDefaultsGameStateStore(
+            defaults: defaults,
+            key: "game-state-test",
+            now: { now }
+        )
+
+        XCTAssertTrue(store.snapshot.pinnedGamesById.isEmpty)
+        XCTAssertTrue(store.snapshot.progressByGameId.isEmpty)
+    }
+
     func testRawFeedExpansionCanCollapseAndUsesProgressDefaults() throws {
         let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
         let key = "raw-feed:v1:mlb:301:event-1:456"
@@ -383,6 +413,18 @@ final class GameStateStoreTests: XCTestCase {
         XCTAssertNotNil(store.snapshot.pinnedGamesById[206])
         XCTAssertEqual(store.snapshot.pinnedGamesById[206]?.newEventCount, 0)
         XCTAssertNil(store.progress(for: 206)?.eventIdentityBaseline)
+    }
+
+    func testReadProgressIsMonotonicWhenUserScrollsBackUp() throws {
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
+
+        store.recordReadEvent(gameId: 207, eventID: "event-5", eventIndex: 5, knownEventCount: 9)
+        store.recordReadEvent(gameId: 207, eventID: "event-2", eventIndex: 2, knownEventCount: 9)
+
+        let progress = try XCTUnwrap(store.progress(for: 207))
+        XCTAssertEqual(progress.lastReadEventID, "event-5")
+        XCTAssertEqual(progress.lastReadEventIndex, 5)
+        XCTAssertEqual(progress.newEventCount, 3)
     }
 
     private func makeDefaults() throws -> UserDefaults {

@@ -70,7 +70,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(detail.game.scoreState.away, 99)
         XCTAssertEqual(response.playerStats[0].points, 28)
         XCTAssertEqual(detail.events[0].headline, "Made jumper")
-        XCTAssertEqual(detail.events[0].clockText, "Q1 11:42")
+        XCTAssertEqual(detail.events[0].clockText, "Q1 · 11:42")
     }
 
     func testMapsUnknownSafeSportAndLegacyScores() throws {

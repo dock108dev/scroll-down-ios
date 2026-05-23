@@ -3,14 +3,15 @@ import XCTest
 
 @MainActor
 final class HomeViewModelTests: XCTestCase {
-    func testBuildsPinnedTodayAndEarlierSectionsWithoutFuturePeers() throws {
+    func testBuildsPinnedAndChronologicalTimelineWithUpcomingGames() throws {
         let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
         let pinned = TestFixtures.makeGame(id: 1, scheduledStart: TestFixtures.fixedDate("2026-05-22T15:00:00Z"))
         let today = TestFixtures.makeGame(
             id: 2,
             scheduledStart: TestFixtures.fixedDate("2026-05-22T23:00:00Z"),
             status: "scheduled",
-            isLive: false
+            isLive: false,
+            presentation: previewPresentation()
         )
         let earlier = TestFixtures.makeGame(
             id: 3,
@@ -23,7 +24,8 @@ final class HomeViewModelTests: XCTestCase {
             id: 4,
             scheduledStart: TestFixtures.fixedDate("2026-05-23T23:00:00Z"),
             status: "scheduled",
-            isLive: false
+            isLive: false,
+            presentation: previewPresentation()
         )
         let store = InMemoryGameStateStore(now: { now })
         store.pin(pinned)
@@ -32,13 +34,15 @@ final class HomeViewModelTests: XCTestCase {
 
         let sections = viewModel.filteredHomeSections
 
-        XCTAssertEqual(sections.map(\.id), ["pinned", "today", "earlier"])
+        XCTAssertEqual(sections.map(\.id), ["pinned", "timeline"])
         XCTAssertEqual(pinnedIDs(in: sections), [1])
-        XCTAssertEqual(todayIDs(in: sections), [2])
-        XCTAssertEqual(earlierIDsByDate(in: sections), [[3]])
+        XCTAssertEqual(timelineSectionIDs(in: sections), ["timeline-yesterday", "timeline-later-today", "timeline-upcoming"])
+        XCTAssertEqual(timelineIDs(in: sections, sectionID: "timeline-yesterday"), [3])
+        XCTAssertEqual(timelineIDs(in: sections, sectionID: "timeline-later-today"), [2])
+        XCTAssertEqual(timelineIDs(in: sections, sectionID: "timeline-upcoming"), [4])
     }
 
-    func testPinnedMetadataRendersWhenFetchedWindowDoesNotContainPinnedGame() throws {
+    func testPinnedMetadataDoesNotRenderWhenFetchedWindowDoesNotContainPinnedGame() throws {
         let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
         let oldPinned = TestFixtures.makeGame(
             id: 10,
@@ -53,8 +57,9 @@ final class HomeViewModelTests: XCTestCase {
 
         let sections = viewModel.filteredHomeSections
 
-        XCTAssertEqual(sections.map(\.id), ["pinned", "today"])
-        XCTAssertEqual(pinnedIDs(in: sections), [10])
+        XCTAssertEqual(sections.map(\.id), ["timeline"])
+        XCTAssertEqual(pinnedIDs(in: sections), [])
+        XCTAssertNil(viewModel.initialHomeAnchorID)
     }
 
     func testHydratesMatchingPersistedHomeSnapshotOnInit() throws {
@@ -87,6 +92,7 @@ final class HomeViewModelTests: XCTestCase {
         store.pin(mets)
         store.pin(yankees)
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
+        viewModel.games = [mets, yankees]
         viewModel.teamQuery = "Mets"
 
         let sections = viewModel.filteredHomeSections
@@ -101,23 +107,93 @@ final class HomeViewModelTests: XCTestCase {
             id: 30,
             scheduledStart: TestFixtures.fixedDate("2026-05-22T19:00:00Z"),
             status: "scheduled",
-            isLive: false
+            isLive: false,
+            presentation: previewPresentation()
         )
         let store = InMemoryGameStateStore(now: { now })
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
         viewModel.games = [game]
 
-        XCTAssertEqual(viewModel.filteredHomeSections.map(\.id), ["today"])
-        XCTAssertEqual(todayIDs(in: viewModel.filteredHomeSections), [30])
+        XCTAssertEqual(viewModel.filteredHomeSections.map(\.id), ["timeline"])
+        XCTAssertEqual(timelineIDs(in: viewModel.filteredHomeSections, sectionID: "timeline-later-today"), [30])
 
         store.pin(game)
         store.setReachedScoreboard(gameId: game.id, reached: true)
 
         let sections = viewModel.filteredHomeSections
-        XCTAssertEqual(sections.map(\.id), ["pinned", "today"])
+        XCTAssertEqual(sections.map(\.id), ["pinned", "timeline"])
         XCTAssertEqual(pinnedIDs(in: sections), [30])
         XCTAssertTrue(firstPinnedItem(in: sections)?.reachedScoreboard == true)
-        XCTAssertTrue(todayIDs(in: sections).isEmpty)
+        XCTAssertTrue(allTimelineIDs(in: sections).isEmpty)
+    }
+
+    func testInitialAnchorPrefersYesterdayCatchupOverOlderAndUpcomingGames() throws {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let older = TestFixtures.makeGame(
+            id: 31,
+            scheduledStart: TestFixtures.fixedDate("2026-05-21T23:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let yesterday = TestFixtures.makeGame(
+            id: 32,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T23:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let live = TestFixtures.makeGame(
+            id: 33,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T16:00:00Z"),
+            status: "in_progress",
+            isLive: true
+        )
+        let upcoming = TestFixtures.makeGame(
+            id: 34,
+            scheduledStart: TestFixtures.fixedDate("2026-05-24T18:00:00Z"),
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            presentation: previewPresentation()
+        )
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.games = [upcoming, live, yesterday, older]
+
+        XCTAssertEqual(timelineSectionIDs(in: viewModel.filteredHomeSections), [
+            "timeline-older",
+            "timeline-yesterday",
+            "timeline-live",
+            "timeline-upcoming"
+        ])
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+    }
+
+    func testDefaultTimelineFiltersPlaceholderGames() throws {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let real = TestFixtures.makeGame(
+            id: 35,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T18:00:00Z"),
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            presentation: previewPresentation()
+        )
+        let placeholder = TestFixtures.makeGame(
+            id: 36,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T19:00:00Z"),
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            awayName: "TBD",
+            awayAbbreviation: "TBD",
+            homeName: "Carolina Hurricanes",
+            homeAbbreviation: "CAR"
+        )
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.games = [placeholder, real]
+
+        XCTAssertEqual(allTimelineIDs(in: viewModel.filteredHomeSections), [35])
     }
 
     func testScheduledCardDoesNotAdvertiseStreamResumeOrNewPlaysWithoutPriorProgress() throws {
@@ -171,13 +247,13 @@ final class HomeViewModelTests: XCTestCase {
         )
         let unreadState = HomeGameCardState(item: makeItem(game: finalWithTimeline))
         XCTAssertEqual(unreadState.primaryActionLabel, "Catch up")
-        XCTAssertEqual(unreadState.scoreCueText, "Score at bottom")
+        XCTAssertEqual(unreadState.scoreCueText, "score at bottom")
         XCTAssertFalse(unreadState.showsScoreRows)
 
         let partialProgress = TestFixtures.makeProgress(gameId: finalWithTimeline.id, lastReadEventIndex: 4, lastKnownEventCount: 12)
         let resumeState = HomeGameCardState(item: makeItem(game: finalWithTimeline, progress: partialProgress))
         XCTAssertEqual(resumeState.primaryActionLabel, "Resume")
-        XCTAssertEqual(resumeState.progressText, "Resume T4")
+        XCTAssertEqual(resumeState.progressText, "Resume from T4")
 
         var recapProgress = partialProgress
         recapProgress.reachedScoreboard = true
@@ -240,6 +316,29 @@ final class HomeViewModelTests: XCTestCase {
         return section.games.map(\.id)
     }
 
+    private func previewPresentation() -> GamePresentationData {
+        GamePresentationData(
+            headline: "Preview",
+            shortHeadline: nil,
+            subheadline: nil,
+            matchupLabel: nil,
+            primaryLabel: nil,
+            secondaryLabel: nil,
+            tertiaryLabel: nil,
+            accessibilityLabel: nil,
+            displayState: nil,
+            visualPriority: nil,
+            sortBucket: nil,
+            accentRole: nil,
+            statusTone: nil,
+            eventCounts: nil,
+            statusLabel: nil,
+            primaryActionLabel: "Preview",
+            secondaryContextLabel: nil,
+            scoreboardPlacement: nil
+        )
+    }
+
     private func firstPinnedItem(in sections: [HomeSection]) -> HomeGameItem? {
         guard case .pinned(let section) = sections.first(where: { $0.id == "pinned" }) else {
             return nil
@@ -247,18 +346,26 @@ final class HomeViewModelTests: XCTestCase {
         return section.games.first
     }
 
-    private func todayIDs(in sections: [HomeSection]) -> [Int] {
-        guard case .today(let section) = sections.first(where: { $0.id == "today" }) else {
+    private func timelineSectionIDs(in sections: [HomeSection]) -> [String] {
+        guard case .timeline(let section) = sections.first(where: { $0.id == "timeline" }) else {
             return []
         }
-        return section.games.map(\.id)
+        return section.dateSections.map(\.id)
     }
 
-    private func earlierIDsByDate(in sections: [HomeSection]) -> [[Int]] {
-        guard case .earlier(let section) = sections.first(where: { $0.id == "earlier" }) else {
+    private func timelineIDs(in sections: [HomeSection], sectionID: String) -> [Int] {
+        guard case .timeline(let section) = sections.first(where: { $0.id == "timeline" }),
+              let dateSection = section.dateSections.first(where: { $0.id == sectionID }) else {
             return []
         }
-        return section.dateSections.map { $0.games.map(\.id) }
+        return dateSection.games.map(\.id)
+    }
+
+    private func allTimelineIDs(in sections: [HomeSection]) -> [Int] {
+        guard case .timeline(let section) = sections.first(where: { $0.id == "timeline" }) else {
+            return []
+        }
+        return section.dateSections.flatMap { $0.games.map(\.id) }
     }
 
     private func makeItem(game: Game, isPinned: Bool = false, progress: GameProgressRecord? = nil) -> HomeGameItem {

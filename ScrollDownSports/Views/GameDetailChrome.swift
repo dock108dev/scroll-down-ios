@@ -9,30 +9,19 @@ struct GameHeaderView: View {
     var body: some View {
         let presentation = renderer.gameHeaderPresentation(for: game)
 
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             SportsTeamRail(color: presentation.accentColor)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Text(presentation.leagueLabel)
                         .font(SportsTheme.Typography.leagueCode)
                         .foregroundStyle(presentation.accentColor)
-                    Text(presentation.sportLabel)
+                    Text(statusLine)
                         .font(SportsTheme.Typography.metadata)
                         .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    Text(DateFormatters.shortTime.string(from: game.scheduledStart))
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    if game.status.isLive {
-                        SportsBadge(text: "LIVE", tone: .live)
-                    }
                     Spacer()
                 }
-
-                Text(presentation.headline ?? game.matchupText)
-                    .font(SportsTheme.Typography.appTitle)
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 if let away = game.awayParticipant {
                     DetailTeamLine(abbreviation: away.abbreviation, name: away.name)
@@ -41,27 +30,46 @@ struct GameHeaderView: View {
                     DetailTeamLine(abbreviation: home.abbreviation, name: home.name)
                 }
 
-                if let progressText = presentation.statusText {
-                    Text(progressText)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(game.status.isLive ? SportsTheme.Tone.live.accent : SportsTheme.Colors.secondaryInk)
-                }
-
-                FlowLayout(spacing: 8) {
-                    SportsBadge(text: isPinned ? "PINNED" : "UNPINNED", tone: .pinned, filled: isPinned)
-                    SportsBadge(text: "Score at bottom", tone: .scoreboard, filled: false)
-                    if let playCountText = presentation.playCountText {
-                        SportsBadge(text: playCountText, tone: .neutral, filled: false)
-                    }
-                    if newPlayCount > 0 {
-                        SportsBadge(text: "\(newPlayCount) new", tone: .newPlay)
-                    }
-                }
+                Text(contextLine)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(contextColor)
             }
         }
-        .sportsSurface(.gameHeaderCard, accent: presentation.accentColor)
+        .padding(12)
+        .background(SportsTheme.Surface.gameHeaderCard.background, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
+                .stroke(SportsTheme.Stroke.accent(presentation.accentColor), lineWidth: 1)
+        )
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityLabel(presentation.accessibilityLabel ?? presentation.headline ?? game.matchupText)
+    }
+
+    private var statusLine: String {
+        let presentation = renderer.gameHeaderPresentation(for: game)
+        let status: String
+        if game.status.isLive {
+            status = presentation.statusText ?? "Live"
+        } else if game.status.isFinal {
+            status = "Final"
+        } else {
+            status = DateFormatters.timeOnly.string(from: game.scheduledStart)
+        }
+        return "\(status) · \(DateFormatters.daySubtitle.string(from: game.scheduledStart))"
+    }
+
+    private var contextLine: String {
+        if newPlayCount > 0 {
+            return "\(newPlayCount) new"
+        }
+        if game.status.isFinal || game.status.isLive {
+            return "Catch up"
+        }
+        return "Preview"
+    }
+
+    private var contextColor: Color {
+        newPlayCount > 0 ? SportsTheme.Tone.newPlay.accent : SportsTheme.Colors.secondaryInk
     }
 }
 
@@ -153,23 +161,23 @@ struct NewPlaysAffordance: View {
             SportsFeedback.impact()
             onJumpLatest()
         } label: {
-            HStack(spacing: 10) {
-                Text(count == 1 ? "1 new play" : "\(count) new plays")
-                    .font(.subheadline.weight(.semibold))
-                Divider()
-                    .frame(height: 18)
-                    .overlay(.white.opacity(0.35))
-                Label("Jump to latest", systemImage: "arrow.down.to.line")
-                    .font(.subheadline.weight(.semibold))
+            HStack(spacing: 7) {
+                Text(count == 1 ? "1 new" : "\(count) new")
+                    .font(SportsTheme.Typography.metadata)
+                Text("·")
+                    .font(SportsTheme.Typography.metadata)
+                    .opacity(0.8)
+                Text("jump latest")
+                    .font(SportsTheme.Typography.metadata)
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
                     .fill(SportsTheme.Tone.newPlay.accent)
             )
-            .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
+            .shadow(color: .black.opacity(0.14), radius: 6, y: 2)
         }
         .buttonStyle(.plain)
         .transition(.move(edge: .bottom).combined(with: .opacity))

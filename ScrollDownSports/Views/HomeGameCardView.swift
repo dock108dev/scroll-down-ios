@@ -11,46 +11,45 @@ struct GameRowView: View {
             fallback: presentation.accentColor
         )
 
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             SportsTeamRail(color: railColor)
 
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 8) {
                 HomeCardMetadataRow(
                     state: cardState,
                     presentation: presentation
                 )
                 .padding(.trailing, 38)
 
-                if cardState.usesStrongLiveTreatment {
-                    HomeLiveStrip(text: cardState.statusText)
-                }
-
-                Text(presentation.headline ?? game.matchupText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-
                 VStack(alignment: .leading, spacing: 3) {
                     if let away = game.awayParticipant {
-                        TeamLine(abbreviation: away.abbreviation, name: away.name)
+                        TeamLine(
+                            abbreviation: away.abbreviation,
+                            name: away.name,
+                            scoreText: cardState.showsScoreRows ? cardState.scoreRows.first { $0.id == away.id }?.scoreText : nil
+                        )
                     }
                     if let home = game.homeParticipant {
-                        TeamLine(abbreviation: home.abbreviation, name: home.name)
+                        TeamLine(
+                            abbreviation: home.abbreviation,
+                            name: home.name,
+                            scoreText: cardState.showsScoreRows ? cardState.scoreRows.first { $0.id == home.id }?.scoreText : nil
+                        )
                     }
                 }
 
                 HomeCardContext(state: cardState)
-
-                if cardState.showsScoreRows {
-                    HomeCardScoreRows(rows: cardState.scoreRows)
-                } else if let scoreCueText = cardState.scoreCueText {
-                    HomeScoreCue(text: scoreCueText)
-                }
-
-                HomeCardActionRow(label: cardState.primaryActionLabel, phase: cardState.phase)
             }
         }
-        .sportsSurface(.gameCard, accent: accent(for: cardState, fallback: presentation.accentColor))
+        .padding(12)
+        .background(
+            SportsTheme.Surface.gameCard.background,
+            in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
+                .stroke(SportsTheme.Stroke.accent(accent(for: cardState, fallback: presentation.accentColor)), lineWidth: 1)
+        )
         .contentShape(RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .accessibilityLabel(accessibilityLabel(presentation: presentation, state: cardState))
     }
@@ -126,54 +125,12 @@ private struct HomeCardMetadataRow: View {
             Text(state.metadataText)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            if let statusBadgeText = state.statusBadgeText {
-                SportsBadge(text: statusBadgeText, tone: tone, filled: state.phase == .live)
-            }
-            if state.showsPinnedBadge {
-                SportsBadge(text: "PINNED", tone: .pinned, filled: false)
-            }
-            if let newPlayText = state.newPlayText {
-                SportsBadge(text: newPlayText.uppercased(), tone: .newPlay, filled: false)
+            if state.phase == .live {
+                Circle()
+                    .fill(SportsTheme.Tone.live.accent)
+                    .frame(width: 6, height: 6)
             }
         }
-    }
-
-    private var tone: SportsTheme.Tone {
-        switch state.phase {
-        case .live:
-            return .live
-        case .final:
-            return .final
-        case .scheduled, .other:
-            return .neutral
-        }
-    }
-}
-
-private struct HomeLiveStrip: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(SportsTheme.Tone.live.accent)
-                .frame(width: 7, height: 7)
-            Text("Live now")
-                .font(.caption.weight(.black))
-                .foregroundStyle(SportsTheme.Tone.live.accent)
-            Text(text)
-                .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .background(
-            SportsTheme.Tone.live.subtleFill,
-            in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
-        )
     }
 }
 
@@ -181,23 +138,22 @@ private struct HomeCardContext: View {
     let state: HomeGameCardState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Label(state.contextText, systemImage: contextIcon)
+        HStack(spacing: 6) {
+            Image(systemName: contextIcon)
+                .font(.caption2.weight(.bold))
+            Text(state.contextText)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(contextColor)
-            if let progressText = state.progressText {
-                Label(progressText, systemImage: "arrow.uturn.forward")
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Tone.newPlay.accent)
-            }
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
         }
     }
 
     private var contextIcon: String {
-        if state.newPlayText != nil {
+        if state.contextText.contains("new") {
             return "sparkles"
         }
-        if state.scoreCueText != nil {
+        if state.contextText.contains("score at bottom") {
             return "list.bullet.rectangle"
         }
         switch state.phase {
@@ -213,34 +169,13 @@ private struct HomeCardContext: View {
     }
 
     private var contextColor: Color {
-        if state.newPlayText != nil {
+        if state.contextText.contains("new") || state.contextText.contains("Resume") {
             return SportsTheme.Tone.newPlay.accent
         }
-        if state.scoreCueText != nil {
+        if state.contextText.contains("score at bottom") {
             return SportsTheme.Tone.scoreboard.accent
         }
         return SportsTheme.Colors.secondaryInk
-    }
-}
-
-private struct HomeScoreCue: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "list.bullet.rectangle")
-                .font(.caption.weight(.bold))
-            Text(text)
-                .font(SportsTheme.Typography.metadata)
-            Spacer(minLength: 0)
-        }
-        .foregroundStyle(SportsTheme.Tone.scoreboard.accent)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            SportsTheme.Tone.scoreboard.subtleFill,
-            in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
-        )
     }
 }
 
@@ -277,58 +212,10 @@ private struct HomeCardScoreRows: View {
     }
 }
 
-private struct HomeCardActionRow: View {
-    let label: String
-    let phase: HomeGameCardPhase
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Label(label, systemImage: icon)
-                .font(.subheadline.weight(.bold))
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-        }
-        .foregroundStyle(tone.accent)
-        .padding(.top, 2)
-    }
-
-    private var icon: String {
-        switch label.lowercased() {
-        case let value where value.contains("resume"):
-            return "arrow.uturn.forward"
-        case let value where value.contains("stream"):
-            return "play.circle.fill"
-        case let value where value.contains("catch"):
-            return "sparkles"
-        case let value where value.contains("recap"):
-            return "doc.text"
-        case let value where value.contains("box"):
-            return "number.square"
-        case let value where value.contains("preview"):
-            return "calendar"
-        default:
-            return phase == .live ? "play.circle.fill" : "arrow.right.circle"
-        }
-    }
-
-    private var tone: SportsTheme.Tone {
-        switch phase {
-        case .live:
-            return .live
-        case .final:
-            return .final
-        case .scheduled:
-            return .neutral
-        case .other:
-            return .newPlay
-        }
-    }
-}
-
 private struct TeamLine: View {
     let abbreviation: String?
     let name: String
+    let scoreText: String?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -342,6 +229,14 @@ private struct TeamLine: View {
                 .foregroundStyle(SportsTheme.Colors.ink)
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
+            Spacer(minLength: 8)
+            if let scoreText {
+                Text(scoreText)
+                    .font(.headline.weight(.black))
+                    .monospacedDigit()
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .frame(minWidth: 24, alignment: .trailing)
+            }
         }
     }
 

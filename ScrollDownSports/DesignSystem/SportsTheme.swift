@@ -4,15 +4,15 @@ import UIKit
 enum SportsTheme {
     enum Colors {
         static let paper = adaptive(
-            light: UIColor(red: 0.976, green: 0.961, blue: 0.922, alpha: 1),
+            light: UIColor(red: 0.957, green: 0.958, blue: 0.948, alpha: 1),
             dark: UIColor(red: 0.071, green: 0.075, blue: 0.086, alpha: 1)
         )
         static let paperInset = adaptive(
-            light: UIColor(red: 0.996, green: 0.988, blue: 0.961, alpha: 1),
+            light: UIColor(red: 0.988, green: 0.990, blue: 0.984, alpha: 1),
             dark: UIColor(red: 0.103, green: 0.108, blue: 0.122, alpha: 1)
         )
         static let paperRaised = adaptive(
-            light: UIColor(red: 1, green: 0.996, blue: 0.980, alpha: 1),
+            light: UIColor(red: 1.000, green: 1.000, blue: 0.996, alpha: 1),
             dark: UIColor(red: 0.133, green: 0.138, blue: 0.157, alpha: 1)
         )
         static let ink = adaptive(
@@ -24,7 +24,7 @@ enum SportsTheme {
             dark: UIColor(red: 0.710, green: 0.702, blue: 0.659, alpha: 1)
         )
         static let hairline = adaptive(
-            light: UIColor(red: 0.804, green: 0.776, blue: 0.710, alpha: 1),
+            light: UIColor(red: 0.780, green: 0.796, blue: 0.800, alpha: 1),
             dark: UIColor(red: 0.263, green: 0.271, blue: 0.302, alpha: 1)
         )
         static let textOnFill = Color.white
@@ -87,7 +87,7 @@ enum SportsTheme {
                 colors: [
                     Colors.paper,
                     Colors.paperInset,
-                    Color(red: 0.922, green: 0.902, blue: 0.847).opacity(0.42)
+                    Color(red: 0.905, green: 0.925, blue: 0.928).opacity(0.46)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -166,10 +166,10 @@ enum SportsTheme {
             switch self {
             case .gameCard, .gameHeaderCard, .scoreboardCard:
                 return Colors.paperRaised
-            case .eventCard, .statSummary:
-                return Colors.paperInset
-            case .streamControlBar, .compactTableRow:
+            case .eventCard:
                 return Colors.paper
+            case .statSummary, .streamControlBar, .compactTableRow:
+                return Colors.paperInset
             }
         }
 

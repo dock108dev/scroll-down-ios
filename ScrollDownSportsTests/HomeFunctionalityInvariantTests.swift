@@ -24,7 +24,7 @@ final class HomeFunctionalityInvariantTests: XCTestCase {
         XCTAssertEqual(viewModel.games.map(\.id), [1401])
         XCTAssertEqual(viewModel.lastUpdated, now)
         XCTAssertEqual(viewModel.errorMessage, "The data service returned HTTP 503.")
-        XCTAssertEqual(viewModel.filteredHomeSections.map(\.id), ["today"])
+        XCTAssertEqual(viewModel.filteredHomeSections.map(\.id), ["timeline"])
     }
 
     func testFinalGameWithoutPlayByPlayOpensBoxScoreWithoutNewPlayBadge() {

@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum GameDetailScrollAnchor: Hashable {
+    case top
     case latest
     case event(String)
     case scoreboard
@@ -39,6 +40,14 @@ struct DetailLatestAnchorPreferenceKey: PreferenceKey {
     }
 }
 
+struct DetailTopChromePreferenceKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = nextValue() ?? value
+    }
+}
+
 struct DetailResumeState {
     let target: GameEvent
     let description: String
@@ -51,49 +60,108 @@ struct ResumeBanner: View {
     let onStartOver: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "bookmark.fill")
-                    .foregroundStyle(SportsTheme.Tone.newPlay.accent)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Saved position")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(SportsTheme.Colors.ink)
-                    Text(description)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+        HStack(spacing: 10) {
+            Image(systemName: "bookmark.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+
+            Text(description)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(SportsTheme.Colors.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+
+            Spacer(minLength: 0)
+
+            Button {
+                SportsFeedback.impact()
+                onResume()
+            } label: {
+                Text("Resume")
             }
+            .buttonStyle(.sportsControl(tone: .newPlay, filled: true, compact: true))
 
-            FlowLayout(spacing: 8) {
-                Button {
-                    SportsFeedback.impact()
-                    onResume()
-                } label: {
-                    Label("Resume", systemImage: "arrow.uturn.forward")
-                }
-                .buttonStyle(.sportsControl(tone: .newPlay, filled: true))
-
+            Menu {
                 Button {
                     SportsFeedback.impact()
                     onJumpLatest()
                 } label: {
-                    Label("Jump to Latest", systemImage: "arrow.down.to.line")
+                    Label("Jump latest", systemImage: "arrow.down.to.line")
                 }
-                .buttonStyle(.sportsControl(tone: .scoreboard))
 
                 Button(role: .destructive) {
                     SportsFeedback.selection()
                     onStartOver()
                 } label: {
-                    Label("Start Over", systemImage: "restart")
+                    Label("Start over", systemImage: "restart")
                 }
-                .buttonStyle(.sportsControl(tone: .critical))
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                    .frame(width: 28, height: 28)
+                    .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
             }
         }
         .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct DetailStickyNavigationBar: View {
+    let title: String
+    let endLabel: String
+    let returnLabel: String?
+    let onTop: () -> Void
+    let onEnd: () -> Void
+    let onReturn: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let returnLabel {
+                Button {
+                    SportsFeedback.impact()
+                    onReturn()
+                } label: {
+                    Text(returnLabel)
+                        .lineLimit(1)
+                }
+                .buttonStyle(.sportsControl(tone: .neutral, filled: true, compact: true))
+            } else {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Spacer(minLength: 0)
+
+                Button {
+                    SportsFeedback.selection()
+                    onTop()
+                } label: {
+                    Text("Top")
+                }
+                .buttonStyle(.sportsControl(tone: .neutral, filled: false, compact: true))
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                SportsFeedback.selection()
+                onEnd()
+            } label: {
+                Text(endLabel)
+            }
+            .buttonStyle(.sportsControl(tone: .neutral, filled: false, compact: true))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(SportsTheme.Colors.paper.opacity(0.96), in: Capsule())
+        .overlay {
+            Capsule().strokeBorder(SportsTheme.Colors.hairline.opacity(0.7), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
     }
 }
 
@@ -119,7 +187,7 @@ struct PlayByPlaySection: View {
                                 PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)
                                 ForEach(group.events) { event in
                                     let readIndex = readIndex(for: event)
-                                    let presentation = renderer.eventPresentation(for: event, periodGroupLabel: group.label)
+                                    let presentation = eventPresentation(for: event, periodGroupLabel: group.label)
                                     let rawFeedKey = event.rawFeedExpansionKey(game: game)
                                     PlayRow(
                                         presentation: presentation,
@@ -171,6 +239,14 @@ struct PlayByPlaySection: View {
     private func readIndex(for event: GameEvent) -> Int {
         dedupedEvents.firstIndex(of: event) ?? 0
     }
+
+    private func eventPresentation(for event: GameEvent, periodGroupLabel: String) -> GameEventPresentation {
+        var presentation = renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
+        if let scoreLine = event.scoreProgressionText(game: game) {
+            presentation.scoreLabel = scoreLine
+        }
+        return presentation
+    }
 }
 
 private struct PlayRow: View {
@@ -181,9 +257,9 @@ private struct PlayRow: View {
     let onRawFeedExpansionChange: (String, Bool) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 9) {
             EventMarker(importance: importance, accent: accentColor)
-            VStack(alignment: .leading, spacing: importance == .low ? 5 : 8) {
+            VStack(alignment: .leading, spacing: importance == .low ? 4 : 6) {
                 contextLine
                 Text(presentation.headline)
                     .font(headlineFont)
@@ -200,49 +276,63 @@ private struct PlayRow: View {
                         .foregroundStyle(SportsTheme.Colors.secondaryInk)
                         .lineLimit(2)
                 }
-                eventMetadata
+                detailLine
                 rawFeedDisclosure
             }
         }
-        .padding(importance == .low ? 10 : SportsTheme.Spacing.large)
+        .padding(importance == .low ? 9 : 11)
         .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: importance == .low ? 0.5 : 1)
+                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: importance == .low ? 0 : 0.75)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(presentation.accessibilityLabel ?? presentation.headline)
     }
 
     private var contextLine: some View {
-        HStack(spacing: 7) {
-            ImportanceBadge(importance: importance)
-            if let eventLabel = presentation.eventLabel?.nilIfBlank {
-                Text(eventLabel)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(accentColor)
-            }
+        HStack(spacing: 5) {
             if !presentation.clockText.isEmpty {
                 Text(presentation.clockText)
                     .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
             }
-        }
-    }
-
-    private var eventMetadata: some View {
-        FlowLayout(spacing: 6) {
             if let team = presentation.teamAbbreviation?.nilIfBlank {
-                SportsBadge(text: team, tone: .neutral, filled: false)
-                    .foregroundStyle(teamColor)
-            } else if let teamLabel = presentation.teamLabel?.nilIfBlank {
-                Text(teamLabel)
+                Text(team)
                     .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(teamColor)
             }
-            if let scoringLabel = presentation.scoringLabel?.nilIfBlank {
-                SportsBadge(text: scoringLabel, tone: .scoring, filled: importance == .critical)
+            if let eventLabel = presentation.eventLabel?.nilIfBlank {
+                Text(eventLabel)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(accentColor)
             }
+            if importance != .low, !importance.title.isEmpty {
+                Text(importance.title)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(accentColor)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var detailLine: some View {
+        if let scoringLabel = presentation.scoringLabel?.nilIfBlank {
+            Text(scoringLabel)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Tone.scoring.accent)
+        } else if let teamLabel = presentation.teamLabel?.nilIfBlank,
+                  presentation.teamAbbreviation?.nilIfBlank == nil {
+            Text(teamLabel)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(teamColor)
+        }
+        if importance != .low,
+           let scoreLabel = presentation.scoreLabel?.nilIfBlank {
+            Text(scoreLabel)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Tone.scoring.accent)
+        } else {
             if let scoreLabel = presentation.scoreLabel?.nilIfBlank {
                 Text(scoreLabel)
                     .font(SportsTheme.Typography.metadata)
@@ -255,10 +345,10 @@ private struct PlayRow: View {
     private var rawFeedDisclosure: some View {
         if let rawFeedKey,
            let rawFeedText = presentation.rawFeedText?.nilIfBlank {
-                    Button {
-                        SportsFeedback.selection()
-                        onRawFeedExpansionChange(rawFeedKey, !isRawFeedExpanded)
-                    } label: {
+            Button {
+                SportsFeedback.selection()
+                onRawFeedExpansionChange(rawFeedKey, !isRawFeedExpanded)
+            } label: {
                 Label("Feed details", systemImage: isRawFeedExpanded ? "chevron.up" : "chevron.down")
                     .font(SportsTheme.Typography.metadata)
             }
@@ -290,9 +380,9 @@ private struct PlayRow: View {
         case .critical:
             return .headline.weight(.bold)
         case .high:
-            return SportsTheme.Typography.momentHeadline
+            return .subheadline.weight(.bold)
         case .medium:
-            return SportsTheme.Typography.momentDetail
+            return .subheadline.weight(.semibold)
         case .low:
             return .subheadline.weight(.semibold)
         }
@@ -327,6 +417,26 @@ private struct PlayRow: View {
     }
 }
 
+private extension GameEvent {
+    func scoreProgressionText(game: Game) -> String? {
+        let isScoring = importanceMetadata?.isScoringPlay == true || scoreDelta != nil
+        guard isScoring else { return nil }
+        guard let away = game.awayParticipant,
+              let home = game.homeParticipant,
+              let awayScore = scoreAfter.score(for: .away),
+              let homeScore = scoreAfter.score(for: .home) else {
+            return nil
+        }
+        let awayCode = away.abbreviation?.nilIfBlank ?? shortTeamCode(away.name)
+        let homeCode = home.abbreviation?.nilIfBlank ?? shortTeamCode(home.name)
+        return "\(awayCode) \(awayScore) · \(homeCode) \(homeScore)"
+    }
+
+    private func shortTeamCode(_ name: String) -> String {
+        String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
+    }
+}
+
 private struct EventMarker: View {
     let importance: EventVisualImportance
     let accent: Color
@@ -349,27 +459,6 @@ private struct EventMarker: View {
         case .high: return 10
         case .medium: return 8
         case .low: return 6
-        }
-    }
-}
-
-private struct ImportanceBadge: View {
-    let importance: EventVisualImportance
-
-    var body: some View {
-        SportsBadge(text: importance.title, tone: tone, filled: importance == .critical)
-    }
-
-    private var tone: SportsTheme.Tone {
-        switch importance {
-        case .critical:
-            return .critical
-        case .high:
-            return .scoring
-        case .medium:
-            return .newPlay
-        case .low:
-            return .neutral
         }
     }
 }
@@ -437,18 +526,11 @@ struct BoxScoreSection: View {
                     ScoreboardCardHeader(presentation: presentation)
                     ScoreboardContent(presentation: presentation)
 
-                    HStack {
-                        if let gameStateText = presentation.stateText {
-                            Text(gameStateText)
-                                .font(SportsTheme.Typography.metadata)
-                                .foregroundStyle(presentation.stateColor)
-                        }
-                        Spacer()
-                        Button(presentation.hideButtonTitle) {
-                            SportsFeedback.selection()
-                            scoreRevealed = false
-                        }
-                        .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
+                    if let gameStateText = presentation.stateText {
+                        Text(gameStateText)
+                            .font(SportsTheme.Typography.metadata)
+                            .foregroundStyle(presentation.stateColor)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .sportsSurface(.scoreboardCard, accent: presentation.accentColor)

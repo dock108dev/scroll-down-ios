@@ -7,11 +7,11 @@ extension StatPresentationBuilder {
             sortedPlayers.contains { genericValue(column.id, for: $0.player) != nil }
         }.prefix(8))
         let columns = [
-            tableColumn("player", "Player", width: 132, alignment: .leading),
-            tableColumn("team", "Team", width: 54, alignment: .leading)
+            tableColumn("player", "Player", width: 154, alignment: .leading),
+            tableColumn("team", "Team", width: 42, alignment: .leading)
         ] + statColumns
         let rows = sortedPlayers.enumerated().map { index, scored in
-            var values = ["player": scored.player.playerName, "team": scored.player.team]
+            var values = ["player": scored.player.playerName, "team": shortTeamCode(scored.player.team)]
             statColumns.forEach { column in
                 values[column.id] = genericValue(column.id, for: scored.player) ?? "-"
             }
@@ -20,10 +20,10 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "generic-full-stats", title: "Full Stats", columns: columns, rows: rows)
     }
 
-    static func baseballBatterTable(from batters: [ScoredBatter]) -> StatTablePresentation {
+    static func baseballBatterTable(from batters: [ScoredBatter], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
-            tableColumn("player", "Player", width: 132, alignment: .leading),
-            tableColumn("team", "Team", width: 54, alignment: .leading),
+            tableColumn("player", "Player", width: 154, alignment: .leading),
+            tableColumn("team", "Team", width: 42, alignment: .leading),
             tableColumn("pos", "Pos", width: 44, alignment: .leading),
             tableColumn("ab", "AB"), tableColumn("h", "H"), tableColumn("r", "R"),
             tableColumn("rbi", "RBI", width: 46), tableColumn("hr", "HR"), tableColumn("bb", "BB"),
@@ -34,7 +34,9 @@ extension StatPresentationBuilder {
             return StatTableRowPresentation(
                 id: "\(player.id)-\(index)",
                 values: [
-                    "player": player.playerName, "team": player.team, "pos": player.position ?? "-",
+                    "player": player.playerName,
+                    "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team),
+                    "pos": player.position ?? "-",
                     "ab": statString(player.atBats), "h": statString(player.hits), "r": statString(player.runs),
                     "rbi": statString(player.rbi), "hr": statString(player.homeRuns),
                     "bb": statString(player.baseOnBalls), "k": statString(player.strikeOuts)
@@ -44,10 +46,10 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "baseball-batters", title: "Batters", columns: columns, rows: rows)
     }
 
-    static func baseballPitcherTable(from pitchers: [ScoredPitcher]) -> StatTablePresentation {
+    static func baseballPitcherTable(from pitchers: [ScoredPitcher], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
-            tableColumn("player", "Player", width: 132, alignment: .leading),
-            tableColumn("team", "Team", width: 54, alignment: .leading),
+            tableColumn("player", "Player", width: 154, alignment: .leading),
+            tableColumn("team", "Team", width: 42, alignment: .leading),
             tableColumn("ip", "IP", width: 46), tableColumn("h", "H"), tableColumn("r", "R"),
             tableColumn("er", "ER"), tableColumn("bb", "BB"), tableColumn("k", "K"),
             tableColumn("hr", "HR")
@@ -57,7 +59,7 @@ extension StatPresentationBuilder {
             return StatTableRowPresentation(
                 id: "\(player.id)-\(index)",
                 values: [
-                    "player": player.playerName, "team": player.team, "ip": player.inningsPitched ?? "-",
+                    "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team), "ip": player.inningsPitched ?? "-",
                     "h": statString(player.hits), "r": statString(player.runs), "er": statString(player.earnedRuns),
                     "bb": statString(player.baseOnBalls), "k": statString(player.strikeOuts),
                     "hr": statString(player.homeRuns)
@@ -67,10 +69,10 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "baseball-pitchers", title: "Pitchers", columns: columns, rows: rows)
     }
 
-    static func hockeySkaterTable(from players: [ScoredNHLPlayer]) -> StatTablePresentation {
+    static func hockeySkaterTable(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
-            tableColumn("player", "Player", width: 132, alignment: .leading),
-            tableColumn("team", "Team", width: 54, alignment: .leading),
+            tableColumn("player", "Player", width: 154, alignment: .leading),
+            tableColumn("team", "Team", width: 42, alignment: .leading),
             tableColumn("g", "G"), tableColumn("a", "A"), tableColumn("pts", "PTS", width: 46),
             tableColumn("sog", "SOG", width: 48)
         ]
@@ -79,7 +81,7 @@ extension StatPresentationBuilder {
             return StatTableRowPresentation(
                 id: "\(player.id)-skater-\(index)",
                 values: [
-                    "player": player.playerName, "team": player.team, "g": statString(player.goals),
+                    "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team), "g": statString(player.goals),
                     "a": statString(player.assists), "pts": statString(player.points),
                     "sog": statString(player.shotsOnGoal)
                 ]
@@ -88,11 +90,11 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "hockey-skaters", title: "Skaters", columns: columns, rows: rows)
     }
 
-    static func hockeyGoalieTable(from players: [ScoredNHLPlayer]) -> StatTablePresentation {
+    static func hockeyGoalieTable(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let hasSavePercentage = players.contains { $0.player.saves != nil && $0.player.goalsAgainst != nil }
         var columns = [
-            tableColumn("player", "Player", width: 132, alignment: .leading),
-            tableColumn("team", "Team", width: 54, alignment: .leading),
+            tableColumn("player", "Player", width: 154, alignment: .leading),
+            tableColumn("team", "Team", width: 42, alignment: .leading),
             tableColumn("sv", "SV"), tableColumn("ga", "GA")
         ]
         if hasSavePercentage {
@@ -101,7 +103,7 @@ extension StatPresentationBuilder {
         let rows = players.sorted(by: sortScoredNHLPlayers).enumerated().map { index, scored in
             let player = scored.player
             var values = [
-                "player": player.playerName, "team": player.team,
+                "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team),
                 "sv": statString(player.saves), "ga": statString(player.goalsAgainst)
             ]
             if hasSavePercentage {
@@ -150,6 +152,10 @@ extension StatPresentationBuilder {
             stats: items,
             accentTone: .neutral
         )
+    }
+
+    private static func shortTeamCode(_ name: String) -> String {
+        String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
     }
 }
 
