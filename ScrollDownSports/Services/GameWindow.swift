@@ -8,6 +8,10 @@ struct GameWindow: Equatable {
         centeredOnToday(now: now)
     }
 
+    static func home(now: Date = Date()) -> GameWindow {
+        centeredOnToday(now: now, pastDays: 7, futureDays: 0)
+    }
+
     static func centeredOnToday(now: Date = Date(), pastDays: Int = 7, futureDays: Int = 7) -> GameWindow {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
@@ -27,6 +31,10 @@ struct GameWindow: Equatable {
 
     var endDateQuery: String {
         DateFormatters.queryDate.string(from: end)
+    }
+
+    var stableKey: String {
+        "\(startDateQuery):\(endDateQuery)"
     }
 
     func contains(_ date: Date) -> Bool {

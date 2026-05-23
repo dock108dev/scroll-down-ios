@@ -31,6 +31,14 @@ extension ISO8601DateFormatter {
     }()
 }
 
+extension Calendar {
+    static var sda: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        return calendar
+    }
+}
+
 enum DateFormatters {
     static let apiDate: DateFormatter = {
         let formatter = DateFormatter()

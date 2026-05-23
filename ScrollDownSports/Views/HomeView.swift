@@ -4,105 +4,142 @@ struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
-                    FilterHeader(viewModel: viewModel)
-                        .padding(.bottom, 4)
-
-                    if viewModel.loading && viewModel.games.isEmpty {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
-                    } else if let error = viewModel.errorMessage, viewModel.games.isEmpty {
-                        ErrorState(message: error) {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
+                if viewModel.loading && !viewModel.hasAnyHomeSourceGames {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+                } else if let error = viewModel.errorMessage, !viewModel.hasAnyHomeSourceGames {
+                    ErrorState(message: error) {
+                        Task { await viewModel.refresh() }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                } else if viewModel.showsFilteredEmptyState {
+                    FilteredEmptyState {
+                        viewModel.clearFilters()
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                } else {
+                    if let error = viewModel.errorMessage {
+                        InlineErrorState(message: error) {
                             Task { await viewModel.refresh() }
                         }
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                    } else if visibleGameCount == 0 && !hasTodaySection {
-                        EmptyState()
-                            .frame(maxWidth: .infinity, minHeight: 220)
-                    } else {
-                        ForEach(viewModel.filteredTimelineSections) { section in
-                            TimelineDayHeader(section: section)
-                                .id(section.id)
-                                .padding(.top, section.isToday ? 8 : 16)
+                    }
 
-                            if section.games.isEmpty {
-                                if section.isToday {
-                                    TodayEmptyRow()
-                                }
-                            } else {
-                                ForEach(section.games) { game in
-                                    NavigationLink {
-                                        GameDetailView(gameId: game.id, summary: game)
-                                    } label: {
-                                        GameRowView(game: game)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                    ForEach(viewModel.filteredHomeSections) { section in
+                        switch section {
+                        case .pinned(let pinned):
+                            PinnedSectionView(section: pinned) { item in
+                                gameLink(for: item)
+                            }
+                        case .today(let today):
+                            TodaySectionView(
+                                section: today,
+                                hasActiveFilters: viewModel.hasActiveFilters,
+                                clearFilters: viewModel.clearFilters
+                            ) { item in
+                                gameLink(for: item)
+                            }
+                        case .earlier(let earlier):
+                            EarlierSectionView(section: earlier) { item in
+                                gameLink(for: item)
                             }
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
             }
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(.systemBackground),
-                        Color(.systemTeal).opacity(0.08),
-                        Color(.systemOrange).opacity(0.06)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .task {
-                guard !AppEnvironment.isRunningTests else { return }
-                await viewModel.refresh()
-                viewModel.startAutoRefresh()
-            }
-            .onDisappear {
-                viewModel.stopAutoRefresh()
-            }
-            .onChange(of: viewModel.league) { _, _ in
-                Task { await viewModel.refresh() }
-            }
-            .onChange(of: viewModel.anchorToken) { _, _ in
-                scrollToToday(proxy)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await viewModel.refresh() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(viewModel.loading)
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 24)
+        }
+        .background(
+            SportsTheme.Background.page
+        )
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HomeStickyHeader(viewModel: viewModel)
+        }
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .task {
+            guard !AppEnvironment.isRunningTests else { return }
+            await viewModel.refresh()
+            viewModel.startAutoRefresh()
+        }
+        .onDisappear {
+            viewModel.stopAutoRefresh()
+        }
+        .onChange(of: viewModel.league) { _, _ in
+            Task { await viewModel.refresh() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
                 }
+                .disabled(viewModel.loading)
+                .accessibilityLabel("Refresh games")
             }
         }
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(SportsTheme.Colors.paper, for: .navigationBar)
     }
 
-    private var visibleGameCount: Int {
-        viewModel.filteredTimelineSections.reduce(0) { $0 + $1.games.count }
-    }
+    private func gameLink(for item: HomeGameItem) -> some View {
+        ZStack(alignment: .topTrailing) {
+            NavigationLink {
+                GameDetailView(
+                    gameId: item.id,
+                    summary: item.game,
+                    gameStateStore: viewModel.gameStateStore
+                )
+            } label: {
+                GameRowView(item: item)
+            }
+            .buttonStyle(.plain)
 
-    private var hasTodaySection: Bool {
-        viewModel.filteredTimelineSections.contains { $0.isToday }
-    }
-
-    private func scrollToToday(_ proxy: ScrollViewProxy) {
-        DispatchQueue.main.async {
-            withAnimation(.snappy(duration: 0.35)) {
-                proxy.scrollTo(viewModel.todaySectionID, anchor: .top)
+            HomePinButton(isPinned: item.isPinned) {
+                viewModel.togglePin(item.game)
+            }
+            .padding(.top, 12)
+            .padding(.trailing, 12)
+        }
+        .contextMenu {
+            Button {
+                viewModel.togglePin(item.game)
+            } label: {
+                Label(item.isPinned ? "Unpin Game" : "Pin Game", systemImage: item.isPinned ? "pin.slash" : "pin")
             }
         }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                viewModel.togglePin(item.game)
+            } label: {
+                Label(item.isPinned ? "Unpin" : "Pin", systemImage: item.isPinned ? "pin.slash" : "pin")
+            }
+            .tint(SportsTheme.Tone.pinned.accent)
+        }
+    }
+}
+
+private struct HomeStickyHeader: View {
+    @ObservedObject var viewModel: HomeViewModel
+
+    var body: some View {
+        FilterHeader(viewModel: viewModel)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(SportsTheme.Colors.paper)
+            .overlay(alignment: .bottom) {
+                Divider()
+                    .overlay(SportsTheme.Colors.hairline)
+            }
     }
 }
 
@@ -122,130 +159,116 @@ private struct FilterHeader: View {
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .padding(10)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .background(SportsTheme.Colors.paperRaised, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
+                        .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
+                }
 
             if let lastUpdated = viewModel.lastUpdated {
                 Text("Updated \(lastUpdated.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
             }
         }
     }
 }
 
-private struct GameRowView: View {
-    let game: GameSummary
+private struct PinnedSectionView<Row: View>: View {
+    let section: HomePinnedSection
+    let row: (HomeGameItem) -> Row
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(leagueColor)
-                .frame(width: 4)
-                .padding(.vertical, 3)
+        VStack(alignment: .leading, spacing: 10) {
+            HomeSectionHeader(title: section.title, subtitle: "Saved and live-tracked games", systemImage: "pin.fill")
+                .id("pinned")
 
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    Text(game.leagueCode.uppercased())
-                        .font(.caption.weight(.black))
-                        .foregroundStyle(leagueColor)
-                    Text(DateFormatters.timeOnly.string(from: game.gameDate))
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    if let liveText {
-                        Text(liveText)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.vertical, 3)
-                            .padding(.horizontal, 7)
-                            .background(Color(.systemRed), in: Capsule())
-                    }
-                    Spacer()
-                }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    TeamLine(abbreviation: game.awayTeamAbbr, name: game.awayTeam)
-                    TeamLine(abbreviation: game.homeTeamAbbr, name: game.homeTeam)
-                }
-
-                HStack(spacing: 6) {
-                    Image(systemName: game.isPregame ? "calendar" : "sparkles")
-                        .font(.caption.weight(.semibold))
-                    Text(footnoteText)
-                        .font(.caption)
-                }
-                .foregroundStyle(.secondary)
+            ForEach(section.games) { item in
+                row(item)
             }
         }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground).opacity(0.86), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(leagueColor.opacity(0.18), lineWidth: 1)
-        )
-    }
-
-    private var liveText: String? {
-        game.isLiveGame ? "LIVE" : nil
-    }
-
-    private var footnoteText: String {
-        if game.isLiveGame {
-            return [game.currentPeriodLabel, game.gameClock].compactMap { $0 }.joined(separator: " ").nilIfEmpty ?? "In progress"
-        }
-        if game.isPregame {
-            return "Scheduled"
-        }
-        return "Catch up"
-    }
-
-    private var leagueColor: Color {
-        switch game.leagueCode.uppercased() {
-        case "MLB": return Color(.systemGreen)
-        case "NBA": return Color(.systemOrange)
-        case "NHL": return Color(.systemTeal)
-        case "NFL": return Color(.systemIndigo)
-        case "NCAAB": return Color(.systemPurple)
-        case "NCAAF": return Color(.systemBrown)
-        default: return Color(.systemBlue)
-        }
+        .padding(.top, 8)
     }
 }
 
-private struct TeamLine: View {
-    let abbreviation: String?
-    let name: String
+private struct TodaySectionView<Row: View>: View {
+    let section: HomeTodaySection
+    let hasActiveFilters: Bool
+    let clearFilters: () -> Void
+    let row: (HomeGameItem) -> Row
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text(abbreviation ?? shortName)
-                .font(.subheadline.weight(.black))
-                .monospaced()
-                .foregroundStyle(.primary)
-                .frame(width: 44, alignment: .leading)
-            Text(name)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-        }
-    }
+        VStack(alignment: .leading, spacing: 10) {
+            HomeSectionHeader(title: section.title, subtitle: section.subtitle, systemImage: "sun.max.fill")
+                .id(section.id)
 
-    private var shortName: String {
-        String(name.split(separator: " ").last?.prefix(4) ?? "TEAM")
+            if section.games.isEmpty {
+                TodayEmptyRow(hasActiveFilters: hasActiveFilters, clearFilters: clearFilters)
+            } else {
+                ForEach(section.games) { item in
+                    row(item)
+                }
+            }
+        }
+        .padding(.top, 8)
     }
 }
 
-private struct TimelineDayHeader: View {
+private struct EarlierSectionView<Row: View>: View {
+    let section: HomeEarlierSection
+    let row: (HomeGameItem) -> Row
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HomeSectionHeader(title: section.title, subtitle: "Recent catch-up", systemImage: "clock.arrow.circlepath")
+
+            ForEach(section.dateSections) { dateSection in
+                NestedDateHeader(section: dateSection)
+                    .id(dateSection.id)
+                    .padding(.top, 6)
+
+                ForEach(dateSection.games) { item in
+                    row(item)
+                }
+            }
+        }
+        .padding(.top, 16)
+    }
+}
+
+private struct HomeSectionHeader: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+            Text(title)
+                .font(SportsTheme.Typography.sectionTitle)
+                .foregroundStyle(SportsTheme.Colors.ink)
+            Text(subtitle)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            Spacer()
+        }
+        .padding(.top, 12)
+    }
+}
+
+private struct NestedDateHeader: View {
     let section: HomeTimelineSection
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(section.title)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(section.isToday ? Color(.systemTeal) : .primary)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(SportsTheme.Colors.ink)
             Text(section.subtitle)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Colors.secondaryInk)
             Spacer()
         }
         .textCase(nil)
@@ -254,27 +277,81 @@ private struct TimelineDayHeader: View {
 }
 
 private struct TodayEmptyRow: View {
+    let hasActiveFilters: Bool
+    let clearFilters: () -> Void
+
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "calendar")
-                .foregroundStyle(Color(.systemTeal))
-            Text("No games on today's slate for these filters.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar")
+                    .foregroundStyle(SportsTheme.Tone.neutral.accent)
+                Text("No games on today's slate for these filters.")
+                    .font(.subheadline)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            }
+
+            if hasActiveFilters {
+                Button("Clear filters") {
+                    SportsFeedback.selection()
+                    clearFilters()
+                }
+                .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
+                .controlSize(.small)
+            } else {
+                Text("Pull to refresh or browse earlier games below.")
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            }
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground).opacity(0.75), in: RoundedRectangle(cornerRadius: 8))
+        .sportsSurface(.eventCard)
     }
 }
 
-private struct EmptyState: View {
+private struct FilteredEmptyState: View {
+    let clearFilters: () -> Void
+
     var body: some View {
-        ContentUnavailableView(
-            "No games in this window",
-            systemImage: "calendar.badge.exclamationmark",
-            description: Text("Try another league or team filter.")
-        )
+        VStack(spacing: 12) {
+            ContentUnavailableView(
+                "No games match these filters",
+                systemImage: "line.3.horizontal.decrease.circle",
+                description: Text("Clear filters to return to today's slate.")
+            )
+            Button("Clear filters") {
+                SportsFeedback.selection()
+                clearFilters()
+            }
+            .buttonStyle(.sportsControl(tone: .scoreboard, filled: true))
+        }
+    }
+}
+
+private struct InlineErrorState: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "wifi.exclamationmark")
+                .foregroundStyle(SportsTheme.Tone.critical.accent)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Showing last known games")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                Text(message)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                Button("Retry") {
+                    SportsFeedback.impact()
+                    retry()
+                }
+                .buttonStyle(.sportsControl(tone: .critical, compact: true))
+                .controlSize(.small)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sportsSurface(.eventCard, accent: SportsTheme.Tone.critical.accent)
     }
 }
 
@@ -289,14 +366,11 @@ private struct ErrorState: View {
                 systemImage: "wifi.exclamationmark",
                 description: Text(message)
             )
-            Button("Retry", action: retry)
-                .buttonStyle(.borderedProminent)
+            Button("Retry") {
+                SportsFeedback.impact()
+                retry()
+            }
+            .buttonStyle(.sportsControl(tone: .critical, filled: true))
         }
-    }
-}
-
-private extension String {
-    var nilIfEmpty: String? {
-        isEmpty ? nil : self
     }
 }

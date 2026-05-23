@@ -1,47 +1,38 @@
 # Scroll Down Sports iOS
 
-Native SwiftUI catch-up app for Scroll Down Sports.
+Scroll Down Sports iOS is a SwiftUI app for browsing Scroll Down Sports games, pinning games, and reading a game detail stream before reaching the score and box score near the bottom of the page. The app talks to the SDA admin sports API configured through Xcode build settings.
 
-The app reads the same SDA game data shape used by the tagged `scroll-down-web` release, but strips the product down to:
+## Run Locally
 
-- A home list of games from 72 hours before now through 48 hours after now.
-- League and team search filters.
-- A game catch-up page ordered as play-by-play, player stats, team stats, then the only visible score/box-score section at the bottom.
-- Foreground refresh every 5 minutes, plus an iOS background app-refresh task request for live-ish updates when the system allows it.
-
-## Backend
-
-Default base URL:
-
-```text
-https://sda.dock108.dev
-```
-
-The client calls:
-
-```text
-GET /api/admin/sports/games?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&limit=200
-GET /api/admin/sports/games/{id}
-```
-
-The upstream currently returns `401 Missing API key` without credentials. The app reads `SDABaseURL` and `SDAApiKey` from `Info.plist`, backed by these Xcode build settings:
-
-```text
-SDA_API_BASE_URL=https://sda.dock108.dev
-SDA_API_KEY=
-```
-
-For local simulator builds, pass a key as a build setting or add a user-local `.xcconfig` outside source control. For App Store builds, use a mobile-safe backend/proxy path; do not ship a private SDA key in the binary.
-
-## Generate and Build
+Install Xcode and XcodeGen, then generate the project after changing `project.yml`:
 
 ```sh
 xcodegen generate
+```
+
+Build the app for the simulator:
+
+```sh
 xcodebuild -project ScrollDownSports.xcodeproj -scheme ScrollDownSports -destination 'generic/platform=iOS Simulator' build
 ```
 
-With a local development key:
+Run the unit tests:
 
 ```sh
-xcodebuild -project ScrollDownSports.xcodeproj -scheme ScrollDownSports -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' SDA_API_KEY="$SPORTS_DATA_API_KEY" build
+xcodebuild -project ScrollDownSports.xcodeproj -scheme ScrollDownSports -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' -derivedDataPath .build/DerivedData test
 ```
+
+For local API credentials, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set `SDA_API_KEY`. `Config/Local.xcconfig` is ignored by git and is included by `Config/Secrets.xcconfig` when present.
+
+## Deployment Basics
+
+The app target uses bundle identifier `com.dock108.scrolldownsports`, iOS deployment target `18.0`, and Release settings from `Config/Secrets.xcconfig`. `DEVELOPMENT_TEAM` is empty in `project.yml`, so signing must be supplied before archive or App Store distribution.
+
+Both Debug and Release builds read `SDA_API_BASE_URL` and `SDA_API_KEY` into `Info.plist` as `SDABaseURL` and `SDAApiKey`; any Release credential value supplied through those build settings becomes part of the built app configuration.
+
+There are no checked-in GitHub Actions workflows in this repo.
+
+## Docs
+
+- [App reference](docs/app-reference.md)
+- [Documentation consolidation audit](docs/audits/docs-consolidation.md)

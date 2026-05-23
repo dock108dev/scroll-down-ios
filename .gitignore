@@ -10,3 +10,8 @@ xcuserdata/
 *.dSYM.zip
 *.dSYM
 Config/Local.xcconfig
+
+# AIDLC working directory
+.aidlc/runs/
+.aidlc/reports/
+.aidlc/_archive/

@@ -1,625 +1,484 @@
 import SwiftUI
 
-struct PlayByPlaySection: View {
-    let plays: [PlayEntry]
-    @State private var showP2 = false
-    @State private var showP3 = false
-    @State private var configuredSignature = ""
+enum GameDetailScrollAnchor: Hashable {
+    case latest
+    case event(String)
+    case scoreboard
+}
 
-    var body: some View {
-        CatchUpSection(title: "Key Moments", systemImage: "sparkles") {
-            if plays.isEmpty {
-                UnavailableText("No play-by-play data yet.")
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    priorityControls
+struct DetailEventVisibilityFrame: Equatable {
+    let anchorID: String
+    let readIndex: Int
+    let sequence: Int
+    let eventID: String?
+    let label: String
+    let frame: CGRect
+}
 
-                    if visiblePlays.isEmpty {
-                        UnavailableText("No plays in the selected priority bands.")
-                    } else {
-                        ForEach(visiblePlays) { play in
-                            PlayRow(play: play, band: play.priorityBand)
-                        }
-                    }
-                }
-                .onAppear(perform: configureDefaultExpansion)
-                .onChange(of: playSignature) { _, _ in
-                    configureDefaultExpansion()
-                }
-            }
-        }
-    }
+struct DetailEventVisibilityPreferenceKey: PreferenceKey {
+    static let defaultValue: [DetailEventVisibilityFrame] = []
 
-    private var priorityControls: some View {
-        HStack(spacing: 8) {
-            PriorityFilterButton(
-                band: .p1,
-                count: count(.p1),
-                isExpanded: true,
-                isLocked: true
-            ) {}
-
-            PriorityFilterButton(
-                band: .p2,
-                count: count(.p2),
-                isExpanded: showP2,
-                isLocked: false
-            ) {
-                showP2.toggle()
-            }
-
-            PriorityFilterButton(
-                band: .p3,
-                count: count(.p3),
-                isExpanded: showP3,
-                isLocked: false
-            ) {
-                showP3.toggle()
-            }
-        }
-    }
-
-    private var visiblePlays: [PlayEntry] {
-        dedupedPlays.filter { play in
-            switch play.priorityBand {
-            case .p1:
-                return true
-            case .p2:
-                return showP2
-            case .p3:
-                return showP3
-            }
-        }
-    }
-
-    private var dedupedPlays: [PlayEntry] {
-        let unique = Dictionary(grouping: plays) { play in
-            "\(play.periodLabel ?? "")|\(play.gameClock ?? "")|\(play.description ?? "")"
-        }
-        .compactMap { $0.value.first }
-
-        return unique.sorted {
-            if $0.playIndex != $1.playIndex {
-                return $0.playIndex < $1.playIndex
-            }
-            return $0.clockText < $1.clockText
-        }
-    }
-
-    private var playSignature: String {
-        "\(dedupedPlays.count)-\(dedupedPlays.last?.playIndex ?? 0)-\(count(.p1))-\(count(.p2))-\(count(.p3))"
-    }
-
-    private func count(_ band: PlayPriorityBand) -> Int {
-        dedupedPlays.filter { $0.priorityBand == band }.count
-    }
-
-    private func configureDefaultExpansion() {
-        guard configuredSignature != playSignature else { return }
-        configuredSignature = playSignature
-        let hasP1 = count(.p1) > 0
-        let hasP2 = count(.p2) > 0
-        showP2 = !hasP1 && hasP2
-        showP3 = !hasP1 && !hasP2
+    static func reduce(value: inout [DetailEventVisibilityFrame], nextValue: () -> [DetailEventVisibilityFrame]) {
+        value.append(contentsOf: nextValue())
     }
 }
 
-private struct PriorityFilterButton: View {
-    let band: PlayPriorityBand
-    let count: Int
-    let isExpanded: Bool
-    let isLocked: Bool
-    let action: () -> Void
+struct DetailScoreboardVisibilityPreferenceKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = nextValue() ?? value
+    }
+}
+
+struct DetailLatestAnchorPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+struct DetailResumeState {
+    let target: GameEvent
+    let description: String
+}
+
+struct ResumeBanner: View {
+    let description: String
+    let onResume: () -> Void
+    let onJumpLatest: () -> Void
+    let onStartOver: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                PriorityBadge(band: band)
-                Text("\(count)")
-                    .font(.caption.weight(.bold))
-                if !isLocked {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2.weight(.bold))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "bookmark.fill")
+                    .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Saved position")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(SportsTheme.Colors.ink)
+                    Text(description)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .foregroundStyle(isExpanded ? .primary : .secondary)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(
-                (isExpanded ? band.color.opacity(0.14) : Color(.tertiarySystemGroupedBackground)),
-                in: RoundedRectangle(cornerRadius: 7)
-            )
+
+            FlowLayout(spacing: 8) {
+                Button {
+                    SportsFeedback.impact()
+                    onResume()
+                } label: {
+                    Label("Resume", systemImage: "arrow.uturn.forward")
+                }
+                .buttonStyle(.sportsControl(tone: .newPlay, filled: true))
+
+                Button {
+                    SportsFeedback.impact()
+                    onJumpLatest()
+                } label: {
+                    Label("Jump to Latest", systemImage: "arrow.down.to.line")
+                }
+                .buttonStyle(.sportsControl(tone: .scoreboard))
+
+                Button(role: .destructive) {
+                    SportsFeedback.selection()
+                    onStartOver()
+                } label: {
+                    Label("Start Over", systemImage: "restart")
+                }
+                .buttonStyle(.sportsControl(tone: .critical))
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
+        .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct PlayByPlaySection: View {
+    let game: Game
+    let events: [GameEvent]
+    let renderer: any SportRenderer
+    let selectedMode: DetailStreamMode
+    let expandedRawFeedKeys: Set<String>
+    let onRawFeedExpansionChange: (String, Bool) -> Void
+
+    var body: some View {
+        CatchUpSection(title: selectedMode.sectionTitle, systemImage: "sparkles") {
+            if events.isEmpty {
+                UnavailableText("No play-by-play data yet.")
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    if visibleEvents.isEmpty {
+                        UnavailableText(selectedMode.emptyStateMessage)
+                    } else {
+                        ForEach(periodGroups) { group in
+                            VStack(alignment: .leading, spacing: 10) {
+                                PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)
+                                ForEach(group.events) { event in
+                                    let readIndex = readIndex(for: event)
+                                    let presentation = renderer.eventPresentation(for: event, periodGroupLabel: group.label)
+                                    let rawFeedKey = event.rawFeedExpansionKey(game: game)
+                                    PlayRow(
+                                        presentation: presentation,
+                                        importance: event.visualImportance,
+                                        rawFeedKey: rawFeedKey,
+                                        isRawFeedExpanded: rawFeedKey.map { expandedRawFeedKeys.contains($0) } ?? false,
+                                        onRawFeedExpansionChange: onRawFeedExpansionChange
+                                    )
+                                        .id(GameDetailScrollAnchor.event(event.detailAnchorID))
+                                        .background {
+                                            GeometryReader { geometry in
+                                                Color.clear.preference(
+                                                    key: DetailEventVisibilityPreferenceKey.self,
+                                                    value: [
+                                                        DetailEventVisibilityFrame(
+                                                            anchorID: event.detailAnchorID,
+                                                            readIndex: readIndex,
+                                                            sequence: event.sequence,
+                                                            eventID: event.normalizedSourceEventID ?? event.id,
+                                                            label: presentation.clockText,
+                                                            frame: geometry.frame(in: .named("game-detail-scroll"))
+                                                        )
+                                                    ]
+                                                )
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                        StreamTerminalMarker(game: game)
+                    }
+                }
+            }
+        }
+    }
+
+    private var visibleEvents: [GameEvent] {
+        selectedMode.visibleDedupedEvents(dedupedEvents)
+    }
+
+    private var dedupedEvents: [GameEvent] {
+        DetailStreamMode.dedupedEvents(from: events)
+    }
+
+    private var periodGroups: [GameEventPeriodGroup] {
+        renderer.periodGroups(for: visibleEvents)
+    }
+
+    private func readIndex(for event: GameEvent) -> Int {
+        dedupedEvents.firstIndex(of: event) ?? 0
     }
 }
 
 private struct PlayRow: View {
-    let play: PlayEntry
-    let band: PlayPriorityBand
+    let presentation: GameEventPresentation
+    let importance: EventVisualImportance
+    let rawFeedKey: String?
+    let isRawFeedExpanded: Bool
+    let onRawFeedExpansionChange: (String, Bool) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            VStack(spacing: 4) {
-                Circle()
-                    .fill(band.color)
-                    .frame(width: band == .p1 ? 10 : 7, height: band == .p1 ? 10 : 7)
-                Rectangle()
-                    .fill(band.color.opacity(0.25))
-                    .frame(width: 1)
-            }
-            .frame(width: 12)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 7) {
-                    PriorityBadge(band: band)
-                    if !play.clockText.isEmpty {
-                        Text(play.clockText)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Text(play.description ?? play.playType ?? "Play update")
-                    .font(.body)
+            EventMarker(importance: importance, accent: accentColor)
+            VStack(alignment: .leading, spacing: importance == .low ? 5 : 8) {
+                contextLine
+                Text(presentation.headline)
+                    .font(headlineFont)
+                    .foregroundStyle(SportsTheme.Colors.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 6) {
-                    if let team = play.teamAbbreviation {
-                        Text(team)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(band.color)
-                    }
-                    if play.scoreChanged == true {
-                        Text("Scoring")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                if importance != .low, let detail = presentation.detail?.nilIfBlank {
+                    Text(detail)
+                        .font(SportsTheme.Typography.momentDetail)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let detail = presentation.detail?.nilIfBlank {
+                    Text(detail)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .lineLimit(2)
+                }
+                eventMetadata
+                rawFeedDisclosure
+            }
+        }
+        .padding(importance == .low ? 10 : SportsTheme.Spacing.large)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
+                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: importance == .low ? 0.5 : 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(presentation.accessibilityLabel ?? presentation.headline)
+    }
+
+    private var contextLine: some View {
+        HStack(spacing: 7) {
+            ImportanceBadge(importance: importance)
+            if let eventLabel = presentation.eventLabel?.nilIfBlank {
+                Text(eventLabel)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(accentColor)
+            }
+            if !presentation.clockText.isEmpty {
+                Text(presentation.clockText)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            }
+        }
+    }
+
+    private var eventMetadata: some View {
+        FlowLayout(spacing: 6) {
+            if let team = presentation.teamAbbreviation?.nilIfBlank {
+                SportsBadge(text: team, tone: .neutral, filled: false)
+                    .foregroundStyle(teamColor)
+            } else if let teamLabel = presentation.teamLabel?.nilIfBlank {
+                Text(teamLabel)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(teamColor)
+            }
+            if let scoringLabel = presentation.scoringLabel?.nilIfBlank {
+                SportsBadge(text: scoringLabel, tone: .scoring, filled: importance == .critical)
+            }
+            if let scoreLabel = presentation.scoreLabel?.nilIfBlank {
+                Text(scoreLabel)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Tone.scoring.accent)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var rawFeedDisclosure: some View {
+        if let rawFeedKey,
+           let rawFeedText = presentation.rawFeedText?.nilIfBlank {
+                    Button {
+                        SportsFeedback.selection()
+                        onRawFeedExpansionChange(rawFeedKey, !isRawFeedExpanded)
+                    } label: {
+                Label("Feed details", systemImage: isRawFeedExpanded ? "chevron.up" : "chevron.down")
+                    .font(SportsTheme.Typography.metadata)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            .padding(.top, 2)
+
+            if isRawFeedExpanded {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(rawFeedText)
+                        .font(SportsTheme.Typography.rawFeedText)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let source = presentation.rawFeedSource?.nilIfBlank {
+                        Text(source)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(SportsTheme.Colors.secondaryInk.opacity(0.75))
                     }
                 }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous))
             }
-            .padding(.bottom, 12)
         }
+    }
+
+    private var headlineFont: Font {
+        switch importance {
+        case .critical:
+            return .headline.weight(.bold)
+        case .high:
+            return SportsTheme.Typography.momentHeadline
+        case .medium:
+            return SportsTheme.Typography.momentDetail
+        case .low:
+            return .subheadline.weight(.semibold)
+        }
+    }
+
+    private var cardBackground: Color {
+        switch importance {
+        case .critical:
+            return accentColor.opacity(0.11)
+        case .high, .medium:
+            return SportsTheme.Surface.eventCard.background
+        case .low:
+            return SportsTheme.Colors.paper.opacity(0.72)
+        }
+    }
+
+    private var accentColor: Color {
+        switch importance {
+        case .critical:
+            return SportsTheme.Tone.critical.accent
+        case .high:
+            return SportsTheme.Tone.scoring.accent
+        case .medium:
+            return SportsTheme.Tone.newPlay.accent
+        case .low:
+            return SportsTheme.Tone.neutral.accent
+        }
+    }
+
+    private var teamColor: Color {
+        SportsTheme.Team.accent(for: presentation.teamAbbreviation, fallback: accentColor)
     }
 }
 
-private struct PriorityBadge: View {
-    let band: PlayPriorityBand
+private struct EventMarker: View {
+    let importance: EventVisualImportance
+    let accent: Color
 
     var body: some View {
-        Text(band.rawValue)
-            .font(.caption2.weight(.black))
-            .foregroundStyle(.white)
-            .padding(.vertical, 3)
-            .padding(.horizontal, 7)
-            .background(band.color, in: RoundedRectangle(cornerRadius: 5))
-    }
-}
-
-private enum PlayPriorityBand: String, CaseIterable {
-    case p1 = "P1"
-    case p2 = "P2"
-    case p3 = "P3"
-
-    var title: String {
-        switch self {
-        case .p1: return "Game changers"
-        case .p2: return "Momentum"
-        case .p3: return "Routine stream"
+        VStack(spacing: 4) {
+            Circle()
+                .fill(accent)
+                .frame(width: markerSize, height: markerSize)
+            Rectangle()
+                .fill(accent.opacity(importance == .low ? 0.16 : 0.28))
+                .frame(width: importance == .critical ? 2 : 1)
         }
+        .frame(width: 14)
     }
 
-    var color: Color {
-        switch self {
-        case .p1: return Color(.systemOrange)
-        case .p2: return Color(.systemTeal)
-        case .p3: return Color(.systemGray)
+    private var markerSize: CGFloat {
+        switch importance {
+        case .critical: return 12
+        case .high: return 10
+        case .medium: return 8
+        case .low: return 6
         }
     }
 }
 
-private extension PlayEntry {
-    var priorityBand: PlayPriorityBand {
-        if scoreChanged == true || tier == 1 {
-            return .p1
+private struct ImportanceBadge: View {
+    let importance: EventVisualImportance
+
+    var body: some View {
+        SportsBadge(text: importance.title, tone: tone, filled: importance == .critical)
+    }
+
+    private var tone: SportsTheme.Tone {
+        switch importance {
+        case .critical:
+            return .critical
+        case .high:
+            return .scoring
+        case .medium:
+            return .newPlay
+        case .low:
+            return .neutral
         }
-        if tier == 2 {
-            return .p2
-        }
-        return .p3
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 
 struct PlayerStatsSection: View {
-    let detail: GameDetailResponse
-    @State private var isExpanded = false
+    let detail: GameDetail
+    let renderer: any SportRenderer
+    @Binding private var isExpanded: Bool
+
+    init(detail: GameDetail, renderer: any SportRenderer, isExpanded: Binding<Bool> = .constant(false)) {
+        self.detail = detail
+        self.renderer = renderer
+        _isExpanded = isExpanded
+    }
 
     var body: some View {
         CollapsibleCatchUpSection(title: "Player Stats", systemImage: "person.3", isExpanded: $isExpanded) {
-            if detail.leagueCode == "mlb", hasMLBStats {
-                MLBPlayerStats(detail: detail)
-            } else if let nhlSkaters = detail.nhlSkaters, !nhlSkaters.isEmpty {
-                NHLStats(title: "Skaters", players: nhlSkaters)
-                if let goalies = detail.nhlGoalies, !goalies.isEmpty {
-                    NHLStats(title: "Goalies", players: goalies)
-                }
-            } else if detail.playerStats.isEmpty {
-                UnavailableText("No player stats available yet.")
-            } else {
-                GenericPlayerStats(players: detail.playerStats)
-            }
-        }
-    }
-
-    private var hasMLBStats: Bool {
-        !(detail.mlbBatters ?? []).isEmpty || !(detail.mlbPitchers ?? []).isEmpty
-    }
-}
-
-private struct GenericPlayerStats: View {
-    let players: [PlayerStat]
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ForEach(players.prefix(80)) { player in
-                StatCard(title: player.playerName, subtitle: player.team) {
-                    StatPills(items: genericItems(for: player))
-                }
-            }
-        }
-    }
-
-    private func genericItems(for player: PlayerStat) -> [(String, String)] {
-        var items: [(String, String)] = []
-        append("MIN", player.minutes, to: &items)
-        append("PTS", player.points, to: &items)
-        append("REB", player.rebounds, to: &items)
-        append("AST", player.assists, to: &items)
-        append("YDS", player.yards, to: &items)
-        append("TD", player.touchdowns, to: &items)
-
-        if items.isEmpty {
-            for key in ["goals", "assists", "points", "shots", "hits", "saves", "strikeOuts", "rbi"] {
-                if let value = player.rawStats[key]?.displayString, !value.isEmpty {
-                    items.append((key.camelTitle, value))
-                }
-            }
-        }
-        return items
-    }
-
-    private func append(_ label: String, _ value: Double?, to items: inout [(String, String)]) {
-        guard let value else { return }
-        if value.rounded() == value {
-            items.append((label, String(Int(value))))
-        } else {
-            items.append((label, String(format: "%.1f", value)))
-        }
-    }
-}
-
-private struct MLBPlayerStats: View {
-    let detail: GameDetailResponse
-
-    var body: some View {
-        VStack(spacing: 10) {
-            ForEach(detail.mlbBatters ?? []) { player in
-                StatCard(title: player.playerName, subtitle: "\(player.team) Batter") {
-                    StatPills(items: [
-                        ("AB", player.atBats?.description),
-                        ("H", player.hits?.description),
-                        ("R", player.runs?.description),
-                        ("RBI", player.rbi?.description),
-                        ("HR", player.homeRuns?.description),
-                        ("BB", player.baseOnBalls?.description),
-                        ("K", player.strikeOuts?.description)
-                    ].compactMap { label, value in value.map { (label, $0) } })
-                }
-            }
-
-            ForEach(detail.mlbPitchers ?? []) { player in
-                StatCard(title: player.playerName, subtitle: "\(player.team) Pitcher") {
-                    StatPills(items: [
-                        ("IP", player.inningsPitched),
-                        ("H", player.hits?.description),
-                        ("R", player.runs?.description),
-                        ("ER", player.earnedRuns?.description),
-                        ("BB", player.baseOnBalls?.description),
-                        ("K", player.strikeOuts?.description),
-                        ("HR", player.homeRuns?.description)
-                    ].compactMap { label, value in value.map { (label, $0) } })
-                }
-            }
-        }
-    }
-}
-
-private struct NHLStats: View {
-    let title: String
-    let players: [NHLPlayerStat]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            ForEach(players) { player in
-                StatCard(title: player.playerName, subtitle: player.team) {
-                    StatPills(items: [
-                        ("G", player.goals?.description),
-                        ("A", player.assists?.description),
-                        ("PTS", player.points?.description),
-                        ("SOG", player.shotsOnGoal?.description),
-                        ("SV", player.saves?.description),
-                        ("GA", player.goalsAgainst?.description)
-                    ].compactMap { label, value in value.map { (label, $0) } })
-                }
-            }
+            StatSectionList(sections: renderer.statsPresentation(for: detail).playerSections)
         }
     }
 }
 
 struct TeamStatsSection: View {
-    let detail: GameDetailResponse
-    @State private var isExpanded = false
+    let detail: GameDetail
+    let renderer: any SportRenderer
+    @Binding private var isExpanded: Bool
+
+    init(detail: GameDetail, renderer: any SportRenderer, isExpanded: Binding<Bool> = .constant(false)) {
+        self.detail = detail
+        self.renderer = renderer
+        _isExpanded = isExpanded
+    }
 
     var body: some View {
         CollapsibleCatchUpSection(title: "Team Stats", systemImage: "chart.bar.xaxis", isExpanded: $isExpanded) {
-            if detail.teamStats.count < 2 {
-                UnavailableText("No team stats available yet.")
-            } else {
-                ForEach(detail.teamStats) { team in
-                    StatCard(title: team.team, subtitle: team.isHome ? "Home" : "Away") {
-                        StatPills(items: teamItems(team).prefix(16).map { $0 })
-                    }
-                }
-            }
+            StatSectionList(sections: [renderer.statsPresentation(for: detail).teamSection])
         }
-    }
-
-    private func teamItems(_ team: TeamStat) -> [(String, String)] {
-        if let normalized = team.normalizedStats, !normalized.isEmpty {
-            return normalized.compactMap { stat in
-                guard let value = stat.value?.displayString, !value.isEmpty else { return nil }
-                return (stat.displayLabel, value)
-            }
-        }
-
-        return team.stats
-            .sorted { $0.key < $1.key }
-            .compactMap { key, value in
-                let display = value.displayString
-                guard !display.isEmpty, display != "-" else { return nil }
-                return (key.camelTitle, display)
-            }
     }
 }
 
 struct BoxScoreSection: View {
     let game: Game
-    @State private var scoreRevealed = false
-    @State private var showRevealConfirm = false
+    let renderer: any SportRenderer
+    @State private var scoreRevealed: Bool
+
+    init(game: Game, renderer: any SportRenderer, scoreInitiallyRevealed: Bool = true) {
+        self.game = game
+        self.renderer = renderer
+        _scoreRevealed = State(initialValue: scoreInitiallyRevealed)
+    }
 
     var body: some View {
-        CatchUpSection(title: "Box Score", systemImage: "number.square") {
+        let presentation = renderer.scoreboardPresentation(for: game)
+
+        CatchUpSection(title: presentation.title, systemImage: presentation.systemImage) {
             if scoreRevealed {
                 VStack(spacing: 12) {
-                    ScoreRow(
-                        team: game.awayTeam,
-                        abbreviation: game.awayTeamAbbr,
-                        score: game.resolvedAwayScore
-                    )
-                    Divider()
-                    ScoreRow(
-                        team: game.homeTeam,
-                        abbreviation: game.homeTeamAbbr,
-                        score: game.resolvedHomeScore
-                    )
+                    ScoreboardCardHeader(presentation: presentation)
+                    ScoreboardContent(presentation: presentation)
 
                     HStack {
-                        if let gameStateText {
+                        if let gameStateText = presentation.stateText {
                             Text(gameStateText)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(game.isLiveGame ? .green : .secondary)
+                                .font(SportsTheme.Typography.metadata)
+                                .foregroundStyle(presentation.stateColor)
                         }
                         Spacer()
-                        Button("Hide score") {
+                        Button(presentation.hideButtonTitle) {
+                            SportsFeedback.selection()
                             scoreRevealed = false
                         }
-                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
                     }
                 }
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
             } else {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
                         Image(systemName: "eye.slash")
-                            .foregroundStyle(Color(.systemTeal))
+                            .foregroundStyle(presentation.accentColor)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Score hidden")
+                            Text(presentation.revealTitle)
                                 .font(.subheadline.weight(.semibold))
-                            Text("Reveal only when you are ready to see the current or final boxscore.")
+                                .foregroundStyle(SportsTheme.Colors.ink)
+                            Text(presentation.revealDescription)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(SportsTheme.Colors.secondaryInk)
                         }
                     }
 
                     Button {
-                        showRevealConfirm = true
+                        SportsFeedback.impact()
+                        scoreRevealed = true
                     } label: {
-                        Label("Reveal box score", systemImage: "eye")
+                        Label(presentation.revealButtonTitle, systemImage: "eye")
                             .font(.subheadline.weight(.semibold))
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.sportsControl(tone: .scoreboard))
                 }
-                .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.secondarySystemGroupedBackground).opacity(0.72), in: RoundedRectangle(cornerRadius: 8))
-                .confirmationDialog(
-                    "Reveal score?",
-                    isPresented: $showRevealConfirm,
-                    titleVisibility: .visible
-                ) {
-                    Button("Reveal box score", role: .destructive) {
-                        scoreRevealed = true
-                    }
-                    Button("Keep hidden", role: .cancel) {}
-                } message: {
-                    Text("This may reveal the current or final score.")
-                }
+                .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
             }
         }
-    }
-
-    private var gameStateText: String? {
-        if game.isLiveGame {
-            let liveText = [game.currentPeriodLabel, game.gameClock]
-                .compactMap { $0 }
-                .joined(separator: " ")
-            return liveText.isEmpty ? "Live" : liveText
-        }
-        if game.isFinalGame {
-            return "Final"
-        }
-        if game.isPregame {
-            return "Scheduled"
-        }
-        return nil
-    }
-}
-
-private struct ScoreRow: View {
-    let team: String
-    let abbreviation: String?
-    let score: Int?
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(abbreviation ?? team)
-                    .font(.headline)
-                Text(team)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Text(score.map(String.init) ?? "-")
-                .font(.largeTitle.weight(.bold))
-                .monospacedDigit()
-        }
-    }
-}
-
-private struct CatchUpSection<Content: View>: View {
-    let title: String
-    let systemImage: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: systemImage)
-                .font(.title3.weight(.bold))
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct CollapsibleCatchUpSection<Content: View>: View {
-    let title: String
-    let systemImage: String
-    @Binding var isExpanded: Bool
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            content
-                .padding(.top, 10)
-        } label: {
-            Label(title, systemImage: systemImage)
-                .font(.title3.weight(.bold))
-        }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground).opacity(0.72), in: RoundedRectangle(cornerRadius: 8))
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct StatCard<Content: View>: View {
-    let title: String
-    let subtitle: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            content
-        }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-private struct StatPills: View {
-    let items: [(String, String)]
-
-    var body: some View {
-        if items.isEmpty {
-            UnavailableText("Stats unavailable.")
-        } else {
-            FlowLayout(spacing: 8) {
-                ForEach(items, id: \.0) { label, value in
-                    VStack(spacing: 2) {
-                        Text(value)
-                            .font(.subheadline.weight(.bold))
-                        Text(label)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 6))
-                }
-            }
-        }
-    }
-}
-
-private struct UnavailableText: View {
-    let message: String
-
-    init(_ message: String) {
-        self.message = message
-    }
-
-    var body: some View {
-        Text(message)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-private extension GameDetailResponse {
-    var leagueCode: String {
-        game.leagueCode.lowercased()
-    }
-}
-
-private extension String {
-    var camelTitle: String {
-        replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
-            .replacingOccurrences(of: "_", with: " ")
-            .capitalized
     }
 }

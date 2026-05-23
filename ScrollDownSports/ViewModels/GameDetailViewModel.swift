@@ -1,20 +1,42 @@
+import Combine
 import Foundation
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
-    @Published var detail: GameDetailResponse?
+    @Published var detail: GameDetail?
     @Published var loading = false
     @Published var errorMessage: String?
     @Published var lastUpdated: Date?
+    @Published private(set) var localProgress: GameProgressRecord?
+    @Published private(set) var isGamePinned = false
+    @Published private(set) var selectedStreamMode: DetailStreamMode = .key
+    @Published private(set) var isFollowingLiveEdge = false
+    @Published private(set) var eventDiff = GameEventListDiff.unchanged
     @Published private(set) var updateToken = UUID()
 
     let gameId: Int
+    let openingNewEventCount: Int
     private let apiClient: SDAApiClient
+    private let gameStateStore: any GameStateStore
     private var refreshTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
 
-    init(gameId: Int, apiClient: SDAApiClient = .shared) {
+    init(
+        gameId: Int,
+        apiClient: SDAApiClient = .shared,
+        gameStateStore: any GameStateStore
+    ) {
         self.gameId = gameId
         self.apiClient = apiClient
+        self.gameStateStore = gameStateStore
+        self.openingNewEventCount = gameStateStore.progress(for: gameId)?.newEventCount ?? 0
+        self.localProgress = gameStateStore.progress(for: gameId)
+        self.isGamePinned = gameStateStore.isPinned(gameId: gameId)
+        self.selectedStreamMode = DetailStreamMode(storageMode: localProgress?.selectedMode ?? .timeline)
+        self.isFollowingLiveEdge = localProgress?.followLivePreference.isFollowingLiveEdge == true
+        hydrateFromPersistedPinnedState()
+        gameStateStore.markViewed(gameId: gameId)
+        observeLocalProgress()
     }
 
     func refresh(silent: Bool = false) async {
@@ -23,8 +45,19 @@ final class GameDetailViewModel: ObservableObject {
         }
         errorMessage = nil
         do {
-            detail = try await apiClient.fetchGame(id: gameId)
+            let refreshedDetail = try await apiClient.fetchGame(id: gameId)
+            let diff = detail.map { previousDetail in
+                GameEventListDiffer.diff(
+                    previous: previousDetail.events,
+                    current: refreshedDetail.events,
+                    baseline: localProgress?.eventIdentityBaseline
+                )
+            } ?? .unchanged
+            detail = refreshedDetail
+            eventDiff = diff
             lastUpdated = Date()
+            gameStateStore.updatePinnedGameDetail(refreshedDetail, fetchedAt: lastUpdated ?? Date())
+            gameStateStore.recordEventRefresh(gameId: gameId, events: refreshedDetail.events, diff: diff)
             updateToken = UUID()
         } catch {
             errorMessage = error.localizedDescription
@@ -45,5 +78,113 @@ final class GameDetailViewModel: ObservableObject {
     func stopAutoRefresh() {
         refreshTask?.cancel()
         refreshTask = nil
+    }
+
+    func recordReadEvent(eventIndex: Int, eventID: String?, knownEventCount: Int?) {
+        gameStateStore.recordReadEvent(
+            gameId: gameId,
+            eventID: eventID,
+            eventIndex: eventIndex,
+            knownEventCount: knownEventCount
+        )
+    }
+
+    func recordLatestEventRead(events: [GameEvent]) {
+        guard let latestEvent = DetailStreamMode.dedupedEvents(from: events).last else { return }
+        gameStateStore.recordReadEvent(
+            gameId: gameId,
+            eventID: latestEvent.normalizedSourceEventID ?? latestEvent.id,
+            eventIndex: max(0, events.count - 1),
+            knownEventCount: events.count
+        )
+    }
+
+    func recordScrollFallback(eventSequence: Int?, approximateOffset: Double?) {
+        gameStateStore.setScrollFallback(
+            gameId: gameId,
+            fallback: GameScrollFallbackRecord(
+                eventSequence: eventSequence,
+                approximateOffset: approximateOffset
+            )
+        )
+    }
+
+    func markViewed() {
+        gameStateStore.markViewed(gameId: gameId)
+    }
+
+    func clearReadPosition() {
+        gameStateStore.clearReadPosition(gameId: gameId)
+    }
+
+    func setReachedScoreboard(_ reached: Bool) {
+        gameStateStore.setReachedScoreboard(gameId: gameId, reached: reached)
+    }
+
+    func setExpandedSection(_ sectionID: String, isExpanded: Bool) {
+        var sectionIDs = localProgress?.expandedSectionIDs ?? []
+        if isExpanded {
+            sectionIDs.insert(sectionID)
+        } else {
+            sectionIDs.remove(sectionID)
+        }
+        gameStateStore.setExpandedSectionIDs(gameId: gameId, sectionIDs: sectionIDs)
+    }
+
+    func setRawFeedExpanded(key: String, isExpanded: Bool) {
+        gameStateStore.setRawFeedExpanded(gameId: gameId, key: key, isExpanded: isExpanded)
+    }
+
+    func setFollowLivePreference(_ preference: FollowLivePreference) {
+        gameStateStore.setFollowLivePreference(gameId: gameId, preference: preference)
+    }
+
+    func setFollowingLiveEdge(_ enabled: Bool) {
+        setFollowLivePreference(enabled ? .followingLiveEdge : .readingAwayFromLiveEdge)
+    }
+
+    func setSelectedStreamMode(_ mode: DetailStreamMode) {
+        gameStateStore.setSelectedMode(gameId: gameId, mode: mode.storageMode)
+    }
+
+    func toggleGamePin(_ game: Game) {
+        gameStateStore.togglePin(game)
+    }
+
+    private func observeLocalProgress() {
+        gameStateStore.snapshots
+            .map { [gameId] snapshot in
+                (
+                    snapshot.progressByGameId[gameId],
+                    snapshot.pinnedGamesById[gameId]?.isPinned == true
+                )
+            }
+            .sink { [weak self] progress, isGamePinned in
+                self?.localProgress = progress
+                self?.isGamePinned = isGamePinned
+                self?.selectedStreamMode = DetailStreamMode(storageMode: progress?.selectedMode ?? .timeline)
+                self?.isFollowingLiveEdge = progress?.followLivePreference.isFollowingLiveEdge == true
+            }
+            .store(in: &cancellables)
+    }
+
+    private func hydrateFromPersistedPinnedState() {
+        guard let record = gameStateStore.snapshot.pinnedGamesById[gameId],
+              let latestDetail = record.latestDetail else {
+            return
+        }
+        detail = latestDetail
+        lastUpdated = record.lastBackgroundRefreshAt ?? record.lastSummaryRefreshAt
+    }
+}
+
+private extension FollowLivePreference {
+    var isFollowingLiveEdge: Bool {
+        switch self {
+        case .followingLiveEdge, .pinnedToLiveEdge:
+            return true
+        case .automatic, .readingAwayFromLiveEdge:
+            return false
+        }
     }
 }

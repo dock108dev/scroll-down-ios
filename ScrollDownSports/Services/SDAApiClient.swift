@@ -35,7 +35,7 @@ final class SDAApiClient: Sendable {
         window: GameWindow,
         league: String? = nil,
         limit: Int = 200
-    ) async throws -> [GameSummary] {
+    ) async throws -> [Game] {
         var components = URLComponents(
             url: baseURL.appending(path: "/api/admin/sports/games"),
             resolvingAgainstBaseURL: false
@@ -54,13 +54,15 @@ final class SDAApiClient: Sendable {
         components?.queryItems = queryItems
         guard let url = components?.url else { throw SDAApiError.invalidURL }
 
-        let response: GameListResponse = try await get(url)
-        return response.games.filter { window.contains($0.gameDate) }
+        let response: SDAGameListResponseDTO = try await get(url)
+        return SDADomainMapper.games(from: response)
+            .filter { window.contains($0.scheduledStart) }
     }
 
-    func fetchGame(id: Int) async throws -> GameDetailResponse {
+    func fetchGame(id: Int) async throws -> GameDetail {
         let url = baseURL.appending(path: "/api/admin/sports/games/\(id)")
-        return try await get(url)
+        let response: SDAGameDetailResponseDTO = try await get(url)
+        return SDADomainMapper.detail(from: response)
     }
 
     private func get<T: Decodable>(_ url: URL) async throws -> T {

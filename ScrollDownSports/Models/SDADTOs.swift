@@ -1,44 +1,17 @@
 import Foundation
 
-struct Score: Decodable, Hashable {
+struct SDAScoreDTO: Decodable, Hashable {
     let home: Int?
     let away: Int?
 }
 
-protocol GameStatusRepresentable {
-    var status: String { get }
-    var isLiveFlag: Bool? { get }
-    var isFinalFlag: Bool? { get }
-    var gameDate: Date { get }
-}
-
-extension GameStatusRepresentable {
-    var isLiveGame: Bool {
-        if let isLiveFlag {
-            return isLiveFlag
-        }
-        return ["in_progress", "live"].contains(status.lowercased())
-    }
-
-    var isFinalGame: Bool {
-        if let isFinalFlag {
-            return isFinalFlag
-        }
-        return ["completed", "final", "recap_ready", "archived"].contains(status.lowercased())
-    }
-
-    var isPregame: Bool {
-        ["scheduled", "pregame"].contains(status.lowercased())
-    }
-}
-
-struct GameListResponse: Decodable {
-    let games: [GameSummary]
+struct SDAGameListResponseDTO: Decodable {
+    let games: [SDAGameSummaryDTO]
     let total: Int?
     let lastUpdatedAt: String?
 }
 
-struct GameSummary: Decodable, Identifiable, Hashable, GameStatusRepresentable {
+struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable {
     let id: Int
     let leagueCode: String
     let gameDate: Date
@@ -51,13 +24,16 @@ struct GameSummary: Decodable, Identifiable, Hashable, GameStatusRepresentable {
     let currentPeriod: Int?
     let currentPeriodLabel: String?
     let gameClock: String?
-    let score: Score?
+    let score: SDAScoreDTO?
     let homeScore: Int?
     let awayScore: Int?
     let hasPbp: Bool?
     let playCount: Int?
     let isLiveFlag: Bool?
     let isFinalFlag: Bool?
+    let presentation: SDAMobilePresentationDTO?
+    let eligibility: SDAGameEligibilityDTO?
+    let scoreboard: SDAScoreboardDTO?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -79,25 +55,24 @@ struct GameSummary: Decodable, Identifiable, Hashable, GameStatusRepresentable {
         case playCount
         case isLiveFlag = "isLive"
         case isFinalFlag = "isFinal"
+        case presentation
+        case eligibility
+        case scoreboard
     }
-
-    var resolvedHomeScore: Int? { score?.home ?? homeScore }
-    var resolvedAwayScore: Int? { score?.away ?? awayScore }
-    var matchupText: String { "\(awayTeam) at \(homeTeam)" }
 }
 
-struct GameDetailResponse: Decodable {
-    let game: Game
+struct SDAGameDetailResponseDTO: Decodable {
+    let game: SDAGameDTO
     let teamStats: [TeamStat]
     let playerStats: [PlayerStat]
-    let plays: [PlayEntry]
+    let plays: [SDAPlayDTO]
     let mlbBatters: [MLBBatterStat]?
     let mlbPitchers: [MLBPitcherStat]?
     let nhlSkaters: [NHLPlayerStat]?
     let nhlGoalies: [NHLPlayerStat]?
 }
 
-struct Game: Decodable, Identifiable, Hashable, GameStatusRepresentable {
+struct SDAGameDTO: Decodable, Identifiable, Hashable {
     let id: Int
     let leagueCode: String
     let gameDate: Date
@@ -110,11 +85,14 @@ struct Game: Decodable, Identifiable, Hashable, GameStatusRepresentable {
     let currentPeriod: Int?
     let currentPeriodLabel: String?
     let gameClock: String?
-    let score: Score?
+    let score: SDAScoreDTO?
     let homeScore: Int?
     let awayScore: Int?
     let isLiveFlag: Bool?
     let isFinalFlag: Bool?
+    let presentation: SDAMobilePresentationDTO?
+    let eligibility: SDAGameEligibilityDTO?
+    let scoreboard: SDAScoreboardDTO?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -134,14 +112,46 @@ struct Game: Decodable, Identifiable, Hashable, GameStatusRepresentable {
         case awayScore
         case isLiveFlag = "isLive"
         case isFinalFlag = "isFinal"
+        case presentation
+        case eligibility
+        case scoreboard
     }
-
-    var resolvedHomeScore: Int? { score?.home ?? homeScore }
-    var resolvedAwayScore: Int? { score?.away ?? awayScore }
-    var matchupText: String { "\(awayTeam) at \(homeTeam)" }
 }
 
-struct TeamStat: Decodable, Identifiable, Hashable {
+struct SDAPlayDTO: Decodable, Identifiable, Hashable {
+    var id: String { eventId ?? "\(playIndex)-\(periodLabel ?? "")-\(gameClock ?? "")" }
+    let eventId: String?
+    let playIndex: Int
+    let quarter: Int?
+    let gameClock: String?
+    let playType: String?
+    let teamAbbreviation: String?
+    let playerName: String?
+    let description: String?
+    let homeScore: Int?
+    let awayScore: Int?
+    let score: SDAScoreDTO?
+    let periodLabel: String?
+    let timeLabel: String?
+    let tier: Int?
+    let scoreChanged: Bool?
+    let presentation: SDAMobilePresentationDTO?
+    let importance: SDAEventImportanceDTO?
+    let rawFeedText: String?
+    let rawFeedSource: String?
+    let rawFeedUpdatedAt: String?
+    let rawDescription: String?
+    let modeEligibility: SDAEventModeEligibilityDTO?
+    let belongsToModes: SDAEventModeEligibilityDTO?
+    let scoreBefore: SDAScoreSnapshotDTO?
+    let scoreAfter: SDAScoreSnapshotDTO?
+    let scoreDelta: SDAScoreDeltaDTO?
+    let scoreboard: SDAEventScoreboardDTO?
+    let sportMetadata: [String: JSONValue]?
+    let metadata: [String: JSONValue]?
+}
+
+struct TeamStat: Codable, Identifiable, Hashable {
     var id: String { "\(team)-\(isHome)" }
     let team: String
     let isHome: Bool
@@ -149,14 +159,14 @@ struct TeamStat: Decodable, Identifiable, Hashable {
     let normalizedStats: [NormalizedStat]?
 }
 
-struct NormalizedStat: Decodable, Hashable {
+struct NormalizedStat: Codable, Hashable {
     let key: String
     let displayLabel: String
     let group: String?
     let value: JSONValue?
 }
 
-struct PlayerStat: Decodable, Identifiable, Hashable {
+struct PlayerStat: Codable, Identifiable, Hashable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
     let playerName: String
@@ -169,35 +179,7 @@ struct PlayerStat: Decodable, Identifiable, Hashable {
     let rawStats: [String: JSONValue]
 }
 
-struct PlayEntry: Decodable, Identifiable, Hashable {
-    var id: String { eventId ?? "\(playIndex)-\(periodLabel ?? "")-\(gameClock ?? "")" }
-    let eventId: String?
-    let playIndex: Int
-    let quarter: Int?
-    let gameClock: String?
-    let playType: String?
-    let teamAbbreviation: String?
-    let playerName: String?
-    let description: String?
-    let homeScore: Int?
-    let awayScore: Int?
-    let score: Score?
-    let periodLabel: String?
-    let timeLabel: String?
-    let tier: Int?
-    let scoreChanged: Bool?
-
-    var clockText: String {
-        [periodLabel, timeLabel ?? gameClock]
-            .compactMap { value in
-                guard let value, !value.isEmpty else { return nil }
-                return value
-            }
-            .joined(separator: " ")
-    }
-}
-
-struct MLBBatterStat: Decodable, Identifiable, Hashable {
+struct MLBBatterStat: Codable, Identifiable, Hashable {
     var id: String { "\(team)-\(playerName)-batter" }
     let team: String
     let playerName: String
@@ -211,7 +193,7 @@ struct MLBBatterStat: Decodable, Identifiable, Hashable {
     let strikeOuts: Int?
 }
 
-struct MLBPitcherStat: Decodable, Identifiable, Hashable {
+struct MLBPitcherStat: Codable, Identifiable, Hashable {
     var id: String { "\(team)-\(playerName)-pitcher" }
     let team: String
     let playerName: String
@@ -224,7 +206,7 @@ struct MLBPitcherStat: Decodable, Identifiable, Hashable {
     let homeRuns: Int?
 }
 
-struct NHLPlayerStat: Decodable, Identifiable, Hashable {
+struct NHLPlayerStat: Codable, Identifiable, Hashable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
     let playerName: String
@@ -236,4 +218,3 @@ struct NHLPlayerStat: Decodable, Identifiable, Hashable {
     let goalsAgainst: Int?
     let rawStats: [String: JSONValue]?
 }
-
