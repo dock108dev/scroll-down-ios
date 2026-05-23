@@ -115,8 +115,8 @@ final class ProductPresentationInvariantTests: XCTestCase {
     func testStreamModesAndEventLabelsUseCustomerLanguage() {
         XCTAssertEqual(DetailStreamMode.allCases.map(\.title), ["Important", "Standard", "All Plays"])
 
-        let homeRun = TestFixtures.makeEvent(sequence: 1, eventType: "HOME_RUN")
-        let fieldOut = TestFixtures.makeEvent(sequence: 2, eventType: "FIELD_OUT")
+        let homeRun = TestFixtures.makeEvent(sequence: 1, eventType: "Home run")
+        let fieldOut = TestFixtures.makeEvent(sequence: 2, eventType: "Out")
         let renderer = GenericSportRenderer(leagueCode: "mlb")
 
         XCTAssertEqual(renderer.eventPresentation(for: homeRun).eventLabel, "Home run")

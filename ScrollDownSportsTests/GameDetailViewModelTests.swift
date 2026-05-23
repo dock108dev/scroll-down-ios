@@ -169,16 +169,16 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertEqual(DetailStreamMode.full.count(in: events), 3)
     }
 
-    func testStreamModesFallbackToBestAvailableEvents() {
+    func testStreamModesDoNotFallbackAcrossBackendEligibility() {
         let flow = makeEvent(sequence: 1, importance: .secondary)
         let routine = makeEvent(sequence: 2, importance: .contextual)
 
-        XCTAssertEqual(DetailStreamMode.key.visibleEvents(in: [flow, routine]).map(\.id), [flow.id])
+        XCTAssertEqual(DetailStreamMode.key.visibleEvents(in: [flow, routine]).map(\.id), [])
         XCTAssertEqual(DetailStreamMode.flow.visibleEvents(in: [flow, routine]).map(\.id), [flow.id])
         XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: [flow, routine]).map(\.id), [flow.id, routine.id])
 
-        XCTAssertEqual(DetailStreamMode.key.count(in: [routine]), 1)
-        XCTAssertEqual(DetailStreamMode.flow.count(in: [routine]), 1)
+        XCTAssertEqual(DetailStreamMode.key.count(in: [routine]), 0)
+        XCTAssertEqual(DetailStreamMode.flow.count(in: [routine]), 0)
         XCTAssertEqual(DetailStreamMode.full.count(in: [routine]), 1)
     }
 
@@ -368,8 +368,8 @@ final class GameDetailViewModelTests: XCTestCase {
             teamAbbreviation: "SEA",
             eventType: "play",
             importance: importance,
-            eligibleModes: [.timeline],
-            usesBackendModeEligibility: false,
+            eligibleModes: eligibleModes(for: importance),
+            usesBackendModeEligibility: true,
             presentation: presentationTimeLabel.map { makeEventPresentation(timeLabel: $0) },
             importanceMetadata: nil,
             headline: headline ?? "Game update \(sequence)",
@@ -382,6 +382,17 @@ final class GameDetailViewModelTests: XCTestCase {
             scoreDelta: nil,
             sportMetadata: [:]
         )
+    }
+
+    private func eligibleModes(for importance: GameEventImportance) -> Set<GameMode> {
+        switch importance {
+        case .primary:
+            return [.timeline, .flow, .stream]
+        case .secondary:
+            return [.flow, .stream]
+        case .contextual:
+            return [.stream]
+        }
     }
 
     private func makeEventPresentation(timeLabel: String) -> EventPresentationData {

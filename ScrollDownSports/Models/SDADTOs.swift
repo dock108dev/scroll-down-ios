@@ -62,6 +62,7 @@ struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable {
 }
 
 struct SDAGameDetailResponseDTO: Decodable {
+    let detailContractVersion: Int
     let game: SDAGameDTO
     let teamStats: [TeamStat]
     let playerStats: [PlayerStat]
@@ -119,29 +120,32 @@ struct SDAGameDTO: Decodable, Identifiable, Hashable {
 }
 
 struct SDAPlayDTO: Decodable, Identifiable, Hashable {
-    var id: String { eventId ?? "\(playIndex)-\(periodLabel ?? "")-\(gameClock ?? "")" }
+    var id: String { eventId ?? "\(playIndex)-\(periodLabel)-\(clockLabel ?? gameClock ?? "")" }
     let eventId: String?
     let playIndex: Int
     let quarter: Int?
     let gameClock: String?
     let playType: String?
+    let displayType: String
     let teamAbbreviation: String?
     let playerName: String?
     let description: String?
     let homeScore: Int?
     let awayScore: Int?
     let score: SDAScoreDTO?
-    let periodLabel: String?
+    let periodLabel: String
+    let clockLabel: String?
     let timeLabel: String?
     let tier: Int?
     let scoreChanged: Bool?
+    let scoreDisplay: String?
     let presentation: SDAMobilePresentationDTO?
-    let importance: SDAEventImportanceDTO?
+    let importance: SDAEventImportanceDTO
     let rawFeedText: String?
     let rawFeedSource: String?
     let rawFeedUpdatedAt: String?
     let rawDescription: String?
-    let modeEligibility: SDAEventModeEligibilityDTO?
+    let modeEligibility: SDAEventModeEligibilityDTO
     let belongsToModes: SDAEventModeEligibilityDTO?
     let scoreBefore: SDAScoreSnapshotDTO?
     let scoreAfter: SDAScoreSnapshotDTO?

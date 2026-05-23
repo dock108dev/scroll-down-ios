@@ -95,8 +95,8 @@ enum TestFixtures {
         clockLabel: String? = "10:00",
         scoreDelta: ScoreDelta? = nil,
         eventType: String = "play",
-        eligibleModes: Set<GameMode> = [.timeline, .flow, .stream],
-        usesBackendModeEligibility: Bool = false,
+        eligibleModes: Set<GameMode>? = nil,
+        usesBackendModeEligibility: Bool = true,
         presentation: EventPresentationData? = nil,
         importanceMetadata: EventImportanceData? = nil,
         homeScore: Int? = nil,
@@ -114,7 +114,7 @@ enum TestFixtures {
             teamAbbreviation: "SEA",
             eventType: eventType,
             importance: importance,
-            eligibleModes: eligibleModes,
+            eligibleModes: eligibleModes ?? Self.eligibleModes(for: importance),
             usesBackendModeEligibility: usesBackendModeEligibility,
             presentation: presentation,
             importanceMetadata: importanceMetadata,
@@ -133,6 +133,17 @@ enum TestFixtures {
             scoreDelta: scoreDelta,
             sportMetadata: sportMetadata
         )
+    }
+
+    private static func eligibleModes(for importance: GameEventImportance) -> Set<GameMode> {
+        switch importance {
+        case .primary:
+            return [.timeline, .flow, .stream]
+        case .secondary:
+            return [.flow, .stream]
+        case .contextual:
+            return [.stream]
+        }
     }
 
     static func makeDetail(game: Game, events: [GameEvent]) -> GameDetail {
@@ -190,6 +201,7 @@ enum TestFixtures {
               "quarter": 1,
               "gameClock": "10:0\(index)",
               "playType": "play",
+              "displayType": "Game update",
               "teamAbbreviation": "SEA",
               "playerName": null,
               "description": "Game update \(index + 1)",
@@ -197,9 +209,24 @@ enum TestFixtures {
               "awayScore": 0,
               "score": {"home": \(index), "away": 0},
               "periodLabel": "Q1",
+              "clockLabel": "10:0\(index)",
               "timeLabel": "10:0\(index)",
               "tier": 3,
-              "scoreChanged": false
+              "scoreChanged": false,
+              "scoreDisplay": null,
+              "importance": {
+                "level": "tertiary",
+                "rank": 10,
+                "reasons": [],
+                "isKeyMoment": false,
+                "isScoringPlay": false,
+                "isLeadChange": false,
+                "isTyingPlay": false,
+                "isLateGame": false,
+                "isFinalPlay": false,
+                "isRunEnding": false
+              },
+              "modeEligibility": { "important": false, "standard": false, "all": true }
             }
             """
         }.joined(separator: ",")
@@ -207,6 +234,7 @@ enum TestFixtures {
         return Data(
             """
             {
+              "detailContractVersion": 2,
               "game": \(sdaGameSummaryJSON(id: gameId, playCount: playIDs.count)),
               "teamStats": [],
               "playerStats": [],

@@ -241,11 +241,7 @@ struct PlayByPlaySection: View {
     }
 
     private func eventPresentation(for event: GameEvent, periodGroupLabel: String) -> GameEventPresentation {
-        var presentation = renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
-        if let scoreLine = event.scoreProgressionText(game: game) {
-            presentation.scoreLabel = scoreLine
-        }
-        return presentation
+        renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
     }
 }
 
@@ -414,26 +410,6 @@ private struct PlayRow: View {
 
     private var teamColor: Color {
         SportsTheme.Team.accent(for: presentation.teamAbbreviation, fallback: accentColor)
-    }
-}
-
-private extension GameEvent {
-    func scoreProgressionText(game: Game) -> String? {
-        let isScoring = importanceMetadata?.isScoringPlay == true || scoreDelta != nil
-        guard isScoring else { return nil }
-        guard let away = game.awayParticipant,
-              let home = game.homeParticipant,
-              let awayScore = scoreAfter.score(for: .away),
-              let homeScore = scoreAfter.score(for: .home) else {
-            return nil
-        }
-        let awayCode = away.abbreviation?.nilIfBlank ?? shortTeamCode(away.name)
-        let homeCode = home.abbreviation?.nilIfBlank ?? shortTeamCode(home.name)
-        return "\(awayCode) \(awayScore) · \(homeCode) \(homeScore)"
-    }
-
-    private func shortTeamCode(_ name: String) -> String {
-        String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
     }
 }
 

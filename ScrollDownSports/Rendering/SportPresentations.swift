@@ -65,40 +65,11 @@ private extension String {
     var customerFacingEventLabel: String? {
         let normalized = trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return nil }
-        switch normalized.uppercased() {
-        case "HOME_RUN":
-            return "Home run"
-        case "FIELD_OUT", "GROUND_OUT", "FLY_OUT", "POP_OUT", "LINE_OUT":
-            return "Out"
-        case "FORCE_OUT":
-            return "Force out"
-        case "STRIKEOUT", "STRIKE_OUT":
-            return "Strikeout"
-        case "SINGLE":
-            return "Single"
-        case "DOUBLE":
-            return "Double"
-        case "TRIPLE":
-            return "Triple"
-        case "WALK", "BASE_ON_BALLS":
-            return "Walk"
-        case "HIT_BY_PITCH":
-            return "Hit by pitch"
-        case "STOLEN_BASE":
-            return "Stolen base"
-        case "SAC_FLY", "SACRIFICE_FLY":
-            return "Sac fly"
-        case "PLAY", "GAME_UPDATE":
+        if normalized.uppercased() == "PLAY" || normalized.uppercased() == "GAME_UPDATE" {
             return nil
-        default:
-            if normalized.contains("_") || normalized == normalized.uppercased() {
-                return normalized
-                    .replacingOccurrences(of: "_", with: " ")
-                    .lowercased()
-                    .capitalized
-            }
-            return normalized
         }
+        guard !normalized.contains("_") else { return nil }
+        return normalized
     }
 
     var customerFacingPlayText: String {

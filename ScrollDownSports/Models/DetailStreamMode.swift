@@ -86,14 +86,7 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
     }
 
     func visibleDedupedEvents(_ events: [GameEvent]) -> [GameEvent] {
-        if events.contains(where: \.usesBackendModeEligibility) {
-            let eligible = events.filter { $0.isEligible(for: self) }
-            if !eligible.isEmpty || events.allSatisfy(\.usesBackendModeEligibility) {
-                return eligible
-            }
-        }
-        let bands = includedBands(in: events)
-        return events.filter { bands.contains($0.detailBand) }
+        events.filter { $0.isEligible(for: self) }
     }
 
     static func dedupedEvents(from events: [GameEvent]) -> [GameEvent] {
@@ -141,18 +134,9 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
     private func includedBands(in events: [GameEvent]) -> Set<DetailEventBand> {
         switch self {
         case .key:
-            if events.contains(where: { $0.detailBand == .key }) {
-                return [.key]
-            }
-            if events.contains(where: { $0.detailBand == .flow }) {
-                return [.flow]
-            }
-            return [.play]
+            return [.key]
         case .flow:
-            if events.contains(where: { $0.detailBand == .key || $0.detailBand == .flow }) {
-                return [.key, .flow]
-            }
-            return [.play]
+            return [.key, .flow]
         case .full:
             return [.key, .flow, .play]
         }
@@ -275,15 +259,11 @@ extension GameEvent {
     }
 
     var isKeyMoment: Bool {
-        if usesBackendModeEligibility {
-            return eligibleModes.contains(.timeline)
-        }
-        return scoreDelta != nil || importance == .primary
+        eligibleModes.contains(.timeline)
     }
 
     func isEligible(for mode: DetailStreamMode) -> Bool {
-        guard usesBackendModeEligibility else { return true }
-        return eligibleModes.contains(mode.storageMode)
+        eligibleModes.contains(mode.storageMode)
     }
 
     var detailBand: DetailEventBand {
@@ -300,7 +280,7 @@ extension GameEvent {
         if let metadataImportance = importanceMetadata?.visualImportance {
             return metadataImportance
         }
-        if scoreDelta != nil || importance == .primary {
+        if importance == .primary {
             return .high
         }
         if importance == .secondary {
@@ -346,19 +326,14 @@ private extension EventImportanceData {
             return .critical
         }
         switch level?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "critical":
+        case "primary":
             return .critical
-        case "high", "major":
-            return .high
-        case "medium", "notable":
+        case "secondary":
             return .medium
-        case "low", "routine":
+        case "tertiary":
             return .low
         default:
             break
-        }
-        if isScoringPlay == true {
-            return .high
         }
         if let rank {
             if rank >= 90 { return .critical }

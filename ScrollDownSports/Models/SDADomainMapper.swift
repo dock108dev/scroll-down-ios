@@ -74,7 +74,12 @@ enum SDADomainMapper {
     }
 
     static func event(from dto: SDAPlayDTO, participants: [GameParticipant]) -> GameEvent {
-        let mappedPresentation = eventPresentation(from: dto.presentation)
+        let mappedPresentation = eventPresentation(
+            from: dto.presentation,
+            displayType: dto.displayType,
+            scoreDisplay: dto.scoreDisplay,
+            clockLabel: dto.clockLabel
+        )
         let scoreAfter = scoreState(
             scoreSnapshot: dto.scoreboard?.scoreAfter ?? dto.scoreAfter,
             score: dto.score,
@@ -90,7 +95,7 @@ enum SDADomainMapper {
             dto.presentation?.headline,
             dto.presentation?.body,
             dto.description,
-            dto.playType
+            dto.displayType
         ].firstNonBlank ?? "Game update"
         let detail = eventDetail(presentation: dto.presentation, headline: headline, playerName: dto.playerName)
         let importanceMetadata = eventImportance(from: dto.importance)
@@ -102,8 +107,7 @@ enum SDADomainMapper {
             scoreAfter: scoreAfter,
             participants: participants
         )
-        let modeEligibility = dto.modeEligibility ?? dto.belongsToModes
-        let usesBackendModeEligibility = modeEligibility != nil
+        let modeEligibility = dto.modeEligibility
 
         return GameEvent(
             id: dto.id,
@@ -111,13 +115,13 @@ enum SDADomainMapper {
             sequence: dto.playIndex,
             periodOrdinal: dto.quarter,
             periodLabel: dto.periodLabel,
-            clockLabel: dto.timeLabel ?? dto.gameClock,
+            clockLabel: dto.clockLabel,
             teamOwnership: owningRole,
             teamAbbreviation: dto.teamAbbreviation,
-            eventType: dto.playType,
-            importance: importance(dto.importance, tier: dto.tier, scoreChanged: dto.scoreChanged),
-            eligibleModes: eligibleModes(from: modeEligibility) ?? [.timeline, .stream],
-            usesBackendModeEligibility: usesBackendModeEligibility,
+            eventType: dto.displayType,
+            importance: importance(dto.importance),
+            eligibleModes: eligibleModes(from: modeEligibility),
+            usesBackendModeEligibility: true,
             presentation: mappedPresentation,
             importanceMetadata: importanceMetadata,
             headline: headline,
@@ -264,31 +268,17 @@ enum SDADomainMapper {
         }
     }
 
-    private static func importance(_ dto: SDAEventImportanceDTO?, tier: Int?, scoreChanged: Bool?) -> GameEventImportance {
-        if dto?.isKeyMoment == true || dto?.isLeadChange == true || dto?.isTyingPlay == true {
+    private static func importance(_ dto: SDAEventImportanceDTO) -> GameEventImportance {
+        switch dto.level.lowercased() {
+        case "primary":
             return .primary
-        }
-        if dto?.isScoringPlay == true {
-            return .primary
-        }
-        if let rank = dto?.rank {
-            if rank >= 50 { return .primary }
-            if rank >= 25 { return .secondary }
-            return .contextual
-        }
-        switch dto?.level?.lowercased() {
-        case "critical", "major", "high":
-            return .primary
-        case "notable", "medium":
+        case "secondary":
             return .secondary
-        case "routine", "low":
+        case "tertiary":
             return .contextual
         default:
-            break
+            return .contextual
         }
-        if scoreChanged == true || tier == 1 { return .primary }
-        if tier == 2 { return .secondary }
-        return .contextual
     }
 
     private static func gamePresentation(from dto: SDAMobilePresentationDTO?) -> GamePresentationData? {
@@ -379,21 +369,25 @@ enum SDADomainMapper {
         return ScoreboardSegmentData(label: label, away: dto.away?.nilIfBlank, home: dto.home?.nilIfBlank)
     }
 
-    private static func eventPresentation(from dto: SDAMobilePresentationDTO?) -> EventPresentationData? {
-        guard let dto else { return nil }
+    private static func eventPresentation(
+        from dto: SDAMobilePresentationDTO?,
+        displayType: String,
+        scoreDisplay: String?,
+        clockLabel: String?
+    ) -> EventPresentationData {
         return EventPresentationData(
-            headline: dto.headline?.nilIfBlank,
-            shortHeadline: dto.shortHeadline?.nilIfBlank,
-            body: dto.body?.nilIfBlank,
-            primaryLabel: dto.primaryLabel?.nilIfBlank,
-            secondaryLabel: dto.secondaryLabel?.nilIfBlank,
-            tertiaryLabel: dto.tertiaryLabel?.nilIfBlank,
-            timeLabel: dto.timeLabel?.nilIfBlank,
-            accessibilityLabel: dto.accessibilityLabel?.nilIfBlank,
-            eventTypeLabel: dto.eventTypeLabel?.nilIfBlank,
-            teamLabel: dto.teamLabel?.nilIfBlank,
-            playerLabel: dto.playerLabel?.nilIfBlank,
-            scoreLabel: dto.scoreLabel?.nilIfBlank
+            headline: dto?.headline?.nilIfBlank,
+            shortHeadline: dto?.shortHeadline?.nilIfBlank,
+            body: dto?.body?.nilIfBlank,
+            primaryLabel: dto?.primaryLabel?.nilIfBlank,
+            secondaryLabel: dto?.secondaryLabel?.nilIfBlank,
+            tertiaryLabel: dto?.tertiaryLabel?.nilIfBlank,
+            timeLabel: dto?.timeLabel?.nilIfBlank ?? clockLabel?.nilIfBlank,
+            accessibilityLabel: dto?.accessibilityLabel?.nilIfBlank,
+            eventTypeLabel: dto?.eventTypeLabel?.nilIfBlank ?? displayType.nilIfBlank,
+            teamLabel: dto?.teamLabel?.nilIfBlank,
+            playerLabel: dto?.playerLabel?.nilIfBlank,
+            scoreLabel: dto?.scoreLabel?.nilIfBlank ?? scoreDisplay?.nilIfBlank
         )
     }
 
@@ -408,13 +402,12 @@ enum SDADomainMapper {
         ].firstNonBlank
     }
 
-    private static func eventImportance(from dto: SDAEventImportanceDTO?) -> EventImportanceData? {
-        guard let dto else { return nil }
+    private static func eventImportance(from dto: SDAEventImportanceDTO) -> EventImportanceData {
         return EventImportanceData(
-            level: dto.level?.nilIfBlank,
+            level: dto.level.nilIfBlank,
             rank: dto.rank,
             bucket: dto.bucket?.nilIfBlank,
-            reasons: dto.reasons ?? [],
+            reasons: dto.reasons,
             isKeyMoment: dto.isKeyMoment,
             isScoringPlay: dto.isScoringPlay,
             isLeadChange: dto.isLeadChange,
@@ -423,16 +416,15 @@ enum SDADomainMapper {
         )
     }
 
-    private static func eligibleModes(from dto: SDAEventModeEligibilityDTO?) -> Set<GameMode>? {
-        guard let dto else { return nil }
+    private static func eligibleModes(from dto: SDAEventModeEligibilityDTO) -> Set<GameMode> {
         var modes = Set<GameMode>()
-        if dto.key == true || dto.timeline == true {
+        if dto.important {
             modes.insert(.timeline)
         }
-        if dto.flow == true {
+        if dto.standard {
             modes.insert(.flow)
         }
-        if dto.full == true || dto.stream == true {
+        if dto.all {
             modes.insert(.stream)
         }
         return modes

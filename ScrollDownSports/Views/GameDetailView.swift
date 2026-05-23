@@ -55,7 +55,7 @@ struct GameDetailView: View {
                                 game: detail.game,
                                 renderer: renderer,
                                 isPinned: viewModel.isGamePinned,
-                                newPlayCount: viewModel.localProgress?.newEventCount ?? 0
+                                newPlayCount: pendingNewPlayCount
                             )
                             if let resumeState {
                                 ResumeBanner(
@@ -79,7 +79,7 @@ struct GameDetailView: View {
                                 events: detail.events,
                                 isGamePinned: viewModel.isGamePinned,
                                 isFollowingLiveEdge: viewModel.isFollowingLiveEdge,
-                                newPlayCount: viewModel.localProgress?.newEventCount ?? 0,
+                                newPlayCount: pendingNewPlayCount,
                                 canResume: resumeState != nil,
                                 selectedMode: Binding(
                                     get: { viewModel.selectedStreamMode },
@@ -266,7 +266,7 @@ struct GameDetailView: View {
     }
 
     private var pendingNewPlayCount: Int {
-        viewModel.localProgress?.newEventCount ?? 0
+        selectedModeUnreadCount
     }
 
     private var showsNewPlaysAffordance: Bool {
@@ -312,9 +312,35 @@ struct GameDetailView: View {
             target: target,
             description: GameDetailRestoreTargetResolver.resumeDescription(
                 target: target,
-                newPlayCount: progress.newEventCount
+                newPlayCount: selectedModeUnreadCount
             )
         )
+    }
+
+    private var selectedModeUnreadCount: Int {
+        guard let detail = viewModel.detail, let progress = viewModel.localProgress else { return 0 }
+        guard !progress.reachedScoreboard else { return 0 }
+        let visibleEvents = viewModel.selectedStreamMode.visibleDedupedEvents(
+            DetailStreamMode.dedupedEvents(from: detail.events)
+        )
+        guard !visibleEvents.isEmpty else { return 0 }
+        guard let readSequence = readSequence(progress: progress, events: detail.events) else {
+            return min(progress.newEventCount, visibleEvents.count)
+        }
+        return visibleEvents.filter { $0.sequence > readSequence }.count
+    }
+
+    private func readSequence(progress: GameProgressRecord, events: [GameEvent]) -> Int? {
+        let sortedEvents = DetailStreamMode.dedupedEvents(from: events)
+        if let eventID = progress.lastReadEventID,
+           let event = sortedEvents.first(where: { $0.normalizedSourceEventID == eventID || $0.id == eventID || $0.detailAnchorID == eventID }) {
+            return event.sequence
+        }
+        if let eventIndex = progress.lastReadEventIndex,
+           sortedEvents.indices.contains(eventIndex) {
+            return sortedEvents[eventIndex].sequence
+        }
+        return progress.lastScrollFallback?.eventSequence
     }
 
     private func scrollToLatest(_ proxy: ScrollViewProxy, preservesReturnAnchor: Bool = true) {

@@ -42,6 +42,7 @@ final class DecodingTests: XCTestCase {
     func testDecodesGameDetailStatsAndPlays() throws {
         let json = """
         {
+          "detailContractVersion": 2,
           "game": {
             "id": 42,
             "leagueCode": "nba",
@@ -58,7 +59,28 @@ final class DecodingTests: XCTestCase {
             { "team": "Boston Celtics", "playerName": "Example Player", "points": 28, "rawStats": { "assists": 6 } }
           ],
           "plays": [
-            { "playIndex": 1, "periodLabel": "Q1", "gameClock": "11:42", "description": "Made jumper" }
+            {
+              "playIndex": 1,
+              "periodLabel": "Q1",
+              "clockLabel": "11:42",
+              "gameClock": "11:42",
+              "playType": "2pt",
+              "displayType": "2-pointer",
+              "description": "Made jumper",
+              "importance": {
+                "level": "secondary",
+                "rank": 25,
+                "reasons": ["scoring"],
+                "isKeyMoment": false,
+                "isScoringPlay": true,
+                "isLeadChange": false,
+                "isTyingPlay": false,
+                "isLateGame": false,
+                "isFinalPlay": false,
+                "isRunEnding": false
+              },
+              "modeEligibility": { "important": false, "standard": true, "all": true }
+            }
           ]
         }
         """.data(using: .utf8)!
@@ -70,7 +92,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(detail.game.scoreState.away, 99)
         XCTAssertEqual(response.playerStats[0].points, 28)
         XCTAssertEqual(detail.events[0].headline, "Made jumper")
-        XCTAssertEqual(detail.events[0].clockText, "Q1 · 11:42")
+        XCTAssertEqual(detail.events[0].clockText, "11:42")
     }
 
     func testMapsUnknownSafeSportAndLegacyScores() throws {
@@ -212,6 +234,7 @@ final class DecodingTests: XCTestCase {
     func testEventPresentationImportanceModesAndScoreStatePreferBackend() throws {
         let json = """
         {
+          "detailContractVersion": 2,
           "game": {
             "id": 89,
             "leagueCode": "nhl",
@@ -232,8 +255,13 @@ final class DecodingTests: XCTestCase {
               "quarter": 3,
               "gameClock": "02:14",
               "playType": "shot",
+              "displayType": "Goal",
+              "periodLabel": "3rd",
+              "clockLabel": "02:14",
               "teamAbbreviation": "EV",
               "description": "Legacy raw shot text",
+              "scoreChanged": true,
+              "scoreDisplay": "EV 3 · NH 3",
               "rawFeedText": "Provider raw goal text",
               "rawFeedSource": "NHL feed",
               "rawFeedUpdatedAt": "2026-05-22T23:41:00Z",
@@ -247,16 +275,19 @@ final class DecodingTests: XCTestCase {
               },
               "importance": {
                 "schemaVersion": 1,
-                "level": "critical",
+                "level": "primary",
                 "rank": 95,
                 "bucket": "scoring",
                 "reasons": ["score_change", "tying_play"],
                 "isKeyMoment": true,
                 "isScoringPlay": true,
                 "isLeadChange": false,
-                "isTyingPlay": true
+                "isTyingPlay": true,
+                "isLateGame": true,
+                "isFinalPlay": false,
+                "isRunEnding": false
               },
-              "modeEligibility": { "key": true, "flow": false, "full": false },
+              "modeEligibility": { "important": true, "standard": true, "all": true },
               "scoreBefore": { "away": 2, "home": 3, "scoreText": "North Harbor 3, East Vale 2" },
               "scoreboard": {
                 "scoreAfter": { "away": 3, "home": 3, "scoreText": "East Vale 3, North Harbor 3", "isTied": true },
@@ -285,11 +316,11 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(event.scoreDelta?.change, 1)
         XCTAssertTrue(event.usesBackendModeEligibility)
         XCTAssertEqual(DetailStreamMode.key.visibleEvents(in: [event]).map(\.id), ["goal-1"])
-        XCTAssertTrue(DetailStreamMode.full.visibleEvents(in: [event]).isEmpty)
+        XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: [event]).map(\.id), ["goal-1"])
         XCTAssertEqual(event.sportMetadata["strength"], .string("even"))
     }
 
-    func testLegacyFallbacksRemainForMissingPresentationAndNoScoreCases() throws {
+    func testLegacyGameSummaryFallbacksRemainButDetailRequiresV2Contract() throws {
         let gamesJSON = """
         {
           "games": [
@@ -351,13 +382,6 @@ final class DecodingTests: XCTestCase {
         }
         """.data(using: .utf8)!
 
-        let events = SDADomainMapper.detail(from: try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: detailJSON)).events
-
-        XCTAssertEqual(events[0].headline, "Made three")
-        XCTAssertEqual(events[0].importance, .primary)
-        XCTAssertNotNil(events[0].scoreDelta)
-        XCTAssertEqual(events[1].headline, "Defensive rebound")
-        XCTAssertEqual(events[1].importance, .contextual)
-        XCTAssertNil(events[1].scoreDelta)
+        XCTAssertThrowsError(try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: detailJSON))
     }
 }

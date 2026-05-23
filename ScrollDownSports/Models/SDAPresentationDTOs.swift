@@ -96,14 +96,17 @@ struct SDAScoreboardTotalsDTO: Decodable, Hashable {
 
 struct SDAEventImportanceDTO: Decodable, Hashable {
     let schemaVersion: Int?
-    let level: String?
+    let level: String
     let rank: Int?
     let bucket: String?
-    let reasons: [String]?
-    let isKeyMoment: Bool?
-    let isScoringPlay: Bool?
-    let isLeadChange: Bool?
-    let isTyingPlay: Bool?
+    let reasons: [String]
+    let isKeyMoment: Bool
+    let isScoringPlay: Bool
+    let isLeadChange: Bool
+    let isTyingPlay: Bool
+    let isLateGame: Bool
+    let isFinalPlay: Bool?
+    let isRunEnding: Bool?
     let winProbabilityDelta: Double?
 }
 
@@ -133,9 +136,7 @@ struct SDAScoreDeltaDTO: Decodable, Hashable {
 }
 
 struct SDAEventModeEligibilityDTO: Decodable, Hashable {
-    let key: Bool?
-    let flow: Bool?
-    let full: Bool?
-    let timeline: Bool?
-    let stream: Bool?
+    let important: Bool
+    let standard: Bool
+    let all: Bool
 }

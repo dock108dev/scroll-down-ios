@@ -3,13 +3,22 @@ import Foundation
 enum SDAApiError: LocalizedError {
     case invalidURL
     case badStatus(Int)
+    case incompleteDetail(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "The data URL is invalid."
         case .badStatus(let status):
+            if status == 404 {
+                return "Game Data Not Found"
+            }
+            if status == 422 {
+                return "Game Data Incomplete"
+            }
             return "The data service returned HTTP \(status)."
+        case .incompleteDetail:
+            return "Game Data Incomplete"
         }
     }
 }
@@ -61,7 +70,13 @@ final class SDAApiClient: Sendable {
 
     func fetchGame(id: Int) async throws -> GameDetail {
         let url = baseURL.appending(path: "/api/admin/sports/games/\(id)")
-        let response: SDAGameDetailResponseDTO = try await get(url)
+        let response: SDAGameDetailResponseDTO
+        do {
+            response = try await get(url)
+        } catch is DecodingError {
+            throw SDAApiError.incompleteDetail("Detail response could not decode required v2 fields")
+        }
+        try validateGameDetailContract(response)
         return SDADomainMapper.detail(from: response)
     }
 
@@ -81,6 +96,33 @@ final class SDAApiClient: Sendable {
             throw SDAApiError.badStatus(httpResponse.statusCode)
         }
         return try JSONDecoder.sda.decode(T.self, from: data)
+    }
+
+    private func validateGameDetailContract(_ response: SDAGameDetailResponseDTO) throws {
+        guard response.detailContractVersion >= 2 else {
+            throw SDAApiError.incompleteDetail("Unsupported detail contract")
+        }
+        for play in response.plays {
+            guard play.modeEligibility.all else {
+                throw SDAApiError.incompleteDetail("modeEligibility.all missing or false")
+            }
+            guard !play.displayType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw SDAApiError.incompleteDetail("displayType missing")
+            }
+            guard !isRawEnumLabel(play.displayType) else {
+                throw SDAApiError.incompleteDetail("displayType must be customer-facing")
+            }
+            guard !play.periodLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw SDAApiError.incompleteDetail("periodLabel missing")
+            }
+        }
+    }
+
+    private func isRawEnumLabel(_ value: String) -> Bool {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.contains("_") { return true }
+        let hasLetter = trimmed.rangeOfCharacter(from: .letters) != nil
+        return hasLetter && trimmed.count > 1 && trimmed == trimmed.uppercased()
     }
 
     private static func configuredBaseURL() -> URL {
