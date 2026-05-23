@@ -18,6 +18,19 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedStreamMode, .full)
     }
 
+    func testStreamModeSelectionPreservesCanonicalReadIndex() {
+        let store = InMemoryGameStateStore()
+        let viewModel = GameDetailViewModel(gameId: 501, gameStateStore: store)
+
+        viewModel.recordReadEvent(eventIndex: 3, eventID: "event-4", knownEventCount: 6)
+        viewModel.setSelectedStreamMode(.flow)
+        viewModel.setSelectedStreamMode(.full)
+
+        XCTAssertEqual(store.progress(for: 501)?.lastReadEventID, "event-4")
+        XCTAssertEqual(store.progress(for: 501)?.lastReadEventIndex, 3)
+        XCTAssertEqual(store.progress(for: 501)?.newEventCount, 2)
+    }
+
     func testFollowLiveStateUsesSeparatePreferenceFromGamePinning() {
         let store = InMemoryGameStateStore()
         let game = makeGame(id: 502)
@@ -293,7 +306,7 @@ final class GameDetailViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             GameDetailRestoreTargetResolver.targetEvent(progress: sequenceProgress, events: events, mode: .key)?.id,
-            "event-12"
+            "event-14"
         )
     }
 

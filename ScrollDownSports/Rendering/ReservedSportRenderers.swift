@@ -4,10 +4,6 @@ struct FootballRenderer: GenericSportRendererBacked {
     init(leagueCode: String) {
         generic = GenericSportRenderer(leagueCode: leagueCode, sportLabel: "Football")
     }
-
-    func eventPresentation(for event: GameEvent) -> GameEventPresentation {
-        GameEventPresentation(event: event)
-    }
 }
 
 struct BasketballRenderer: GenericSportRendererBacked {
@@ -15,10 +11,6 @@ struct BasketballRenderer: GenericSportRendererBacked {
 
     init(leagueCode: String) {
         generic = GenericSportRenderer(leagueCode: leagueCode, sportLabel: "Basketball")
-    }
-
-    func eventPresentation(for event: GameEvent) -> GameEventPresentation {
-        GameEventPresentation(event: event)
     }
 }
 

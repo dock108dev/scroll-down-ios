@@ -231,6 +231,34 @@ final class GameStateStoreTests: XCTestCase {
         XCTAssertNil(store.snapshot.pinnedGamesById[game.id]?.lastReadEventIndex)
     }
 
+    func testStartOverKeepsModeAndUnrelatedPreferences() throws {
+        let game = TestFixtures.makeGame(
+            id: 103,
+            leagueCode: "nba",
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T23:30:00Z")
+        )
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
+
+        store.pin(game)
+        store.setSelectedMode(gameId: game.id, mode: .flow)
+        store.setFollowLivePreference(gameId: game.id, preference: .readingAwayFromLiveEdge)
+        store.setExpandedSectionIDs(gameId: game.id, sectionIDs: ["player-stats"])
+        store.setRawFeedExpanded(gameId: game.id, key: "raw-feed:v1:nba:103:event-2:1", isExpanded: true)
+        store.recordReadEvent(gameId: game.id, eventID: "made-shot", eventIndex: 2, knownEventCount: 4)
+
+        store.clearReadPosition(gameId: game.id)
+
+        let progress = try XCTUnwrap(store.progress(for: game.id))
+        XCTAssertEqual(progress.selectedMode, .flow)
+        XCTAssertEqual(progress.followLivePreference, .readingAwayFromLiveEdge)
+        XCTAssertEqual(progress.expandedSectionIDs, ["player-stats"])
+        XCTAssertEqual(progress.expandedRawFeedKeys, ["raw-feed:v1:nba:103:event-2:1"])
+        XCTAssertTrue(store.isPinned(gameId: game.id))
+        XCTAssertNil(progress.lastReadEventID)
+        XCTAssertNil(progress.lastReadEventIndex)
+        XCTAssertNil(progress.lastScrollFallback)
+    }
+
     func testReachedScoreboardIsMonotonicOncePersisted() throws {
         let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
 
@@ -424,6 +452,22 @@ final class GameStateStoreTests: XCTestCase {
         let progress = try XCTUnwrap(store.progress(for: 207))
         XCTAssertEqual(progress.lastReadEventID, "event-5")
         XCTAssertEqual(progress.lastReadEventIndex, 5)
+        XCTAssertEqual(progress.newEventCount, 3)
+    }
+
+    func testVisibleScrollFallbackDoesNotRegressDurableReadProgress() throws {
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
+
+        store.recordReadEvent(gameId: 208, eventID: "event-6", eventIndex: 6, knownEventCount: 10)
+        store.setScrollFallback(
+            gameId: 208,
+            fallback: GameScrollFallbackRecord(eventSequence: 2, approximateOffset: 40)
+        )
+
+        let progress = try XCTUnwrap(store.progress(for: 208))
+        XCTAssertEqual(progress.lastReadEventID, "event-6")
+        XCTAssertEqual(progress.lastReadEventIndex, 6)
+        XCTAssertEqual(progress.lastScrollFallback?.eventSequence, 2)
         XCTAssertEqual(progress.newEventCount, 3)
     }
 

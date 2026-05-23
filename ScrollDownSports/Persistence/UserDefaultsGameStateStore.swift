@@ -165,6 +165,7 @@ final class UserDefaultsGameStateStore: GameStateStore {
         update(&next)
         next.schemaVersion = LocalGameStateSnapshot.currentSchemaVersion
         next.updatedAt = now()
+        next.pruneFixtureState()
         subject.send(next)
         persist(next)
     }

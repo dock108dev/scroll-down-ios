@@ -20,7 +20,7 @@
 
 - `.aidlc` markdown files were not consolidated into product docs. They are tool working artifacts, not user-facing project documentation, and the repo `.gitignore` already treats AIDLC run/report/archive output as generated workspace state.
 - `build/DerivedData` text files were not rewritten or moved. They are generated Xcode build outputs under an ignored build directory, not source documentation.
-- No CI runbook was added because the repo has no checked-in `.github` workflow files.
+- At consolidation time, no CI runbook was added because the repo had no checked-in `.github` workflow files.
 
 ## Validation
 

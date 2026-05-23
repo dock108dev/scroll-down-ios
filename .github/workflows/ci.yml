@@ -1,0 +1,192 @@
+name: iOS CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ios-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  xcode:
+    name: XcodeGen Build and Test
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    env:
+      PROJECT: ScrollDownSports.xcodeproj
+      SCHEME: ScrollDownSports
+      DERIVED_DATA: .build/DerivedData
+      RESULT_BUNDLE: .build/TestResults/ScrollDownSports.xcresult
+      COVERAGE_DIR: .build/coverage
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode environment
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcode-select -p
+          xcrun simctl list runtimes
+          xcrun simctl list devices available
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew update
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        run: |
+          set -euo pipefail
+          xcodegen generate
+
+      - name: Validate generated project and scheme
+        run: |
+          set -euo pipefail
+          test -d "$PROJECT"
+          test -f "$PROJECT/xcshareddata/xcschemes/$SCHEME.xcscheme"
+          xcodebuild -list -project "$PROJECT"
+
+      - name: Guard snapshot recording mode
+        run: |
+          set -euo pipefail
+          if [ "${SNAPSHOT_RECORD:-}" = "1" ]; then
+            echo "SNAPSHOT_RECORD must not be enabled in CI"
+            exit 1
+          fi
+
+      - name: Resolve test simulator
+        id: simulator
+        run: |
+          set -euo pipefail
+
+          DESTINATION_ID="$(xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME" | awk -F '[{},]' '
+            /platform:iOS Simulator/ && /name:iPhone/ {
+              for (idx = 1; idx <= NF; idx++) {
+                field = $idx
+                gsub(/^ +| +$/, "", field)
+                if (field ~ /^id:/) {
+                  sub(/^id:/, "", field)
+                  print field
+                  exit
+                }
+              }
+            }
+          ')"
+
+          if [ -z "$DESTINATION_ID" ]; then
+            echo "No available iPhone simulator found"
+            xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME"
+            exit 1
+          fi
+
+          echo "destination=id=$DESTINATION_ID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator destination: id=$DESTINATION_ID"
+
+      - name: Build app for iOS Simulator
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run XCTest
+        env:
+          TEST_DESTINATION: ${{ steps.simulator.outputs.destination }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RESULT_BUNDLE" "$COVERAGE_DIR"
+          mkdir -p "$(dirname "$RESULT_BUNDLE")" "$COVERAGE_DIR"
+
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$TEST_DESTINATION" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath "$RESULT_BUNDLE" \
+            -enableCodeCoverage YES \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+      - name: Generate coverage reports
+        run: |
+          set -euo pipefail
+          mkdir -p "$COVERAGE_DIR"
+
+          xcrun xccov view \
+            --report \
+            --json \
+            "$RESULT_BUNDLE" > "$COVERAGE_DIR/xccov-report.json"
+
+          xcrun xccov view \
+            --archive \
+            --file-list \
+            --json \
+            "$RESULT_BUNDLE" > "$COVERAGE_DIR/xccov-files.json"
+
+          swift Scripts/check_xccov_thresholds.swift \
+            --report "$COVERAGE_DIR/xccov-report.json" \
+            --config Config/coverage-thresholds.json \
+            --repo-root "$PWD"
+
+      - name: Test coverage checker
+        run: |
+          set -euo pipefail
+          bash Scripts/test_xccov_thresholds.sh
+
+      - name: Upload XCTest result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-xcresult
+          path: .build/TestResults/ScrollDownSports.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload snapshot review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-snapshot-artifacts
+          path: |
+            ScrollDownSportsTests/__Snapshots__
+            .build/DerivedData/Logs/Test
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-coverage
+          path: .build/coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload DerivedData logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-deriveddata-logs
+          path: .build/DerivedData/Logs
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload generated project
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-generated-xcodeproj
+          path: ScrollDownSports.xcodeproj
+          if-no-files-found: error
+          retention-days: 7

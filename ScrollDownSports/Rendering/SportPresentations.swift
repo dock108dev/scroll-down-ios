@@ -45,38 +45,56 @@ extension GameEventPresentation {
         scoringFallbackLabel: String = "Scoring"
     ) {
         let isScoring = event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil
+        let resolvedClockText = clockText ?? event.clockText
+        let resolvedDetail = detail ?? event.detail
+        let resolvedScoreLabel = [event.presentation?.scoreLabel].firstNonBlank
+            ?? Self.fallbackScoreAfterLabel(for: event, isScoring: isScoring)
         self.init(
-            clockText: clockText ?? event.clockText,
-            headline: event.headline.customerFacingPlayText,
-            detail: detail ?? event.detail,
-            eventLabel: (event.presentation?.eventTypeLabel ?? event.presentation?.primaryLabel ?? event.eventType)?.customerFacingEventLabel,
+            clockText: resolvedClockText,
+            headline: event.headline,
+            detail: resolvedDetail,
+            eventLabel: [
+                EventLabelResolver.customerLabel(from: event.presentation?.eventTypeLabel),
+                EventLabelResolver.customerLabel(from: event.presentation?.primaryLabel),
+                EventLabelResolver.customerLabel(from: event.eventType)
+            ].firstNonBlank,
             teamAbbreviation: event.teamAbbreviation,
             teamLabel: event.presentation?.teamLabel,
             scoringLabel: isScoring ? scoringFallbackLabel : nil,
-            scoreLabel: event.presentation?.scoreLabel,
+            scoreLabel: resolvedScoreLabel,
             rawFeedText: event.displayRawFeedText,
             rawFeedSource: event.rawFeedSource,
-            accessibilityLabel: event.presentation?.accessibilityLabel
+            accessibilityLabel: EventLabelResolver.customerAccessibilityText(
+                preferred: event.presentation?.accessibilityLabel,
+                fallbackPieces: [
+                    resolvedClockText,
+                    event.headline,
+                    resolvedDetail,
+                    event.presentation?.teamLabel,
+                    resolvedScoreLabel
+                ]
+            )
         )
+    }
+
+    private static func fallbackScoreAfterLabel(for event: GameEvent, isScoring: Bool) -> String? {
+        guard isScoring,
+              let away = event.scoreAfter.away,
+              let home = event.scoreAfter.home else {
+            return nil
+        }
+        return "\(away)-\(home)"
     }
 }
 
-private extension String {
-    var customerFacingEventLabel: String? {
-        let normalized = trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty else { return nil }
-        if normalized.uppercased() == "PLAY" || normalized.uppercased() == "GAME_UPDATE" {
-            return nil
+private extension Array where Element == String? {
+    var firstNonBlank: String? {
+        for value in self {
+            if let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty {
+                return trimmed
+            }
         }
-        guard !normalized.contains("_") else { return nil }
-        return normalized
-    }
-
-    var customerFacingPlayText: String {
-        guard contains("_") || self == uppercased() else { return self }
-        return replacingOccurrences(of: "_", with: " ")
-            .lowercased()
-            .capitalized
+        return nil
     }
 }
 

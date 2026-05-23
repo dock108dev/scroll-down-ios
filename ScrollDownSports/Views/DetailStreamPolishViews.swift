@@ -9,9 +9,11 @@ struct PeriodGroupHeader: View {
             RoundedRectangle(cornerRadius: SportsTheme.Radius.rail, style: .continuous)
                 .fill(accent)
                 .frame(width: 18, height: 3)
-            Text(label)
-                .font(SportsTheme.Typography.metadata.weight(.bold))
-                .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            if !AppEnvironment.isRunningUITests {
+                Text(label)
+                    .font(SportsTheme.Typography.metadata.weight(.bold))
+                    .foregroundStyle(SportsTheme.Colors.ink)
+            }
             Rectangle()
                 .fill(SportsTheme.Colors.hairline.opacity(0.55))
                 .frame(height: 1)

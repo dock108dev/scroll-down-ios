@@ -1,0 +1,54 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 904,
+    "leagueCode": "mlb",
+    "gameDate": "2026-05-22T23:10:00Z",
+    "localGameDate": "2026-05-22",
+    "status": "in_progress",
+    "homeTeam": "Seattle Mariners",
+    "awayTeam": "New York Yankees",
+    "homeTeamAbbr": "SEA",
+    "awayTeamAbbr": "NYY",
+    "score": { "home": 2, "away": 1 },
+    "isLive": true,
+    "isFinal": false
+  },
+  "teamStats": [],
+  "playerStats": [],
+  "plays": [
+    {
+      "eventId": "bad-mode-001",
+      "playIndex": 1,
+      "quarter": 4,
+      "gameClock": "12:14",
+      "playType": "single",
+      "displayType": "Single",
+      "teamAbbreviation": "SEA",
+      "description": "Evan Vale lines a single to center.",
+      "homeScore": 2,
+      "awayScore": 1,
+      "score": { "home": 2, "away": 1 },
+      "periodLabel": "T4",
+      "clockLabel": "12:14",
+      "importance": {
+        "schemaVersion": 1,
+        "level": "secondary",
+        "rank": 25,
+        "bucket": "context",
+        "reasons": [],
+        "isKeyMoment": false,
+        "isScoringPlay": false,
+        "isLeadChange": false,
+        "isTyingPlay": false,
+        "isLateGame": false,
+        "isFinalPlay": false,
+        "isRunEnding": false
+      }
+    }
+  ],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}

@@ -168,10 +168,10 @@ struct GameDetailRestoreTargetResolver {
         }
 
         if let fallbackSequence = progress.lastScrollFallback?.eventSequence {
-            if let previous = sortedEvents.last(where: { $0.sequence < fallbackSequence }) {
-                return previous
+            if let next = sortedEvents.first(where: { $0.sequence > fallbackSequence }) {
+                return next
             }
-            return sortedEvents.first(where: { $0.sequence > fallbackSequence })
+            return sortedEvents.last(where: { $0.sequence < fallbackSequence })
         }
 
         return mode.visibleDedupedEvents(sortedEvents).first
@@ -290,34 +290,24 @@ extension GameEvent {
     }
 
     var resumePositionText: String {
-        let candidate = presentation?.timeLabel?.cleanDisplayLabel ?? normalizedPeriodClockText(
+        let candidate = normalizedPeriodClockText(
             periodLabel: periodLabel,
-            clockLabel: clockLabel
+            clockLabel: clockLabel,
+            presentationTimeLabel: presentation?.timeLabel
         )
         return candidate ?? ""
     }
 }
 
-func normalizedPeriodClockText(periodLabel: String?, clockLabel: String?) -> String? {
-    let period = periodLabel?.cleanDisplayLabel
-    let clock = clockLabel?.cleanDisplayLabel
-
-    switch (period, clock) {
-    case (.none, .none):
-        return nil
-    case (.some(let period), .none):
-        return period
-    case (.none, .some(let clock)):
-        return clock
-    case (.some(let period), .some(let clock)):
-        if period.normalizedLabelKey == clock.normalizedLabelKey {
-            return period
-        }
-        if clock.removingPeriodPrefix(period).isEmpty {
-            return period
-        }
-        return "\(period) · \(clock.removingPeriodPrefix(period))"
-    }
+func normalizedPeriodClockText(periodLabel: String?, clockLabel: String?, presentationTimeLabel: String? = nil) -> String? {
+    PeriodLabelFormatter.output(
+        sport: .other("generic"),
+        leagueCode: "generic",
+        periodOrdinal: nil,
+        periodLabel: periodLabel,
+        clockLabel: clockLabel,
+        presentationTimeLabel: presentationTimeLabel
+    ).resumeText
 }
 
 private extension EventImportanceData {
@@ -364,31 +354,9 @@ extension String {
             .lowercased()
     }
 
-    func removingPeriodPrefix(_ period: String) -> String {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        let periodTrimmed = period.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !periodTrimmed.isEmpty else { return trimmed }
-        if trimmed.normalizedLabelKey == periodTrimmed.normalizedLabelKey {
-            return ""
-        }
-
-        for separator in [" · ", " - ", ": ", " "] {
-            let prefix = periodTrimmed + separator
-            if trimmed.hasPrefix(prefix) {
-                return String(trimmed.dropFirst(prefix.count))
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
-        return trimmed
-    }
 }
 
 private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
     var normalizedForDisplayComparison: String {
         trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)

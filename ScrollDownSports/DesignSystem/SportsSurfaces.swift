@@ -58,6 +58,9 @@ struct CollapsibleCatchUpSection<Content: View>: View {
         }
         .sportsSurface(.statSummary)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel(title)
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityHint("Shows or hides \(title.lowercased()).")
     }
 }
 

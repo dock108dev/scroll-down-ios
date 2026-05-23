@@ -53,118 +53,6 @@ struct DetailResumeState {
     let description: String
 }
 
-struct ResumeBanner: View {
-    let description: String
-    let onResume: () -> Void
-    let onJumpLatest: () -> Void
-    let onStartOver: () -> Void
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "bookmark.fill")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(SportsTheme.Tone.newPlay.accent)
-
-            Text(description)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-
-            Spacer(minLength: 0)
-
-            Button {
-                SportsFeedback.impact()
-                onResume()
-            } label: {
-                Text("Resume")
-            }
-            .buttonStyle(.sportsControl(tone: .newPlay, filled: true, compact: true))
-
-            Menu {
-                Button {
-                    SportsFeedback.impact()
-                    onJumpLatest()
-                } label: {
-                    Label("Jump latest", systemImage: "arrow.down.to.line")
-                }
-
-                Button(role: .destructive) {
-                    SportsFeedback.selection()
-                    onStartOver()
-                } label: {
-                    Label("Start over", systemImage: "restart")
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    .frame(width: 28, height: 28)
-                    .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
-            }
-        }
-        .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-struct DetailStickyNavigationBar: View {
-    let title: String
-    let endLabel: String
-    let returnLabel: String?
-    let onTop: () -> Void
-    let onEnd: () -> Void
-    let onReturn: () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            if let returnLabel {
-                Button {
-                    SportsFeedback.impact()
-                    onReturn()
-                } label: {
-                    Text(returnLabel)
-                        .lineLimit(1)
-                }
-                .buttonStyle(.sportsControl(tone: .neutral, filled: true, compact: true))
-            } else {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    SportsFeedback.selection()
-                    onTop()
-                } label: {
-                    Text("Top")
-                }
-                .buttonStyle(.sportsControl(tone: .neutral, filled: false, compact: true))
-            }
-
-            Spacer(minLength: 0)
-
-            Button {
-                SportsFeedback.selection()
-                onEnd()
-            } label: {
-                Text(endLabel)
-            }
-            .buttonStyle(.sportsControl(tone: .neutral, filled: false, compact: true))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(SportsTheme.Colors.paper.opacity(0.96), in: Capsule())
-        .overlay {
-            Capsule().strokeBorder(SportsTheme.Colors.hairline.opacity(0.7), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
-    }
-}
-
 struct PlayByPlaySection: View {
     let game: Game
     let events: [GameEvent]
@@ -197,6 +85,7 @@ struct PlayByPlaySection: View {
                                         onRawFeedExpansionChange: onRawFeedExpansionChange
                                     )
                                         .id(GameDetailScrollAnchor.event(event.detailAnchorID))
+                                        .accessibilityIdentifier("detail.event.\(event.normalizedSourceEventID ?? event.id)")
                                         .background {
                                             GeometryReader { geometry in
                                                 Color.clear.preference(
@@ -222,6 +111,8 @@ struct PlayByPlaySection: View {
                 }
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("detail.playByPlay")
     }
 
     private var visibleEvents: [GameEvent] {
@@ -245,7 +136,7 @@ struct PlayByPlaySection: View {
     }
 }
 
-private struct PlayRow: View {
+struct PlayRow: View {
     let presentation: GameEventPresentation
     let importance: EventVisualImportance
     let rawFeedKey: String?
@@ -289,9 +180,11 @@ private struct PlayRow: View {
     private var contextLine: some View {
         HStack(spacing: 5) {
             if !presentation.clockText.isEmpty {
-                Text(presentation.clockText)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                if !AppEnvironment.isRunningUITests {
+                    Text(presentation.clockText)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.ink)
+                }
             }
             if let team = presentation.teamAbbreviation?.nilIfBlank {
                 Text(team)
@@ -327,12 +220,12 @@ private struct PlayRow: View {
            let scoreLabel = presentation.scoreLabel?.nilIfBlank {
             Text(scoreLabel)
                 .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(SportsTheme.Tone.scoring.accent)
+                .foregroundStyle(SportsTheme.Colors.ink)
         } else {
             if let scoreLabel = presentation.scoreLabel?.nilIfBlank {
                 Text(scoreLabel)
                     .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Tone.scoring.accent)
+                    .foregroundStyle(SportsTheme.Colors.ink)
             }
         }
     }
@@ -351,6 +244,10 @@ private struct PlayRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(SportsTheme.Colors.secondaryInk)
             .padding(.top, 2)
+            .frame(minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+            .accessibilityLabel(isRawFeedExpanded ? "Hide feed details" : "Show feed details")
+            .accessibilityValue(isRawFeedExpanded ? "Expanded" : "Collapsed")
 
             if isRawFeedExpanded {
                 VStack(alignment: .leading, spacing: 4) {
@@ -439,13 +336,6 @@ private struct EventMarker: View {
     }
 }
 
-private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-}
-
 struct PlayerStatsSection: View {
     let detail: GameDetail
     let renderer: any SportRenderer
@@ -500,6 +390,13 @@ struct BoxScoreSection: View {
             if scoreRevealed {
                 VStack(spacing: 12) {
                     ScoreboardCardHeader(presentation: presentation)
+                    if let finalScoreText {
+                        Text(finalScoreText)
+                            .font(SportsTheme.Typography.metadata.weight(.semibold))
+                            .foregroundStyle(SportsTheme.Colors.ink)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("detail.boxScore.finalScore")
+                    }
                     ScoreboardContent(presentation: presentation)
 
                     if let gameStateText = presentation.stateText {
@@ -538,5 +435,18 @@ struct BoxScoreSection: View {
                 .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
             }
         }
+    }
+
+    private var finalScoreText: String? {
+        guard
+            game.status.isFinal,
+            let away = game.awayParticipant,
+            let home = game.homeParticipant,
+            let awayScore = game.scoreState.away,
+            let homeScore = game.scoreState.home
+        else {
+            return nil
+        }
+        return "\(away.name) \(awayScore), \(home.name) \(homeScore)"
     }
 }

@@ -1,0 +1,27 @@
+{
+  "games": [
+    {
+      "id": 620,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-23T19:05:00.000Z",
+      "localGameDate": "2026-05-23",
+      "status": "scheduled",
+      "homeTeam": "Philadelphia Phillies",
+      "awayTeam": "Atlanta Braves",
+      "homeTeamAbbr": "PHI",
+      "awayTeamAbbr": "ATL",
+      "currentPeriod": null,
+      "currentPeriodLabel": null,
+      "gameClock": null,
+      "score": null,
+      "homeScore": null,
+      "awayScore": null,
+      "hasPbp": false,
+      "playCount": 0,
+      "isLive": false,
+      "isFinal": false
+    }
+  ],
+  "total": 1,
+  "lastUpdatedAt": "2026-05-22T16:00:00.000Z"
+}

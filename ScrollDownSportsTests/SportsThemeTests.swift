@@ -1,4 +1,6 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import ScrollDownSports
 
 final class SportsThemeTests: XCTestCase {
@@ -339,6 +341,23 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertEqual(SportsTheme.Surface.compactTableRow.radius, SportsTheme.Radius.row)
     }
 
+    func testCoreTextAndFillTokensMeetContrastMinimums() {
+        let textPairs: [(String, Color, Color)] = [
+            ("ink on paper", SportsTheme.Colors.ink, SportsTheme.Colors.paper),
+            ("ink on raised paper", SportsTheme.Colors.ink, SportsTheme.Colors.paperRaised),
+            ("secondary ink on paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paper),
+            ("secondary ink on inset paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paperInset)
+        ]
+
+        for (name, foreground, background) in textPairs {
+            assertContrast(foreground, on: background, name: name)
+        }
+
+        for tone in SportsTheme.Tone.allCases {
+            assertContrast(SportsTheme.Colors.textOnFill, on: tone.accent, name: "text on \(tone.rawValue)")
+        }
+    }
+
     private func makeGame(leagueCode: String, scoreboard: GameScoreboardData? = nil) -> Game {
         Game(
             id: 10,
@@ -374,5 +393,53 @@ final class SportsThemeTests: XCTestCase {
             ),
             availableFeatures: GameAvailableFeatures(hasTimeline: true, hasStats: true, hasScoreboard: true)
         )
+    }
+
+    private func assertContrast(
+        _ foreground: Color,
+        on background: Color,
+        name: String,
+        minimum: CGFloat = 4.5,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            let foregroundColor = UIColor(foreground).resolvedColor(with: traits)
+            let backgroundColor = UIColor(background).resolvedColor(with: traits)
+            let contrast = contrastRatio(foreground: foregroundColor, background: backgroundColor)
+            XCTAssertGreaterThanOrEqual(
+                contrast,
+                minimum,
+                "\(name) \(style == .dark ? "dark" : "light") contrast \(contrast) is below \(minimum)",
+                file: file,
+                line: line
+            )
+        }
+    }
+
+    private func contrastRatio(foreground: UIColor, background: UIColor) -> CGFloat {
+        let foregroundLuminance = relativeLuminance(foreground)
+        let backgroundLuminance = relativeLuminance(background)
+        let lighter = max(foregroundLuminance, backgroundLuminance)
+        let darker = min(foregroundLuminance, backgroundLuminance)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    private func relativeLuminance(_ color: UIColor) -> CGFloat {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard color.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            XCTFail("Could not resolve color components for contrast")
+            return 0
+        }
+
+        func linearized(_ component: CGFloat) -> CGFloat {
+            component <= 0.03928 ? component / 12.92 : pow((component + 0.055) / 1.055, 2.4)
+        }
+
+        return 0.2126 * linearized(red) + 0.7152 * linearized(green) + 0.0722 * linearized(blue)
     }
 }

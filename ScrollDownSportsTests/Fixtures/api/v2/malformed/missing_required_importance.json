@@ -1,0 +1,26 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 900,
+    "leagueCode": "mlb",
+    "gameDate": "2026-05-22T23:10:00Z",
+    "status": "in_progress",
+    "homeTeam": "Seattle Mariners",
+    "awayTeam": "New York Yankees"
+  },
+  "teamStats": [],
+  "playerStats": [],
+  "plays": [
+    {
+      "eventId": "bad-1",
+      "playIndex": 1,
+      "displayType": "Broken play",
+      "periodLabel": "T1",
+      "modeEligibility": { "important": false, "standard": true, "all": true }
+    }
+  ],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}

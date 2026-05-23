@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "headline": "Yankees rally in Seattle",
+  "shortHeadline": "Yankees 7, Mariners 6",
+  "body": "New York strings together four late hits to take the lead.",
+  "matchupLabel": "Yankees at Mariners",
+  "primaryLabel": "Top 9",
+  "secondaryLabel": "One-run game",
+  "tertiaryLabel": "42 plays",
+  "accessibilityLabel": "Yankees at Mariners. Top ninth. Yankees 7, Mariners 6.",
+  "displayState": "live",
+  "visualPriority": 92,
+  "eventCounts": { "key": 4, "flow": 12, "full": 42 },
+  "displayLabels": {
+    "status": "Top 9",
+    "primaryAction": "Catch up",
+    "secondaryContext": "42 plays"
+  },
+  "scoreboardPlacement": "bottom",
+  "timeLabel": "Top 9",
+  "eventTypeLabel": "Rally",
+  "teamLabel": "New York Yankees",
+  "playerLabel": "Aaron Judge",
+  "scoreLabel": "Yankees 7, Mariners 6"
+}

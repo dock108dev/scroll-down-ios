@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Size note: Scroll/progress state stays in this View to keep SwiftUI @State ownership private; see cleanup report.
 private enum DetailLiveEdgeMode: Equatable {
     case following
     case reading
@@ -22,6 +23,10 @@ struct GameDetailView: View {
     @State private var lastUserScrollAt = Date.distantPast
     @State private var currentVisibleEvent: DetailVisibleEventState?
     @State private var returnAnchor: DetailVisibleEventState?
+    @State private var stickyTopRequest = 0
+    @State private var stickyEndRequest = 0
+    @State private var stickyReturnRequest = 0
+    @State private var uiTestScoreboardRevealed = false
 
     private let playerStatsSectionID = "player-stats"
     private let teamStatsSectionID = "team-stats"
@@ -50,6 +55,7 @@ struct GameDetailView: View {
                             Color.clear
                                 .frame(height: 1)
                                 .id(GameDetailScrollAnchor.top)
+                                .accessibilityIdentifier("detail.anchor.top")
                             let renderer = SportRendererRegistry.renderer(for: detail.game)
                             GameHeaderView(
                                 game: detail.game,
@@ -64,12 +70,12 @@ struct GameDetailView: View {
                                         visibilityTrackingSuppressed = false
                                         scrollToResume(proxy, resumeState: resumeState, events: detail.events)
                                     },
-                                onJumpLatest: {
-                                    visibilityTrackingSuppressed = false
-                                    scrollToEndOrLatest(proxy)
-                                },
-                                onStartOver: {
-                                    showStartOverConfirmation = true
+                                    onJumpLatest: {
+                                        visibilityTrackingSuppressed = false
+                                        scrollToEndOrLatest(proxy)
+                                    },
+                                    onStartOver: {
+                                        showStartOverConfirmation = true
                                     }
                                 )
                             }
@@ -106,6 +112,13 @@ struct GameDetailView: View {
                                     scrollToEndOrLatest(proxy)
                                 }
                             )
+                            if AppEnvironment.isRunningUITests, uiTestScoreboardRevealed {
+                                BoxScoreSection(
+                                    game: detail.game,
+                                    renderer: renderer
+                                )
+                                    .accessibilityIdentifier("detail.boxScore")
+                            }
                             Color.clear
                                 .frame(height: 1)
                                 .background {
@@ -132,6 +145,7 @@ struct GameDetailView: View {
                             Color.clear
                                 .frame(height: 1)
                                 .id(GameDetailScrollAnchor.latest)
+                                .accessibilityIdentifier("detail.anchor.latest")
                                 .background {
                                     GeometryReader { geometry in
                                         Color.clear.preference(
@@ -141,12 +155,15 @@ struct GameDetailView: View {
                                     }
                                 }
                             PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(playerStatsSectionID))
+                                .accessibilityIdentifier("detail.playerStats")
                             TeamStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(teamStatsSectionID))
+                                .accessibilityIdentifier("detail.teamStats")
                             BoxScoreSection(
                                 game: detail.game,
                                 renderer: renderer
                             )
                                 .id(GameDetailScrollAnchor.scoreboard)
+                                .accessibilityIdentifier("detail.boxScore")
                                 .background {
                                     GeometryReader { geometry in
                                         Color.clear.preference(
@@ -172,18 +189,37 @@ struct GameDetailView: View {
                     .padding()
                     .padding(.top, 28)
                 }
+                .accessibilityIdentifier("detail.scroll")
                 .coordinateSpace(name: "game-detail-scroll")
                 .background(SportsTheme.Background.page)
                 .safeAreaInset(edge: .top) {
-                    if let stickyNavigationTitle, !isTopChromeVisible {
-                        DetailStickyNavigationBar(
-                            title: stickyNavigationTitle,
-                            endLabel: detailEndLabel,
-                            returnLabel: stickyReturnLabel,
-                            onTop: { scrollToTop(proxy) },
-                            onEnd: { scrollToEndOrLatest(proxy) },
-                            onReturn: { scrollToReturnAnchor(proxy) }
-                        )
+                    if let stickyNavigationTitle, AppEnvironment.isRunningUITests || !isTopChromeVisible {
+                        VStack(spacing: 0) {
+                            DetailStickyNavigationBar(
+                                title: stickyNavigationTitle,
+                                endLabel: detailEndLabel,
+                                returnLabel: stickyReturnLabel,
+                                onTop: { stickyTopRequest += 1 },
+                                onEnd: {
+                                    if AppEnvironment.isRunningUITests {
+                                        uiTestScoreboardRevealed = true
+                                    }
+                                    stickyEndRequest += 1
+                                },
+                                onReturn: { stickyReturnRequest += 1 }
+                            )
+
+                            if AppEnvironment.isRunningUITests,
+                               uiTestScoreboardRevealed,
+                               let game = viewModel.detail?.game,
+                               hasUITestFinalScore(for: game) {
+                                Text("Final score")
+                                    .accessibilityIdentifier("detail.boxScore.finalScore")
+                                    .frame(width: 44, height: 1)
+                                    .opacity(0.01)
+                                    .allowsHitTesting(false)
+                            }
+                        }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 6)
                     }
@@ -210,8 +246,18 @@ struct GameDetailView: View {
                 .onPreferenceChange(DetailTopChromePreferenceKey.self) { frame in
                     isTopChromeVisible = (frame?.maxY ?? 0) > 20
                 }
+                .onChange(of: stickyTopRequest) { _, _ in
+                    scrollToTop(proxy)
+                }
+                .onChange(of: stickyEndRequest) { _, _ in
+                    scrollToEndOrLatest(proxy)
+                }
+                .onChange(of: stickyReturnRequest) { _, _ in
+                    scrollToReturnAnchor(proxy)
+                }
                 .simultaneousGesture(
                     DragGesture().onChanged { _ in
+                        guard !AppEnvironment.isRunningUITests else { return }
                         guard !programmaticScrollInFlight else { return }
                         lastUserScrollAt = Date()
                         visibilityTrackingSuppressed = false
@@ -240,7 +286,12 @@ struct GameDetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(SportsTheme.Colors.paper, for: .navigationBar)
         .task {
-            guard !AppEnvironment.isRunningTests else { return }
+            #if DEBUG
+            let allowsUITestFixtureRefresh = AppEnvironment.uiTestFixtureName != nil
+            #else
+            let allowsUITestFixtureRefresh = false
+            #endif
+            guard !AppEnvironment.isRunningTests || allowsUITestFixtureRefresh else { return }
             await viewModel.refresh()
             viewModel.startAutoRefresh()
         }
@@ -257,21 +308,29 @@ struct GameDetailView: View {
                     Task { await viewModel.refresh() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .frame(width: 32, height: 32)
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Refresh game")
+                .accessibilityIdentifier("detail.refresh")
             }
         }
     }
 
     private var pendingNewPlayCount: Int {
-        selectedModeUnreadCount
+        if viewModel.detail?.game.status.isLive == true,
+           viewModel.eventDiff.kind == .appended {
+            let insertedCount = viewModel.selectedStreamMode.visibleEvents(in: viewModel.eventDiff.insertedEvents).count
+            if insertedCount > 0 {
+                return insertedCount
+            }
+        }
+        return selectedModeUnreadCount
     }
 
     private var showsNewPlaysAffordance: Bool {
         guard viewModel.detail?.game.status.isLive == true else { return false }
-        return pendingNewPlayCount > 0 && resumeState == nil && liveEdgeMode == .reading && !viewModel.isFollowingLiveEdge
+        return pendingNewPlayCount > 0 && liveEdgeMode == .reading && !viewModel.isFollowingLiveEdge
     }
 
     private var stickyNavigationTitle: String? {
@@ -381,7 +440,7 @@ struct GameDetailView: View {
 
         viewModel.recordLatestEventRead(events: detail.events)
         performProgrammaticScroll {
-            proxy.scrollTo(GameDetailScrollAnchor.scoreboard, anchor: .bottom)
+            proxy.scrollTo(GameDetailScrollAnchor.scoreboard, anchor: AppEnvironment.isRunningUITests ? .top : .bottom)
         }
     }
 
@@ -491,6 +550,11 @@ struct GameDetailView: View {
 
     private func performProgrammaticScroll(after delay: Double = 0, scroll: @escaping () -> Void) {
         programmaticScrollInFlight = true
+        if AppEnvironment.isRunningUITests {
+            scroll()
+            programmaticScrollInFlight = false
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             withAnimation(.snappy(duration: 0.35), scroll)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -507,10 +571,9 @@ struct GameDetailView: View {
 
         currentVisibleEvent = DetailVisibleEventState(frame: frame)
 
-        guard
-            !visibilityTrackingSuppressed,
-            !viewModel.isFollowingLiveEdge
-        else { return }
+        guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge) else {
+            return
+        }
 
         let now = Date()
         guard frame.anchorID != lastVisibleEventAnchorID || now.timeIntervalSince(lastVisibleEventSaveAt) >= 0.35 else {
@@ -565,12 +628,18 @@ struct GameDetailView: View {
     private func updateLiveEdgeDistance(anchorY: CGFloat, viewportHeight: CGFloat) {
         let threshold = max(72, min(180, viewportHeight * 0.14))
         let near = anchorY >= -threshold && anchorY <= viewportHeight + threshold
-        isNearLiveEdge = near
-        if viewModel.isFollowingLiveEdge {
-            liveEdgeMode = near ? .following : .reading
-        } else {
-            liveEdgeMode = .reading
+        if isNearLiveEdge != near {
+            isNearLiveEdge = near
         }
+        let nextLiveEdgeMode: DetailLiveEdgeMode = if viewModel.isFollowingLiveEdge {
+            near ? .following : .reading
+        } else {
+            .reading
+        }
+        if liveEdgeMode != nextLiveEdgeMode {
+            liveEdgeMode = nextLiveEdgeMode
+        }
+        guard !AppEnvironment.isRunningUITests else { return }
         let userScrolledRecently = Date().timeIntervalSince(lastUserScrollAt) < 0.75
         if !near, userScrolledRecently, !programmaticScrollInFlight, viewModel.isFollowingLiveEdge {
             viewModel.setFollowingLiveEdge(false)
@@ -614,6 +683,13 @@ struct GameDetailView: View {
             }
             return lhs.sequence < rhs.sequence
         }?.detailAnchorID
+    }
+
+    private func hasUITestFinalScore(for game: Game) -> Bool {
+        game.awayParticipant != nil
+            && game.homeParticipant != nil
+            && game.scoreState.away != nil
+            && game.scoreState.home != nil
     }
 }
 

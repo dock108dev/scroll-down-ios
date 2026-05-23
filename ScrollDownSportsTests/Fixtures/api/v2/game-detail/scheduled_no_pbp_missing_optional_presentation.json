@@ -1,0 +1,33 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 505,
+    "leagueCode": "mlb",
+    "gameDate": "2026-05-23T01:40:00.000Z",
+    "localGameDate": "2026-05-22",
+    "status": "scheduled",
+    "homeTeam": "Boston Red Sox",
+    "awayTeam": "Toronto Blue Jays",
+    "homeTeamAbbr": "BOS",
+    "awayTeamAbbr": "TOR",
+    "currentPeriod": null,
+    "currentPeriodLabel": null,
+    "gameClock": null,
+    "score": null,
+    "homeScore": null,
+    "awayScore": null,
+    "isLive": false,
+    "isFinal": false,
+    "providerExtra": {
+      "unused": true
+    }
+  },
+  "teamStats": [],
+  "playerStats": [],
+  "plays": [],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null,
+  "extraTopLevelField": "ignored"
+}

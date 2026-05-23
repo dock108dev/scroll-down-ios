@@ -3,96 +3,101 @@ import XCTest
 
 final class DecodingTests: XCTestCase {
     func testDecodesTaggedWebGameListShape() throws {
-        let json = """
-        {
-          "games": [
-            {
-              "id": 42,
-              "leagueCode": "mlb",
-              "gameDate": "2026-05-22T23:10:00Z",
-              "localGameDate": "2026-05-22",
-              "status": "in_progress",
-              "homeTeam": "Seattle Mariners",
-              "awayTeam": "New York Yankees",
-              "homeTeamAbbr": "SEA",
-              "awayTeamAbbr": "NYY",
-              "score": { "home": 2, "away": 1 },
-              "playCount": 98,
-              "isLive": true
-            }
-          ],
-          "total": 1
-        }
-        """.data(using: .utf8)!
-
-        let response = try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: json)
+        let response = try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: try SDAFixtures.gameList("live_mlb_two_games"))
         let games = SDADomainMapper.games(from: response)
 
-        XCTAssertEqual(response.games.count, 1)
+        XCTAssertEqual(response.games.count, 2)
         XCTAssertEqual(games[0].scoreState.home, 2)
         XCTAssertEqual(games[0].scoreState.away, 1)
         XCTAssertTrue(games[0].status.isLive)
         XCTAssertEqual(games[0].sport, .mlb)
         XCTAssertEqual(games[0].participants.map(\.role), [.away, .home])
         XCTAssertEqual(games[0].matchupText, "New York Yankees at Seattle Mariners")
-        XCTAssertEqual(games[0].progress.eventCount, 98)
-        XCTAssertEqual(games[0].progress.persistence?.storageKey, "game-42-progress")
+        XCTAssertEqual(games[0].progress.eventCount, 12)
+        XCTAssertEqual(games[0].progress.persistence?.storageKey, "game-504-progress")
+    }
+
+    func testListAndDetailFixturesPreserveCrossFlowIdentity() throws {
+        let listResponse = try JSONDecoder.sda.decode(
+            SDAGameListResponseDTO.self,
+            from: try SDAFixtures.gameList("live_mlb_two_games")
+        )
+        let liveSummary = try XCTUnwrap(SDADomainMapper.games(from: listResponse).first { $0.id == 504 })
+        let scheduledSummary = try XCTUnwrap(SDADomainMapper.games(from: listResponse).first { $0.id == 505 })
+        let liveDetailResponse = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("mlb_live_new_events")
+        )
+        let scheduledDetailResponse = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("scheduled_no_pbp_missing_optional_presentation")
+        )
+        let liveDetail = SDADomainMapper.detail(from: liveDetailResponse)
+        let scheduledDetail = SDADomainMapper.detail(from: scheduledDetailResponse)
+
+        XCTAssertEqual(liveDetailResponse.detailContractVersion, 2)
+        XCTAssertEqual(scheduledDetailResponse.detailContractVersion, 2)
+        XCTAssertEqual(liveSummary.id, liveDetail.game.id)
+        XCTAssertEqual(scheduledSummary.id, scheduledDetail.game.id)
+        XCTAssertEqual(liveSummary.participants.map(\.role), liveDetail.game.participants.map(\.role))
+        XCTAssertEqual(liveSummary.participants.map(\.name), liveDetail.game.participants.map(\.name))
+        XCTAssertEqual(liveDetail.events.map(\.sourceEventID), ["sda-504-001", "sda-504-002", "sda-504-003"])
+        XCTAssertTrue(liveDetail.game.availableFeatures.hasTimeline)
+        XCTAssertFalse(scheduledDetail.game.availableFeatures.hasTimeline)
+        XCTAssertNil(scheduledDetail.game.presentation)
+        XCTAssertNil(scheduledDetail.game.scoreboard)
+        XCTAssertFalse(scheduledDetail.game.scoreState.hasAnyScore)
     }
 
     func testDecodesGameDetailStatsAndPlays() throws {
-        let json = """
-        {
-          "detailContractVersion": 2,
-          "game": {
-            "id": 42,
-            "leagueCode": "nba",
-            "gameDate": "2026-05-22T23:30:00Z",
-            "status": "final",
-            "homeTeam": "Boston Celtics",
-            "awayTeam": "New York Knicks",
-            "score": { "home": 104, "away": 99 }
-          },
-          "teamStats": [
-            { "team": "Boston Celtics", "isHome": true, "stats": { "rebounds": 42 } }
-          ],
-          "playerStats": [
-            { "team": "Boston Celtics", "playerName": "Example Player", "points": 28, "rawStats": { "assists": 6 } }
-          ],
-          "plays": [
-            {
-              "playIndex": 1,
-              "periodLabel": "Q1",
-              "clockLabel": "11:42",
-              "gameClock": "11:42",
-              "playType": "2pt",
-              "displayType": "2-pointer",
-              "description": "Made jumper",
-              "importance": {
-                "level": "secondary",
-                "rank": 25,
-                "reasons": ["scoring"],
-                "isKeyMoment": false,
-                "isScoringPlay": true,
-                "isLeadChange": false,
-                "isTyingPlay": false,
-                "isLateGame": false,
-                "isFinalPlay": false,
-                "isRunEnding": false
-              },
-              "modeEligibility": { "important": false, "standard": true, "all": true }
-            }
-          ]
-        }
-        """.data(using: .utf8)!
-
-        let response = try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: json)
+        let response = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("stats_with_mlb_box_score")
+        )
         let detail = SDADomainMapper.detail(from: response)
 
-        XCTAssertEqual(detail.game.scoreState.home, 104)
-        XCTAssertEqual(detail.game.scoreState.away, 99)
-        XCTAssertEqual(response.playerStats[0].points, 28)
-        XCTAssertEqual(detail.events[0].headline, "Made jumper")
-        XCTAssertEqual(detail.events[0].clockText, "11:42")
+        XCTAssertEqual(detail.game.scoreState.home, 6)
+        XCTAssertEqual(detail.game.scoreState.away, 5)
+        XCTAssertEqual(response.playerStats[0].rawStats["rbi"], .number(2))
+        XCTAssertEqual(detail.events[0].headline, "Julio Rodriguez singles to center. Two runs score.")
+        XCTAssertEqual(detail.events[0].clockText, "Bot 8")
+        XCTAssertEqual(detail.mlbBatters?.first?.hits, 3)
+    }
+
+    func testFullPlayByPlayScoringProgressionMapsScoresAndModes() throws {
+        let finalResponse = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("mlb_final_full_pbp")
+        )
+        let progressionResponse = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("mlb_scoring_progression")
+        )
+        let finalDetail = SDADomainMapper.detail(from: finalResponse)
+        let progression = SDADomainMapper.detail(from: progressionResponse)
+        let firstScoringPlay = try XCTUnwrap(progression.events.first)
+        let finalPlay = try XCTUnwrap(finalDetail.events.last)
+
+        XCTAssertEqual(finalResponse.detailContractVersion, 2)
+        XCTAssertEqual(finalDetail.events.count, 3)
+        XCTAssertTrue(finalDetail.game.status.isFinal)
+        XCTAssertEqual(finalDetail.game.scoreboard?.layout, "inning_table")
+        XCTAssertEqual(finalDetail.game.scoreboard?.competitors.map(\.side), [.away, .home])
+        XCTAssertEqual(finalDetail.game.scoreboard?.segments.map(\.label), ["1", "5", "9"])
+        XCTAssertEqual(firstScoringPlay.importance, .primary)
+        XCTAssertEqual(firstScoringPlay.importanceMetadata?.bucket, "scoring_play")
+        XCTAssertEqual(firstScoringPlay.scoreBefore?.away, 0)
+        XCTAssertEqual(firstScoringPlay.scoreBefore?.home, 0)
+        XCTAssertEqual(firstScoringPlay.scoreAfter.away, 2)
+        XCTAssertEqual(firstScoringPlay.scoreAfter.home, 0)
+        XCTAssertEqual(firstScoringPlay.scoreDelta?.participantRole, .away)
+        XCTAssertEqual(firstScoringPlay.scoreDelta?.before, 0)
+        XCTAssertEqual(firstScoringPlay.scoreDelta?.after, 2)
+        XCTAssertEqual(firstScoringPlay.scoreDelta?.change, 2)
+        XCTAssertEqual(DetailStreamMode.key.visibleEvents(in: progression.events).map(\.id), ["sda-520-001", "sda-520-002"])
+        XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: progression.events).count, 2)
+        XCTAssertEqual(finalPlay.scoreAfter.away, 3)
+        XCTAssertEqual(finalPlay.scoreAfter.home, 5)
     }
 
     func testMapsUnknownSafeSportAndLegacyScores() throws {
@@ -123,61 +128,10 @@ final class DecodingTests: XCTestCase {
     }
 
     func testGamePresentationFieldsOverrideLegacyFallbacks() throws {
-        let json = """
-        {
-          "games": [
-            {
-              "id": 88,
-              "leagueCode": "mlb",
-              "gameDate": "2026-05-22T23:10:00Z",
-              "status": "scheduled",
-              "homeTeam": "Seattle Mariners",
-              "awayTeam": "New York Yankees",
-              "score": { "home": 0, "away": 0 },
-              "playCount": 1,
-              "isLive": false,
-              "presentation": {
-                "schemaVersion": 1,
-                "headline": "Yankees rally in Seattle",
-                "shortHeadline": "Yankees 7, Mariners 6",
-                "matchupLabel": "Yankees at Mariners",
-                "primaryLabel": "Top 9",
-                "secondaryLabel": "One-run game",
-                "accessibilityLabel": "Yankees at Mariners. Top ninth. Yankees 7, Mariners 6.",
-                "displayState": "live",
-                "visualPriority": 92,
-                "eventCounts": { "key": 4, "flow": 12, "full": 42 },
-                "displayLabels": { "status": "Top 9", "primaryAction": "Catch up", "secondaryContext": "42 plays" },
-                "scoreboardPlacement": "bottom"
-              },
-              "eligibility": {
-                "schemaVersion": 1,
-                "playByPlay": { "isEligible": false, "reason": "data_pending" },
-                "boxScore": { "isEligible": true, "reason": "available" },
-                "teamStats": { "isEligible": false, "reason": "stats_unavailable" },
-                "playerStats": { "isEligible": false, "reason": "stats_unavailable" }
-              },
-              "scoreboard": {
-                "schemaVersion": 1,
-                "layout": "inning_table",
-                "statusLabel": "Top 9",
-                "scoreline": "Yankees 7, Mariners 6",
-                "competitors": [
-                  { "side": "away", "teamName": "New York Yankees", "teamAbbreviation": "NYY", "score": 7, "scoreText": "7" },
-                  { "side": "home", "teamName": "Seattle Mariners", "teamAbbreviation": "SEA", "score": 6, "scoreText": "6" }
-                ],
-                "segments": [
-                  { "label": "1", "away": "2", "home": "0" },
-                  { "label": "2", "away": "0", "home": "1" }
-                ],
-                "totals": { "away": "7", "home": "6" }
-              }
-            }
-          ]
-        }
-        """.data(using: .utf8)!
-
-        let response = try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: json)
+        let response = try JSONDecoder.sda.decode(
+            SDAGameListResponseDTO.self,
+            from: try SDAFixtures.gameList("presentation_scoreboard_game")
+        )
         let game = try XCTUnwrap(SDADomainMapper.games(from: response).first)
 
         XCTAssertTrue(game.status.isLive)
@@ -187,6 +141,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(game.presentation?.eventCount(for: .key), 4)
         XCTAssertEqual(game.presentation?.primaryActionLabel, "Catch up")
         XCTAssertEqual(game.presentation?.scoreboardPlacement, "bottom")
+        XCTAssertEqual(game.presentation?.accessibilityLabel, "Yankees at Mariners. Top ninth. Yankees 7, Mariners 6.")
         XCTAssertEqual(game.progress.eventCount, 42)
         XCTAssertFalse(game.availableFeatures.hasTimeline)
         XCTAssertFalse(game.availableFeatures.hasStats)
@@ -199,31 +154,10 @@ final class DecodingTests: XCTestCase {
     }
 
     func testScoreboardPreservesLeaderboardCompetitorsWithoutTeamSides() throws {
-        let json = """
-        {
-          "games": [
-            {
-              "id": 91,
-              "leagueCode": "pga",
-              "gameDate": "2026-05-22T23:10:00Z",
-              "status": "final",
-              "homeTeam": "Field",
-              "awayTeam": "Field",
-              "scoreboard": {
-                "schemaVersion": 1,
-                "layout": "leaderboard",
-                "statusLabel": "Final",
-                "competitors": [
-                  { "teamName": "A. Stone", "scoreText": "-12", "isWinner": true },
-                  { "teamName": "B. Vale", "scoreText": "-10" }
-                ]
-              }
-            }
-          ]
-        }
-        """.data(using: .utf8)!
-
-        let response = try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: json)
+        let response = try JSONDecoder.sda.decode(
+            SDAGameListResponseDTO.self,
+            from: try SDAFixtures.gameList("leaderboard_scoreboard_game")
+        )
         let game = try XCTUnwrap(SDADomainMapper.games(from: response).first)
 
         XCTAssertEqual(game.scoreboard?.layout, "leaderboard")
@@ -232,74 +166,10 @@ final class DecodingTests: XCTestCase {
     }
 
     func testEventPresentationImportanceModesAndScoreStatePreferBackend() throws {
-        let json = """
-        {
-          "detailContractVersion": 2,
-          "game": {
-            "id": 89,
-            "leagueCode": "nhl",
-            "gameDate": "2026-05-22T23:30:00Z",
-            "status": "in_progress",
-            "homeTeam": "North Harbor",
-            "awayTeam": "East Vale",
-            "homeTeamAbbr": "NH",
-            "awayTeamAbbr": "EV",
-            "score": { "home": 0, "away": 0 }
-          },
-          "teamStats": [],
-          "playerStats": [],
-          "plays": [
-            {
-              "eventId": "goal-1",
-              "playIndex": 9,
-              "quarter": 3,
-              "gameClock": "02:14",
-              "playType": "shot",
-              "displayType": "Goal",
-              "periodLabel": "3rd",
-              "clockLabel": "02:14",
-              "teamAbbreviation": "EV",
-              "description": "Legacy raw shot text",
-              "scoreChanged": true,
-              "scoreDisplay": "EV 3 · NH 3",
-              "rawFeedText": "Provider raw goal text",
-              "rawFeedSource": "NHL feed",
-              "rawFeedUpdatedAt": "2026-05-22T23:41:00Z",
-              "presentation": {
-                "schemaVersion": 1,
-                "headline": "Vale ties it late",
-                "body": "Mara Vale scores from the slot to make it 3-3.",
-                "primaryLabel": "Goal",
-                "timeLabel": "3rd 02:14",
-                "scoreLabel": "East Vale 3, North Harbor 3"
-              },
-              "importance": {
-                "schemaVersion": 1,
-                "level": "primary",
-                "rank": 95,
-                "bucket": "scoring",
-                "reasons": ["score_change", "tying_play"],
-                "isKeyMoment": true,
-                "isScoringPlay": true,
-                "isLeadChange": false,
-                "isTyingPlay": true,
-                "isLateGame": true,
-                "isFinalPlay": false,
-                "isRunEnding": false
-              },
-              "modeEligibility": { "important": true, "standard": true, "all": true },
-              "scoreBefore": { "away": 2, "home": 3, "scoreText": "North Harbor 3, East Vale 2" },
-              "scoreboard": {
-                "scoreAfter": { "away": 3, "home": 3, "scoreText": "East Vale 3, North Harbor 3", "isTied": true },
-                "scoreDelta": { "side": "away", "before": 2, "after": 3, "change": 1 }
-              },
-              "metadata": { "strength": "even" }
-            }
-          ]
-        }
-        """.data(using: .utf8)!
-
-        let response = try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: json)
+        let response = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("nhl_event_presentation_importance")
+        )
         let event = try XCTUnwrap(SDADomainMapper.detail(from: response).events.first)
 
         XCTAssertEqual(event.headline, "Vale ties it late")
@@ -317,44 +187,42 @@ final class DecodingTests: XCTestCase {
         XCTAssertTrue(event.usesBackendModeEligibility)
         XCTAssertEqual(DetailStreamMode.key.visibleEvents(in: [event]).map(\.id), ["goal-1"])
         XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: [event]).map(\.id), ["goal-1"])
+        XCTAssertEqual(event.presentation?.scoreLabel, "East Vale 3, North Harbor 3")
         XCTAssertEqual(event.sportMetadata["strength"], .string("even"))
     }
 
-    func testLegacyGameSummaryFallbacksRemainButDetailRequiresV2Contract() throws {
-        let gamesJSON = """
-        {
-          "games": [
-            {
-              "id": 90,
-              "leagueCode": "nba",
-              "gameDate": "2026-05-22T23:30:00Z",
-              "status": "scheduled",
-              "homeTeam": "Boston Celtics",
-              "awayTeam": "New York Knicks"
-            },
-            {
-              "id": 91,
-              "leagueCode": "nba",
-              "gameDate": "2026-05-22T23:30:00Z",
-              "status": "in_progress",
-              "homeTeam": "Boston Celtics",
-              "awayTeam": "New York Knicks",
-              "isLive": true
-            },
-            {
-              "id": 92,
-              "leagueCode": "nba",
-              "gameDate": "2026-05-22T23:30:00Z",
-              "status": "final",
-              "homeTeam": "Boston Celtics",
-              "awayTeam": "New York Knicks",
-              "isFinal": true
-            }
-          ]
-        }
-        """.data(using: .utf8)!
+    func testPartialPayloadsDegradeWithoutFabricatingScoresOrStats() throws {
+        let response = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.gameDetail("partial_degraded_payload")
+        )
+        let detail = SDADomainMapper.detail(from: response)
+        let scoreboard = try XCTUnwrap(detail.game.scoreboard)
 
-        let games = SDADomainMapper.games(from: try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: gamesJSON))
+        XCTAssertEqual(detail.game.participants.map(\.role), [.away, .home])
+        XCTAssertEqual(detail.game.awayParticipant?.name, "New York Yankees")
+        XCTAssertEqual(detail.game.homeParticipant?.name, "")
+        XCTAssertEqual(detail.game.matchupText, "New York Yankees at ")
+        XCTAssertEqual(detail.game.scoreState.away, 2)
+        XCTAssertNil(detail.game.scoreState.home)
+        XCTAssertEqual(scoreboard.competitors.count, 1)
+        XCTAssertEqual(scoreboard.competitors.first?.teamName, "New York Yankees")
+        XCTAssertEqual(scoreboard.segments.map(\.label), ["1"])
+        XCTAssertEqual(scoreboard.totals?.away, "2")
+        XCTAssertNil(scoreboard.totals?.home)
+        XCTAssertEqual(detail.teamStats.map(\.team), ["New York Yankees"])
+        XCTAssertEqual(detail.playerStats.map(\.playerName), ["Cal Rios"])
+        XCTAssertEqual(detail.events.first?.scoreAfter.away, 2)
+        XCTAssertNil(detail.events.first?.scoreAfter.home)
+    }
+
+    func testLegacyGameSummaryFallbacksRemainButDetailRequiresV2Contract() async throws {
+        let games = SDADomainMapper.games(
+            from: try JSONDecoder.sda.decode(
+                SDAGameListResponseDTO.self,
+                from: try SDAFixtures.gameList("legacy_status_fallbacks")
+            )
+        )
 
         XCTAssertTrue(games[0].status.isPregame)
         XCTAssertFalse(games[0].availableFeatures.hasScoreboard)
@@ -362,26 +230,53 @@ final class DecodingTests: XCTestCase {
         XCTAssertTrue(games[2].status.isFinal)
         XCTAssertEqual(games[0].matchupText, "New York Knicks at Boston Celtics")
 
-        let detailJSON = """
-        {
-          "game": {
-            "id": 93,
-            "leagueCode": "nba",
-            "gameDate": "2026-05-22T23:30:00Z",
-            "status": "final",
-            "homeTeam": "Boston Celtics",
-            "awayTeam": "New York Knicks",
-            "score": { "home": 104, "away": 99 }
-          },
-          "teamStats": [],
-          "playerStats": [],
-          "plays": [
-            { "playIndex": 1, "description": "Made three", "scoreChanged": true, "homeScore": 3, "awayScore": 0 },
-            { "playIndex": 2, "description": "Defensive rebound", "tier": 3, "scoreChanged": false, "homeScore": 3, "awayScore": 0 }
-          ]
-        }
-        """.data(using: .utf8)!
+        _ = try JSONDecoder.sda.decode(
+            SDAGameDetailResponseDTO.self,
+            from: try SDAFixtures.malformed("wrong_detail_contract_version")
+        )
+        try await assertMalformedFixtureFailsAsIncompleteDetail(
+            "wrong_detail_contract_version",
+            protocolClass: MockWrongContractURLProtocol.self
+        )
+    }
 
-        XCTAssertThrowsError(try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: detailJSON))
+    func testMalformedDetailFixturesFailAsControlledIncompleteData() async throws {
+        try await assertMalformedFixtureFailsAsIncompleteDetail(
+            "missing_all_usable_event_text",
+            protocolClass: MockMissingTextURLProtocol.self
+        )
+        try await assertMalformedFixtureFailsAsIncompleteDetail(
+            "missing_period_label",
+            protocolClass: MockMissingPeriodURLProtocol.self
+        )
+        try await assertMalformedFixtureFailsAsIncompleteDetail(
+            "missing_mode_eligibility",
+            protocolClass: MockMissingEligibilityURLProtocol.self
+        )
+    }
+
+    private func assertMalformedFixtureFailsAsIncompleteDetail(
+        _ fixtureName: String,
+        protocolClass: MockHTTPURLProtocol.Type,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(try SDAFixtures.malformed(fixtureName))],
+            protocolClass: protocolClass
+        )
+
+        do {
+            _ = try await client.fetchGame(id: 900)
+            XCTFail("Expected incomplete detail error", file: file, line: line)
+        } catch SDAApiError.incompleteDetail {
+        } catch {
+            XCTFail("Unexpected error: \(error)", file: file, line: line)
+        }
     }
 }
+
+private final class MockWrongContractURLProtocol: MockHTTPURLProtocol {}
+private final class MockMissingTextURLProtocol: MockHTTPURLProtocol {}
+private final class MockMissingPeriodURLProtocol: MockHTTPURLProtocol {}
+private final class MockMissingEligibilityURLProtocol: MockHTTPURLProtocol {}

@@ -1,0 +1,118 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 540,
+    "leagueCode": "mlb",
+    "gameDate": "2026-05-22T23:10:00Z",
+    "status": "final",
+    "homeTeam": "Seattle Mariners",
+    "awayTeam": "New York Yankees",
+    "homeTeamAbbr": "SEA",
+    "awayTeamAbbr": "NYY",
+    "score": { "home": 6, "away": 5 },
+    "scoreboard": {
+      "schemaVersion": 1,
+      "layout": "inning_table",
+      "statusLabel": "Final",
+      "scoreline": "Mariners 6, Yankees 5",
+      "competitors": [
+        { "side": "away", "teamName": "New York Yankees", "teamAbbreviation": "NYY", "score": 5, "scoreText": "5" },
+        { "side": "home", "teamName": "Seattle Mariners", "teamAbbreviation": "SEA", "score": 6, "scoreText": "6", "isWinner": true }
+      ],
+      "segments": [
+        { "label": "1", "away": "2", "home": "0" },
+        { "label": "8", "away": "0", "home": "3" }
+      ],
+      "totals": { "away": "5", "home": "6" }
+    }
+  },
+  "teamStats": [
+    {
+      "team": "Seattle Mariners",
+      "isHome": true,
+      "stats": { "hits": 9, "errors": 0 },
+      "normalizedStats": [
+        { "key": "hits", "displayLabel": "Hits", "group": "batting", "value": 9 }
+      ]
+    }
+  ],
+  "playerStats": [
+    {
+      "team": "Seattle Mariners",
+      "playerName": "Julio Rodriguez",
+      "minutes": null,
+      "points": null,
+      "rebounds": null,
+      "assists": null,
+      "yards": null,
+      "touchdowns": null,
+      "rawStats": { "hits": 3, "rbi": 2 }
+    }
+  ],
+  "plays": [
+    {
+      "eventId": "sda-540-001",
+      "playIndex": 1,
+      "quarter": 8,
+      "gameClock": "Bot 8",
+      "playType": "single",
+      "displayType": "Go-ahead single",
+      "teamAbbreviation": "SEA",
+      "playerName": "Julio Rodriguez",
+      "description": "Julio Rodriguez singles to center. Two runs score.",
+      "homeScore": 6,
+      "awayScore": 5,
+      "score": { "home": 6, "away": 5 },
+      "periodLabel": "B8",
+      "clockLabel": "Bot 8",
+      "timeLabel": "B8",
+      "tier": 1,
+      "scoreChanged": true,
+      "scoreDisplay": "SEA 6, NYY 5",
+      "importance": {
+        "schemaVersion": 1,
+        "level": "primary",
+        "rank": 95,
+        "bucket": "go_ahead_hit",
+        "reasons": ["scoring play", "lead change"],
+        "isKeyMoment": true,
+        "isScoringPlay": true,
+        "isLeadChange": true,
+        "isTyingPlay": false,
+        "isLateGame": true,
+        "isFinalPlay": false,
+        "isRunEnding": false
+      },
+      "modeEligibility": { "important": true, "standard": true, "all": true }
+    }
+  ],
+  "mlbBatters": [
+    {
+      "team": "Seattle Mariners",
+      "playerName": "Julio Rodriguez",
+      "position": "CF",
+      "atBats": 4,
+      "hits": 3,
+      "runs": 1,
+      "rbi": 2,
+      "homeRuns": 0,
+      "baseOnBalls": 1,
+      "strikeOuts": 0
+    }
+  ],
+  "mlbPitchers": [
+    {
+      "team": "Seattle Mariners",
+      "playerName": "George Kirby",
+      "inningsPitched": "6.0",
+      "hits": 5,
+      "runs": 2,
+      "earnedRuns": 2,
+      "baseOnBalls": 1,
+      "strikeOuts": 7,
+      "homeRuns": 1
+    }
+  ],
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}

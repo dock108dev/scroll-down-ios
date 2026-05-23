@@ -50,6 +50,7 @@ struct HomeView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 24)
             }
+            .accessibilityIdentifier("home.scroll")
             .onAppear {
                 scrollToInitialHomeAnchor(proxy)
             }
@@ -70,7 +71,12 @@ struct HomeView: View {
             await viewModel.refresh()
         }
         .task {
-            guard !AppEnvironment.isRunningTests else { return }
+            #if DEBUG
+            let allowsUITestFixtureRefresh = AppEnvironment.uiTestFixtureName != nil
+            #else
+            let allowsUITestFixtureRefresh = false
+            #endif
+            guard !AppEnvironment.isRunningTests || allowsUITestFixtureRefresh else { return }
             await viewModel.refresh()
             viewModel.startAutoRefresh()
         }
@@ -86,11 +92,12 @@ struct HomeView: View {
                     Task { await viewModel.refresh() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .frame(width: 32, height: 32)
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .disabled(viewModel.loading)
                 .accessibilityLabel("Refresh games")
+                .accessibilityIdentifier("home.refresh")
             }
         }
         .toolbarBackground(.visible, for: .navigationBar)
@@ -127,10 +134,12 @@ struct HomeView: View {
                 GameRowView(item: item)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("home.gameRow.\(item.id)")
 
             HomePinButton(isPinned: item.isPinned) {
                 viewModel.togglePin(item.game)
             }
+            .accessibilityIdentifier("home.gameRow.\(item.id).pin")
             .padding(.top, 12)
             .padding(.trailing, 12)
         }
@@ -166,6 +175,8 @@ private struct HomeStickyHeader: View {
                 Divider()
                     .overlay(SportsTheme.Colors.hairline)
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("home.stickyHeader")
     }
 }
 
@@ -180,6 +191,7 @@ private struct FilterHeader: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier("home.leaguePicker")
 
             TextField("Filter by team", text: $viewModel.teamQuery)
                 .textInputAutocapitalization(.words)
@@ -190,6 +202,7 @@ private struct FilterHeader: View {
                     RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
                         .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
                 }
+                .accessibilityIdentifier("home.teamFilter")
 
             if let lastUpdated = viewModel.lastUpdated {
                 Text("Updated \(lastUpdated.formatted(date: .omitted, time: .shortened))")
@@ -200,7 +213,7 @@ private struct FilterHeader: View {
     }
 }
 
-private struct PinnedSectionView<Row: View>: View {
+struct PinnedSectionView<Row: View>: View {
     let section: HomePinnedSection
     let row: (HomeGameItem) -> Row
 
@@ -208,6 +221,8 @@ private struct PinnedSectionView<Row: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HomeSectionHeader(title: section.title, subtitle: "Saved and live-tracked games", systemImage: "pin.fill")
                 .id("pinned")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("home.section.pinned")
 
             ForEach(section.games) { item in
                 row(item)
@@ -217,7 +232,7 @@ private struct PinnedSectionView<Row: View>: View {
     }
 }
 
-private struct TimelineSectionView<Row: View>: View {
+struct TimelineSectionView<Row: View>: View {
     let section: HomeTimelineFeedSection
     let hasActiveFilters: Bool
     let clearFilters: () -> Void
@@ -227,6 +242,8 @@ private struct TimelineSectionView<Row: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HomeSectionHeader(title: section.title, subtitle: "Last 72 hours", systemImage: "clock.arrow.circlepath")
                 .id("timeline")
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("home.section.timeline")
 
             if section.dateSections.isEmpty {
                 TodayEmptyRow(hasActiveFilters: hasActiveFilters, clearFilters: clearFilters)
@@ -234,6 +251,8 @@ private struct TimelineSectionView<Row: View>: View {
                 ForEach(section.dateSections) { dateSection in
                     NestedDateHeader(section: dateSection)
                         .id(dateSection.id)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("home.dateSection.\(dateSection.id)")
                         .padding(.top, 6)
 
                     ForEach(dateSection.games) { item in
@@ -256,6 +275,7 @@ private struct HomeSectionHeader: View {
             Image(systemName: systemImage)
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+                .accessibilityHidden(true)
             Text(title)
                 .font(SportsTheme.Typography.sectionTitle)
                 .foregroundStyle(SportsTheme.Colors.ink)
@@ -295,6 +315,7 @@ private struct TodayEmptyRow: View {
             HStack(spacing: 10) {
                 Image(systemName: "calendar")
                     .foregroundStyle(SportsTheme.Tone.neutral.accent)
+                    .accessibilityHidden(true)
                 Text("No games on today's slate for these filters.")
                     .font(.subheadline)
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
@@ -318,7 +339,7 @@ private struct TodayEmptyRow: View {
     }
 }
 
-private struct FilteredEmptyState: View {
+struct FilteredEmptyState: View {
     let clearFilters: () -> Void
 
     var body: some View {
@@ -345,6 +366,7 @@ private struct InlineErrorState: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "wifi.exclamationmark")
                 .foregroundStyle(SportsTheme.Tone.critical.accent)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Showing last known games")
                     .font(.subheadline.weight(.semibold))

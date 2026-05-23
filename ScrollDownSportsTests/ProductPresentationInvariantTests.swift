@@ -4,15 +4,26 @@ import XCTest
 @MainActor
 final class ProductPresentationInvariantTests: XCTestCase {
     func testHomeCardHidesScoresFromTopRegionsUntilScoreboardPayoff() {
-        let game = TestFixtures.makeGame(awayScore: 7, homeScore: 6)
+        let game = TestFixtures.makeGame(
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayScore: 7,
+            homeScore: 6,
+            presentation: scoreRichPresentation()
+        )
         let item = HomeGameItem(game: game, isPinned: false, pinnedRecord: nil, progress: nil)
         let state = HomeGameCardState(item: item)
         let presentation = SportRendererRegistry.renderer(for: game).gameCardPresentation(for: game)
 
         XCTAssertEqual(state.scoreCueText, "score at bottom")
         XCTAssertFalse(state.showsScoreRows)
+        XCTAssertEqual(state.statusText, "Final")
+        XCTAssertEqual(state.primaryActionLabel, "Catch up")
+        XCTAssertEqual(presentation.matchupLabel, "New York Yankees at Seattle Mariners")
         assertNoScoreLeak(
             texts: [
+                presentation.accessibilityLabel,
                 presentation.leagueLabel,
                 presentation.sportLabel,
                 presentation.statusText,
@@ -20,9 +31,11 @@ final class ProductPresentationInvariantTests: XCTestCase {
                 presentation.matchupLabel,
                 state.metadataText,
                 state.contextText,
+                state.statusText,
+                state.statusBadgeText,
                 state.primaryActionLabel
             ],
-            forbidden: ["7-6", "6-7", "7, Mariners 6", "NYY 7", "SEA 6"]
+            forbidden: scoreLeakTerms
         )
     }
 
@@ -64,6 +77,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
             isFinal: true,
             awayScore: 7,
             homeScore: 6,
+            presentation: scoreRichPresentation(),
             scoreboard: scoreboard
         )
         let renderer = SportRendererRegistry.renderer(for: game)
@@ -71,6 +85,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
         let header = renderer.gameHeaderPresentation(for: game)
         assertNoScoreLeak(
             texts: [
+                header.accessibilityLabel,
                 header.leagueLabel,
                 header.sportLabel,
                 header.statusText,
@@ -79,7 +94,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
                 header.matchupLabel,
                 header.secondaryText
             ],
-            forbidden: ["7-6", "6-7", "Yankees 7", "Mariners 6", "NYY 7", "SEA 6"]
+            forbidden: scoreLeakTerms
         )
 
         let scoreboardPresentation = renderer.scoreboardPresentation(for: game)
@@ -110,6 +125,121 @@ final class ProductPresentationInvariantTests: XCTestCase {
             viewModel.setReachedScoreboard(true)
         }
         XCTAssertTrue(store.progress(for: 900)?.reachedScoreboard == true)
+
+        let readGame = TestFixtures.makeGame(
+            id: 900,
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayScore: 7,
+            homeScore: 6,
+            presentation: scoreRichPresentation()
+        )
+        let readItem = HomeGameItem(game: readGame, isPinned: false, pinnedRecord: nil, progress: store.progress(for: 900))
+        let readState = HomeGameCardState(item: readItem)
+        XCTAssertTrue(readState.showsScoreRows)
+        XCTAssertEqual(readState.scoreRows.map(\.scoreText), ["7", "6"])
+
+        let unreadGame = TestFixtures.makeGame(id: 901, status: "final", isLive: false, isFinal: true, awayScore: 5, homeScore: 4)
+        let unreadItem = HomeGameItem(game: unreadGame, isPinned: false, pinnedRecord: nil, progress: store.progress(for: 901))
+        XCTAssertFalse(HomeGameCardState(item: unreadItem).showsScoreRows)
+
+        let header = SportRendererRegistry.renderer(for: readGame).gameHeaderPresentation(for: readGame)
+        assertNoScoreLeak(
+            texts: [
+                header.accessibilityLabel,
+                header.statusText,
+                header.headline,
+                header.matchupLabel,
+                header.secondaryText
+            ],
+            forbidden: scoreLeakTerms
+        )
+    }
+
+    func testScoringPlayScoreLabelUsesBackendThenScoreAfterFallbackOnlyForScoringPlays() {
+        let renderer = GenericSportRenderer(leagueCode: "mlb")
+        let scoringMetadata = EventImportanceData(
+            level: "primary",
+            rank: 90,
+            bucket: "scoring_play",
+            reasons: ["scoring play"],
+            isKeyMoment: true,
+            isScoringPlay: true,
+            isLeadChange: nil,
+            isTyingPlay: nil,
+            winProbabilityDelta: nil
+        )
+        let scoreDelta = ScoreDelta(participantID: "home", participantRole: .home, before: 2, after: 4, change: 2)
+
+        let backendLabel = TestFixtures.makeEvent(
+            sequence: 1,
+            scoreDelta: scoreDelta,
+            presentation: eventPresentation(scoreLabel: "SEA 4, NYY 3"),
+            importanceMetadata: scoringMetadata,
+            homeScore: 4,
+            awayScore: 3
+        )
+        XCTAssertEqual(renderer.eventPresentation(for: backendLabel).scoreLabel, "SEA 4, NYY 3")
+
+        let fallbackLabel = TestFixtures.makeEvent(
+            sequence: 2,
+            scoreDelta: scoreDelta,
+            importanceMetadata: scoringMetadata,
+            homeScore: 4,
+            awayScore: 3
+        )
+        XCTAssertEqual(renderer.eventPresentation(for: fallbackLabel).scoreLabel, "3-4")
+
+        let nonScoring = TestFixtures.makeEvent(sequence: 3, homeScore: 4, awayScore: 3)
+        XCTAssertNil(renderer.eventPresentation(for: nonScoring).scoreLabel)
+
+        let incompleteScoreAfter = TestFixtures.makeEvent(
+            sequence: 4,
+            scoreDelta: scoreDelta,
+            importanceMetadata: scoringMetadata,
+            homeScore: nil,
+            awayScore: 3
+        )
+        XCTAssertNil(renderer.eventPresentation(for: incompleteScoreAfter).scoreLabel)
+    }
+
+    func testFinalGameWithoutScoreboardDataKeepsTopRegionsScorelessAndAllowsNoScorePayoff() {
+        let game = TestFixtures.makeGame(
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            hasTimeline: false,
+            hasScoreboard: true,
+            presentation: scoreRichPresentation()
+        )
+        let item = HomeGameItem(game: game, isPinned: false, pinnedRecord: nil, progress: nil)
+        let state = HomeGameCardState(item: item)
+        let renderer = SportRendererRegistry.renderer(for: game)
+        let header = renderer.gameHeaderPresentation(for: game)
+        let scoreboard = renderer.scoreboardPresentation(for: game)
+
+        XCTAssertNil(state.scoreCueText)
+        XCTAssertFalse(state.showsScoreRows)
+        XCTAssertNil(state.progressText)
+        XCTAssertEqual(state.primaryActionLabel, "Open box score")
+        XCTAssertEqual(scoreboard.stateText, "Final")
+        XCTAssertEqual(scoreboard.rows.map(\.totalText), ["-", "-"])
+        assertNoScoreLeak(
+            texts: [
+                header.accessibilityLabel,
+                header.statusText,
+                header.headline,
+                header.matchupLabel,
+                state.statusText,
+                state.contextText,
+                state.primaryActionLabel
+            ],
+            forbidden: scoreLeakTerms
+        )
     }
 
     func testStreamModesAndEventLabelsUseCustomerLanguage() {
@@ -134,7 +264,51 @@ final class ProductPresentationInvariantTests: XCTestCase {
     private func assertNoScoreLeak(texts: [String?], forbidden: [String], file: StaticString = #filePath, line: UInt = #line) {
         let combined = texts.compactMap { $0 }.joined(separator: " | ")
         for value in forbidden {
-            XCTAssertFalse(combined.contains(value), "\(value) leaked through \(combined)", file: file, line: line)
+            XCTAssertFalse(combined.localizedCaseInsensitiveContains(value), "\(value) leaked through \(combined)", file: file, line: line)
         }
+    }
+
+    private var scoreLeakTerms: [String] {
+        ["7-6", "6-7", "Yankees 7", "Mariners 6", "NYY 7", "SEA 6", "won", "lost", "winner"]
+    }
+
+    private func scoreRichPresentation() -> GamePresentationData {
+        GamePresentationData(
+            headline: "Yankees 7, Mariners 6",
+            shortHeadline: "NYY 7-6",
+            subheadline: "NYY 7 at SEA 6",
+            matchupLabel: "NYY 7 at SEA 6",
+            primaryLabel: "Yankees won 7-6",
+            secondaryLabel: "Mariners lost 7-6",
+            tertiaryLabel: nil,
+            accessibilityLabel: "Yankees won 7-6 over Mariners",
+            displayState: nil,
+            visualPriority: nil,
+            sortBucket: nil,
+            accentRole: nil,
+            statusTone: nil,
+            eventCounts: nil,
+            statusLabel: "Final: NYY 7, SEA 6",
+            primaryActionLabel: "Open Yankees 7-6 win",
+            secondaryContextLabel: nil,
+            scoreboardPlacement: "bottom"
+        )
+    }
+
+    private func eventPresentation(scoreLabel: String?) -> EventPresentationData {
+        EventPresentationData(
+            headline: nil,
+            shortHeadline: nil,
+            body: nil,
+            primaryLabel: nil,
+            secondaryLabel: nil,
+            tertiaryLabel: nil,
+            timeLabel: nil,
+            accessibilityLabel: nil,
+            eventTypeLabel: nil,
+            teamLabel: nil,
+            playerLabel: nil,
+            scoreLabel: scoreLabel
+        )
     }
 }

@@ -33,16 +33,38 @@ struct ScoreboardContent: View {
     let presentation: ScoreboardPresentation
 
     var body: some View {
-        switch presentation.layout {
-        case .leaderboard:
-            LeaderboardScoreboard(presentation: presentation)
-        case .segmentTable:
-            SegmentScoreboard(presentation: presentation)
-        case .soccerSummary:
-            SimpleScoreboard(presentation: presentation, emphasizesGoals: true)
-        case .simpleTotal:
-            SimpleScoreboard(presentation: presentation, emphasizesGoals: false)
+        Group {
+            switch presentation.layout {
+            case .leaderboard:
+                LeaderboardScoreboard(presentation: presentation)
+            case .segmentTable:
+                SegmentScoreboard(presentation: presentation)
+            case .soccerSummary:
+                SimpleScoreboard(presentation: presentation, emphasizesGoals: true)
+            case .simpleTotal:
+                SimpleScoreboard(presentation: presentation, emphasizesGoals: false)
+            }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: String {
+        [
+            presentation.stateText,
+            presentation.rows.map { row in
+                var pieces = ["\(row.title) \(row.totalText)"]
+                if row.isWinner {
+                    pieces.append("winner")
+                }
+                if let record = row.recordText {
+                    pieces.append(record)
+                }
+                return pieces.joined(separator: ", ")
+            }.joined(separator: ". ")
+        ]
+        .compactMap { $0?.nilIfBlank }
+        .joined(separator: ". ")
     }
 }
 

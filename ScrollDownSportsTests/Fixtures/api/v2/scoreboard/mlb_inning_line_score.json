@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "layout": "inning_table",
+  "clockLabel": null,
+  "periodLabel": "Final",
+  "statusLabel": "Final",
+  "scoreline": "Mariners 6, Yankees 5",
+  "competitors": [
+    { "side": "away", "teamName": "New York Yankees", "teamAbbreviation": "NYY", "score": 5, "scoreText": "5" },
+    { "side": "home", "teamName": "Seattle Mariners", "teamAbbreviation": "SEA", "score": 6, "scoreText": "6", "isWinner": true }
+  ],
+  "segments": [
+    { "label": "1", "away": "2", "home": "0" },
+    { "label": "2", "away": "0", "home": "1" },
+    { "label": "8", "away": "0", "home": "3" }
+  ],
+  "totals": { "away": "5", "home": "6" }
+}

@@ -24,7 +24,7 @@ enum SDAApiError: LocalizedError {
 }
 
 final class SDAApiClient: Sendable {
-    static let shared = SDAApiClient()
+    static let shared = makeSharedClient()
 
     private let session: URLSession
     private let baseURL: URL
@@ -109,20 +109,22 @@ final class SDAApiClient: Sendable {
             guard !play.displayType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw SDAApiError.incompleteDetail("displayType missing")
             }
-            guard !isRawEnumLabel(play.displayType) else {
-                throw SDAApiError.incompleteDetail("displayType must be customer-facing")
-            }
             guard !play.periodLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw SDAApiError.incompleteDetail("periodLabel missing")
+            }
+            guard hasUsableEventText(play) else {
+                throw SDAApiError.incompleteDetail("play text missing")
             }
         }
     }
 
-    private func isRawEnumLabel(_ value: String) -> Bool {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.contains("_") { return true }
-        let hasLetter = trimmed.rangeOfCharacter(from: .letters) != nil
-        return hasLetter && trimmed.count > 1 && trimmed == trimmed.uppercased()
+    private func hasUsableEventText(_ play: SDAPlayDTO) -> Bool {
+        [
+            play.presentation?.headline,
+            play.presentation?.body,
+            play.description
+        ].contains { EventLabelResolver.customerText(from: $0) != nil }
+            || EventLabelResolver.customerLabel(from: play.displayType) != nil
     }
 
     private static func configuredBaseURL() -> URL {
@@ -138,5 +140,14 @@ final class SDAApiClient: Sendable {
             return ""
         }
         return sanitized
+    }
+
+    private static func makeSharedClient() -> SDAApiClient {
+        #if DEBUG
+        if AppEnvironment.uiTestFixtureName != nil {
+            return SDAUITestFixtureAPI.makeClient()
+        }
+        #endif
+        return SDAApiClient()
     }
 }

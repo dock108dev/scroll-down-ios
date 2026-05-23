@@ -1,0 +1,68 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 89,
+    "leagueCode": "nhl",
+    "gameDate": "2026-05-22T23:30:00Z",
+    "status": "in_progress",
+    "homeTeam": "North Harbor",
+    "awayTeam": "East Vale",
+    "homeTeamAbbr": "NH",
+    "awayTeamAbbr": "EV",
+    "score": { "home": 0, "away": 0 }
+  },
+  "teamStats": [],
+  "playerStats": [],
+  "plays": [
+    {
+      "eventId": "goal-1",
+      "playIndex": 9,
+      "quarter": 3,
+      "gameClock": "02:14",
+      "playType": "shot",
+      "displayType": "Goal",
+      "periodLabel": "3rd",
+      "clockLabel": "02:14",
+      "teamAbbreviation": "EV",
+      "description": "Legacy raw shot text",
+      "scoreChanged": true,
+      "scoreDisplay": "EV 3 · NH 3",
+      "rawFeedText": "Provider raw goal text",
+      "rawFeedSource": "NHL feed",
+      "rawFeedUpdatedAt": "2026-05-22T23:41:00Z",
+      "presentation": {
+        "schemaVersion": 1,
+        "headline": "Vale ties it late",
+        "body": "Mara Vale scores from the slot to make it 3-3.",
+        "primaryLabel": "Goal",
+        "timeLabel": "3rd 02:14",
+        "scoreLabel": "East Vale 3, North Harbor 3"
+      },
+      "importance": {
+        "schemaVersion": 1,
+        "level": "primary",
+        "rank": 95,
+        "bucket": "scoring",
+        "reasons": ["score_change", "tying_play"],
+        "isKeyMoment": true,
+        "isScoringPlay": true,
+        "isLeadChange": false,
+        "isTyingPlay": true,
+        "isLateGame": true,
+        "isFinalPlay": false,
+        "isRunEnding": false
+      },
+      "modeEligibility": { "important": true, "standard": true, "all": true },
+      "scoreBefore": { "away": 2, "home": 3, "scoreText": "North Harbor 3, East Vale 2" },
+      "scoreboard": {
+        "scoreAfter": { "away": 3, "home": 3, "scoreText": "East Vale 3, North Harbor 3", "isTied": true },
+        "scoreDelta": { "side": "away", "before": 2, "after": 3, "change": 1 }
+      },
+      "metadata": { "strength": "even" }
+    }
+  ],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}

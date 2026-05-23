@@ -1,0 +1,27 @@
+{
+  "games": [
+    {
+      "id": 630,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-23T22:10:00.000Z",
+      "localGameDate": "2026-05-23",
+      "status": "scheduled",
+      "homeTeam": "TBD",
+      "awayTeam": "Chicago Cubs",
+      "homeTeamAbbr": "TBD",
+      "awayTeamAbbr": "CHC",
+      "currentPeriod": null,
+      "currentPeriodLabel": null,
+      "gameClock": null,
+      "score": null,
+      "homeScore": null,
+      "awayScore": null,
+      "hasPbp": false,
+      "playCount": 0,
+      "isLive": false,
+      "isFinal": false
+    }
+  ],
+  "total": 1,
+  "lastUpdatedAt": "2026-05-22T16:00:00.000Z"
+}

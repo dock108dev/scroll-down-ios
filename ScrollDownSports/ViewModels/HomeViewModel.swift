@@ -2,96 +2,6 @@ import Combine
 import Foundation
 import SwiftUI
 
-enum LeagueFilter: String, CaseIterable, Identifiable {
-    case all = "All"
-    case mlb = "MLB"
-    case nba = "NBA"
-    case nhl = "NHL"
-    case nfl = "NFL"
-    case ncaab = "NCAAB"
-    case ncaaf = "NCAAF"
-
-    var id: String { rawValue }
-    var apiValue: String? { self == .all ? nil : rawValue.lowercased() }
-}
-
-struct HomeTimelineSection: Identifiable, Equatable {
-    let id: String
-    let date: Date
-    let title: String
-    let subtitle: String
-    let anchorRole: HomeTimelineAnchorRole
-    let isToday: Bool
-    let games: [HomeGameItem]
-}
-
-enum HomeTimelineAnchorRole: Equatable {
-    case olderCatchUp
-    case yesterday
-    case today
-    case live
-    case laterToday
-    case upcoming
-}
-
-struct HomeGameItem: Identifiable, Equatable {
-    let game: Game
-    let isPinned: Bool
-    let pinnedRecord: PinnedGameRecord?
-    let progress: GameProgressRecord?
-
-    var id: Int { game.id }
-
-    var newEventCount: Int {
-        progress?.newEventCount ?? pinnedRecord?.newEventCount ?? 0
-    }
-
-    var hasResumeState: Bool {
-        guard let progress else { return false }
-        return progress.lastReadEventIndex != nil
-            || progress.lastReadEventID != nil
-            || progress.reachedScoreboard
-            || progress.selectedMode != .timeline
-    }
-
-    var reachedScoreboard: Bool {
-        progress?.reachedScoreboard ?? false
-    }
-}
-
-enum HomeSection: Identifiable, Equatable {
-    case pinned(HomePinnedSection)
-    case timeline(HomeTimelineFeedSection)
-
-    var id: String {
-        switch self {
-        case .pinned:
-            return "pinned"
-        case .timeline:
-            return "timeline"
-        }
-    }
-
-    var gameCount: Int {
-        switch self {
-        case .pinned(let section):
-            return section.games.count
-        case .timeline(let section):
-            return section.dateSections.reduce(0) { $0 + $1.games.count }
-        }
-    }
-}
-
-struct HomePinnedSection: Equatable {
-    let title: String
-    let games: [HomeGameItem]
-}
-
-struct HomeTimelineFeedSection: Equatable {
-    let title: String
-    let dateSections: [HomeTimelineSection]
-}
-
 @MainActor
 final class HomeViewModel: ObservableObject {
     @Published var games: [Game] = []
@@ -103,10 +13,12 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var pinnedGameIds: Set<Int> = []
     @Published private(set) var pinnedGameRecords: [PinnedGameRecord] = []
     @Published private(set) var progressByGameId: [Int: GameProgressRecord] = [:]
+    @Published private(set) var separatelyFetchedPinnedGames: [Game] = []
 
     let gameStateStore: any GameStateStore
     private let apiClient: SDAApiClient
     private let nowProvider: () -> Date
+    private let maxMissingPinnedFetches = 8
     private var refreshTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
@@ -127,7 +39,12 @@ final class HomeViewModel: ObservableObject {
     }
 
     var initialHomeAnchorID: String? {
-        homeAnchorID(for: filteredHomeSections)
+        #if DEBUG
+        if let anchor = AppEnvironment.uiTestHomeInitialAnchor {
+            return anchor
+        }
+        #endif
+        return homeAnchorID(for: filteredHomeSections)
     }
 
     var filteredHomeSections: [HomeSection] {
@@ -167,7 +84,11 @@ final class HomeViewModel: ObservableObject {
     }
 
     private var mergedGames: [Game] {
-        games.sorted { left, right in
+        let homeGameIds = Set(games.map(\.id))
+        let pinnedOnlyGames = separatelyFetchedPinnedGames.filter {
+            pinnedGameIds.contains($0.id) && !homeGameIds.contains($0.id)
+        }
+        return (games + pinnedOnlyGames).sorted { left, right in
             if left.scheduledStart != right.scheduledStart {
                 return left.scheduledStart < right.scheduledStart
             }
@@ -197,10 +118,12 @@ final class HomeViewModel: ObservableObject {
                 limit: 200
             )
             let fetchedAt = Date()
+            separatelyFetchedPinnedGames = []
             if league == .all {
                 gameStateStore.saveHomeSnapshot(games: games, windowKey: window.stableKey, fetchedAt: fetchedAt)
             }
             games.forEach { gameStateStore.updatePinnedGame($0) }
+            separatelyFetchedPinnedGames = await fetchMissingPinnedGames(currentGames: games, fetchedAt: fetchedAt)
             lastUpdated = fetchedAt
         } catch {
             errorMessage = error.localizedDescription
@@ -442,7 +365,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func isVisibleInDefaultHomeTimeline(_ game: Game) -> Bool {
-        guard hasConcreteParticipants(game) else { return false }
+        guard GameParticipantVisibility.hasConcreteParticipants(game) else { return false }
         if game.status.isPregame {
             return game.scheduledStart >= nowProvider() && hasUsefulPregamePreview(game)
         }
@@ -453,29 +376,6 @@ final class HomeViewModel: ObservableObject {
             return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
         }
         return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
-    }
-
-    private func hasConcreteParticipants(_ game: Game) -> Bool {
-        guard let away = game.awayParticipant,
-              let home = game.homeParticipant else {
-            return false
-        }
-        return isConcreteParticipant(away) && isConcreteParticipant(home)
-    }
-
-    private func isConcreteParticipant(_ participant: GameParticipant) -> Bool {
-        let name = participant.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let abbreviation = participant.abbreviation?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let placeholderNames: Set<String> = ["", "tbd", "to be determined"]
-        let placeholderAbbreviations: Set<String> = ["", "tbd", "tt"]
-        if placeholderNames.contains(name) {
-            return false
-        }
-        if let abbreviation,
-           placeholderAbbreviations.contains(abbreviation) {
-            return false
-        }
-        return true
     }
 
     private func hasUsefulPregamePreview(_ game: Game) -> Bool {
@@ -492,6 +392,31 @@ final class HomeViewModel: ObservableObject {
             ].contains { $0?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         }
         return false
+    }
+
+    private func fetchMissingPinnedGames(currentGames: [Game], fetchedAt: Date) async -> [Game] {
+        let fetchedIds = Set(currentGames.map(\.id))
+        let records = pinnedGameRecords
+            .filter { $0.isPinned && !fetchedIds.contains($0.gameId) }
+            .prefix(maxMissingPinnedFetches)
+
+        var fetchedGames: [Game] = []
+        for record in records {
+            do {
+                let detail = try await apiClient.fetchGame(id: record.gameId)
+                guard gameStateStore.isPinned(gameId: record.gameId) else { continue }
+                gameStateStore.updatePinnedGameDetail(detail, fetchedAt: fetchedAt)
+                gameStateStore.updatePinnedGame(detail.game)
+                fetchedGames.append(detail.game)
+            } catch {
+                gameStateStore.recordPinnedGameRefreshFailure(
+                    gameId: record.gameId,
+                    message: error.localizedDescription,
+                    at: fetchedAt
+                )
+            }
+        }
+        return fetchedGames
     }
 
     private func homeItem(for game: Game) -> HomeGameItem {
@@ -565,56 +490,5 @@ private extension Game {
         participants
             .flatMap { [$0.name, $0.abbreviation ?? ""] }
         .contains { $0.lowercased().contains(query) }
-    }
-
-    init(pinnedRecord: PinnedGameRecord) {
-        self.init(
-            id: pinnedRecord.gameId,
-            sport: Sport(leagueCode: pinnedRecord.sportCode),
-            leagueCode: pinnedRecord.leagueCode,
-            scheduledStart: pinnedRecord.gameDate,
-            localDateLabel: DateFormatters.queryDate.string(from: pinnedRecord.gameDate),
-            status: GameStatus(rawValue: pinnedRecord.statusRawValue, isLiveOverride: nil, isFinalOverride: nil),
-            participants: [
-                GameParticipant(
-                    id: "away-\(pinnedRecord.gameId)",
-                    role: .away,
-                    name: pinnedRecord.awayTeam,
-                    abbreviation: pinnedRecord.awayTeamAbbr
-                ),
-                GameParticipant(
-                    id: "home-\(pinnedRecord.gameId)",
-                    role: .home,
-                    name: pinnedRecord.homeTeam,
-                    abbreviation: pinnedRecord.homeTeamAbbr
-                )
-            ],
-            scoreState: ScoreState(
-                participantScores: [
-                    ParticipantScore(participantID: "away-\(pinnedRecord.gameId)", participantRole: .away, score: pinnedRecord.awayScore),
-                    ParticipantScore(participantID: "home-\(pinnedRecord.gameId)", participantRole: .home, score: pinnedRecord.homeScore)
-                ]
-            ),
-            presentation: nil,
-            scoreboard: nil,
-            progress: GameProgress(
-                selectedMode: .timeline,
-                periodOrdinal: nil,
-                periodLabel: nil,
-                clockLabel: nil,
-                eventCount: pinnedRecord.summaryPlayCountBaseline,
-                lastReadEventID: pinnedRecord.lastReadEventID,
-                scrollFallback: nil,
-                reachedScoreboard: false,
-                updatedAt: pinnedRecord.lastSummaryRefreshAt,
-                restoredAt: pinnedRecord.lastViewedAt,
-                persistence: nil
-            ),
-            availableFeatures: GameAvailableFeatures(
-                hasTimeline: pinnedRecord.summaryPlayCountBaseline != nil,
-                hasStats: true,
-                hasScoreboard: true
-            )
-        )
     }
 }

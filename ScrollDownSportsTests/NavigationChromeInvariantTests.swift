@@ -27,20 +27,43 @@ final class NavigationChromeInvariantTests: XCTestCase {
     func testDetailRefreshToolbarControlHasStableSizeAndLabel() throws {
         let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
 
-        XCTAssertTrue(source.contains(".frame(width: 32, height: 32)"))
+        XCTAssertTrue(source.contains(".frame(minWidth: 44, minHeight: 44)"))
         XCTAssertTrue(source.contains(".accessibilityLabel(\"Refresh game\")"))
     }
 
     func testDetailScreenHasStickyProgressNavigationWithoutLargeDuplicateCard() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
-        let streamSource = try repoFile("ScrollDownSports/Views/CatchUpSections.swift")
+        let chromeSource = try repoFile("ScrollDownSports/Views/GameDetailChrome.swift")
 
         XCTAssertTrue(detailSource.contains("DetailStickyNavigationBar("))
         XCTAssertTrue(detailSource.contains("scrollToTop(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToReturnAnchor(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
         XCTAssertTrue(detailSource.contains("Back to"))
-        XCTAssertTrue(streamSource.contains("Capsule()"))
+        XCTAssertTrue(chromeSource.contains("Capsule()"))
+    }
+
+    func testReturnAnchorRemainsViewLocalAndClearsAfterBackToSpot() throws {
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let storeSource = try repoFile("ScrollDownSports/Persistence/GameStateStore.swift")
+
+        XCTAssertTrue(detailSource.contains("@State private var returnAnchor: DetailVisibleEventState?"))
+        XCTAssertTrue(detailSource.contains("private func rememberReturnAnchor()"))
+        XCTAssertTrue(detailSource.contains("return \"Back to \\(returnAnchor.label)\""))
+        XCTAssertTrue(detailSource.contains("private func scrollToReturnAnchor(_ proxy: ScrollViewProxy)"))
+        XCTAssertTrue(detailSource.contains("returnAnchor = nil"))
+        XCTAssertFalse(storeSource.contains("returnAnchor"))
+    }
+
+    func testResumeBannerKeepsResumePrimaryWithLatestAndStartOverSecondary() throws {
+        let streamSource = try repoFile("ScrollDownSports/Views/GameDetailChrome.swift")
+
+        let resumeButtonRange = try XCTUnwrap(streamSource.range(of: "Text(\"Resume\")"))
+        let menuRange = try XCTUnwrap(streamSource.range(of: "Menu {"))
+        XCTAssertLessThan(resumeButtonRange.lowerBound, menuRange.lowerBound)
+        XCTAssertTrue(streamSource.contains("Label(\"Jump latest\", systemImage: \"arrow.down.to.line\")"))
+        XCTAssertTrue(streamSource.contains("Label(\"Start over\", systemImage: \"restart\")"))
+        XCTAssertTrue(streamSource.contains("Button(role: .destructive)"))
     }
 
     func testSportsNativeControlsUseSharedStyleAndFeedback() throws {

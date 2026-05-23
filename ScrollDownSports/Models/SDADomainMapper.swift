@@ -6,7 +6,11 @@ enum SDADomainMapper {
     }
 
     static func detail(from response: SDAGameDetailResponseDTO) -> GameDetail {
-        let game = game(from: response.game)
+        let game = game(
+            from: response.game,
+            hasPbp: !response.plays.isEmpty,
+            playCount: nil
+        )
         return GameDetail(
             game: game,
             teamStats: response.teamStats,
@@ -47,6 +51,10 @@ enum SDADomainMapper {
     }
 
     static func game(from dto: SDAGameDTO) -> Game {
+        game(from: dto, hasPbp: nil, playCount: nil)
+    }
+
+    private static func game(from dto: SDAGameDTO, hasPbp: Bool?, playCount: Int?) -> Game {
         game(
             id: dto.id,
             leagueCode: dto.leagueCode,
@@ -63,8 +71,8 @@ enum SDADomainMapper {
             score: dto.score,
             homeScore: dto.homeScore,
             awayScore: dto.awayScore,
-            hasPbp: nil,
-            playCount: nil,
+            hasPbp: hasPbp,
+            playCount: playCount,
             isLiveFlag: dto.isLiveFlag,
             isFinalFlag: dto.isFinalFlag,
             presentation: dto.presentation,
@@ -91,12 +99,12 @@ enum SDADomainMapper {
             scoreState(scoreSnapshot: $0, score: nil, homeScore: nil, awayScore: nil, participants: participants)
         }
         let owningRole = participantRole(for: dto.teamAbbreviation, participants: participants)
-        let headline = [
-            dto.presentation?.headline,
-            dto.presentation?.body,
-            dto.description,
-            dto.displayType
-        ].firstNonBlank ?? "Game update"
+        let headline = EventLabelResolver.customerHeadline(
+            presentationHeadline: dto.presentation?.headline,
+            presentationBody: dto.presentation?.body,
+            description: dto.description,
+            displayType: dto.displayType
+        )
         let detail = eventDetail(presentation: dto.presentation, headline: headline, playerName: dto.playerName)
         let importanceMetadata = eventImportance(from: dto.importance)
         let delta = scoreDelta(
@@ -383,8 +391,9 @@ enum SDADomainMapper {
             secondaryLabel: dto?.secondaryLabel?.nilIfBlank,
             tertiaryLabel: dto?.tertiaryLabel?.nilIfBlank,
             timeLabel: dto?.timeLabel?.nilIfBlank ?? clockLabel?.nilIfBlank,
-            accessibilityLabel: dto?.accessibilityLabel?.nilIfBlank,
-            eventTypeLabel: dto?.eventTypeLabel?.nilIfBlank ?? displayType.nilIfBlank,
+            accessibilityLabel: EventLabelResolver.customerText(from: dto?.accessibilityLabel),
+            eventTypeLabel: EventLabelResolver.customerLabel(from: dto?.eventTypeLabel)
+                ?? EventLabelResolver.customerLabel(from: displayType),
             teamLabel: dto?.teamLabel?.nilIfBlank,
             playerLabel: dto?.playerLabel?.nilIfBlank,
             scoreLabel: dto?.scoreLabel?.nilIfBlank ?? scoreDisplay?.nilIfBlank
@@ -454,13 +463,6 @@ enum SDADomainMapper {
         var metadata = dto.metadata ?? dto.sportMetadata ?? [:]
         metadata["playIndex"] = .number(Double(dto.playIndex))
         return metadata
-    }
-}
-
-private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

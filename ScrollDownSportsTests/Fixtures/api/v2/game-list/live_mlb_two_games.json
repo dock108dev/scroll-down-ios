@@ -1,0 +1,48 @@
+{
+  "games": [
+    {
+      "id": 504,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-22T23:10:00.000Z",
+      "localGameDate": "2026-05-22",
+      "status": "in_progress",
+      "homeTeam": "Seattle Mariners",
+      "awayTeam": "New York Yankees",
+      "homeTeamAbbr": "SEA",
+      "awayTeamAbbr": "NYY",
+      "currentPeriod": 4,
+      "currentPeriodLabel": "T4",
+      "gameClock": "1 out",
+      "score": { "home": 2, "away": 1 },
+      "homeScore": 2,
+      "awayScore": 1,
+      "hasPbp": true,
+      "playCount": 12,
+      "isLive": true,
+      "isFinal": false
+    },
+    {
+      "id": 505,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-23T01:40:00.000Z",
+      "localGameDate": "2026-05-22",
+      "status": "scheduled",
+      "homeTeam": "Boston Red Sox",
+      "awayTeam": "Toronto Blue Jays",
+      "homeTeamAbbr": "BOS",
+      "awayTeamAbbr": "TOR",
+      "currentPeriod": null,
+      "currentPeriodLabel": null,
+      "gameClock": null,
+      "score": { "home": 0, "away": 0 },
+      "homeScore": 0,
+      "awayScore": 0,
+      "hasPbp": false,
+      "playCount": 0,
+      "isLive": false,
+      "isFinal": false
+    }
+  ],
+  "total": 2,
+  "lastUpdatedAt": "2026-05-22T23:25:00.000Z"
+}

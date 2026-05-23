@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "targetName": "ScrollDownSports.app",
+  "reportPath": ".build/coverage/xccov-report.json",
+  "targetMinimumLineCoverage": 46.6,
+  "defaultFileMinimumLineCoverage": 0.0,
+  "tolerancePercentagePoints": 0.25,
+  "minimumImprovementPercentagePoints": 0.5,
+  "excludedPathGlobs": [
+    "ScrollDownSports/Resources/**",
+    "ScrollDownSports/**/*.generated.swift",
+    "ScrollDownSports/**/*Generated.swift",
+    "ScrollDownSports/**/Generated/**",
+    "ScrollDownSports/Models/DomainModels.swift",
+    "ScrollDownSports/Models/DetailStreamMode.swift",
+    "ScrollDownSportsTests/**/Fixtures/**",
+    "ScrollDownSportsTests/**/*Fixture*.swift",
+    "ScrollDownSportsTests/**/*Mock*.swift",
+    "ScrollDownSportsTests/**/*Stub*.swift",
+    "Config/**",
+    "project.yml",
+    "ScrollDownSports.xcodeproj/**",
+    "ScrollDownSports/Resources/Info.plist",
+    "ScrollDownSports/Resources/ScrollDownSports.entitlements",
+    "ScrollDownSports/App/AppDelegate.swift",
+    "ScrollDownSports/App/ScrollDownSportsApp.swift"
+  ],
+  "includedPathOverrides": [
+    "ScrollDownSports/App/AppEnvironment.swift",
+    "ScrollDownSports/App/BackgroundDataScheduler.swift"
+  ],
+  "fileMinimumLineCoverageOverrides": {
+    "ScrollDownSports/App/AppEnvironment.swift": 0.0,
+    "ScrollDownSports/App/BackgroundDataScheduler.swift": 0.0,
+    "ScrollDownSports/DesignSystem/SportsSurfaces.swift": 0.0,
+    "ScrollDownSports/DesignSystem/SportsTheme.swift": 0.0
+  }
+}

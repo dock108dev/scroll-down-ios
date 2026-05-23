@@ -299,11 +299,13 @@ struct SportsControlButtonStyle: ButtonStyle {
             .foregroundStyle(foregroundColor)
             .padding(.vertical, compact ? 7 : 9)
             .padding(.horizontal, compact ? 10 : 12)
+            .frame(minWidth: 44, minHeight: 44)
             .background(backgroundColor(configuration: configuration), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
                     .stroke(borderColor(configuration: configuration), lineWidth: SportsTheme.Stroke.standard)
             )
+            .contentShape(Rectangle())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.snappy(duration: 0.16), value: configuration.isPressed)
     }

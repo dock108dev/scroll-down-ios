@@ -11,6 +11,10 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: 1.18.0
 targets:
   ScrollDownSports:
     type: application
@@ -45,11 +49,30 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dock108.scrolldownsports.tests
     dependencies:
       - target: ScrollDownSports
+      - package: SnapshotTesting
+  ScrollDownSportsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ScrollDownSportsUITests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.dock108.scrolldownsports.uitests
+    dependencies:
+      - target: ScrollDownSports
 schemes:
   ScrollDownSports:
     build:
       targets:
         ScrollDownSports: all
+        ScrollDownSportsUITests: all
     test:
+      gatherCoverageData: true
+      coverageTargets:
+        - ScrollDownSports
+      environmentVariables:
+        SNAPSHOT_RECORD: "$(SNAPSHOT_RECORD)"
       targets:
         - ScrollDownSportsTests
+        - ScrollDownSportsUITests

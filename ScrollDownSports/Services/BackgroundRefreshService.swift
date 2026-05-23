@@ -1,19 +1,54 @@
 import Foundation
 
 @MainActor
+protocol BackgroundRefreshAPIClient {
+    func fetchGames(window: GameWindow, limit: Int) async throws -> [Game]
+    func fetchGame(id: Int) async throws -> GameDetail
+}
+
+@MainActor
+private final class SDABackgroundRefreshAPIClient: BackgroundRefreshAPIClient {
+    private let apiClient: SDAApiClient
+
+    init(apiClient: SDAApiClient) {
+        self.apiClient = apiClient
+    }
+
+    func fetchGames(window: GameWindow, limit: Int) async throws -> [Game] {
+        try await apiClient.fetchGames(window: window, limit: limit)
+    }
+
+    func fetchGame(id: Int) async throws -> GameDetail {
+        try await apiClient.fetchGame(id: id)
+    }
+}
+
+@MainActor
 final class BackgroundRefreshService {
     static let shared = BackgroundRefreshService(
         apiClient: .shared,
         gameStateStore: UserDefaultsGameStateStore()
     )
 
-    private let apiClient: SDAApiClient
+    private let apiClient: any BackgroundRefreshAPIClient
     private let gameStateStore: any GameStateStore
     private let now: () -> Date
     private let maxPinnedDetailFetches: Int
 
     init(
         apiClient: SDAApiClient,
+        gameStateStore: any GameStateStore,
+        now: @escaping () -> Date = Date.init,
+        maxPinnedDetailFetches: Int = 8
+    ) {
+        self.apiClient = SDABackgroundRefreshAPIClient(apiClient: apiClient)
+        self.gameStateStore = gameStateStore
+        self.now = now
+        self.maxPinnedDetailFetches = max(0, maxPinnedDetailFetches)
+    }
+
+    init(
+        apiClient: any BackgroundRefreshAPIClient,
         gameStateStore: any GameStateStore,
         now: @escaping () -> Date = Date.init,
         maxPinnedDetailFetches: Int = 8

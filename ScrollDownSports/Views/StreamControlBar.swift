@@ -23,6 +23,7 @@ struct StreamControlBar: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier("detail.streamModePicker")
 
             HStack(spacing: 8) {
                 Text(contextLine)
@@ -30,6 +31,7 @@ struct StreamControlBar: View {
                     .foregroundStyle(contextColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
+                    .accessibilityIdentifier("detail.streamControls")
 
                 Spacer(minLength: 0)
 
@@ -42,6 +44,7 @@ struct StreamControlBar: View {
                     }
                     .buttonStyle(.sportsControl(tone: .newPlay, compact: true))
                     .accessibilityLabel("Jump to latest")
+                    .accessibilityIdentifier("detail.jumpEnd")
                 }
 
                 Menu {
@@ -67,9 +70,11 @@ struct StreamControlBar: View {
                     Image(systemName: isGamePinned ? "pin.fill" : "ellipsis")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(isGamePinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Colors.secondaryInk)
-                        .frame(width: 28, height: 28)
+                        .frame(minWidth: 44, minHeight: 44)
                         .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
                 }
+                .accessibilityLabel(isGamePinned ? "Game actions, pinned" : "Game actions")
+                .accessibilityIdentifier("detail.gameActions")
             }
         }
         .sportsSurface(.streamControlBar, accent: renderer.theme.accentColor)

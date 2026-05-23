@@ -28,9 +28,9 @@ enum TestFixtures {
         isLive: Bool? = true,
         isFinal: Bool? = nil,
         awayName: String = "New York Yankees",
-        awayAbbreviation: String = "NYY",
+        awayAbbreviation: String? = "NYY",
         homeName: String = "Seattle Mariners",
-        homeAbbreviation: String = "SEA",
+        homeAbbreviation: String? = "SEA",
         awayScore: Int? = 1,
         homeScore: Int? = 2,
         eventCount: Int? = 12,
@@ -99,6 +99,7 @@ enum TestFixtures {
         usesBackendModeEligibility: Bool = true,
         presentation: EventPresentationData? = nil,
         importanceMetadata: EventImportanceData? = nil,
+        rawFeedSource: String? = nil,
         homeScore: Int? = nil,
         awayScore: Int? = nil,
         sportMetadata: [String: JSONValue] = [:]
@@ -121,7 +122,7 @@ enum TestFixtures {
             headline: headline ?? "Game update \(sequence)",
             detail: detail,
             rawText: nil,
-            rawFeedSource: nil,
+            rawFeedSource: rawFeedSource,
             rawFeedUpdatedAt: nil,
             scoreBefore: nil,
             scoreAfter: ScoreState(
@@ -160,92 +161,27 @@ enum TestFixtures {
     }
 
     static func sdaGameListJSON(ids: [Int]) -> Data {
-        let games = ids.map { sdaGameSummaryJSON(id: $0) }.joined(separator: ",")
-        return Data("""
-        {"games":[\(games)],"total":\(ids.count),"lastUpdatedAt":null}
-        """.utf8)
+        do {
+            return try SDAFixturePayloadFactory.gameList(ids: ids)
+        } catch {
+            preconditionFailure("Unable to build SDA game-list fixture payload: \(error)")
+        }
     }
 
     static func sdaGameSummaryJSON(id: Int, playCount: Int = 2) -> String {
-        """
-        {
-          "id": \(id),
-          "leagueCode": "mlb",
-          "gameDate": "2026-05-22T23:10:00.000Z",
-          "localGameDate": "2026-05-22",
-          "status": "in_progress",
-          "homeTeam": "Seattle Mariners",
-          "awayTeam": "New York Yankees",
-          "homeTeamAbbr": "SEA",
-          "awayTeamAbbr": "NYY",
-          "currentPeriod": 1,
-          "currentPeriodLabel": "Q1",
-          "gameClock": "10:00",
-          "score": {"home": 0, "away": 0},
-          "homeScore": 0,
-          "awayScore": 0,
-          "hasPbp": true,
-          "playCount": \(playCount),
-          "isLive": true,
-          "isFinal": false
+        do {
+            return try SDAFixturePayloadFactory.gameSummary(id: id, playCount: playCount)
+        } catch {
+            preconditionFailure("Unable to build SDA game-summary fixture payload: \(error)")
         }
-        """
     }
 
     static func sdaGameDetailJSON(gameId: Int = 504, playIDs: [String]) -> Data {
-        let plays = playIDs.enumerated().map { index, id in
-            """
-            {
-              "eventId": "\(id)",
-              "playIndex": \(index + 1),
-              "quarter": 1,
-              "gameClock": "10:0\(index)",
-              "playType": "play",
-              "displayType": "Game update",
-              "teamAbbreviation": "SEA",
-              "playerName": null,
-              "description": "Game update \(index + 1)",
-              "homeScore": \(index),
-              "awayScore": 0,
-              "score": {"home": \(index), "away": 0},
-              "periodLabel": "Q1",
-              "clockLabel": "10:0\(index)",
-              "timeLabel": "10:0\(index)",
-              "tier": 3,
-              "scoreChanged": false,
-              "scoreDisplay": null,
-              "importance": {
-                "level": "tertiary",
-                "rank": 10,
-                "reasons": [],
-                "isKeyMoment": false,
-                "isScoringPlay": false,
-                "isLeadChange": false,
-                "isTyingPlay": false,
-                "isLateGame": false,
-                "isFinalPlay": false,
-                "isRunEnding": false
-              },
-              "modeEligibility": { "important": false, "standard": false, "all": true }
-            }
-            """
-        }.joined(separator: ",")
-
-        return Data(
-            """
-            {
-              "detailContractVersion": 2,
-              "game": \(sdaGameSummaryJSON(id: gameId, playCount: playIDs.count)),
-              "teamStats": [],
-              "playerStats": [],
-              "plays": [\(plays)],
-              "mlbBatters": null,
-              "mlbPitchers": null,
-              "nhlSkaters": null,
-              "nhlGoalies": null
-            }
-            """.utf8
-        )
+        do {
+            return try SDAFixturePayloadFactory.gameDetail(gameId: gameId, playIDs: playIDs)
+        } catch {
+            preconditionFailure("Unable to build SDA game-detail fixture payload: \(error)")
+        }
     }
 
     static func makeProgress(
@@ -274,9 +210,16 @@ enum MockHTTPResponse {
 
 class MockHTTPURLProtocol: URLProtocol {
     nonisolated(unsafe) private static var responseQueues: [ObjectIdentifier: [MockHTTPResponse]] = [:]
+    nonisolated(unsafe) private static var requestedURLs: [ObjectIdentifier: [URL]] = [:]
 
     static func setResponses(_ responses: [MockHTTPResponse], for protocolClass: MockHTTPURLProtocol.Type) {
-        responseQueues[ObjectIdentifier(protocolClass)] = responses
+        let key = ObjectIdentifier(protocolClass)
+        responseQueues[key] = responses
+        requestedURLs[key] = []
+    }
+
+    static func requestURLs(for protocolClass: MockHTTPURLProtocol.Type) -> [URL] {
+        requestedURLs[ObjectIdentifier(protocolClass)] ?? []
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -292,6 +235,7 @@ class MockHTTPURLProtocol: URLProtocol {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
+        Self.recordRequest(url, for: type(of: self))
 
         switch next {
         case .ok(let data):
@@ -311,6 +255,11 @@ class MockHTTPURLProtocol: URLProtocol {
         let response = queue.removeFirst()
         responseQueues[key] = queue
         return response
+    }
+
+    private static func recordRequest(_ url: URL, for protocolClass: MockHTTPURLProtocol.Type) {
+        let key = ObjectIdentifier(protocolClass)
+        requestedURLs[key, default: []].append(url)
     }
 
     private func respond(url: URL, statusCode: Int, data: Data) {

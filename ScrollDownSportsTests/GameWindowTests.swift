@@ -22,12 +22,16 @@ final class GameWindowTests: XCTestCase {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/New_York")!
         let today = calendar.startOfDay(for: now)
+        let expectedStart = now.addingTimeInterval(-72 * 60 * 60)
+        let expectedEnd = calendar.date(byAdding: DateComponents(day: 2, second: -1), to: today)!
 
-        XCTAssertEqual(window.start, now.addingTimeInterval(-72 * 60 * 60))
-        XCTAssertEqual(window.end, calendar.date(byAdding: DateComponents(day: 2, second: -1), to: today))
+        XCTAssertEqual(window.start, expectedStart)
+        XCTAssertEqual(window.end, expectedEnd)
         XCTAssertTrue(window.contains(now))
+        XCTAssertTrue(window.contains(expectedStart))
+        XCTAssertTrue(window.contains(expectedEnd))
         XCTAssertTrue(window.contains(calendar.date(byAdding: .day, value: 1, to: today)!))
-        XCTAssertFalse(window.contains(now.addingTimeInterval(-73 * 60 * 60)))
-        XCTAssertFalse(window.contains(calendar.date(byAdding: .day, value: 2, to: today)!))
+        XCTAssertFalse(window.contains(expectedStart.addingTimeInterval(-1)))
+        XCTAssertFalse(window.contains(expectedEnd.addingTimeInterval(1)))
     }
 }

@@ -4,7 +4,7 @@
 
 `ScrollDownSportsApp` creates a `UserDefaultsGameStateStore`, gives it to `ContentView`, and wires the same store into `BackgroundDataScheduler`.
 
-`ContentView` hosts `HomeView` in a `NavigationStack`. `HomeView` shows league and team filters, a refresh button, pull-to-refresh, pinned games, today's games, and earlier games. The home fetch window is `GameWindow.home`, which covers seven days before the current New York day through the end of the current New York day.
+`ContentView` hosts `HomeView` in a `NavigationStack`. `HomeView` shows league and team filters, a refresh button, pull-to-refresh, pinned games, today's games, and earlier games. The home fetch window is `GameWindow.home`, which starts 72 hours before the current instant and runs through the end of tomorrow in the New York calendar.
 
 `GameDetailView` loads one game by id, shows a game header, optional resume banner, stream controls, play-by-play, player stats, team stats, and then the box score section. The detail screen starts a foreground refresh loop every five minutes while visible and stops it on disappear.
 
@@ -54,3 +54,5 @@ The home card state hides score rows behind a `Score at bottom` cue when a game 
 `project.yml` defines one iOS application target, `ScrollDownSports`, and one unit-test target, `ScrollDownSportsTests`. The deployment target is iOS 18.0, Swift version is 6.0, marketing version is 0.1.0, and current project version is 1.
 
 The app target uses `ScrollDownSports/Resources/Info.plist`, `ScrollDownSports/Resources/ScrollDownSports.entitlements`, and `ScrollDownSports/Resources/PrivacyInfo.xcprivacy`. The privacy manifest currently declares no collected data types, no accessed API types, no tracking domains, and tracking disabled.
+
+The shared `ScrollDownSports` scheme gathers coverage for the app target during XCTest. Local and CI runs write `.build/TestResults/ScrollDownSports.xcresult`, emit `.build/coverage/xccov-report.json` and `.build/coverage/xccov-files.json`, and enforce the filtered threshold policy in `Config/coverage-thresholds.json`.

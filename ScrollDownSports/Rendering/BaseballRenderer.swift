@@ -36,9 +36,3 @@ struct BaseballRenderer: GenericSportRendererBacked {
         return event.detail
     }
 }
-
-private extension String {
-    var nilIfEmpty: String? {
-        isEmpty ? nil : self
-    }
-}

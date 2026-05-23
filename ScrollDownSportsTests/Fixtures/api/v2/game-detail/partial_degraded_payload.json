@@ -1,0 +1,99 @@
+{
+  "detailContractVersion": 2,
+  "game": {
+    "id": 560,
+    "leagueCode": "mlb",
+    "gameDate": "2026-05-22T23:10:00Z",
+    "localGameDate": "2026-05-22",
+    "status": "in_progress",
+    "homeTeam": "",
+    "awayTeam": "New York Yankees",
+    "homeTeamAbbr": null,
+    "awayTeamAbbr": "NYY",
+    "score": { "home": null, "away": 2 },
+    "homeScore": null,
+    "awayScore": 2,
+    "isLive": true,
+    "isFinal": false,
+    "scoreboard": {
+      "schemaVersion": 1,
+      "layout": "line_score",
+      "periodLabel": "T4",
+      "competitors": [
+        {
+          "side": "away",
+          "teamName": "New York Yankees",
+          "teamAbbreviation": "NYY",
+          "score": 2,
+          "scoreText": "2"
+        },
+        {
+          "side": null,
+          "teamName": null,
+          "teamAbbreviation": null,
+          "score": null,
+          "scoreText": null
+        }
+      ],
+      "segments": [
+        { "label": "1", "away": "2", "home": null },
+        { "label": null, "away": "0", "home": "0" }
+      ],
+      "totals": { "away": "2", "home": null }
+    }
+  },
+  "teamStats": [
+    {
+      "team": "New York Yankees",
+      "isHome": false,
+      "stats": { "hits": 4 },
+      "normalizedStats": [
+        { "key": "hits", "displayLabel": "Hits", "group": "batting", "value": 4 }
+      ]
+    }
+  ],
+  "playerStats": [
+    {
+      "team": "New York Yankees",
+      "playerName": "Cal Rios",
+      "rawStats": { "hits": 2 }
+    }
+  ],
+  "plays": [
+    {
+      "eventId": "partial-560-001",
+      "playIndex": 1,
+      "quarter": 4,
+      "gameClock": "12:14",
+      "playType": "single",
+      "displayType": "Single",
+      "teamAbbreviation": "NYY",
+      "description": "Cal Rios singles to right.",
+      "homeScore": null,
+      "awayScore": 2,
+      "score": { "home": null, "away": 2 },
+      "periodLabel": "T4",
+      "clockLabel": "12:14",
+      "scoreChanged": false,
+      "importance": {
+        "schemaVersion": 1,
+        "level": "secondary",
+        "rank": 25,
+        "bucket": "base_runner",
+        "reasons": [],
+        "isKeyMoment": false,
+        "isScoringPlay": false,
+        "isLeadChange": false,
+        "isTyingPlay": false,
+        "isLateGame": false,
+        "isFinalPlay": false,
+        "isRunEnding": false
+      },
+      "modeEligibility": { "important": false, "standard": true, "all": true }
+    }
+  ],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}

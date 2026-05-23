@@ -61,10 +61,10 @@ struct HomeGameCardState: Equatable {
     }
 
     private static func statusText(for game: Game, phase: HomeGameCardPhase) -> String {
-        if let label = game.presentation?.statusLabel ?? game.presentation?.primaryLabel {
+        if let label = ScoreSpoilerFilter.topRegionText(game.presentation?.statusLabel ?? game.presentation?.primaryLabel, for: game) {
             return label
         }
-        if let scoreboardStatus = game.scoreboard?.statusLabel {
+        if let scoreboardStatus = ScoreSpoilerFilter.topRegionText(game.scoreboard?.statusLabel, for: game) {
             return scoreboardStatus
         }
         switch phase {
@@ -101,6 +101,7 @@ struct HomeGameCardState: Equatable {
             return "Preview"
         }
         if let backendLabel = item.game.presentation?.primaryActionLabel?.nilIfBlank,
+           ScoreSpoilerFilter.topRegionText(backendLabel, for: item.game) != nil,
            labelIsAllowed(backendLabel, phase: phase, capability: capability) {
             return backendLabel
         }
@@ -307,12 +308,5 @@ private struct HomeGameCardCapability {
         self.hasOpenedRecap = hasOpenedRecap
         self.shouldHideScoreBehindCue = game.scoreState.hasAnyScore && !item.reachedScoreboard && (phase == .final || canCatchUp)
         self.canShowScoreRows = game.scoreState.hasAnyScore && !shouldHideScoreBehindCue
-    }
-}
-
-private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }

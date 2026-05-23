@@ -1,0 +1,27 @@
+{
+  "games": [
+    {
+      "id": 640,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-22T18:05:00.000Z",
+      "localGameDate": "2026-05-22",
+      "status": "final",
+      "homeTeam": "Baltimore Orioles",
+      "awayTeam": "Tampa Bay Rays",
+      "homeTeamAbbr": "BAL",
+      "awayTeamAbbr": "TB",
+      "currentPeriod": 9,
+      "currentPeriodLabel": "Final",
+      "gameClock": null,
+      "score": { "home": 5, "away": 3 },
+      "homeScore": 5,
+      "awayScore": 3,
+      "hasPbp": true,
+      "playCount": 84,
+      "isLive": false,
+      "isFinal": true
+    }
+  ],
+  "total": 1,
+  "lastUpdatedAt": "2026-05-22T21:10:00.000Z"
+}

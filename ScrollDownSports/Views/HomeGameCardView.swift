@@ -16,6 +16,7 @@ struct GameRowView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HomeCardMetadataRow(
+                    gameID: game.id,
                     state: cardState,
                     presentation: presentation
                 )
@@ -24,6 +25,7 @@ struct GameRowView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     if let away = game.awayParticipant {
                         TeamLine(
+                            gameID: game.id,
                             abbreviation: away.abbreviation,
                             name: away.name,
                             scoreText: cardState.showsScoreRows ? cardState.scoreRows.first { $0.id == away.id }?.scoreText : nil
@@ -31,6 +33,7 @@ struct GameRowView: View {
                     }
                     if let home = game.homeParticipant {
                         TeamLine(
+                            gameID: game.id,
                             abbreviation: home.abbreviation,
                             name: home.name,
                             scoreText: cardState.showsScoreRows ? cardState.scoreRows.first { $0.id == home.id }?.scoreText : nil
@@ -39,6 +42,7 @@ struct GameRowView: View {
                 }
 
                 HomeCardContext(state: cardState)
+                    .accessibilityIdentifier("home.gameRow.\(game.id).status")
             }
         }
         .padding(12)
@@ -51,7 +55,10 @@ struct GameRowView: View {
                 .stroke(SportsTheme.Stroke.accent(accent(for: cardState, fallback: presentation.accentColor)), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel(presentation: presentation, state: cardState))
+        .accessibilityHint("Opens game details.")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var game: Game {
@@ -77,9 +84,9 @@ struct GameRowView: View {
 
     private func accessibilityLabel(presentation: GameCardPresentation, state: HomeGameCardState) -> String {
         [
-            presentation.accessibilityLabel,
-            presentation.headline,
-            game.matchupText,
+            ScoreSpoilerFilter.topRegionText(presentation.accessibilityLabel, for: game),
+            ScoreSpoilerFilter.topRegionText(presentation.headline, for: game),
+            ScoreSpoilerFilter.matchupText(for: game),
             state.statusText,
             state.primaryActionLabel
         ]
@@ -100,13 +107,14 @@ struct HomePinButton: View {
             Image(systemName: isPinned ? "pin.slash.fill" : "pin")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(isPinned ? SportsTheme.Colors.textOnFill : SportsTheme.Tone.pinned.accent)
-                .frame(width: 30, height: 30)
+                .frame(minWidth: 44, minHeight: 44)
                 .background(
                     isPinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Tone.pinned.subtleFill,
                     in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
                 )
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .scaleEffect(isPinned ? 1.04 : 1)
         .animation(.snappy(duration: 0.22), value: isPinned)
         .accessibilityLabel(isPinned ? "Unpin game" : "Pin game")
@@ -114,6 +122,7 @@ struct HomePinButton: View {
 }
 
 private struct HomeCardMetadataRow: View {
+    let gameID: Int
     let state: HomeGameCardState
     let presentation: GameCardPresentation
 
@@ -125,6 +134,7 @@ private struct HomeCardMetadataRow: View {
             Text(state.metadataText)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                .accessibilityIdentifier("home.gameRow.\(gameID).status")
             if state.phase == .live {
                 Circle()
                     .fill(SportsTheme.Tone.live.accent)
@@ -141,11 +151,11 @@ private struct HomeCardContext: View {
         HStack(spacing: 6) {
             Image(systemName: contextIcon)
                 .font(.caption2.weight(.bold))
+                .accessibilityHidden(true)
             Text(state.contextText)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(contextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -213,6 +223,7 @@ private struct HomeCardScoreRows: View {
 }
 
 private struct TeamLine: View {
+    let gameID: Int
     let abbreviation: String?
     let name: String
     let scoreText: String?
@@ -236,18 +247,12 @@ private struct TeamLine: View {
                     .monospacedDigit()
                     .foregroundStyle(SportsTheme.Colors.ink)
                     .frame(minWidth: 24, alignment: .trailing)
+                    .accessibilityIdentifier("home.gameRow.\(gameID).score")
             }
         }
     }
 
     private var shortName: String {
         String(name.split(separator: " ").last?.prefix(4) ?? "TEAM")
-    }
-}
-
-private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }

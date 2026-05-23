@@ -153,6 +153,7 @@ final class InMemoryGameStateStore: GameStateStore {
         update(&next)
         next.schemaVersion = LocalGameStateSnapshot.currentSchemaVersion
         next.updatedAt = now()
+        next.pruneFixtureState()
         subject.send(next)
     }
 

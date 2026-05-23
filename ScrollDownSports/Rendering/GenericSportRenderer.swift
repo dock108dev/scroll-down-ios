@@ -26,10 +26,10 @@ struct GenericSportRenderer: SportRenderer {
             sportLabel: theme.sportLabel,
             accentColor: theme.accentColor,
             statusText: statusText(for: game),
-            headline: game.presentation?.headline ?? game.presentation?.shortHeadline,
-            matchupLabel: game.matchupText,
-            secondaryText: game.presentation?.secondaryLabel ?? game.presentation?.subheadline,
-            accessibilityLabel: game.presentation?.accessibilityLabel
+            headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
+            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
+            accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
     }
 
@@ -40,10 +40,10 @@ struct GenericSportRenderer: SportRenderer {
             accentColor: theme.accentColor,
             statusText: statusText(for: game),
             playCountText: game.progress.eventCount.map { "\($0) plays" },
-            headline: game.presentation?.headline ?? game.presentation?.shortHeadline,
-            matchupLabel: game.matchupText,
-            secondaryText: game.presentation?.secondaryLabel ?? game.presentation?.subheadline,
-            accessibilityLabel: game.presentation?.accessibilityLabel
+            headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
+            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
+            accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
     }
 
@@ -52,27 +52,15 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     func periodGroupLabel(for event: GameEvent) -> String {
-        normalizedPeriodLabel(periodOrdinal: event.periodOrdinal, periodLabel: event.periodLabel) ?? "Game"
+        periodOutput(for: event).groupLabel ?? "Game"
     }
 
     func periodGroupKey(for event: GameEvent) -> String {
-        if let periodLabel = cleanedLabel(event.periodLabel) {
-            return "period:\(periodLabel.normalizedPeriodKey)"
-        }
-        if let periodOrdinal = event.periodOrdinal {
-            return "period:\(normalizedLeagueCode.lowercased()):\(periodOrdinal)"
-        }
-        return "period:game"
+        periodOutput(for: event).groupKey
     }
 
     func rowClockText(for event: GameEvent, periodGroupLabel: String?) -> String {
-        guard let rawClock = cleanedLabel(event.presentation?.timeLabel) ?? cleanedLabel(event.clockLabel) else {
-            return ""
-        }
-        guard let periodGroupLabel = cleanedLabel(periodGroupLabel) else {
-            return rawClock
-        }
-        return rawClock.removingPeriodPrefix(periodGroupLabel)
+        periodOutput(for: event).rowClockText
     }
 
     func scoreboardPresentation(for game: Game) -> ScoreboardPresentation {
@@ -102,17 +90,13 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     func periodClockText(periodOrdinal: Int?, periodLabel: String?, clockLabel: String?) -> String {
-        normalizedPeriodClockText(
-            periodLabel: normalizedPeriodLabel(periodOrdinal: periodOrdinal, periodLabel: periodLabel),
+        PeriodLabelFormatter.output(
+            sport: Sport(leagueCode: leagueCode),
+            leagueCode: leagueCode,
+            periodOrdinal: periodOrdinal,
+            periodLabel: periodLabel,
             clockLabel: clockLabel
-        ) ?? ""
-    }
-
-    func normalizedPeriodLabel(periodOrdinal: Int?, periodLabel: String?) -> String? {
-        if let periodLabel = periodLabel?.cleanDisplayLabel {
-            return periodLabel
-        }
-        return periodOrdinal.map { fallbackPeriodLabel(for: $0) }
+        ).combinedText ?? ""
     }
 
     func teamStatSection(for detail: GameDetail) -> StatSectionPresentation {
@@ -124,7 +108,7 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     func statusText(for game: Game) -> String {
-        if let label = game.presentation?.statusLabel ?? game.presentation?.primaryLabel {
+        if let label = topRegionText(game.presentation?.statusLabel ?? game.presentation?.primaryLabel, for: game) {
             return label
         }
         if game.status.isLive {
@@ -191,50 +175,15 @@ struct GenericSportRenderer: SportRenderer {
         return trimmed.isEmpty ? "SPORT" : trimmed.uppercased()
     }
 
-    private func fallbackPeriodLabel(for period: Int) -> String {
-        switch normalizedLeagueCode {
-        case "NBA", "WNBA", "NFL", "NCAAF", "NCAAFB", "NCAAB", "NCAAMB", "NCAAWB":
-            if period <= 4 {
-                return "Q\(period)"
-            }
-            if period == 5 {
-                return "OT"
-            }
-            return "\(period - 4)OT"
-        case "NHL":
-            if period == 1 { return "1st" }
-            if period == 2 { return "2nd" }
-            if period == 3 { return "3rd" }
-            if period == 4 { return "OT" }
-            return "\(period - 3)OT"
-        case "MLB":
-            return ordinal(period)
-        default:
-            return "Period \(period)"
-        }
-    }
-
-    private func ordinal(_ value: Int) -> String {
-        let suffix: String
-        if (11...13).contains(value % 100) {
-            suffix = "th"
-        } else {
-            switch value % 10 {
-            case 1:
-                suffix = "st"
-            case 2:
-                suffix = "nd"
-            case 3:
-                suffix = "rd"
-            default:
-                suffix = "th"
-            }
-        }
-        return "\(value)\(suffix)"
-    }
-
-    private func cleanedLabel(_ value: String?) -> String? {
-        value?.cleanDisplayLabel
+    private func periodOutput(for event: GameEvent) -> PeriodLabelOutput {
+        PeriodLabelFormatter.output(
+            sport: Sport(leagueCode: leagueCode),
+            leagueCode: leagueCode,
+            periodOrdinal: event.periodOrdinal,
+            periodLabel: event.periodLabel,
+            clockLabel: event.clockLabel,
+            presentationTimeLabel: event.presentation?.timeLabel
+        )
     }
 
     private func scoreboardStateText(for game: Game) -> String? {
@@ -289,6 +238,10 @@ struct GenericSportRenderer: SportRenderer {
         return sideTotal ?? competitor.scoreText ?? competitor.score.map(String.init) ?? "-"
     }
 
+    private func topRegionText(_ value: String?, for game: Game) -> String? {
+        ScoreSpoilerFilter.topRegionText(value, for: game)
+    }
+
     private func accentColor(for leagueCode: String) -> Color {
         switch leagueCode {
         case "MLB":
@@ -306,13 +259,5 @@ struct GenericSportRenderer: SportRenderer {
         default:
             return Color(red: 0.200, green: 0.358, blue: 0.494)
         }
-    }
-}
-
-private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
-
-    var normalizedPeriodKey: String {
-        normalizedLabelKey
     }
 }

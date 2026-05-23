@@ -1,0 +1,23 @@
+{
+  "games": [
+    {
+      "id": 91,
+      "leagueCode": "pga",
+      "gameDate": "2026-05-22T23:10:00Z",
+      "status": "final",
+      "homeTeam": "Field",
+      "awayTeam": "Field",
+      "scoreboard": {
+        "schemaVersion": 1,
+        "layout": "leaderboard",
+        "statusLabel": "Final",
+        "competitors": [
+          { "teamName": "A. Stone", "scoreText": "-12", "isWinner": true },
+          { "teamName": "B. Vale", "scoreText": "-10" }
+        ]
+      }
+    }
+  ],
+  "total": 1,
+  "lastUpdatedAt": "2026-05-22T23:25:00.000Z"
+}

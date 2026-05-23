@@ -1,0 +1,53 @@
+{
+  "games": [
+    {
+      "id": 88,
+      "leagueCode": "mlb",
+      "gameDate": "2026-05-22T23:10:00Z",
+      "status": "scheduled",
+      "homeTeam": "Seattle Mariners",
+      "awayTeam": "New York Yankees",
+      "score": { "home": 0, "away": 0 },
+      "playCount": 1,
+      "isLive": false,
+      "presentation": {
+        "schemaVersion": 1,
+        "headline": "Yankees rally in Seattle",
+        "shortHeadline": "Yankees 7, Mariners 6",
+        "matchupLabel": "Yankees at Mariners",
+        "primaryLabel": "Top 9",
+        "secondaryLabel": "One-run game",
+        "accessibilityLabel": "Yankees at Mariners. Top ninth. Yankees 7, Mariners 6.",
+        "displayState": "live",
+        "visualPriority": 92,
+        "eventCounts": { "key": 4, "flow": 12, "full": 42 },
+        "displayLabels": { "status": "Top 9", "primaryAction": "Catch up", "secondaryContext": "42 plays" },
+        "scoreboardPlacement": "bottom"
+      },
+      "eligibility": {
+        "schemaVersion": 1,
+        "playByPlay": { "isEligible": false, "reason": "data_pending" },
+        "boxScore": { "isEligible": true, "reason": "available" },
+        "teamStats": { "isEligible": false, "reason": "stats_unavailable" },
+        "playerStats": { "isEligible": false, "reason": "stats_unavailable" }
+      },
+      "scoreboard": {
+        "schemaVersion": 1,
+        "layout": "inning_table",
+        "statusLabel": "Top 9",
+        "scoreline": "Yankees 7, Mariners 6",
+        "competitors": [
+          { "side": "away", "teamName": "New York Yankees", "teamAbbreviation": "NYY", "score": 7, "scoreText": "7" },
+          { "side": "home", "teamName": "Seattle Mariners", "teamAbbreviation": "SEA", "score": 6, "scoreText": "6" }
+        ],
+        "segments": [
+          { "label": "1", "away": "2", "home": "0" },
+          { "label": "2", "away": "0", "home": "1" }
+        ],
+        "totals": { "away": "7", "home": "6" }
+      }
+    }
+  ],
+  "total": 1,
+  "lastUpdatedAt": "2026-05-22T23:25:00.000Z"
+}

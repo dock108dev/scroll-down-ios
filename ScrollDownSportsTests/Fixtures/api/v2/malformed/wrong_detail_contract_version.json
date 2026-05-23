@@ -1,0 +1,56 @@
+{
+  "detailContractVersion": 1,
+  "game": {
+    "id": 901,
+    "leagueCode": "nba",
+    "gameDate": "2026-05-22T23:30:00Z",
+    "localGameDate": "2026-05-22",
+    "status": "final",
+    "homeTeam": "Boston Celtics",
+    "awayTeam": "New York Knicks",
+    "homeTeamAbbr": "BOS",
+    "awayTeamAbbr": "NYK",
+    "score": { "home": 104, "away": 99 },
+    "isLive": false,
+    "isFinal": true
+  },
+  "teamStats": [],
+  "playerStats": [],
+  "plays": [
+    {
+      "eventId": "legacy-901-001",
+      "playIndex": 1,
+      "quarter": 4,
+      "gameClock": "00:14",
+      "playType": "three_point_made",
+      "displayType": "Made three",
+      "teamAbbreviation": "BOS",
+      "playerName": "Mara Vale",
+      "description": "Mara Vale makes a three-pointer.",
+      "homeScore": 104,
+      "awayScore": 99,
+      "score": { "home": 104, "away": 99 },
+      "periodLabel": "Q4",
+      "clockLabel": "00:14",
+      "importance": {
+        "schemaVersion": 1,
+        "level": "primary",
+        "rank": 75,
+        "bucket": "scoring",
+        "reasons": ["scoring play"],
+        "isKeyMoment": true,
+        "isScoringPlay": true,
+        "isLeadChange": false,
+        "isTyingPlay": false,
+        "isLateGame": true,
+        "isFinalPlay": false,
+        "isRunEnding": false
+      },
+      "modeEligibility": { "important": true, "standard": true, "all": true }
+    }
+  ],
+  "mlbBatters": null,
+  "mlbPitchers": null,
+  "nhlSkaters": null,
+  "nhlGoalies": null
+}
