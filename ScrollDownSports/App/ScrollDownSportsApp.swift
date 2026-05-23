@@ -8,7 +8,6 @@ struct ScrollDownSportsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(.dark)
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -22,4 +21,3 @@ struct ScrollDownSportsApp: App {
         }
     }
 }
-

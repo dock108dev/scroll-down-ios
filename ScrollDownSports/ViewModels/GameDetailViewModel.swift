@@ -6,6 +6,7 @@ final class GameDetailViewModel: ObservableObject {
     @Published var loading = false
     @Published var errorMessage: String?
     @Published var lastUpdated: Date?
+    @Published private(set) var updateToken = UUID()
 
     let gameId: Int
     private let apiClient: SDAApiClient
@@ -24,6 +25,7 @@ final class GameDetailViewModel: ObservableObject {
         do {
             detail = try await apiClient.fetchGame(id: gameId)
             lastUpdated = Date()
+            updateToken = UUID()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -45,4 +47,3 @@ final class GameDetailViewModel: ObservableObject {
         refreshTask = nil
     }
 }
-

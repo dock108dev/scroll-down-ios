@@ -5,9 +5,19 @@ struct GameWindow: Equatable {
     let end: Date
 
     static func current(now: Date = Date()) -> GameWindow {
-        GameWindow(
-            start: now.addingTimeInterval(-72 * 60 * 60),
-            end: now.addingTimeInterval(48 * 60 * 60)
+        centeredOnToday(now: now)
+    }
+
+    static func centeredOnToday(now: Date = Date(), pastDays: Int = 7, futureDays: Int = 7) -> GameWindow {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        let today = calendar.startOfDay(for: now)
+        let start = calendar.date(byAdding: .day, value: -pastDays, to: today) ?? now.addingTimeInterval(-7 * 24 * 60 * 60)
+        let endOfToday = calendar.date(byAdding: DateComponents(day: futureDays + 1, second: -1), to: today)
+        let end = endOfToday ?? now.addingTimeInterval(7 * 24 * 60 * 60)
+        return GameWindow(
+            start: start,
+            end: end
         )
     }
 
@@ -23,4 +33,3 @@ struct GameWindow: Equatable {
         date >= start && date <= end
     }
 }
-

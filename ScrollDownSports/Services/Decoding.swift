@@ -55,4 +55,28 @@ enum DateFormatters {
         formatter.dateFormat = "EEE, MMM d · h:mm a"
         return formatter
     }()
+
+    static let timeOnly: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+
+    static let dayTitle: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+
+    static let daySubtitle: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
 }
