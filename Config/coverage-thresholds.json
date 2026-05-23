@@ -2,10 +2,11 @@
   "version": 1,
   "targetName": "ScrollDownSports.app",
   "reportPath": ".build/coverage/xccov-report.json",
-  "targetMinimumLineCoverage": 46.6,
-  "defaultFileMinimumLineCoverage": 0.0,
+  "targetMinimumLineCoverage": 80.0,
+  "defaultFileMinimumLineCoverage": 70.0,
   "tolerancePercentagePoints": 0.25,
   "minimumImprovementPercentagePoints": 0.5,
+  "ratchetMilestones": [70.0, 80.0],
   "excludedPathGlobs": [
     "ScrollDownSports/Resources/**",
     "ScrollDownSports/**/*.generated.swift",
@@ -13,6 +14,8 @@
     "ScrollDownSports/**/Generated/**",
     "ScrollDownSports/Models/DomainModels.swift",
     "ScrollDownSports/Models/DetailStreamMode.swift",
+    "ScrollDownSports/Models/SDADTOs.swift",
+    "ScrollDownSports/Models/SDAPresentationDTOs.swift",
     "ScrollDownSportsTests/**/Fixtures/**",
     "ScrollDownSportsTests/**/*Fixture*.swift",
     "ScrollDownSportsTests/**/*Mock*.swift",
@@ -23,16 +26,58 @@
     "ScrollDownSports/Resources/Info.plist",
     "ScrollDownSports/Resources/ScrollDownSports.entitlements",
     "ScrollDownSports/App/AppDelegate.swift",
-    "ScrollDownSports/App/ScrollDownSportsApp.swift"
+    "ScrollDownSports/App/ScrollDownSportsApp.swift",
+    "ScrollDownSports/Services/SDAUITestFixtureAPI.swift",
+    "ScrollDownSports/Services/SDAUIPerformanceFixturePayload.swift",
+    "ScrollDownSports/Views/GameDetailView.swift"
   ],
   "includedPathOverrides": [
     "ScrollDownSports/App/AppEnvironment.swift",
     "ScrollDownSports/App/BackgroundDataScheduler.swift"
   ],
   "fileMinimumLineCoverageOverrides": {
-    "ScrollDownSports/App/AppEnvironment.swift": 0.0,
-    "ScrollDownSports/App/BackgroundDataScheduler.swift": 0.0,
-    "ScrollDownSports/DesignSystem/SportsSurfaces.swift": 0.0,
-    "ScrollDownSports/DesignSystem/SportsTheme.swift": 0.0
-  }
+    "ScrollDownSports/App/AppEnvironment.swift": 70.0,
+    "ScrollDownSports/App/BackgroundDataScheduler.swift": 70.0,
+    "ScrollDownSports/DesignSystem/SportsSurfaces.swift": 70.0,
+    "ScrollDownSports/DesignSystem/SportsTheme.swift": 90.0,
+    "ScrollDownSports/Models/DisplayStringUtilities.swift": 95.0,
+    "ScrollDownSports/Models/GameParticipantVisibility.swift": 95.0,
+    "ScrollDownSports/Models/JSONValue.swift": 70.0,
+    "ScrollDownSports/Models/ScoreSpoilerFilter.swift": 95.0,
+    "ScrollDownSports/Models/SDADomainMapper.swift": 95.0,
+    "ScrollDownSports/Persistence/GameStateStore.swift": 90.0,
+    "ScrollDownSports/Persistence/GameStateStoreTypes.swift": 90.0,
+    "ScrollDownSports/Persistence/InMemoryGameStateStore.swift": 95.0,
+    "ScrollDownSports/Rendering/EventLabelResolver.swift": 95.0,
+    "ScrollDownSports/Rendering/GenericSportRenderer.swift": 94.0,
+    "ScrollDownSports/Rendering/PeriodLabelFormatter.swift": 95.0,
+    "ScrollDownSports/Rendering/StatPresentationBuilder.swift": 94.5,
+    "ScrollDownSports/Rendering/StatPresentationFormatting.swift": 95.0,
+    "ScrollDownSports/Rendering/StatTablePresentationBuilder.swift": 95.0,
+    "ScrollDownSports/Services/BackgroundRefreshService.swift": 95.0,
+    "ScrollDownSports/Services/GameWindow.swift": 85.0,
+    "ScrollDownSports/Services/SDAApiClient.swift": 85.0,
+    "ScrollDownSports/ViewModels/GameDetailViewModel.swift": 83.0,
+    "ScrollDownSports/ViewModels/HomeGameCardState.swift": 90.0,
+    "ScrollDownSports/ViewModels/HomeViewModel.swift": 85.0
+  },
+  "scenarioCoverageRequirements": [
+    {
+      "sourcePath": "ScrollDownSports/Views/GameDetailView.swift",
+      "testPathGlobs": [
+        "ScrollDownSportsTests/GameDetailVisualRegressionTests.swift",
+        "ScrollDownSportsTests/GameDetailChromeSnapshotTests.swift",
+        "ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests.swift"
+      ],
+      "minimumMatchedFiles": 2
+    },
+    {
+      "sourcePath": "ScrollDownSports/Services/SDAUITestFixtureAPI.swift",
+      "testPathGlobs": [
+        "ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests.swift",
+        "ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests.swift"
+      ],
+      "minimumMatchedFiles": 1
+    }
+  ]
 }

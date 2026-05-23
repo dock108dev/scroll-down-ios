@@ -158,8 +158,11 @@ struct GenericSportRenderer: SportRenderer {
         guard let segments = game.scoreboard?.segments, !segments.isEmpty else {
             return []
         }
-        return segments.enumerated().map { index, segment in
-            ScoreboardSegmentPresentation(
+        return segments.enumerated().compactMap { index, segment in
+            if isDuplicateTotalSegment(segment, for: game) {
+                return nil
+            }
+            return ScoreboardSegmentPresentation(
                 id: "\(index)-\(segment.label)",
                 label: segment.label,
                 values: [
@@ -222,6 +225,14 @@ struct GenericSportRenderer: SportRenderer {
         default:
             return "T"
         }
+    }
+
+    private func isDuplicateTotalSegment(_ segment: ScoreboardSegmentData, for game: Game) -> Bool {
+        guard let totals = game.scoreboard?.totals else { return false }
+        let label = segment.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let duplicateLabels = Set([totalHeader(for: game), "t", "total", "final"].map { $0.lowercased() })
+        guard duplicateLabels.contains(label) else { return false }
+        return segment.away == totals.away && segment.home == totals.home
     }
 
     private func scoreboardTotalText(for competitor: ScoreboardCompetitorData, scoreboard: GameScoreboardData?) -> String {

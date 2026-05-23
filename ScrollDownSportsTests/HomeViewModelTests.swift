@@ -196,6 +196,68 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(allTimelineIDs(in: viewModel.filteredHomeSections), [35])
     }
 
+    func testCardDisplayStatesCoverScoreGatesResumeAndPinning() throws {
+        let scheduled = TestFixtures.makeGame(
+            id: 37,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T18:00:00Z"),
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            hasTimeline: false,
+            presentation: previewPresentation()
+        )
+        let scheduledState = HomeGameCardState(item: makeItem(game: scheduled))
+        XCTAssertEqual(scheduledState.phase, .scheduled)
+        XCTAssertEqual(scheduledState.primaryActionLabel, "Preview")
+        XCTAssertEqual(scheduledState.contextText, "Preview")
+        XCTAssertFalse(scheduledState.showsScoreRows)
+
+        let live = TestFixtures.makeGame(id: 38, status: "in_progress", isLive: true, awayScore: 4, homeScore: 5)
+        let liveState = HomeGameCardState(item: makeItem(game: live, isPinned: true))
+        XCTAssertEqual(liveState.phase, .live)
+        XCTAssertEqual(liveState.primaryActionLabel, "Open stream")
+        XCTAssertEqual(liveState.scoreCueText, "score at bottom")
+        XCTAssertTrue(liveState.usesStrongLiveTreatment)
+        XCTAssertTrue(liveState.isPinned)
+        XCTAssertTrue(liveState.showsPinnedBadge)
+        XCTAssertFalse(liveState.showsScoreRows)
+
+        let final = TestFixtures.makeGame(id: 39, status: "final", isLive: false, isFinal: true, awayScore: 7, homeScore: 6)
+        let unreadState = HomeGameCardState(item: makeItem(game: final))
+        XCTAssertEqual(unreadState.phase, .final)
+        XCTAssertEqual(unreadState.primaryActionLabel, "Catch up")
+        XCTAssertEqual(unreadState.contextText, "Catch up · score at bottom")
+        XCTAssertFalse(unreadState.showsScoreRows)
+
+        let resumeProgress = TestFixtures.makeProgress(gameId: final.id, lastReadEventIndex: 3, lastKnownEventCount: 12)
+        let resumeState = HomeGameCardState(item: makeItem(game: final, progress: resumeProgress))
+        XCTAssertEqual(resumeState.primaryActionLabel, "Resume")
+        XCTAssertEqual(resumeState.progressText, "Resume from T4 · 1 out")
+
+        let readProgress = TestFixtures.makeProgress(gameId: final.id, lastReadEventIndex: 11, lastKnownEventCount: 12, reachedScoreboard: true)
+        let readState = HomeGameCardState(item: makeItem(game: final, progress: readProgress))
+        XCTAssertTrue(readState.showsScoreRows)
+        XCTAssertNil(readState.scoreCueText)
+        XCTAssertEqual(readState.scoreRows.map(\.scoreText), ["7", "6"])
+        XCTAssertEqual(Set(readState.scoreRows.map(\.name)).count, readState.scoreRows.count)
+        XCTAssertEqual(Set(readState.scoreRows.map(\.id)).count, final.participants.count)
+
+        let displayCopy = [
+            unreadState.statusText,
+            unreadState.statusBadgeText,
+            unreadState.primaryActionLabel,
+            unreadState.contextText,
+            unreadState.metadataText,
+            unreadState.progressText,
+            unreadState.newPlayText
+        ].compactMap(\.self).joined(separator: " | ")
+        XCTAssertFalse(displayCopy.contains("Score at bottom"))
+        XCTAssertFalse(displayCopy.contains("Game detail available"))
+    }
+
     func testScheduledCardDoesNotAdvertiseStreamResumeOrNewPlaysWithoutPriorProgress() throws {
         let game = TestFixtures.makeGame(
             id: 40,

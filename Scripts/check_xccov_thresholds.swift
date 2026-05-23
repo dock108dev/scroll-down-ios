@@ -10,9 +10,17 @@ struct CoveragePolicy: Decodable {
     let defaultFileMinimumLineCoverage: Double
     let tolerancePercentagePoints: Double
     let minimumImprovementPercentagePoints: Double
+    let ratchetMilestones: [Double]?
     let excludedPathGlobs: [String]
     let includedPathOverrides: [String]
     let fileMinimumLineCoverageOverrides: [String: Double]
+    let scenarioCoverageRequirements: [ScenarioCoverageRequirement]?
+}
+
+struct ScenarioCoverageRequirement: Decodable {
+    let sourcePath: String
+    let testPathGlobs: [String]
+    let minimumMatchedFiles: Int?
 }
 
 struct CoverageFile {
@@ -47,10 +55,15 @@ enum CoverageError: Error, CustomStringConvertible {
     case invalidJSON(String)
     case missingTarget(String)
     case emptyCoverage(String)
+    case scenarioCoverage(String)
 
     var description: String {
         switch self {
-        case .usage(let message), .invalidJSON(let message), .missingTarget(let message), .emptyCoverage(let message):
+        case .usage(let message),
+             .invalidJSON(let message),
+             .missingTarget(let message),
+             .emptyCoverage(let message),
+             .scenarioCoverage(let message):
             return message
         }
     }
@@ -247,11 +260,63 @@ func roundedRatchetValue(measuredCoverage: Double, tolerance: Double) -> Double 
     floor((measuredCoverage - tolerance) * 10) / 10
 }
 
+func repositoryFiles(repoRoot: String) -> [String] {
+    guard let enumerator = FileManager.default.enumerator(atPath: repoRoot) else {
+        return []
+    }
+
+    let skippedDirectories: Set<String> = [".build", ".git", ".aidlc"]
+    var files: [String] = []
+    for entry in enumerator {
+        guard let path = entry as? String else { continue }
+        var isDirectory: ObjCBool = false
+        let fullPath = URL(fileURLWithPath: repoRoot).appendingPathComponent(path).path
+        guard FileManager.default.fileExists(atPath: fullPath, isDirectory: &isDirectory) else {
+            continue
+        }
+        if isDirectory.boolValue {
+            if skippedDirectories.contains(path.split(separator: "/").first.map(String.init) ?? "") {
+                enumerator.skipDescendants()
+            }
+            continue
+        }
+        files.append(normalizePath(path, repoRoot: repoRoot))
+    }
+    return files
+}
+
+func validateScenarioCoverage(policy: CoveragePolicy, repoRoot: String) throws -> Int {
+    guard let requirements = policy.scenarioCoverageRequirements, !requirements.isEmpty else {
+        return 0
+    }
+
+    let files = repositoryFiles(repoRoot: repoRoot)
+    var failures: [String] = []
+
+    for requirement in requirements {
+        let matchedFiles = files.filter { path in
+            requirement.testPathGlobs.contains { pathMatches(glob: $0, path: path) }
+        }
+        let requiredCount = requirement.minimumMatchedFiles ?? 1
+        if matchedFiles.count < requiredCount {
+            failures.append(
+                "\(requirement.sourcePath) matched \(matchedFiles.count)/\(requiredCount) scenario files for \(requirement.testPathGlobs.joined(separator: ", "))"
+            )
+        }
+    }
+
+    if !failures.isEmpty {
+        throw CoverageError.scenarioCoverage("Scenario coverage failed:\n  \(failures.joined(separator: "\n  "))")
+    }
+    return requirements.count
+}
+
 func run() throws {
     let arguments = try parseArguments(Array(CommandLine.arguments.dropFirst()))
     let policy = try loadPolicy(path: arguments.configPath)
     let reportPath = arguments.reportPath ?? policy.reportPath
     let report = try loadJSONDictionary(path: reportPath)
+    let scenarioRequirementCount = try validateScenarioCoverage(policy: policy, repoRoot: arguments.repoRoot)
     let files = try coverageFiles(report: report, policy: policy, repoRoot: arguments.repoRoot)
 
     var included: [CoverageFile] = []
@@ -283,11 +348,13 @@ func run() throws {
 
     var failures: [String] = []
     if aggregateCoverage + policy.tolerancePercentagePoints < policy.targetMinimumLineCoverage {
+        let deficit = policy.targetMinimumLineCoverage - aggregateCoverage
         failures.append(
             String(
-                format: "Project coverage %.2f%% is below threshold %.2f%% after %.2fpp tolerance.",
+                format: "Project coverage %.2f%% is below threshold %.2f%% (delta -%.2fpp, %.2fpp tolerance).",
                 aggregateCoverage,
                 policy.targetMinimumLineCoverage,
+                deficit,
                 policy.tolerancePercentagePoints
             )
         )
@@ -298,7 +365,13 @@ func run() throws {
         guard file.coveragePercentage + policy.tolerancePercentagePoints < required else {
             return nil
         }
-        return String(format: "%@ %.2f%% < %.2f%%", file.path, file.coveragePercentage, required)
+        return String(
+            format: "%@ %.2f%% < %.2f%% (delta -%.2fpp)",
+            file.path,
+            file.coveragePercentage,
+            required,
+            required - file.coveragePercentage
+        )
     }.sorted()
 
     if !failures.isEmpty || !fileFailures.isEmpty {
@@ -321,6 +394,14 @@ func run() throws {
     print(String(format: "Filtered line coverage: %.2f%% >= %.2f%%", aggregateCoverage, policy.targetMinimumLineCoverage))
     print("Included files: \(included.count)")
     print("Excluded files: \(excluded.count)")
+    if scenarioRequirementCount > 0 {
+        print("Scenario coverage requirements: \(scenarioRequirementCount)")
+    }
+
+    if let nextMilestone = policy.ratchetMilestones?.sorted().first(where: { $0 > policy.targetMinimumLineCoverage }) {
+        let remaining = max(0, nextMilestone - aggregateCoverage)
+        print(String(format: "Next milestone: %.2f%% (remaining %.2fpp)", nextMilestone, remaining))
+    }
 
     if aggregateCoverage >= policy.targetMinimumLineCoverage + policy.minimumImprovementPercentagePoints {
         let suggested = roundedRatchetValue(

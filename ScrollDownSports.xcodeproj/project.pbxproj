@@ -134,6 +134,7 @@
 		D137A9876DF90F636A8FAB72 /* testPinnedSectionEmptyStateHasNoPlaceholderRows.pinned-empty-no-placeholder-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = BB4E671FB6F9D21EC3EB1E35 /* testPinnedSectionEmptyStateHasNoPlaceholderRows.pinned-empty-no-placeholder-standard-phoneCompact-light-medium.png */; };
 		D24D50F5586C9AA048ADDEFF /* GameParticipantVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1671221798BAAACF0E2EF353 /* GameParticipantVisibility.swift */; };
 		D27DB7383075235241399E18 /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8540864CA9E32111240E0BD /* DecodingTests.swift */; };
+		D3DFE7E5084BA57515B9FF19 /* FormattingUtilityCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7975673C0CBA38EA82363D53 /* FormattingUtilityCoverageTests.swift */; };
 		D6A444866D389BBAD81DC166 /* testDetailScoringPlayProgressionAndEndOfStream.detail-scoring-progression-end-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = B26A6FABCB800DE1C9759C8F /* testDetailScoringPlayProgressionAndEndOfStream.detail-scoring-progression-end-standard-phoneCompact-light-medium.png */; };
 		D77600E3CEBE193190A317D6 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC3EC08CF99A56E347DBD4E7 /* FlowLayout.swift */; };
 		D857428855D1DD68A17DBF71 /* leaderboard_scoreboard_game.json in Resources */ = {isa = PBXBuildFile; fileRef = C1F54E1104466E8C28A5B4B1 /* leaderboard_scoreboard_game.json */; };
@@ -266,6 +267,7 @@
 		6D1BB95BC5AB067311FF6905 /* GameParticipantVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameParticipantVisibilityTests.swift; sourceTree = "<group>"; };
 		7692A392EBD1E773B86DF452 /* SportPresentations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportPresentations.swift; sourceTree = "<group>"; };
 		7727C1AF0DAB98BD9A78BDD6 /* mlb_final_full_pbp.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_final_full_pbp.json; sourceTree = "<group>"; };
+		7975673C0CBA38EA82363D53 /* FormattingUtilityCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingUtilityCoverageTests.swift; sourceTree = "<group>"; };
 		7B7E1509F88F7A0776BC384A /* testScoreboardContentLayouts.scoreboard-layouts-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScoreboardContentLayouts.scoreboard-layouts-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		7CAEC35295AA4254BAD02CD6 /* DisplayStringUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayStringUtilities.swift; sourceTree = "<group>"; };
 		7CC1C8ABC87C52E5E16B7541 /* testScheduledCard.scheduled-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScheduledCard.scheduled-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
@@ -556,6 +558,7 @@
 				DD6848C2C6CB3B2989192850 /* EventAndScoreboardSnapshotTests.swift */,
 				B17323975B5602866FD9F89C /* EventLabelResolverTests.swift */,
 				3A77E36CCBD82486CCDF594F /* FixtureDataBoundaryTests.swift */,
+				7975673C0CBA38EA82363D53 /* FormattingUtilityCoverageTests.swift */,
 				49AB4E24CF6BE70575055587 /* GameDetailChromeSnapshotTests.swift */,
 				692B84C54089B805FD1B273B /* GameDetailViewModelTests.swift */,
 				CA59EF75E2C99244054867EF /* GameDetailVisualRegressionTests.swift */,
@@ -980,6 +983,7 @@
 				EFAE89E564D48740CACF07E4 /* EventAndScoreboardSnapshotTests.swift in Sources */,
 				0D72B59593EFB352AE3CFA1A /* EventLabelResolverTests.swift in Sources */,
 				FC52ABF303A4BAAC369A6742 /* FixtureDataBoundaryTests.swift in Sources */,
+				D3DFE7E5084BA57515B9FF19 /* FormattingUtilityCoverageTests.swift in Sources */,
 				9010A2871C419A500F77CB4C /* GameDetailChromeSnapshotTests.swift in Sources */,
 				19B8C2FC28FF1E6196474E10 /* GameDetailViewModelTests.swift in Sources */,
 				23D52422379258F9FC38CE08 /* GameDetailVisualRegressionTests.swift in Sources */,

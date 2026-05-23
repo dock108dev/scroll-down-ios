@@ -5,23 +5,23 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ios-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  xcode:
-    name: XcodeGen Build and Test
+  pr-quality:
+    name: PR Fast Quality Gates
+    if: github.event_name != 'schedule'
     runs-on: macos-15
-    timeout-minutes: 45
-
-    env:
-      PROJECT: ScrollDownSports.xcodeproj
-      SCHEME: ScrollDownSports
-      DERIVED_DATA: .build/DerivedData
-      RESULT_BUNDLE: .build/TestResults/ScrollDownSports.xcresult
-      COVERAGE_DIR: .build/coverage
+    timeout-minutes: 80
 
     steps:
       - name: Check out repository
@@ -41,17 +41,112 @@ jobs:
           brew update
           brew install xcodegen
 
-      - name: Generate Xcode project
+      - name: Guard snapshot recording mode
         run: |
           set -euo pipefail
-          xcodegen generate
+          if [ "${SNAPSHOT_RECORD:-}" = "1" ]; then
+            echo "SNAPSHOT_RECORD must not be enabled in CI"
+            exit 1
+          fi
 
-      - name: Validate generated project and scheme
+      - name: Run fast local build gate
         run: |
           set -euo pipefail
-          test -d "$PROJECT"
-          test -f "$PROJECT/xcshareddata/xcschemes/$SCHEME.xcscheme"
-          xcodebuild -list -project "$PROJECT"
+          bash Scripts/local_gate.sh build
+
+      - name: Run coverage gate
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh coverage
+
+      - name: Run repository script checks
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh script-checks
+
+      - name: Run UI smoke gate
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ui-smoke
+
+      - name: Collect simulator diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p .build/artifacts/simulator
+          xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen.png || true
+          xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system.logarchive || true
+
+      - name: Upload XCTest result bundles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-pr-xcresults
+          path: .build/TestResults/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-pr-coverage
+          path: .build/coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload snapshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-pr-snapshot-artifacts
+          path: |
+            ScrollDownSportsTests/__Snapshots__
+            .build/DerivedData/Logs/Test
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload simulator logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-pr-simulator-diagnostics
+          path: .build/artifacts/simulator
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload generated project
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-pr-generated-xcodeproj
+          path: ScrollDownSports.xcodeproj
+          if-no-files-found: error
+          retention-days: 7
+
+  nightly-visual:
+    name: Nightly Visual Matrix (${{ matrix.device.name }})
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - name: compact-phone
+            destination: "platform=iOS Simulator,name=iPhone 16,OS=latest"
+          - name: large-phone
+            destination: "platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew update
+          brew install xcodegen
 
       - name: Guard snapshot recording mode
         run: |
@@ -61,132 +156,122 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve test simulator
-        id: simulator
-        run: |
-          set -euo pipefail
-
-          DESTINATION_ID="$(xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME" | awk -F '[{},]' '
-            /platform:iOS Simulator/ && /name:iPhone/ {
-              for (idx = 1; idx <= NF; idx++) {
-                field = $idx
-                gsub(/^ +| +$/, "", field)
-                if (field ~ /^id:/) {
-                  sub(/^id:/, "", field)
-                  print field
-                  exit
-                }
-              }
-            }
-          ')"
-
-          if [ -z "$DESTINATION_ID" ]; then
-            echo "No available iPhone simulator found"
-            xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME"
-            exit 1
-          fi
-
-          echo "destination=id=$DESTINATION_ID" >> "$GITHUB_OUTPUT"
-          echo "Using simulator destination: id=$DESTINATION_ID"
-
-      - name: Build app for iOS Simulator
-        run: |
-          set -euo pipefail
-          xcodebuild \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$DERIVED_DATA" \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-
-      - name: Run XCTest
+      - name: Run visual regression gate
         env:
-          TEST_DESTINATION: ${{ steps.simulator.outputs.destination }}
+          TEST_DESTINATION: ${{ matrix.device.destination }}
         run: |
           set -euo pipefail
-          rm -rf "$RESULT_BUNDLE" "$COVERAGE_DIR"
-          mkdir -p "$(dirname "$RESULT_BUNDLE")" "$COVERAGE_DIR"
+          bash Scripts/local_gate.sh visual
 
-          xcodebuild \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -destination "$TEST_DESTINATION" \
-            -derivedDataPath "$DERIVED_DATA" \
-            -resultBundlePath "$RESULT_BUNDLE" \
-            -enableCodeCoverage YES \
-            CODE_SIGNING_ALLOWED=NO \
-            test
-
-      - name: Generate coverage reports
-        run: |
-          set -euo pipefail
-          mkdir -p "$COVERAGE_DIR"
-
-          xcrun xccov view \
-            --report \
-            --json \
-            "$RESULT_BUNDLE" > "$COVERAGE_DIR/xccov-report.json"
-
-          xcrun xccov view \
-            --archive \
-            --file-list \
-            --json \
-            "$RESULT_BUNDLE" > "$COVERAGE_DIR/xccov-files.json"
-
-          swift Scripts/check_xccov_thresholds.swift \
-            --report "$COVERAGE_DIR/xccov-report.json" \
-            --config Config/coverage-thresholds.json \
-            --repo-root "$PWD"
-
-      - name: Test coverage checker
-        run: |
-          set -euo pipefail
-          bash Scripts/test_xccov_thresholds.sh
-
-      - name: Upload XCTest result bundle
+      - name: Upload visual artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ScrollDownSports-xcresult
-          path: .build/TestResults/ScrollDownSports.xcresult
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload snapshot review artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ScrollDownSports-snapshot-artifacts
+          name: ScrollDownSports-visual-${{ matrix.device.name }}
           path: |
+            .build/TestResults/*.xcresult
             ScrollDownSportsTests/__Snapshots__
             .build/DerivedData/Logs/Test
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 30
 
-      - name: Upload coverage reports
+  nightly-ui-accessibility:
+    name: Nightly UI and Accessibility (${{ matrix.device.name }})
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - name: small-phone
+            destination: "platform=iOS Simulator,name=iPhone SE (3rd generation),OS=latest"
+          - name: compact-phone
+            destination: "platform=iOS Simulator,name=iPhone 16,OS=latest"
+          - name: large-phone
+            destination: "platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew update
+          brew install xcodegen
+
+      - name: Run UI smoke gate
+        env:
+          TEST_DESTINATION: ${{ matrix.device.destination }}
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ui-smoke
+
+      - name: Run accessibility gate
+        env:
+          TEST_DESTINATION: ${{ matrix.device.destination }}
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh accessibility
+
+      - name: Collect simulator diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p .build/artifacts/simulator
+          xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-${{ matrix.device.name }}.png || true
+          xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-${{ matrix.device.name }}.logarchive || true
+
+      - name: Upload UI and accessibility artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ScrollDownSports-coverage
-          path: .build/coverage
+          name: ScrollDownSports-ui-accessibility-${{ matrix.device.name }}
+          path: |
+            .build/TestResults/*.xcresult
+            .build/DerivedData/Logs/Test
+            .build/artifacts/simulator
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 30
 
-      - name: Upload DerivedData logs
+  nightly-performance:
+    name: Nightly Performance Smoke
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 80
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew update
+          brew install xcodegen
+
+      - name: Run performance smoke gate
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh performance-smoke
+
+      - name: Collect simulator diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p .build/artifacts/simulator
+          xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-performance.png || true
+          xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-performance.logarchive || true
+
+      - name: Upload performance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ScrollDownSports-deriveddata-logs
-          path: .build/DerivedData/Logs
+          name: ScrollDownSports-performance
+          path: |
+            .build/TestResults/*.xcresult
+            .build/DerivedData/Logs/Test
+            .build/artifacts/simulator
           if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload generated project
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ScrollDownSports-generated-xcodeproj
-          path: ScrollDownSports.xcodeproj
-          if-no-files-found: error
-          retention-days: 7
+          retention-days: 30

@@ -8,7 +8,7 @@ enum SDAUIPerformanceFixturePayload {
         let path = url.path
         if path == "/api/admin/sports/games" {
             let games = gameSummaries()
-            return jsonData(["games": games, "total": games.count])
+            return SDAUIFixturePayload.jsonData(["games": games, "total": games.count])
         }
 
         guard path.hasPrefix("/api/admin/sports/games/"),
@@ -24,14 +24,14 @@ enum SDAUIPerformanceFixturePayload {
         detailRequestCounts[gameID] = requestCount
         let playCount = gameID == 9101 && requestCount > 1 ? 165 : ((game["playCount"] as? Int) ?? 1)
 
-        return jsonData([
+        return SDAUIFixturePayload.jsonData([
             "detailContractVersion": 2,
             "game": gameWithPlayCount(game, playCount: playCount),
-            "teamStats": teamStats(),
-            "playerStats": playerStats(),
+            "teamStats": SDAUIFixturePayload.teamStats(away: "Harbor Club 0", home: "Metro Club 0"),
+            "playerStats": SDAUIFixturePayload.playerStats(away: "Harbor Club 0", home: "Metro Club 0"),
             "plays": plays(gameID: gameID, count: playCount),
-            "mlbBatters": batterStats(),
-            "mlbPitchers": pitcherStats(),
+            "mlbBatters": SDAUIFixturePayload.batterStats(away: "Harbor Club 0", home: "Metro Club 0"),
+            "mlbPitchers": SDAUIFixturePayload.pitcherStats(away: "Harbor Club 0", home: "Metro Club 0"),
             "nhlSkaters": [],
             "nhlGoalies": []
         ])
@@ -47,7 +47,7 @@ enum SDAUIPerformanceFixturePayload {
             return game(
                 id: id,
                 league: league,
-                date: relativeDate(days: index % 2 == 0 ? 0 : -1, hour: 12 + (index % 10), now: now),
+                date: SDAUIFixturePayload.relativeDate(days: index % 2 == 0 ? 0 : -1, hour: 12 + (index % 10), now: now),
                 status: isLive ? "in_progress" : "final",
                 away: index.isMultiple(of: 2) ? "Harbor Club \(index)" : "Canyon Club \(index)",
                 awayAbbr: "A\(index)",
@@ -89,7 +89,7 @@ enum SDAUIPerformanceFixturePayload {
         [
             "id": id,
             "leagueCode": league,
-            "gameDate": apiDate(date),
+            "gameDate": SDAUIFixturePayload.apiDate(date),
             "localGameDate": DateFormatters.daySubtitle.string(from: date),
             "status": status,
             "homeTeam": home,
@@ -107,8 +107,21 @@ enum SDAUIPerformanceFixturePayload {
             "awayScore": awayScore,
             "homeScore": homeScore,
             "eligibility": eligibility(),
-            "presentation": presentation(headline: "\(away) at \(home)", displayState: isLive ? "live" : "final", playCount: playCount),
-            "scoreboard": scoreboard(away: away, awayAbbr: awayAbbr, home: home, homeAbbr: homeAbbr, awayScore: awayScore, homeScore: homeScore, status: isFinal ? "Final" : "Live")
+            "presentation": presentation(
+                headline: "\(away) at \(home)",
+                displayState: isLive ? "live" : "final",
+                playCount: playCount
+            ),
+            "scoreboard": SDAUIFixturePayload.lineScoreboard(
+                away: away,
+                awayAbbr: awayAbbr,
+                home: home,
+                homeAbbr: homeAbbr,
+                awayScore: awayScore,
+                homeScore: homeScore,
+                status: isFinal ? "Final" : "Live",
+                segments: [["label": "T", "away": "\(awayScore)", "home": "\(homeScore)"]]
+            )
         ]
     }
 
@@ -181,7 +194,7 @@ enum SDAUIPerformanceFixturePayload {
                 "eventTypeLabel": scoring ? "Scoring" : "Play",
                 "accessibilityLabel": "\(period). \(headline)"
             ],
-            "importance": importance(level: level, scoring: scoring),
+            "importance": SDAUIFixturePayload.importance(level: level, scoring: scoring),
             "rawFeedText": index.isMultiple(of: 4) ? "Provider row \(index)" : "",
             "rawFeedSource": index.isMultiple(of: 4) ? "provider" : "",
             "rawFeedUpdatedAt": "",
@@ -226,95 +239,13 @@ enum SDAUIPerformanceFixturePayload {
             "sortBucket": "fixture",
             "theme": ["accentRole": "scoreboard", "statusTone": displayState],
             "eventCounts": ["key": playCount, "flow": playCount, "full": playCount],
-            "displayLabels": ["status": displayState == "live" ? "Live" : "Final", "primaryAction": displayState == "live" ? "Watch live" : "Catch up", "secondaryContext": ""],
+            "displayLabels": [
+                "status": displayState == "live" ? "Live" : "Final",
+                "primaryAction": displayState == "live" ? "Watch live" : "Catch up",
+                "secondaryContext": ""
+            ],
             "scoreboardPlacement": "bottom"
         ]
-    }
-
-    private static func scoreboard(
-        away: String,
-        awayAbbr: String,
-        home: String,
-        homeAbbr: String,
-        awayScore: Int,
-        homeScore: Int,
-        status: String
-    ) -> [String: Any] {
-        [
-            "schemaVersion": 1,
-            "layout": "line_score",
-            "statusLabel": status,
-            "scoreline": "\(away) \(awayScore), \(home) \(homeScore)",
-            "competitors": [
-                ["side": "away", "teamName": away, "teamAbbreviation": awayAbbr, "score": awayScore, "scoreText": "\(awayScore)", "isWinner": awayScore > homeScore],
-                ["side": "home", "teamName": home, "teamAbbreviation": homeAbbr, "score": homeScore, "scoreText": "\(homeScore)", "isWinner": homeScore > awayScore]
-            ],
-            "segments": [["label": "T", "away": "\(awayScore)", "home": "\(homeScore)"]],
-            "totals": ["away": "\(awayScore)", "home": "\(homeScore)"]
-        ]
-    }
-
-    private static func importance(level: String, scoring: Bool) -> [String: Any] {
-        [
-            "schemaVersion": 1,
-            "level": level,
-            "rank": scoring ? 1 : 2,
-            "bucket": scoring ? "scoring" : "flow",
-            "reasons": scoring ? ["scoring"] : ["flow"],
-            "isKeyMoment": true,
-            "isScoringPlay": scoring,
-            "isLeadChange": false,
-            "isTyingPlay": false,
-            "isLateGame": false,
-            "isFinalPlay": false,
-            "isRunEnding": false
-        ]
-    }
-
-    private static func teamStats() -> [[String: Any]] {
-        [
-            ["team": "Harbor Club 0", "isHome": false, "stats": ["hits": 9, "errors": 0], "normalizedStats": []],
-            ["team": "Metro Club 0", "isHome": true, "stats": ["hits": 7, "errors": 1], "normalizedStats": []]
-        ]
-    }
-
-    private static func playerStats() -> [[String: Any]] {
-        [
-            ["team": "Harbor Club 0", "playerName": "Mason Reed", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["hits": 3]],
-            ["team": "Metro Club 0", "playerName": "Theo Vale", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["rbi": 2]]
-        ]
-    }
-
-    private static func batterStats() -> [[String: Any]] {
-        [
-            ["team": "Harbor Club 0", "playerName": "Mason Reed", "position": "RF", "atBats": 4, "hits": 3, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 1, "strikeOuts": 0],
-            ["team": "Metro Club 0", "playerName": "Theo Vale", "position": "2B", "atBats": 4, "hits": 2, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 0, "strikeOuts": 1]
-        ]
-    }
-
-    private static func pitcherStats() -> [[String: Any]] {
-        [
-            ["team": "Harbor Club 0", "playerName": "Ari Stone", "inningsPitched": "6.0", "hits": 5, "runs": 2, "earnedRuns": 2, "baseOnBalls": 1, "strikeOuts": 7, "homeRuns": 0],
-            ["team": "Metro Club 0", "playerName": "Lane Frost", "inningsPitched": "5.2", "hits": 7, "runs": 4, "earnedRuns": 4, "baseOnBalls": 2, "strikeOuts": 5, "homeRuns": 0]
-        ]
-    }
-
-    private static func relativeDate(days: Int, hour: Int, now: Date) -> Date {
-        var calendar = Calendar.sda
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
-        let start = calendar.startOfDay(for: now)
-        var components = DateComponents()
-        components.day = days
-        components.hour = hour
-        return calendar.date(byAdding: components, to: start) ?? now
-    }
-
-    private static func apiDate(_ date: Date) -> String {
-        ISO8601DateFormatter.sda.string(from: date)
-    }
-
-    private static func jsonData(_ object: Any) -> Data? {
-        try? JSONSerialization.data(withJSONObject: object, options: [])
     }
 }
 #endif

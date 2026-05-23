@@ -121,4 +121,240 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(stats.playerSections.map(\.id), ["hockey-player-stats"])
         XCTAssertEqual(stats.playerSections.first?.tables.map(\.id), ["hockey-skaters", "hockey-goalies"])
     }
+
+    func testStatFormattingCoversImpactLimitsMissingValuesPercentagesAndSportLabels() {
+        let players = (0..<6).map { index in
+            PlayerStat(
+                team: index.isMultiple(of: 2) ? "Baltimore Orioles" : "Seattle Mariners",
+                playerName: "Impact Player \(index)",
+                minutes: index == 0 ? nil : Double(30 - index),
+                points: Double(30 - index),
+                rebounds: Double(index),
+                assists: nil,
+                yards: nil,
+                touchdowns: nil,
+                rawStats: [:]
+            )
+        }
+        let detail = GameDetail(
+            game: TestFixtures.makeGame(id: 1504, leagueCode: "nba"),
+            teamStats: [],
+            playerStats: players,
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+
+        let section = StatPresentationBuilder.genericPlayerSections(for: detail)[0]
+
+        XCTAssertEqual(section.highlights.count, 4)
+        XCTAssertTrue((3...5).contains(section.highlights.count))
+        XCTAssertEqual(StatPresentationBuilder.statString(nil as Int?), "-")
+        XCTAssertNil(StatPresentationBuilder.statString(nil as Double?))
+        XCTAssertEqual(StatPresentationBuilder.statString(12.0), "12")
+        XCTAssertEqual(StatPresentationBuilder.statString(12.5), "12.5")
+        XCTAssertEqual(StatPresentationBuilder.outs(from: "5.2"), 17)
+        XCTAssertEqual(StatPresentationBuilder.outs(from: "5.3"), 15)
+        XCTAssertEqual(StatPresentationBuilder.savePercentage(for: goalie(saves: 31, goalsAgainst: 2)), ".939")
+        XCTAssertEqual(section.tables[0].columns.map(\.label), ["Player", "Team", "MIN", "PTS", "REB"])
+
+        let baseball = StatPresentationBuilder.baseballBatterTable(
+            from: [ScoredBatter(player: batter(team: "Baltimore Orioles", atBats: nil), score: 1)],
+            teamAbbreviations: [:]
+        )
+        XCTAssertEqual(baseball.columns.map(\.label), ["Player", "Team", "Pos", "AB", "H", "R", "RBI", "HR", "BB", "K"])
+        XCTAssertEqual(baseball.rows[0].values["pos"], "-")
+        XCTAssertEqual(baseball.rows[0].values["ab"], "-")
+
+        let hockey = StatPresentationBuilder.hockeyGoalieTable(
+            from: [
+                ScoredNHLPlayer(player: goalie(team: "Seattle Mariners", saves: 31, goalsAgainst: 2), role: "Goalie", score: 1),
+                ScoredNHLPlayer(player: goalie(team: "Baltimore Orioles", saves: nil, goalsAgainst: nil), role: "Goalie", score: 0)
+            ],
+            teamAbbreviations: [:]
+        )
+        XCTAssertEqual(hockey.columns.map(\.label), ["Player", "Team", "SV", "GA", "SV%"])
+        XCTAssertEqual(hockey.rows[1].values["svp"], "-")
+    }
+
+    func testStatTablesAndScoreboardsPreferAbbreviationsWithoutTruncatingNames() {
+        let game = TestFixtures.makeGame(
+            id: 1505,
+            leagueCode: "mlb",
+            awayName: "Baltimore Orioles",
+            awayAbbreviation: "BAL",
+            homeName: "Seattle Mariners",
+            homeAbbreviation: "SEA",
+            scoreboard: scoreboardWithDuplicateRunSegment()
+        )
+        let detail = GameDetail(
+            game: game,
+            teamStats: [],
+            playerStats: [],
+            events: [],
+            mlbBatters: [batter(team: "Baltimore Orioles")],
+            mlbPitchers: [pitcher(team: "Seattle Mariners")],
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+        let stats = BaseballRenderer().statsPresentation(for: detail)
+        let scoreboard = BaseballRenderer().scoreboardPresentation(for: game)
+
+        XCTAssertEqual(stats.playerSections[0].tables[0].rows[0].values["team"], "BAL")
+        XCTAssertEqual(stats.playerSections[0].tables[1].rows[0].values["team"], "SEA")
+        XCTAssertEqual(scoreboard.rows[0].title, "Baltimore Orioles")
+        XCTAssertEqual(scoreboard.rows[0].abbreviation, "BAL")
+        XCTAssertFalse(scoreboard.rows.map(\.title).joined(separator: " ").contains("Baltimo..."))
+    }
+
+    func testScoreboardPresentationDropsDuplicateTotalSegments() {
+        let game = TestFixtures.makeGame(id: 1506, leagueCode: "mlb", scoreboard: scoreboardWithDuplicateRunSegment())
+
+        let presentation = BaseballRenderer().scoreboardPresentation(for: game)
+
+        XCTAssertEqual(presentation.layout, .segmentTable)
+        XCTAssertEqual(presentation.totalHeader, "R")
+        XCTAssertEqual(presentation.rows.map(\.totalText), ["7", "6"])
+        XCTAssertEqual(presentation.segments.map(\.label), ["1", "H"])
+    }
+
+    func testEventImportanceMapsToDifferentiatedSemanticVisuals() {
+        let low = TestFixtures.makeEvent(sequence: 1, importanceMetadata: importance(level: "tertiary"))
+        let medium = TestFixtures.makeEvent(sequence: 2, importanceMetadata: importance(level: "secondary"))
+        let high = TestFixtures.makeEvent(sequence: 3, importanceMetadata: importance(rank: 50))
+        let critical = TestFixtures.makeEvent(sequence: 4, importanceMetadata: importance(isLeadChange: true))
+        let visuals = [low.visualImportance, medium.visualImportance, high.visualImportance, critical.visualImportance]
+
+        XCTAssertEqual(visuals, [.low, .medium, .high, .critical])
+        XCTAssertEqual(Set(visuals).count, 4)
+        XCTAssertEqual(visuals.map(\.title), ["", "Notable", "Key play", "Big moment"])
+        XCTAssertFalse(visuals.map(\.title).joined(separator: " ").localizedCaseInsensitiveContains("tertiary"))
+    }
+
+    func testPresentationBuildersExposeSemanticRolesAndEmptyStates() {
+        let game = TestFixtures.makeGame(id: 1507, leagueCode: "nhl", scoreboard: scoreboardWithDuplicateRunSegment())
+        let emptyDetail = GameDetail(
+            game: game,
+            teamStats: [],
+            playerStats: [],
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+        let stats = GenericSportRenderer(leagueCode: "nhl").statsPresentation(for: emptyDetail)
+        let scoreboard = GenericSportRenderer(leagueCode: "nhl").scoreboardPresentation(for: game)
+
+        XCTAssertEqual(stats.playerSections[0].id, "player-stats-empty")
+        XCTAssertEqual(stats.playerSections[0].emptyMessage, "No player stats available yet.")
+        XCTAssertEqual(stats.teamSection.id, "team-stats-empty")
+        XCTAssertEqual(stats.teamSection.emptyMessage, "No team stats available yet.")
+        XCTAssertEqual(scoreboard.title, "Box Score")
+        XCTAssertEqual(scoreboard.revealTitle, "Score hidden")
+        XCTAssertEqual(scoreboard.rows.map(\.id), ["away", "home"])
+        XCTAssertEqual(scoreboard.rows.map(\.abbreviation), ["BAL", "SEA"])
+        XCTAssertEqual(scoreboard.stateText, "Baltimore 7, Seattle 6")
+    }
+
+    private func batter(team: String, atBats: Int? = 4) -> MLBBatterStat {
+        MLBBatterStat(
+            team: team,
+            playerName: "Mara Vale",
+            position: nil,
+            atBats: atBats,
+            hits: 2,
+            runs: 1,
+            rbi: 3,
+            homeRuns: 1,
+            baseOnBalls: 0,
+            strikeOuts: 1
+        )
+    }
+
+    private func pitcher(team: String) -> MLBPitcherStat {
+        MLBPitcherStat(
+            team: team,
+            playerName: "Noel King",
+            inningsPitched: "6.1",
+            hits: 4,
+            runs: 2,
+            earnedRuns: 2,
+            baseOnBalls: 1,
+            strikeOuts: 7,
+            homeRuns: 0
+        )
+    }
+
+    private func goalie(team: String = "Seattle Mariners", saves: Int?, goalsAgainst: Int?) -> NHLPlayerStat {
+        NHLPlayerStat(
+            team: team,
+            playerName: "Sam North",
+            goals: nil,
+            assists: nil,
+            points: nil,
+            shotsOnGoal: nil,
+            saves: saves,
+            goalsAgainst: goalsAgainst,
+            rawStats: nil
+        )
+    }
+
+    private func importance(
+        level: String? = nil,
+        rank: Int? = nil,
+        isLeadChange: Bool? = nil
+    ) -> EventImportanceData {
+        EventImportanceData(
+            level: level,
+            rank: rank,
+            bucket: nil,
+            reasons: [],
+            isKeyMoment: nil,
+            isScoringPlay: nil,
+            isLeadChange: isLeadChange,
+            isTyingPlay: nil,
+            winProbabilityDelta: nil
+        )
+    }
+
+    private func scoreboardWithDuplicateRunSegment() -> GameScoreboardData {
+        GameScoreboardData(
+            layout: "inning_table",
+            clockLabel: nil,
+            periodLabel: nil,
+            statusLabel: "Final",
+            scoreline: "Baltimore 7, Seattle 6",
+            competitors: [
+                ScoreboardCompetitorData(
+                    id: "away",
+                    side: .away,
+                    teamName: "Baltimore Orioles",
+                    teamAbbreviation: "BAL",
+                    score: 7,
+                    scoreText: "7",
+                    isWinner: true,
+                    recordText: nil
+                ),
+                ScoreboardCompetitorData(
+                    id: "home",
+                    side: .home,
+                    teamName: "Seattle Mariners",
+                    teamAbbreviation: "SEA",
+                    score: 6,
+                    scoreText: "6",
+                    isWinner: false,
+                    recordText: nil
+                )
+            ],
+            segments: [
+                ScoreboardSegmentData(label: "1", away: "1", home: "0"),
+                ScoreboardSegmentData(label: "R", away: "7", home: "6"),
+                ScoreboardSegmentData(label: "H", away: "9", home: "8")
+            ],
+            totals: ScoreboardTotalsData(away: "7", home: "6")
+        )
+    }
 }

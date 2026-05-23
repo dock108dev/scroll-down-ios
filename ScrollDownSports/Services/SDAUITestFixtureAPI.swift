@@ -59,7 +59,8 @@ private enum SDAUITestFixturePayload {
         guard AppEnvironment.uiTestFixtureName == "critical-final-game" else { return nil }
         let path = url.path
         if path == "/api/admin/sports/games" {
-            return jsonData(["games": gameSummaries(), "total": gameSummaries().count])
+            let games = gameSummaries()
+            return SDAUIFixturePayload.jsonData(["games": games, "total": games.count])
         }
 
         guard path.hasPrefix("/api/admin/sports/games/"),
@@ -71,14 +72,14 @@ private enum SDAUITestFixturePayload {
 
     private static func detailData(gameID: Int) -> Data? {
         guard let game = gameSummaries().first(where: { ($0["id"] as? Int) == gameID }) else { return nil }
-        return jsonData([
+        return SDAUIFixturePayload.jsonData([
             "detailContractVersion": 2,
             "game": game,
-            "teamStats": teamStats(),
-            "playerStats": playerStats(),
+            "teamStats": SDAUIFixturePayload.teamStats(away: "Harbor Pilots", home: "Canyon Owls"),
+            "playerStats": SDAUIFixturePayload.playerStats(away: "Harbor Pilots", home: "Canyon Owls"),
             "plays": plays(for: gameID),
-            "mlbBatters": batterStats(),
-            "mlbPitchers": pitcherStats(),
+            "mlbBatters": SDAUIFixturePayload.batterStats(away: "Harbor Pilots", home: "Canyon Owls"),
+            "mlbPitchers": SDAUIFixturePayload.pitcherStats(away: "Harbor Pilots", home: "Canyon Owls"),
             "nhlSkaters": [],
             "nhlGoalies": []
         ])
@@ -90,7 +91,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9001,
                 league: "MLB",
-                date: relativeDate(days: 0, hour: 13, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: 0, hour: 13, now: now),
                 status: "final",
                 away: "Harbor Pilots",
                 awayAbbr: "HBP",
@@ -103,7 +104,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9002,
                 league: "MLB",
-                date: relativeDate(days: -1, hour: 19, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: -1, hour: 19, now: now),
                 status: "final",
                 away: "Metro Lynx",
                 awayAbbr: "MLX",
@@ -116,7 +117,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9003,
                 league: "NBA",
-                date: relativeDate(days: 0, hour: 15, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: 0, hour: 15, now: now),
                 status: "final",
                 away: "Prairie Jets",
                 awayAbbr: "PRJ",
@@ -129,7 +130,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9004,
                 league: "NHL",
-                date: relativeDate(days: 0, hour: 18, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: 0, hour: 18, now: now),
                 status: "in_progress",
                 away: "Northline Foxes",
                 awayAbbr: "NLF",
@@ -144,7 +145,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9005,
                 league: "NFL",
-                date: relativeDate(days: 1, hour: 20, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: 1, hour: 20, now: now),
                 status: "scheduled",
                 away: "Copper Hawks",
                 awayAbbr: "CPH",
@@ -160,7 +161,7 @@ private enum SDAUITestFixturePayload {
             game(
                 id: 9099,
                 league: "MLB",
-                date: relativeDate(days: 0, hour: 21, now: now),
+                date: SDAUIFixturePayload.relativeDate(days: 0, hour: 21, now: now),
                 status: "scheduled",
                 away: "TBD",
                 awayAbbr: "TBD",
@@ -199,7 +200,7 @@ private enum SDAUITestFixturePayload {
         var payload: [String: Any] = [
             "id": id,
             "leagueCode": league,
-            "gameDate": apiDate(date),
+            "gameDate": SDAUIFixturePayload.apiDate(date),
             "localGameDate": DateFormatters.daySubtitle.string(from: date),
             "status": status,
             "homeTeam": home,
@@ -226,7 +227,7 @@ private enum SDAUITestFixturePayload {
             payload["score"] = ["away": awayScore, "home": homeScore]
             payload["awayScore"] = awayScore
             payload["homeScore"] = homeScore
-            payload["scoreboard"] = scoreboard(
+            payload["scoreboard"] = SDAUIFixturePayload.lineScoreboard(
                 away: away,
                 awayAbbr: awayAbbr,
                 home: home,
@@ -300,7 +301,7 @@ private enum SDAUITestFixturePayload {
                 "eventTypeLabel": scoring ? "Scoring" : "Play",
                 "accessibilityLabel": "\(period). \(headline)"
             ],
-            "importance": importance(level: level, scoring: scoring),
+            "importance": SDAUIFixturePayload.importance(level: level, scoring: scoring),
             "rawFeedText": "",
             "rawFeedSource": "",
             "rawFeedUpdatedAt": "",
@@ -371,19 +372,36 @@ private enum SDAUITestFixturePayload {
             "sortBucket": "fixture",
             "theme": ["accentRole": "scoreboard", "statusTone": displayState],
             "eventCounts": ["key": playCount, "flow": playCount, "full": playCount],
-            "displayLabels": ["status": displayState == "final" ? "Final" : action, "primaryAction": action, "secondaryContext": ""],
+            "displayLabels": [
+                "status": displayState == "final" ? "Final" : action,
+                "primaryAction": action,
+                "secondaryContext": ""
+            ],
             "scoreboardPlacement": "bottom"
         ]
     }
+}
 
-    private static func scoreboard(
+enum SDAUIFixturePayload {
+    static func lineScoreboard(
         away: String,
         awayAbbr: String,
         home: String,
         homeAbbr: String,
         awayScore: Int,
         homeScore: Int,
-        status: String
+        status: String,
+        segments: [[String: String]] = [
+            ["label": "1", "away": "0", "home": "0"],
+            ["label": "2", "away": "1", "home": "0"],
+            ["label": "3", "away": "0", "home": "2"],
+            ["label": "4", "away": "0", "home": "0"],
+            ["label": "5", "away": "1", "home": "0"],
+            ["label": "6", "away": "2", "home": "0"],
+            ["label": "7", "away": "0", "home": "1"],
+            ["label": "8", "away": "1", "home": "0"],
+            ["label": "9", "away": "0", "home": "0"]
+        ]
     ) -> [String: Any] {
         [
             "schemaVersion": 1,
@@ -394,22 +412,12 @@ private enum SDAUITestFixturePayload {
                 ["side": "away", "teamName": away, "teamAbbreviation": awayAbbr, "score": awayScore, "scoreText": "\(awayScore)", "isWinner": awayScore > homeScore],
                 ["side": "home", "teamName": home, "teamAbbreviation": homeAbbr, "score": homeScore, "scoreText": "\(homeScore)", "isWinner": homeScore > awayScore]
             ],
-            "segments": [
-                ["label": "1", "away": "0", "home": "0"],
-                ["label": "2", "away": "1", "home": "0"],
-                ["label": "3", "away": "0", "home": "2"],
-                ["label": "4", "away": "0", "home": "0"],
-                ["label": "5", "away": "1", "home": "0"],
-                ["label": "6", "away": "2", "home": "0"],
-                ["label": "7", "away": "0", "home": "1"],
-                ["label": "8", "away": "1", "home": "0"],
-                ["label": "9", "away": "0", "home": "0"]
-            ],
+            "segments": segments,
             "totals": ["away": "\(awayScore)", "home": "\(homeScore)"]
         ]
     }
 
-    private static func importance(level: String, scoring: Bool) -> [String: Any] {
+    static func importance(level: String, scoring: Bool) -> [String: Any] {
         [
             "schemaVersion": 1,
             "level": level,
@@ -426,35 +434,35 @@ private enum SDAUITestFixturePayload {
         ]
     }
 
-    private static func teamStats() -> [[String: Any]] {
+    static func teamStats(away: String, home: String) -> [[String: Any]] {
         [
-            ["team": "Harbor Pilots", "isHome": false, "stats": ["hits": 9, "errors": 0], "normalizedStats": []],
-            ["team": "Canyon Owls", "isHome": true, "stats": ["hits": 7, "errors": 1], "normalizedStats": []]
+            ["team": away, "isHome": false, "stats": ["hits": 9, "errors": 0], "normalizedStats": []],
+            ["team": home, "isHome": true, "stats": ["hits": 7, "errors": 1], "normalizedStats": []]
         ]
     }
 
-    private static func playerStats() -> [[String: Any]] {
+    static func playerStats(away: String, home: String) -> [[String: Any]] {
         [
-            ["team": "Harbor Pilots", "playerName": "Mason Reed", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["hits": 3]],
-            ["team": "Canyon Owls", "playerName": "Theo Vale", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["rbi": 2]]
+            ["team": away, "playerName": "Mason Reed", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["hits": 3]],
+            ["team": home, "playerName": "Theo Vale", "minutes": 0, "points": 0, "rebounds": 0, "assists": 0, "yards": 0, "touchdowns": 0, "rawStats": ["rbi": 2]]
         ]
     }
 
-    private static func batterStats() -> [[String: Any]] {
+    static func batterStats(away: String, home: String) -> [[String: Any]] {
         [
-            ["team": "Harbor Pilots", "playerName": "Mason Reed", "position": "RF", "atBats": 4, "hits": 3, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 1, "strikeOuts": 0],
-            ["team": "Canyon Owls", "playerName": "Theo Vale", "position": "2B", "atBats": 4, "hits": 2, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 0, "strikeOuts": 1]
+            ["team": away, "playerName": "Mason Reed", "position": "RF", "atBats": 4, "hits": 3, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 1, "strikeOuts": 0],
+            ["team": home, "playerName": "Theo Vale", "position": "2B", "atBats": 4, "hits": 2, "runs": 1, "rbi": 2, "homeRuns": 0, "baseOnBalls": 0, "strikeOuts": 1]
         ]
     }
 
-    private static func pitcherStats() -> [[String: Any]] {
+    static func pitcherStats(away: String, home: String) -> [[String: Any]] {
         [
-            ["team": "Harbor Pilots", "playerName": "Ari Stone", "inningsPitched": "6.0", "hits": 5, "runs": 2, "earnedRuns": 2, "baseOnBalls": 1, "strikeOuts": 7, "homeRuns": 0],
-            ["team": "Canyon Owls", "playerName": "Lane Frost", "inningsPitched": "5.2", "hits": 7, "runs": 4, "earnedRuns": 4, "baseOnBalls": 2, "strikeOuts": 5, "homeRuns": 0]
+            ["team": away, "playerName": "Ari Stone", "inningsPitched": "6.0", "hits": 5, "runs": 2, "earnedRuns": 2, "baseOnBalls": 1, "strikeOuts": 7, "homeRuns": 0],
+            ["team": home, "playerName": "Lane Frost", "inningsPitched": "5.2", "hits": 7, "runs": 4, "earnedRuns": 4, "baseOnBalls": 2, "strikeOuts": 5, "homeRuns": 0]
         ]
     }
 
-    private static func relativeDate(days: Int, hour: Int, now: Date) -> Date {
+    static func relativeDate(days: Int, hour: Int, now: Date) -> Date {
         var calendar = Calendar.sda
         calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
         let start = calendar.startOfDay(for: now)
@@ -464,11 +472,11 @@ private enum SDAUITestFixturePayload {
         return calendar.date(byAdding: components, to: start) ?? now
     }
 
-    private static func apiDate(_ date: Date) -> String {
+    static func apiDate(_ date: Date) -> String {
         ISO8601DateFormatter.sda.string(from: date)
     }
 
-    private static func jsonData(_ object: Any) -> Data? {
+    static func jsonData(_ object: Any) -> Data? {
         try? JSONSerialization.data(withJSONObject: object, options: [])
     }
 }
