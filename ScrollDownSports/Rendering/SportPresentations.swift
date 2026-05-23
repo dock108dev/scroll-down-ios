@@ -87,17 +87,6 @@ extension GameEventPresentation {
     }
 }
 
-private extension Array where Element == String? {
-    var firstNonBlank: String? {
-        for value in self {
-            if let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty {
-                return trimmed
-            }
-        }
-        return nil
-    }
-}
-
 struct ScoreboardPresentation {
     var layout: ScoreboardLayout
     var title: String

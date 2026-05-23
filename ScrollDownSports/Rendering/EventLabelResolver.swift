@@ -174,14 +174,3 @@ enum EventLabelResolver {
         "VAR_REVIEW": "Review"
     ]
 }
-
-private extension Array where Element == String? {
-    var firstNonBlank: String? {
-        for value in self {
-            if let trimmed = value?.nilIfBlank {
-                return trimmed
-            }
-        }
-        return nil
-    }
-}

@@ -1,11 +1,6 @@
 import SwiftUI
 
 // Size note: Scroll/progress state stays in this View to keep SwiftUI @State ownership private; see cleanup report.
-private enum DetailLiveEdgeMode: Equatable {
-    case following
-    case reading
-}
-
 struct GameDetailView: View {
     let gameId: Int
     let summary: Game?
@@ -212,7 +207,7 @@ struct GameDetailView: View {
                             if AppEnvironment.isRunningUITests,
                                uiTestScoreboardRevealed,
                                let game = viewModel.detail?.game,
-                               hasUITestFinalScore(for: game) {
+                               GameDetailScrollLogic.hasFinalScore(for: game) {
                                 Text("Final score")
                                     .accessibilityIdentifier("detail.boxScore.finalScore")
                                     .frame(width: 44, height: 1)
@@ -383,23 +378,10 @@ struct GameDetailView: View {
             DetailStreamMode.dedupedEvents(from: detail.events)
         )
         guard !visibleEvents.isEmpty else { return 0 }
-        guard let readSequence = readSequence(progress: progress, events: detail.events) else {
+        guard let readSequence = GameDetailScrollLogic.readSequence(progress: progress, events: detail.events) else {
             return min(progress.newEventCount, visibleEvents.count)
         }
         return visibleEvents.filter { $0.sequence > readSequence }.count
-    }
-
-    private func readSequence(progress: GameProgressRecord, events: [GameEvent]) -> Int? {
-        let sortedEvents = DetailStreamMode.dedupedEvents(from: events)
-        if let eventID = progress.lastReadEventID,
-           let event = sortedEvents.first(where: { $0.normalizedSourceEventID == eventID || $0.id == eventID || $0.detailAnchorID == eventID }) {
-            return event.sequence
-        }
-        if let eventIndex = progress.lastReadEventIndex,
-           sortedEvents.indices.contains(eventIndex) {
-            return sortedEvents[eventIndex].sequence
-        }
-        return progress.lastScrollFallback?.eventSequence
     }
 
     private func scrollToLatest(_ proxy: ScrollViewProxy, preservesReturnAnchor: Bool = true) {
@@ -535,7 +517,8 @@ struct GameDetailView: View {
 
     private func switchStreamMode(_ mode: DetailStreamMode, events: [GameEvent], proxy: ScrollViewProxy) {
         guard mode != viewModel.selectedStreamMode else { return }
-        let anchorID = restoredStreamAnchorID(
+        let anchorID = GameDetailScrollLogic.restoredStreamAnchorID(
+            currentAnchorID: streamOrientationAnchorID,
             from: viewModel.selectedStreamMode,
             to: mode,
             events: events
@@ -566,7 +549,7 @@ struct GameDetailView: View {
     private func updateVisibleEvent(from frames: [DetailEventVisibilityFrame], viewportHeight: CGFloat) {
         guard
             let detail = viewModel.detail,
-            let frame = visibleCandidate(from: frames, viewportHeight: viewportHeight)
+            let frame = GameDetailScrollLogic.visibleCandidate(from: frames, viewportHeight: viewportHeight)
         else { return }
 
         currentVisibleEvent = DetailVisibleEventState(frame: frame)
@@ -592,26 +575,6 @@ struct GameDetailView: View {
             eventSequence: frame.sequence,
             approximateOffset: Double(frame.frame.minY)
         )
-    }
-
-    private func visibleCandidate(
-        from frames: [DetailEventVisibilityFrame],
-        viewportHeight: CGFloat
-    ) -> DetailEventVisibilityFrame? {
-        frames
-            .filter { frame in
-                guard frame.frame.height > 0 else { return false }
-                let visibleHeight = min(frame.frame.maxY, viewportHeight) - max(frame.frame.minY, 0)
-                return visibleHeight >= min(48, frame.frame.height) || visibleHeight / frame.frame.height >= 0.4
-            }
-            .min { left, right in
-                let leftDistance = abs(left.frame.minY)
-                let rightDistance = abs(right.frame.minY)
-                if leftDistance != rightDistance {
-                    return leftDistance < rightDistance
-                }
-                return left.sequence < right.sequence
-            }
     }
 
     private func updateScoreboardReach(from frame: CGRect?, viewportHeight: CGFloat) {
@@ -653,56 +616,4 @@ struct GameDetailView: View {
         )
     }
 
-    private func restoredStreamAnchorID(
-        from currentMode: DetailStreamMode,
-        to nextMode: DetailStreamMode,
-        events: [GameEvent]
-    ) -> String? {
-        let dedupedEvents = DetailStreamMode.dedupedEvents(from: events)
-        let nextEvents = nextMode.visibleDedupedEvents(dedupedEvents)
-        guard !nextEvents.isEmpty else { return nil }
-
-        if let streamOrientationAnchorID,
-           nextEvents.contains(where: { $0.detailAnchorID == streamOrientationAnchorID }) {
-            return streamOrientationAnchorID
-        }
-
-        let currentEvents = currentMode.visibleDedupedEvents(dedupedEvents)
-        guard
-            let streamOrientationAnchorID,
-            let currentEvent = currentEvents.first(where: { $0.detailAnchorID == streamOrientationAnchorID })
-        else {
-            return nextEvents.first?.detailAnchorID
-        }
-
-        return nextEvents.min { lhs, rhs in
-            let lhsDistance = abs(lhs.sequence - currentEvent.sequence)
-            let rhsDistance = abs(rhs.sequence - currentEvent.sequence)
-            if lhsDistance != rhsDistance {
-                return lhsDistance < rhsDistance
-            }
-            return lhs.sequence < rhs.sequence
-        }?.detailAnchorID
-    }
-
-    private func hasUITestFinalScore(for game: Game) -> Bool {
-        game.awayParticipant != nil
-            && game.homeParticipant != nil
-            && game.scoreState.away != nil
-            && game.scoreState.home != nil
-    }
-}
-
-private struct DetailVisibleEventState: Equatable {
-    let anchorID: String
-    let readIndex: Int
-    let sequence: Int
-    let label: String
-
-    init(frame: DetailEventVisibilityFrame) {
-        self.anchorID = frame.anchorID
-        self.readIndex = frame.readIndex
-        self.sequence = frame.sequence
-        self.label = frame.label.cleanDisplayLabel ?? "spot"
-    }
 }

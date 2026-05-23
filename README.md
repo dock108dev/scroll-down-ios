@@ -4,7 +4,9 @@ Scroll Down Sports iOS is a SwiftUI app for browsing Scroll Down Sports game fee
 
 ## Run Locally
 
-Install Xcode and XcodeGen, then run the fast local build gate:
+Install Xcode and XcodeGen. The local gate wrapper regenerates `ScrollDownSports.xcodeproj` from `project.yml` before build and test gates.
+
+Run the fast local build gate:
 
 ```sh
 Scripts/local_gate.sh fast
