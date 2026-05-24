@@ -18,7 +18,7 @@ struct ScoreRow: View {
             }
             Spacer()
             Text(scoreText ?? score.map(String.init) ?? "-")
-                .font(.largeTitle.weight(.bold))
+                .font(SportsTheme.Typography.scoreNumber)
                 .foregroundStyle(SportsTheme.Colors.ink)
                 .monospacedDigit()
         }
@@ -31,7 +31,7 @@ struct CatchUpSection<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: systemImage)
                 .font(SportsTheme.Typography.sectionTitle)
                 .foregroundStyle(SportsTheme.Colors.ink)
@@ -50,7 +50,7 @@ struct CollapsibleCatchUpSection<Content: View>: View {
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             content
-                .padding(.top, 10)
+                .padding(.top, 8)
         } label: {
             Label(title, systemImage: systemImage)
                 .font(SportsTheme.Typography.sectionTitle)
@@ -70,14 +70,14 @@ struct StatCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.subheadline.weight(.semibold))
+                        .font(SportsTheme.Typography.teamName)
                         .foregroundStyle(SportsTheme.Colors.ink)
                     Text(subtitle)
-                        .font(.caption)
+                        .font(SportsTheme.Typography.metadata)
                         .foregroundStyle(SportsTheme.Colors.secondaryInk)
                 }
                 Spacer()
@@ -113,7 +113,7 @@ struct UnavailableText: View {
 
     var body: some View {
         Text(message)
-            .font(.subheadline)
+            .font(SportsTheme.Typography.momentDetail)
             .foregroundStyle(SportsTheme.Colors.secondaryInk)
             .frame(maxWidth: .infinity, alignment: .leading)
             .sportsSurface(.eventCard)

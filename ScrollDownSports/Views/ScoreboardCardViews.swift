@@ -85,7 +85,7 @@ private struct SegmentScoreboard: View {
             }
             .font(SportsTheme.Typography.statusPill)
             .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            .padding(.bottom, 8)
+            .padding(.bottom, 6)
 
             ForEach(Array(presentation.rows.enumerated()), id: \.element.id) { index, row in
                 if index > 0 {
@@ -102,12 +102,12 @@ private struct SegmentScoreboard: View {
                             .frame(width: segmentColumnWidth, alignment: .trailing)
                     }
                     Text(row.totalText)
-                        .font(SportsTheme.Typography.teamName)
+                        .font(SportsTheme.Typography.scoreNumber)
                         .foregroundStyle(SportsTheme.Colors.ink)
                         .monospacedDigit()
                         .frame(width: segmentColumnWidth, alignment: .trailing)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
             }
         }
     }
@@ -131,11 +131,11 @@ private struct SimpleScoreboard: View {
                     ScoreboardTeamLabel(row: row)
                     Spacer()
                     Text(row.totalText)
-                        .font(emphasizesGoals ? .title.weight(.black) : .title2.weight(.bold))
+                        .font(SportsTheme.Typography.scoreNumber)
                         .foregroundStyle(SportsTheme.Colors.ink)
                         .monospacedDigit()
                 }
-                .padding(.vertical, 9)
+                .padding(.vertical, 7)
             }
         }
     }
@@ -154,7 +154,7 @@ private struct LeaderboardScoreboard: View {
             }
             .font(SportsTheme.Typography.statusPill)
             .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            .padding(.bottom, 8)
+            .padding(.bottom, 6)
 
             ForEach(Array(presentation.rows.enumerated()), id: \.element.id) { index, row in
                 if index > 0 {
@@ -168,12 +168,12 @@ private struct LeaderboardScoreboard: View {
                     ScoreboardTeamLabel(row: row)
                     Spacer()
                     Text(row.totalText)
-                        .font(SportsTheme.Typography.teamName)
+                        .font(SportsTheme.Typography.scoreNumber)
                         .foregroundStyle(SportsTheme.Colors.ink)
                         .monospacedDigit()
                         .frame(width: 72, alignment: .trailing)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
             }
         }
     }
@@ -196,7 +196,7 @@ private struct ScoreboardTeamLabel: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
                     Text(row.title)
-                        .font(.subheadline.weight(row.isWinner ? .bold : .semibold))
+                        .font(SportsTheme.Typography.momentHeadline.weight(row.isWinner ? .bold : .semibold))
                         .foregroundStyle(SportsTheme.Colors.ink)
                     if row.isWinner {
                         Image(systemName: "checkmark.seal.fill")
@@ -206,7 +206,7 @@ private struct ScoreboardTeamLabel: View {
                 }
                 if let recordText = row.recordText {
                     Text(recordText)
-                        .font(.caption2.weight(.semibold))
+                        .font(SportsTheme.Typography.statusPill)
                         .foregroundStyle(SportsTheme.Colors.secondaryInk)
                 }
             }

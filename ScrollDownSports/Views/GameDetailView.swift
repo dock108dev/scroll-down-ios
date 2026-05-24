@@ -45,7 +45,7 @@ struct GameDetailView: View {
         GeometryReader { viewport in
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 18, pinnedViews: []) {
+                    LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
                         if let detail = viewModel.detail {
                             Color.clear
                                 .frame(height: 1)
@@ -181,12 +181,13 @@ struct GameDetailView: View {
                             GameHeaderPlaceholder(summary: summary, renderer: SportRendererRegistry.renderer(for: summary))
                         }
                     }
-                    .padding()
-                    .padding(.top, 28)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 18)
                 }
                 .accessibilityIdentifier("detail.scroll")
                 .coordinateSpace(name: "game-detail-scroll")
-                .background(SportsTheme.Background.page)
+                .background { SportsPageBackground() }
                 .safeAreaInset(edge: .top) {
                     if let stickyNavigationTitle, AppEnvironment.isRunningUITests || !isTopChromeVisible {
                         VStack(spacing: 0) {
@@ -216,7 +217,7 @@ struct GameDetailView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 5)
                     }
                 }
                 .safeAreaInset(edge: .bottom) {

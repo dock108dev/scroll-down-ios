@@ -15,7 +15,7 @@ struct StreamControlBar: View {
     let onJumpLatest: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 7) {
             Picker("Stream mode", selection: $selectedMode) {
                 ForEach(DetailStreamMode.allCases) { mode in
                     Text(mode.title)
@@ -70,7 +70,7 @@ struct StreamControlBar: View {
                     Image(systemName: isGamePinned ? "pin.fill" : "ellipsis")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(isGamePinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Colors.secondaryInk)
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(width: 36, height: 36)
                         .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
                 }
                 .accessibilityLabel(isGamePinned ? "Game actions, pinned" : "Game actions")

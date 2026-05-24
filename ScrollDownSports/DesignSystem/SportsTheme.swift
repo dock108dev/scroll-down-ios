@@ -4,15 +4,15 @@ import UIKit
 enum SportsTheme {
     enum Colors {
         static let paper = adaptive(
-            light: UIColor(red: 0.957, green: 0.958, blue: 0.948, alpha: 1),
+            light: UIColor(red: 0.945, green: 0.938, blue: 0.895, alpha: 1),
             dark: UIColor(red: 0.071, green: 0.075, blue: 0.086, alpha: 1)
         )
         static let paperInset = adaptive(
-            light: UIColor(red: 0.988, green: 0.990, blue: 0.984, alpha: 1),
+            light: UIColor(red: 0.980, green: 0.969, blue: 0.930, alpha: 1),
             dark: UIColor(red: 0.103, green: 0.108, blue: 0.122, alpha: 1)
         )
         static let paperRaised = adaptive(
-            light: UIColor(red: 1.000, green: 1.000, blue: 0.996, alpha: 1),
+            light: UIColor(red: 0.996, green: 0.984, blue: 0.941, alpha: 1),
             dark: UIColor(red: 0.133, green: 0.138, blue: 0.157, alpha: 1)
         )
         static let ink = adaptive(
@@ -24,8 +24,12 @@ enum SportsTheme {
             dark: UIColor(red: 0.710, green: 0.702, blue: 0.659, alpha: 1)
         )
         static let hairline = adaptive(
-            light: UIColor(red: 0.780, green: 0.796, blue: 0.800, alpha: 1),
+            light: UIColor(red: 0.749, green: 0.784, blue: 0.718, alpha: 1),
             dark: UIColor(red: 0.263, green: 0.271, blue: 0.302, alpha: 1)
+        )
+        static let scorebookLine = adaptive(
+            light: UIColor(red: 0.433, green: 0.503, blue: 0.389, alpha: 1),
+            dark: UIColor(red: 0.220, green: 0.286, blue: 0.255, alpha: 1)
         )
         static let textOnFill = Color.white
 
@@ -37,26 +41,27 @@ enum SportsTheme {
     }
 
     enum Typography {
-        static let appTitle = Font.largeTitle.weight(.black)
-        static let sectionTitle = Font.title3.weight(.bold)
-        static let teamName = Font.headline.weight(.semibold)
-        static let detailTeamName = Font.title3.weight(.bold)
-        static let metadata = Font.caption.weight(.semibold)
-        static let momentHeadline = Font.body.weight(.semibold)
-        static let momentDetail = Font.body
+        static let appTitle = Font.custom("Avenir Next Demi Bold", size: 22, relativeTo: .title2)
+        static let sectionTitle = Font.custom("Avenir Next Demi Bold", size: 21, relativeTo: .title3)
+        static let teamName = Font.custom("Avenir Next Demi Bold", size: 16, relativeTo: .headline)
+        static let detailTeamName = Font.custom("Avenir Next Demi Bold", size: 16, relativeTo: .headline)
+        static let metadata = Font.custom("Avenir Next Demi Bold", size: 11, relativeTo: .caption)
+        static let momentHeadline = Font.custom("Avenir Next Demi Bold", size: 14, relativeTo: .subheadline)
+        static let momentDetail = Font.custom("Avenir Next", size: 13, relativeTo: .subheadline)
         static let rawFeedText = Font.caption.monospaced()
-        static let statTable = Font.caption.weight(.semibold)
-        static let statusPill = Font.caption2.weight(.bold)
-        static let leagueCode = Font.caption.weight(.black)
-        static let teamAbbreviation = Font.subheadline.weight(.black)
+        static let statTable = Font.custom("Avenir Next Demi Bold", size: 11, relativeTo: .caption)
+        static let statusPill = Font.custom("Avenir Next Demi Bold", size: 11, relativeTo: .caption2)
+        static let leagueCode = Font.custom("Avenir Next Condensed", size: 12, relativeTo: .caption).weight(.black)
+        static let teamAbbreviation = Font.custom("DIN Alternate", size: 16, relativeTo: .subheadline).weight(.bold)
+        static let scoreNumber = Font.custom("DIN Alternate", size: 19, relativeTo: .headline).weight(.bold)
     }
 
     enum Spacing {
         static let xSmall: CGFloat = 4
         static let small: CGFloat = 8
-        static let medium: CGFloat = 12
-        static let large: CGFloat = 14
-        static let section: CGFloat = 18
+        static let medium: CGFloat = 10
+        static let large: CGFloat = 12
+        static let section: CGFloat = 14
         static let badgeVertical: CGFloat = 3
         static let badgeHorizontal: CGFloat = 7
     }
@@ -82,17 +87,15 @@ enum SportsTheme {
     }
 
     enum Background {
-        static var page: LinearGradient {
-            LinearGradient(
-                colors: [
-                    Colors.paper,
-                    Colors.paperInset,
-                    Color(red: 0.905, green: 0.925, blue: 0.928).opacity(0.46)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        static let wash = LinearGradient(
+            colors: [
+                Colors.paper,
+                Colors.paperInset,
+                Color(red: 0.903, green: 0.938, blue: 0.934).opacity(0.62)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     enum Tone: String, CaseIterable {
@@ -115,9 +118,9 @@ enum SportsTheme {
             case .pinned:
                 return Color(red: 0.365, green: 0.243, blue: 0.529)
             case .scoring:
-                return Color(red: 0.706, green: 0.329, blue: 0.110)
+                return Color(red: 0.730, green: 0.352, blue: 0.132)
             case .critical:
-                return Color(red: 0.553, green: 0.145, blue: 0.125)
+                return Color(red: 0.706, green: 0.329, blue: 0.110)
             case .defensivePitching:
                 return Color(red: 0.168, green: 0.383, blue: 0.494)
             case .neutral:
@@ -167,7 +170,7 @@ enum SportsTheme {
             case .gameCard, .gameHeaderCard, .scoreboardCard:
                 return Colors.paperRaised
             case .eventCard:
-                return Colors.paper
+                return Colors.paperRaised
             case .statSummary, .streamControlBar, .compactTableRow:
                 return Colors.paperInset
             }
@@ -180,7 +183,7 @@ enum SportsTheme {
             case .streamControlBar, .statSummary:
                 return Spacing.medium
             default:
-                return Spacing.large
+                return Spacing.medium
             }
         }
 
@@ -194,6 +197,39 @@ enum SportsTheme {
                 return Radius.card
             }
         }
+    }
+}
+
+struct SportsPageBackground: View {
+    var body: some View {
+        SportsTheme.Background.wash
+            .overlay {
+                ScorebookGrid()
+                    .stroke(SportsTheme.Colors.scorebookLine.opacity(0.07), lineWidth: 0.75)
+            }
+            .overlay {
+                SportsTheme.Colors.paper.opacity(0.22)
+            }
+    }
+}
+
+private struct ScorebookGrid: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let step: CGFloat = 26
+        var x = rect.minX
+        while x <= rect.maxX {
+            path.move(to: CGPoint(x: x, y: rect.minY))
+            path.addLine(to: CGPoint(x: x, y: rect.maxY))
+            x += step
+        }
+        var y = rect.minY
+        while y <= rect.maxY {
+            path.move(to: CGPoint(x: rect.minX, y: y))
+            path.addLine(to: CGPoint(x: rect.maxX, y: y))
+            y += step
+        }
+        return path
     }
 }
 
@@ -297,9 +333,9 @@ struct SportsControlButtonStyle: ButtonStyle {
         configuration.label
             .font(compact ? SportsTheme.Typography.metadata : .subheadline.weight(.semibold))
             .foregroundStyle(foregroundColor)
-            .padding(.vertical, compact ? 7 : 9)
+            .padding(.vertical, compact ? 5 : 8)
             .padding(.horizontal, compact ? 10 : 12)
-            .frame(minWidth: 44, minHeight: 44)
+            .frame(minWidth: 44, minHeight: compact ? 34 : 42)
             .background(backgroundColor(configuration: configuration), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)

@@ -5,13 +5,13 @@ struct PeriodGroupHeader: View {
     let accent: Color
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             RoundedRectangle(cornerRadius: SportsTheme.Radius.rail, style: .continuous)
                 .fill(accent)
-                .frame(width: 18, height: 3)
+                .frame(width: 28, height: 4)
             if !AppEnvironment.isRunningUITests {
                 Text(label)
-                    .font(SportsTheme.Typography.metadata.weight(.bold))
+                    .font(SportsTheme.Typography.teamAbbreviation)
                     .foregroundStyle(SportsTheme.Colors.ink)
             }
             Rectangle()

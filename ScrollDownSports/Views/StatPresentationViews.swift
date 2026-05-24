@@ -4,11 +4,11 @@ struct StatSectionList: View {
     let sections: [StatSectionPresentation]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(sections) { section in
                 if let title = section.title {
                     Text(title)
-                        .font(.headline)
+                        .font(SportsTheme.Typography.teamName)
                         .foregroundStyle(.secondary)
                 }
 
@@ -38,12 +38,12 @@ private struct StatHighlightGroup: View {
     let highlights: [StatHighlightPresentation]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Impact")
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 ForEach(highlights) { highlight in
                     StatHighlightRow(highlight: highlight)
                 }
@@ -56,19 +56,19 @@ private struct StatHighlightRow: View {
     let highlight: StatHighlightPresentation
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 8) {
             if let rank = highlight.rank {
                 Text("\(rank)")
                     .font(SportsTheme.Typography.statusPill.monospacedDigit())
                     .foregroundStyle(SportsTheme.Colors.textOnFill)
-                    .frame(width: 22, height: 22)
+                    .frame(width: 20, height: 20)
                     .background(highlight.accentTone.accent, in: Circle())
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(highlight.title)
-                        .font(.subheadline.weight(.semibold))
+                        .font(SportsTheme.Typography.momentHeadline)
                         .foregroundStyle(SportsTheme.Colors.ink)
                         .lineLimit(1)
                     Text(highlight.subtitle)
@@ -79,7 +79,7 @@ private struct StatHighlightRow: View {
                 }
 
                 Text(highlight.headline)
-                    .font(.caption)
+                    .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(SportsTheme.Colors.ink)
                     .lineLimit(2)
 
@@ -108,7 +108,7 @@ private struct CompactStatTable: View {
     let table: StatTablePresentation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(table.title)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
@@ -139,7 +139,7 @@ private struct CompactStatTable: View {
                 tableCell(column.label, column: column, isHeader: true)
             }
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
     }
 
     private func tableRow(_ row: StatTableRowPresentation, isTinted: Bool) -> some View {
@@ -148,7 +148,7 @@ private struct CompactStatTable: View {
                 tableCell(row.values[column.id] ?? "-", column: column, isHeader: false)
             }
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
         .background(isTinted ? SportsTheme.Colors.paperInset.opacity(0.55) : Color.clear)
     }
 

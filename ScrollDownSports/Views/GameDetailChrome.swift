@@ -9,25 +9,25 @@ struct GameHeaderView: View {
     var body: some View {
         let presentation = renderer.gameHeaderPresentation(for: game)
 
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 8) {
             SportsTeamRail(color: presentation.accentColor)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(presentation.leagueLabel)
                         .font(SportsTheme.Typography.leagueCode)
-                        .foregroundStyle(presentation.accentColor)
+                        .foregroundStyle(Color(red: 0.641, green: 0.867, blue: 0.388))
                     Text(statusLine)
                         .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .foregroundStyle(SportsTheme.Colors.textOnFill.opacity(0.72))
                     Spacer()
                 }
 
                 if let away = game.awayParticipant {
-                    DetailTeamLine(abbreviation: away.abbreviation, name: away.name)
+                    DetailTeamLine(abbreviation: away.abbreviation, name: away.name, isInverted: true)
                 }
                 if let home = game.homeParticipant {
-                    DetailTeamLine(abbreviation: home.abbreviation, name: home.name)
+                    DetailTeamLine(abbreviation: home.abbreviation, name: home.name, isInverted: true)
                 }
 
                 Text(contextLine)
@@ -35,11 +35,12 @@ struct GameHeaderView: View {
                     .foregroundStyle(contextColor)
             }
         }
-        .padding(12)
-        .background(SportsTheme.Surface.gameHeaderCard.background, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(SportsTheme.Tone.scoreboard.accent, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(SportsTheme.Stroke.accent(presentation.accentColor), lineWidth: 1)
+                .stroke(presentation.accentColor.opacity(0.20), lineWidth: 1)
         )
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
@@ -78,24 +79,25 @@ struct GameHeaderView: View {
     }
 
     private var contextColor: Color {
-        newPlayCount > 0 ? SportsTheme.Tone.newPlay.accent : SportsTheme.Colors.secondaryInk
+        newPlayCount > 0 ? Color(red: 0.980, green: 0.510, blue: 0.216) : SportsTheme.Colors.textOnFill.opacity(0.72)
     }
 }
 
 private struct DetailTeamLine: View {
     let abbreviation: String?
     let name: String
+    var isInverted = false
 
     var body: some View {
         HStack(spacing: 8) {
             Text(abbreviation ?? shortName)
                 .font(SportsTheme.Typography.teamAbbreviation)
                 .monospaced()
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .frame(width: 44, alignment: .leading)
+                .foregroundStyle(isInverted ? SportsTheme.Colors.textOnFill.opacity(0.72) : SportsTheme.Colors.ink)
+                .frame(width: 42, alignment: .leading)
             Text(name)
                 .font(SportsTheme.Typography.detailTeamName)
-                .foregroundStyle(SportsTheme.Colors.ink)
+                .foregroundStyle(isInverted ? SportsTheme.Colors.textOnFill : SportsTheme.Colors.ink)
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
         }
@@ -113,7 +115,7 @@ struct GameHeaderPlaceholder: View {
     var body: some View {
         let presentation = renderer.gameHeaderPresentation(for: summary)
 
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(presentation.leagueLabel)
                     .font(SportsTheme.Typography.leagueCode)
@@ -168,13 +170,13 @@ struct ResumeBanner: View {
     let onStartOver: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Image(systemName: "bookmark.fill")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(SportsTheme.Tone.newPlay.accent)
 
             Text(description)
-                .font(.subheadline.weight(.semibold))
+                .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("detail.resumeBanner")
@@ -206,9 +208,9 @@ struct ResumeBanner: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.headline.weight(.bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    .frame(minWidth: 44, minHeight: 44)
+                    .frame(width: 36, height: 36)
                     .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
             }
             .accessibilityLabel("More resume actions")
@@ -228,7 +230,7 @@ struct DetailStickyNavigationBar: View {
     let onReturn: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             if let returnLabel {
                 Button {
                     SportsFeedback.impact()
@@ -251,7 +253,7 @@ struct DetailStickyNavigationBar: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
+                        .padding(.vertical, 4)
                         .background(SportsTheme.Colors.ink, in: Capsule())
                         .accessibilityHidden(true)
                 }
@@ -279,13 +281,13 @@ struct DetailStickyNavigationBar: View {
             .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: true))
             .accessibilityIdentifier("detail.stickyNav.end")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
         .background(SportsTheme.Colors.paperRaised, in: Capsule())
         .overlay {
             Capsule().strokeBorder(SportsTheme.Colors.hairline.opacity(0.7), lineWidth: 1)
         }
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+        .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
         .overlay(alignment: .topLeading) {
             Color.clear
                 .frame(width: 44, height: 44)

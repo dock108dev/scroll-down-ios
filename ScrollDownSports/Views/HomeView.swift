@@ -7,7 +7,7 @@ struct HomeView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 10) {
                     if viewModel.loading && !viewModel.hasAnyHomeSourceGames {
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
@@ -47,7 +47,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 14)
+                .padding(.top, 12)
                 .padding(.bottom, 24)
             }
             .accessibilityIdentifier("home.scroll")
@@ -61,9 +61,7 @@ struct HomeView: View {
                 scrollToInitialHomeAnchor(proxy)
             }
         }
-        .background(
-            SportsTheme.Background.page
-        )
+        .background { SportsPageBackground() }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomeStickyHeader(viewModel: viewModel)
         }
@@ -140,8 +138,8 @@ struct HomeView: View {
                 viewModel.togglePin(item.game)
             }
             .accessibilityIdentifier("home.gameRow.\(item.id).pin")
-            .padding(.top, 12)
-            .padding(.trailing, 12)
+            .padding(.top, 9)
+            .padding(.trailing, 9)
         }
         .contextMenu {
             Button {
@@ -167,8 +165,8 @@ private struct HomeStickyHeader: View {
     var body: some View {
         FilterHeader(viewModel: viewModel)
             .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(SportsTheme.Colors.paper)
             .overlay(alignment: .bottom) {
@@ -184,7 +182,7 @@ private struct FilterHeader: View {
     @ObservedObject var viewModel: HomeViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 9) {
             Picker("League", selection: $viewModel.league) {
                 ForEach(LeagueFilter.allCases) { league in
                     Text(league.rawValue).tag(league)
@@ -196,7 +194,9 @@ private struct FilterHeader: View {
             TextField("Filter by team", text: $viewModel.teamQuery)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
-                .padding(10)
+                .font(SportsTheme.Typography.teamName)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
                 .background(SportsTheme.Colors.paperRaised, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
@@ -218,7 +218,7 @@ struct PinnedSectionView<Row: View>: View {
     let row: (HomeGameItem) -> Row
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeader(title: section.title, subtitle: "Saved and live-tracked games", systemImage: "pin.fill")
                 .id("pinned")
                 .accessibilityElement(children: .contain)
@@ -228,7 +228,7 @@ struct PinnedSectionView<Row: View>: View {
                 row(item)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 6)
     }
 }
 
@@ -239,7 +239,7 @@ struct TimelineSectionView<Row: View>: View {
     let row: (HomeGameItem) -> Row
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeader(title: section.title, subtitle: "Last 72 hours", systemImage: "clock.arrow.circlepath")
                 .id("timeline")
                 .accessibilityElement(children: .contain)
@@ -253,7 +253,7 @@ struct TimelineSectionView<Row: View>: View {
                         .id(dateSection.id)
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("home.dateSection.\(dateSection.id)")
-                        .padding(.top, 6)
+                        .padding(.top, 4)
 
                     ForEach(dateSection.games) { item in
                         row(item)
@@ -261,7 +261,7 @@ struct TimelineSectionView<Row: View>: View {
                 }
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 6)
     }
 }
 
@@ -271,9 +271,9 @@ private struct HomeSectionHeader: View {
     let systemImage: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
             Image(systemName: systemImage)
-                .font(.subheadline.weight(.bold))
+                .font(.caption.weight(.bold))
                 .foregroundStyle(SportsTheme.Tone.newPlay.accent)
                 .accessibilityHidden(true)
             Text(title)
@@ -284,7 +284,7 @@ private struct HomeSectionHeader: View {
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
             Spacer()
         }
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 }
 
@@ -292,9 +292,9 @@ private struct NestedDateHeader: View {
     let section: HomeTimelineSection
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
             Text(section.title)
-                .font(.headline.weight(.semibold))
+                .font(SportsTheme.Typography.teamName)
                 .foregroundStyle(SportsTheme.Colors.ink)
             Text(section.subtitle)
                 .font(SportsTheme.Typography.metadata)
@@ -302,7 +302,7 @@ private struct NestedDateHeader: View {
             Spacer()
         }
         .textCase(nil)
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 }
 

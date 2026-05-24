@@ -66,12 +66,12 @@ struct PlayByPlaySection: View {
             if events.isEmpty {
                 UnavailableText("No play-by-play data yet.")
             } else {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     if visibleEvents.isEmpty {
                         UnavailableText(selectedMode.emptyStateMessage)
                     } else {
                         ForEach(periodGroups) { group in
-                            VStack(alignment: .leading, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 7) {
                                 PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)
                                 ForEach(group.events) { event in
                                     let readIndex = readIndex(for: event)
@@ -144,18 +144,20 @@ struct PlayRow: View {
     let onRawFeedExpansionChange: (String, Bool) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 9) {
+        HStack(alignment: .top, spacing: 7) {
             EventMarker(importance: importance, accent: accentColor)
-            VStack(alignment: .leading, spacing: importance == .low ? 4 : 6) {
+            VStack(alignment: .leading, spacing: importance == .low ? 3 : 4) {
                 contextLine
                 Text(presentation.headline)
                     .font(headlineFont)
                     .foregroundStyle(SportsTheme.Colors.ink)
+                    .lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
                 if importance != .low, let detail = presentation.detail?.nilIfBlank {
                     Text(detail)
                         .font(SportsTheme.Typography.momentDetail)
                         .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .lineSpacing(1)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let detail = presentation.detail?.nilIfBlank {
                     Text(detail)
@@ -167,7 +169,8 @@ struct PlayRow: View {
                 rawFeedDisclosure
             }
         }
-        .padding(importance == .low ? 9 : 11)
+        .padding(.horizontal, importance == .low ? 8 : 10)
+        .padding(.vertical, importance == .low ? 7 : 9)
         .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
@@ -243,7 +246,7 @@ struct PlayRow: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            .padding(.top, 2)
+            .padding(.top, 1)
             .frame(minHeight: 44, alignment: .leading)
             .contentShape(Rectangle())
             .accessibilityLabel(isRawFeedExpanded ? "Hide feed details" : "Show feed details")
@@ -261,7 +264,7 @@ struct PlayRow: View {
                             .foregroundStyle(SportsTheme.Colors.secondaryInk.opacity(0.75))
                     }
                 }
-                .padding(10)
+                .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous))
             }
@@ -271,24 +274,24 @@ struct PlayRow: View {
     private var headlineFont: Font {
         switch importance {
         case .critical:
-            return .headline.weight(.bold)
+            return SportsTheme.Typography.momentHeadline
         case .high:
-            return .subheadline.weight(.bold)
+            return SportsTheme.Typography.momentHeadline
         case .medium:
-            return .subheadline.weight(.semibold)
+            return SportsTheme.Typography.momentHeadline
         case .low:
-            return .subheadline.weight(.semibold)
+            return SportsTheme.Typography.momentHeadline
         }
     }
 
     private var cardBackground: Color {
         switch importance {
         case .critical:
-            return accentColor.opacity(0.11)
+            return Color(red: 1.000, green: 0.969, blue: 0.910)
         case .high, .medium:
             return SportsTheme.Surface.eventCard.background
         case .low:
-            return SportsTheme.Colors.paper.opacity(0.72)
+            return SportsTheme.Colors.paperRaised.opacity(0.82)
         }
     }
 
@@ -315,7 +318,7 @@ private struct EventMarker: View {
     let accent: Color
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 3) {
             Circle()
                 .fill(accent)
                 .frame(width: markerSize, height: markerSize)
@@ -323,14 +326,14 @@ private struct EventMarker: View {
                 .fill(accent.opacity(importance == .low ? 0.16 : 0.28))
                 .frame(width: importance == .critical ? 2 : 1)
         }
-        .frame(width: 14)
+        .frame(width: 10)
     }
 
     private var markerSize: CGFloat {
         switch importance {
-        case .critical: return 12
-        case .high: return 10
-        case .medium: return 8
+        case .critical: return 10
+        case .high: return 9
+        case .medium: return 7
         case .low: return 6
         }
     }
@@ -388,7 +391,7 @@ struct BoxScoreSection: View {
 
         CatchUpSection(title: presentation.title, systemImage: presentation.systemImage) {
             if scoreRevealed {
-                VStack(spacing: 12) {
+                VStack(spacing: 9) {
                     ScoreboardCardHeader(presentation: presentation)
                     if let finalScoreText {
                         Text(finalScoreText)
