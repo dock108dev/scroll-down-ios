@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+
 concurrency:
   group: ios-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,7 +23,7 @@ jobs:
   pr-quality:
     name: PR Fast Quality Gates
     if: github.event_name != 'schedule'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 80
 
     steps:
@@ -127,7 +130,7 @@ jobs:
   nightly-visual:
     name: Nightly Visual Matrix (${{ matrix.device.name }})
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 80
     strategy:
       fail-fast: false
@@ -178,7 +181,7 @@ jobs:
   nightly-ui-accessibility:
     name: Nightly UI and Accessibility (${{ matrix.device.name }})
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -238,7 +241,7 @@ jobs:
   nightly-performance:
     name: Nightly Performance Smoke
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 80
 
     steps:
