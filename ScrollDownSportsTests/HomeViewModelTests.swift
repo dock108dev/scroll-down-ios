@@ -371,6 +371,109 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(state.primaryActionLabel, "Open box score")
     }
 
+    func testCardFallbacksCoverOtherPhaseBackendLabelsAndScoreboardScores() throws {
+        let delayed = TestFixtures.makeGame(
+            id: 46,
+            scheduledStart: TestFixtures.fixedDate("2026-05-21T23:00:00Z"),
+            status: "delayed",
+            isLive: false,
+            isFinal: false,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            periodLabel: nil,
+            clockLabel: nil,
+            hasTimeline: false
+        )
+        let delayedState = HomeGameCardState(item: makeItem(game: delayed))
+        XCTAssertEqual(delayedState.phase, .other)
+        XCTAssertEqual(delayedState.statusText, "Game update")
+        XCTAssertEqual(delayedState.primaryActionLabel, "Game details")
+        XCTAssertEqual(delayedState.contextText, "Details")
+
+        let futureUnknown = TestFixtures.makeGame(
+            id: 47,
+            scheduledStart: TestFixtures.fixedDate("2030-05-23T23:00:00Z"),
+            status: "weather_delay",
+            isLive: false,
+            isFinal: false,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            hasTimeline: false
+        )
+        XCTAssertEqual(HomeGameCardState(item: makeItem(game: futureUnknown)).phase, .scheduled)
+
+        let liveWithoutTimeline = TestFixtures.makeGame(
+            id: 48,
+            status: "in_progress",
+            isLive: true,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            hasTimeline: false,
+            presentation: presentation(statusLabel: "Weather delay", primaryActionLabel: "Open stream")
+        )
+        let liveState = HomeGameCardState(item: makeItem(game: liveWithoutTimeline))
+        XCTAssertEqual(liveState.statusText, "Weather delay")
+        XCTAssertEqual(liveState.primaryActionLabel, "Live details")
+
+        let scoreboardOnly = TestFixtures.makeGame(
+            id: 49,
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayAbbreviation: nil,
+            homeAbbreviation: nil,
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            hasTimeline: false,
+            scoreboard: GameScoreboardData(
+                layout: nil,
+                clockLabel: nil,
+                periodLabel: nil,
+                statusLabel: "Official final",
+                scoreline: nil,
+                competitors: [
+                    ScoreboardCompetitorData(
+                        id: "away-49",
+                        side: .away,
+                        teamName: "New York Yankees",
+                        teamAbbreviation: nil,
+                        score: nil,
+                        scoreText: "11",
+                        isWinner: true,
+                        recordText: nil
+                    ),
+                    ScoreboardCompetitorData(
+                        id: "home-49",
+                        side: .home,
+                        teamName: "Seattle Mariners",
+                        teamAbbreviation: nil,
+                        score: nil,
+                        scoreText: "8",
+                        isWinner: false,
+                        recordText: nil
+                    )
+                ],
+                segments: [],
+                totals: nil
+            )
+        )
+        let reachedScoreboard = TestFixtures.makeProgress(
+            gameId: scoreboardOnly.id,
+            lastKnownEventCount: 0,
+            reachedScoreboard: true
+        )
+        let scoreboardState = HomeGameCardState(item: makeItem(game: scoreboardOnly, progress: reachedScoreboard))
+        XCTAssertEqual(scoreboardState.statusText, "Official final")
+        XCTAssertEqual(scoreboardState.primaryActionLabel, "Open recap")
+        XCTAssertEqual(scoreboardState.scoreRows.map(\.scoreText), ["11", "8"])
+        XCTAssertEqual(scoreboardState.scoreRows.map(\.abbreviation), ["Yank", "Mari"])
+        XCTAssertEqual(scoreboardState.scoreRows.map(\.isWinner), [true, false])
+    }
+
     private func pinnedIDs(in sections: [HomeSection]) -> [Int] {
         guard case .pinned(let section) = sections.first(where: { $0.id == "pinned" }) else {
             return []
@@ -436,6 +539,29 @@ final class HomeViewModelTests: XCTestCase {
             isPinned: isPinned,
             pinnedRecord: nil,
             progress: progress
+        )
+    }
+
+    private func presentation(statusLabel: String? = nil, primaryActionLabel: String? = nil) -> GamePresentationData {
+        GamePresentationData(
+            headline: nil,
+            shortHeadline: nil,
+            subheadline: nil,
+            matchupLabel: nil,
+            primaryLabel: nil,
+            secondaryLabel: nil,
+            tertiaryLabel: nil,
+            accessibilityLabel: nil,
+            displayState: nil,
+            visualPriority: nil,
+            sortBucket: nil,
+            accentRole: nil,
+            statusTone: nil,
+            eventCounts: nil,
+            statusLabel: statusLabel,
+            primaryActionLabel: primaryActionLabel,
+            secondaryContextLabel: nil,
+            scoreboardPlacement: nil
         )
     }
 

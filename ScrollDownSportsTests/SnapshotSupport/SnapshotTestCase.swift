@@ -12,11 +12,15 @@ class SnapshotTestCase: XCTestCase {
     override func setUp() {
         super.setUp()
         continueAfterFailure = false
-        UIView.setAnimationsEnabled(false)
+        MainActor.assumeIsolated {
+            UIView.setAnimationsEnabled(false)
+        }
     }
 
     override func tearDown() {
-        UIView.setAnimationsEnabled(true)
+        MainActor.assumeIsolated {
+            UIView.setAnimationsEnabled(true)
+        }
         super.tearDown()
     }
 }
