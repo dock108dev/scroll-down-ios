@@ -1,6 +1,6 @@
 import Foundation
 
-enum Sport: Codable, Hashable {
+enum Sport: Codable, Hashable, Sendable {
     case mlb
     case nfl
     case nba
@@ -34,7 +34,7 @@ enum Sport: Codable, Hashable {
     }
 }
 
-struct Game: Codable, Identifiable, Hashable {
+struct Game: Codable, Identifiable, Hashable, Sendable {
     typealias ID = Int
 
     let id: ID
@@ -55,20 +55,20 @@ struct Game: Codable, Identifiable, Hashable {
     var matchupText: String { presentation?.matchupLabel ?? "\(awayParticipant?.name ?? "Away") at \(homeParticipant?.name ?? "Home")" }
 }
 
-struct GameParticipant: Codable, Identifiable, Hashable {
+struct GameParticipant: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let role: GameParticipantRole
     let name: String
     let abbreviation: String?
 }
 
-enum GameParticipantRole: Codable, Hashable {
+enum GameParticipantRole: Codable, Hashable, Sendable {
     case home
     case away
     case other(String)
 }
 
-struct ScoreState: Codable, Hashable {
+struct ScoreState: Codable, Hashable, Sendable {
     let participantScores: [ParticipantScore]
 
     var home: Int? { score(for: .home) }
@@ -80,13 +80,13 @@ struct ScoreState: Codable, Hashable {
     }
 }
 
-struct ParticipantScore: Codable, Hashable {
+struct ParticipantScore: Codable, Hashable, Sendable {
     let participantID: String
     let participantRole: GameParticipantRole
     let score: Int?
 }
 
-struct ScoreDelta: Codable, Hashable {
+struct ScoreDelta: Codable, Hashable, Sendable {
     let participantID: String?
     let participantRole: GameParticipantRole?
     let before: Int?
@@ -94,7 +94,7 @@ struct ScoreDelta: Codable, Hashable {
     let change: Int?
 }
 
-struct GameStatus: Codable, Hashable {
+struct GameStatus: Codable, Hashable, Sendable {
     let rawValue: String
     let isLiveOverride: Bool?
     let isFinalOverride: Bool?
@@ -156,20 +156,20 @@ struct GameStatus: Codable, Hashable {
     }
 }
 
-enum GameStatusPhase: Codable, Hashable {
+enum GameStatusPhase: Codable, Hashable, Sendable {
     case pregame
     case live
     case final
     case unknown(String)
 }
 
-struct GameAvailableFeatures: Codable, Hashable {
+struct GameAvailableFeatures: Codable, Hashable, Sendable {
     let hasTimeline: Bool
     let hasStats: Bool
     let hasScoreboard: Bool
 }
 
-enum GameMode: String, Codable, Hashable {
+enum GameMode: String, Codable, Hashable, Sendable {
     case timeline
     case flow
     case stream
@@ -177,7 +177,7 @@ enum GameMode: String, Codable, Hashable {
     case scoreboard
 }
 
-struct GameProgress: Codable, Hashable {
+struct GameProgress: Codable, Hashable, Sendable {
     let selectedMode: GameMode
     let periodOrdinal: Int?
     let periodLabel: String?
@@ -195,16 +195,16 @@ struct GameProgress: Codable, Hashable {
     }
 }
 
-struct ScrollFallback: Codable, Hashable {
+struct ScrollFallback: Codable, Hashable, Sendable {
     let eventSequence: Int?
     let approximateOffset: Double?
 }
 
-struct GameProgressPersistence: Codable, Hashable {
+struct GameProgressPersistence: Codable, Hashable, Sendable {
     let storageKey: String
 }
 
-struct GameEvent: Codable, Identifiable, Hashable {
+struct GameEvent: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let sourceEventID: String?
     let sequence: Int
@@ -250,8 +250,8 @@ struct GameEvent: Codable, Identifiable, Hashable {
     }
 }
 
-struct GameEventDiffKey: Codable, Hashable {
-    enum Kind: String, Codable {
+struct GameEventDiffKey: Codable, Hashable, Sendable {
+    enum Kind: String, Codable, Sendable {
         case sourceEventID
         case sequence
     }
@@ -261,7 +261,7 @@ struct GameEventDiffKey: Codable, Hashable {
     let sequence: Int
 }
 
-struct GameEventIdentityBaseline: Codable, Equatable {
+struct GameEventIdentityBaseline: Codable, Equatable, Sendable {
     var sourceEventIDs: Set<String>
     var sequences: Set<Int>
     var maxSequence: Int?
@@ -305,7 +305,7 @@ struct GameEventIdentityBaseline: Codable, Equatable {
     }
 }
 
-enum GameEventListChangeKind: String, Equatable {
+enum GameEventListChangeKind: String, Equatable, Sendable {
     case unchanged
     case appended
     case prepended
@@ -314,7 +314,7 @@ enum GameEventListChangeKind: String, Equatable {
     case reset
 }
 
-struct GameEventListDiff: Equatable {
+struct GameEventListDiff: Equatable, Sendable {
     let kind: GameEventListChangeKind
     let insertedEvents: [GameEvent]
     let modifiedEvents: [GameEvent]
@@ -440,13 +440,13 @@ private extension GameEvent {
     }
 }
 
-enum GameEventImportance: Codable, Hashable {
+enum GameEventImportance: Codable, Hashable, Sendable {
     case primary
     case secondary
     case contextual
 }
 
-struct GameDetail: Codable, Hashable {
+struct GameDetail: Codable, Hashable, Sendable {
     let game: Game
     let teamStats: [TeamStat]
     let playerStats: [PlayerStat]

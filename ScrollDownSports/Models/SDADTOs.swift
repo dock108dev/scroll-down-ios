@@ -1,17 +1,17 @@
 import Foundation
 
-struct SDAScoreDTO: Decodable, Hashable {
+struct SDAScoreDTO: Decodable, Hashable, Sendable {
     let home: Int?
     let away: Int?
 }
 
-struct SDAGameListResponseDTO: Decodable {
+struct SDAGameListResponseDTO: Decodable, Sendable {
     let games: [SDAGameSummaryDTO]
     let total: Int?
     let lastUpdatedAt: String?
 }
 
-struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable {
+struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable, Sendable {
     let id: Int
     let leagueCode: String
     let gameDate: Date
@@ -61,7 +61,7 @@ struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable {
     }
 }
 
-struct SDAGameDetailResponseDTO: Decodable {
+struct SDAGameDetailResponseDTO: Decodable, Sendable {
     let detailContractVersion: Int
     let game: SDAGameDTO
     let teamStats: [TeamStat]
@@ -73,7 +73,7 @@ struct SDAGameDetailResponseDTO: Decodable {
     let nhlGoalies: [NHLPlayerStat]?
 }
 
-struct SDAGameDTO: Decodable, Identifiable, Hashable {
+struct SDAGameDTO: Decodable, Identifiable, Hashable, Sendable {
     let id: Int
     let leagueCode: String
     let gameDate: Date
@@ -119,7 +119,7 @@ struct SDAGameDTO: Decodable, Identifiable, Hashable {
     }
 }
 
-struct SDAPlayDTO: Decodable, Identifiable, Hashable {
+struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
     var id: String { eventId ?? "\(playIndex)-\(periodLabel)-\(clockLabel ?? gameClock ?? "")" }
     let eventId: String?
     let playIndex: Int
@@ -155,7 +155,7 @@ struct SDAPlayDTO: Decodable, Identifiable, Hashable {
     let metadata: [String: JSONValue]?
 }
 
-struct TeamStat: Codable, Identifiable, Hashable {
+struct TeamStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(isHome)" }
     let team: String
     let isHome: Bool
@@ -163,14 +163,14 @@ struct TeamStat: Codable, Identifiable, Hashable {
     let normalizedStats: [NormalizedStat]?
 }
 
-struct NormalizedStat: Codable, Hashable {
+struct NormalizedStat: Codable, Hashable, Sendable {
     let key: String
     let displayLabel: String
     let group: String?
     let value: JSONValue?
 }
 
-struct PlayerStat: Codable, Identifiable, Hashable {
+struct PlayerStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
     let playerName: String
@@ -183,7 +183,7 @@ struct PlayerStat: Codable, Identifiable, Hashable {
     let rawStats: [String: JSONValue]
 }
 
-struct MLBBatterStat: Codable, Identifiable, Hashable {
+struct MLBBatterStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)-batter" }
     let team: String
     let playerName: String
@@ -197,7 +197,7 @@ struct MLBBatterStat: Codable, Identifiable, Hashable {
     let strikeOuts: Int?
 }
 
-struct MLBPitcherStat: Codable, Identifiable, Hashable {
+struct MLBPitcherStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)-pitcher" }
     let team: String
     let playerName: String
@@ -210,7 +210,7 @@ struct MLBPitcherStat: Codable, Identifiable, Hashable {
     let homeRuns: Int?
 }
 
-struct NHLPlayerStat: Codable, Identifiable, Hashable {
+struct NHLPlayerStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
     let playerName: String

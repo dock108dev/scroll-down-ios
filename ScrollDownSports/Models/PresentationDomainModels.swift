@@ -1,6 +1,6 @@
 import Foundation
 
-struct GamePresentationData: Codable, Hashable {
+struct GamePresentationData: Codable, Hashable, Sendable {
     let headline: String?
     let shortHeadline: String?
     let subheadline: String?
@@ -25,7 +25,7 @@ struct GamePresentationData: Codable, Hashable {
     }
 }
 
-struct DetailModeEventCounts: Codable, Hashable {
+struct DetailModeEventCounts: Codable, Hashable, Sendable {
     let key: Int?
     let flow: Int?
     let full: Int?
@@ -42,7 +42,7 @@ struct DetailModeEventCounts: Codable, Hashable {
     }
 }
 
-struct GameEligibilityData: Codable, Hashable {
+struct GameEligibilityData: Codable, Hashable, Sendable {
     let catchUp: ModeEligibilityData?
     let playByPlay: ModeEligibilityData?
     let keyMoments: ModeEligibilityData?
@@ -53,14 +53,14 @@ struct GameEligibilityData: Codable, Hashable {
     let recap: ModeEligibilityData?
 }
 
-struct ModeEligibilityData: Codable, Hashable {
+struct ModeEligibilityData: Codable, Hashable, Sendable {
     let isEligible: Bool?
     let reason: String?
     let minimumEventCount: Int?
     let availableEventCount: Int?
 }
 
-struct GameScoreboardData: Codable, Hashable {
+struct GameScoreboardData: Codable, Hashable, Sendable {
     let layout: String?
     let clockLabel: String?
     let periodLabel: String?
@@ -75,7 +75,7 @@ struct GameScoreboardData: Codable, Hashable {
     }
 }
 
-struct ScoreboardCompetitorData: Codable, Identifiable, Hashable {
+struct ScoreboardCompetitorData: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let side: GameParticipantRole
     let teamName: String
@@ -86,18 +86,18 @@ struct ScoreboardCompetitorData: Codable, Identifiable, Hashable {
     let recordText: String?
 }
 
-struct ScoreboardSegmentData: Codable, Hashable {
+struct ScoreboardSegmentData: Codable, Hashable, Sendable {
     let label: String
     let away: String?
     let home: String?
 }
 
-struct ScoreboardTotalsData: Codable, Hashable {
+struct ScoreboardTotalsData: Codable, Hashable, Sendable {
     let away: String?
     let home: String?
 }
 
-struct EventPresentationData: Codable, Hashable {
+struct EventPresentationData: Codable, Hashable, Sendable {
     let headline: String?
     let shortHeadline: String?
     let body: String?
@@ -112,7 +112,7 @@ struct EventPresentationData: Codable, Hashable {
     let scoreLabel: String?
 }
 
-struct EventImportanceData: Codable, Hashable {
+struct EventImportanceData: Codable, Hashable, Sendable {
     let level: String?
     let rank: Int?
     let bucket: String?
