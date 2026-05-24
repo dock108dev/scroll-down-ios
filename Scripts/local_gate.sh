@@ -136,6 +136,27 @@ destination_id_for() {
     '
 }
 
+latest_destination_id_for_name() {
+  local wanted_name="$1"
+  xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME" 2>/dev/null | awk -F '[{},]' \
+    -v wanted_name="$wanted_name" '
+      /platform:iOS Simulator/ {
+        id = ""; name = ""; os = ""; platform = "";
+        for (idx = 1; idx <= NF; idx++) {
+          field = $idx;
+          gsub(/^ +| +$/, "", field);
+          if (field ~ /^id:/) { sub(/^id:/, "", field); id = field; }
+          if (field ~ /^name:/) { sub(/^name:/, "", field); name = field; }
+          if (field ~ /^OS:/) { sub(/^OS:/, "", field); os = field; }
+          if (field ~ /^platform:/) { sub(/^platform:/, "", field); platform = field; }
+        }
+        if (platform == "iOS Simulator" && name == wanted_name && id !~ /placeholder/ && id != "" && os != "") {
+          print os " " id;
+        }
+      }
+    ' | sort -V | tail -n 1 | awk '{print $2}'
+}
+
 fallback_destination_id() {
   xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME" 2>/dev/null | awk -F '[{},]' '
     /platform:iOS Simulator/ && /name:iPhone/ {
@@ -155,9 +176,64 @@ fallback_destination_id() {
   '
 }
 
+destination_field() {
+  local spec="$1"
+  local key="$2"
+  printf '%s\n' "$spec" | awk -F ',' -v key="$key" '
+    {
+      for (idx = 1; idx <= NF; idx++) {
+        field = $idx;
+        gsub(/^ +| +$/, "", field);
+        prefix = key "=";
+        if (index(field, prefix) == 1) {
+          sub(prefix, "", field);
+          print field;
+          exit;
+        }
+      }
+    }
+  '
+}
+
+resolve_requested_destination() {
+  local requested="$1"
+  local requested_name requested_os destination_id
+  requested_name="$(destination_field "$requested" "name")"
+  requested_os="$(destination_field "$requested" "OS")"
+
+  if [ "$requested_name" = "" ]; then
+    echo "$requested"
+    return 0
+  fi
+
+  if [ "$requested_os" = "latest" ] || [ "$requested_os" = "" ]; then
+    destination_id="$(latest_destination_id_for_name "$requested_name")"
+  else
+    destination_id="$(destination_id_for "$requested_name" "$requested_os")"
+  fi
+
+  if [ "$destination_id" != "" ]; then
+    echo "platform=iOS Simulator,id=$destination_id"
+    return 0
+  fi
+
+  destination_id="$(fallback_destination_id)"
+  if [ "$destination_id" != "" ]; then
+    echo "platform=iOS Simulator,id=$destination_id"
+    echo "Using an available iPhone simulator because requested destination '$requested' was not found." >&2
+    return 0
+  fi
+
+  echo "$requested"
+}
+
 resolve_destination() {
   if [ "${TEST_DESTINATION:-}" != "" ]; then
-    echo "$TEST_DESTINATION"
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "$TEST_DESTINATION"
+    else
+      resolve_requested_destination "$TEST_DESTINATION"
+    fi
     return 0
   fi
 
@@ -282,6 +358,10 @@ run_visual() {
   if [ "${SNAPSHOT_RECORD:-}" = "1" ]; then
     echo "SNAPSHOT_RECORD=1 will record visual baselines. Leave it unset for verification."
   fi
+  # Snapshot baselines are tied to the canonical simulator runtime. Matrix
+  # destinations are still useful for UI/performance gates, but visual snapshots
+  # drift across simulator devices and OS releases.
+  unset TEST_DESTINATION
   run_xcode_test visual "$RESULTS_DIR/Visual.xcresult" no \
     -only-testing:ScrollDownSportsTests/HomeVisualRegressionTests \
     -only-testing:ScrollDownSportsTests/GameDetailVisualRegressionTests \
