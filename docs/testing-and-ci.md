@@ -4,6 +4,8 @@
 
 `Scripts/local_gate.sh` is the local gate entry point. It regenerates `ScrollDownSports.xcodeproj` from `project.yml`, writes Xcode artifacts under `.build`, disables simulator code signing, and clears `SDA_API_KEY` while setting `SDA_API_BASE_URL` to `http://127.0.0.1.invalid` for simulator gates.
 
+This simulator gate behavior is intentionally different from direct iPhone installs. Physical-device builds use `Config/Secrets.xcconfig` plus ignored `Config/Local.xcconfig`, defaulting to `https://sda.dock108.dev` unless a private local override is set.
+
 The wrapper supports these gates:
 
 ```text

@@ -10,7 +10,6 @@ settings:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    DEVELOPMENT_TEAM: ""
 packages:
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
@@ -34,6 +33,8 @@ targets:
         PRODUCT_NAME: ScrollDownSports
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "$(SDS_DEVELOPMENT_TEAM)"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
     entitlements:
       path: ScrollDownSports/Resources/ScrollDownSports.entitlements

@@ -10,9 +10,11 @@
 
 ## API And Configuration
 
-`SDAApiClient` reads `SDABaseURL` and `SDAApiKey` from `Info.plist`. Those plist values are backed by `SDA_API_BASE_URL` and `SDA_API_KEY` in `Config/Secrets.xcconfig`, with optional overrides from ignored `Config/Local.xcconfig`.
+`SDAApiClient` reads `SDABaseURL` and `SDAApiKey` from `Info.plist`. Those plist values are backed by `SDA_API_BASE_URL` and `SDA_API_KEY` in `Config/Secrets.xcconfig`, with optional overrides from ignored `Config/Local.xcconfig`. The checked-in app default is the production SDA backend at `https://sda.dock108.dev`.
 
 If `SDABaseURL` is absent or invalid, the client falls back to `https://sda.dock108.dev`. If `SDAApiKey` is empty or still an unresolved build-setting placeholder, requests are sent without `X-API-Key`.
+
+For physical-device builds, `project.yml` enables automatic signing for the app target and reads `DEVELOPMENT_TEAM` from `SDS_DEVELOPMENT_TEAM`. Keep that private value in `Config/Local.xcconfig` unless the team id should become a repo default.
 
 The client calls:
 
@@ -57,6 +59,6 @@ Home card state hides score rows behind a `score at bottom` cue when a game has 
 
 ## Build Metadata
 
-`project.yml` defines one iOS application target, `ScrollDownSports`, one unit-test target, `ScrollDownSportsTests`, and one UI-test target, `ScrollDownSportsUITests`. The shared `ScrollDownSports` scheme builds the app and UI-test targets, runs both test targets, and gathers coverage for the app target.
+`project.yml` defines one iOS application target, `ScrollDownSports`, one unit-test target, `ScrollDownSportsTests`, and one UI-test target, `ScrollDownSportsUITests`. The shared `ScrollDownSports` scheme builds the app and UI-test targets, runs both test targets, and gathers coverage for the app target. XcodeGen should be rerun after changes to `project.yml`.
 
 The app target uses `ScrollDownSports/Resources/Info.plist`, `ScrollDownSports/Resources/ScrollDownSports.entitlements`, and `ScrollDownSports/Resources/PrivacyInfo.xcprivacy`. `Info.plist` permits the background refresh task identifier and declares `fetch` in `UIBackgroundModes`. The privacy manifest declares no collected data types, no accessed API types, no tracking domains, and tracking disabled.

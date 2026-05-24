@@ -35,13 +35,13 @@ Clean generated local gate artifacts:
 Scripts/local_gate.sh clean-artifacts
 ```
 
-For local API credentials, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set `SDA_API_KEY`. `Config/Local.xcconfig` is ignored by git and is included by `Config/Secrets.xcconfig` when present.
+For local API credentials or direct-device signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set the private values there. `Config/Local.xcconfig` is ignored by git and is included by `Config/Secrets.xcconfig` when present.
 
 ## Deployment Basics
 
-`project.yml` defines the app bundle identifier as `com.dock108.scrolldownsports`, the iOS deployment target as `18.0`, Swift version `6.0`, marketing version `0.1.0`, and current project version `1`. `DEVELOPMENT_TEAM` is empty, so signing must be supplied before archive or App Store distribution.
+`project.yml` defines the app bundle identifier as `com.dock108.scrolldownsports`, the iOS deployment target as `18.0`, Swift version `6.0`, marketing version `0.1.0`, and current project version `1`. Direct iPhone installs use automatic signing and read `SDS_DEVELOPMENT_TEAM` from `Config/Secrets.xcconfig`, with private overrides in ignored `Config/Local.xcconfig`.
 
-Debug and Release both read `SDA_API_BASE_URL` and `SDA_API_KEY` from `Config/Secrets.xcconfig`, with optional local overrides from `Config/Local.xcconfig`. Those settings become `SDABaseURL` and `SDAApiKey` in `Info.plist`; any Release credential supplied there is part of the built app configuration.
+Debug and Release both read `SDA_API_BASE_URL` and `SDA_API_KEY` from `Config/Secrets.xcconfig`, with optional local overrides from `Config/Local.xcconfig`. Those settings become `SDABaseURL` and `SDAApiKey` in `Info.plist`; any Release credential supplied there is part of the built app configuration. The checked-in backend default is production SDA at `https://sda.dock108.dev`.
 
 The checked-in GitHub Actions workflow runs `Scripts/local_gate.sh` gates on pull requests, pushes to `main`, schedules, and manual dispatch.
 
@@ -49,4 +49,5 @@ The checked-in GitHub Actions workflow runs `Scripts/local_gate.sh` gates on pul
 
 - [App reference](docs/app-reference.md)
 - [Testing and CI](docs/testing-and-ci.md)
+- [Device install](docs/device-install.md)
 - [Documentation consolidation audit](docs/audits/docs-consolidation.md)

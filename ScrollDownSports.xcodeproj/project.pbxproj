@@ -864,14 +864,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					1A2C84F68D68D783035F1D1F = {
-						DevelopmentTeam = "";
 						TestTargetID = 1B0437D600A19D87F8DB7254;
 					};
 					1B0437D600A19D87F8DB7254 = {
-						DevelopmentTeam = "";
-					};
-					A5382150DDA1E2420930759C = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = "$(SDS_DEVELOPMENT_TEAM)";
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -1141,6 +1138,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ScrollDownSports/Resources/ScrollDownSports.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "$(SDS_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = ScrollDownSports/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1242,7 +1241,6 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1308,7 +1306,6 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1339,6 +1336,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ScrollDownSports/Resources/ScrollDownSports.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "$(SDS_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = ScrollDownSports/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
