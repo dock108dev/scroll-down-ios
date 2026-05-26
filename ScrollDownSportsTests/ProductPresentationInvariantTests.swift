@@ -261,6 +261,57 @@ final class ProductPresentationInvariantTests: XCTestCase {
         XCTAssertEqual(duplicatedClock.clockText, "6th")
     }
 
+    func testBaseballEventsUseSituationContextWithoutRepeatingPlayerName() {
+        let event = TestFixtures.makeEvent(
+            sequence: 1,
+            headline: "Jeff McNeil walks.",
+            detail: "Jeff McNeil",
+            clockLabel: "8th",
+            eventType: "Walk",
+            presentation: TestFixtures.eventPresentation(timeLabel: "8th"),
+            importanceMetadata: EventImportanceData(
+                level: "secondary",
+                rank: 40,
+                bucket: "base_runner",
+                reasons: ["runner aboard"],
+                isKeyMoment: false,
+                isScoringPlay: false,
+                isLeadChange: false,
+                isTyingPlay: false,
+                winProbabilityDelta: nil
+            ),
+            sportMetadata: [
+                "baseState": .string("runner_on_first"),
+                "outs": .number(1),
+                "balls": .number(3),
+                "strikes": .number(1)
+            ]
+        )
+
+        let presentation = BaseballRenderer().eventPresentation(for: event, periodGroupLabel: "8th")
+
+        XCTAssertEqual(presentation.detail, "Runner on 1st · 1 out · 3-1 count")
+        XCTAssertFalse(presentation.detail?.contains("Jeff McNeil") == true)
+    }
+
+    func testBaseballEventsPreserveNonDuplicateDetailWithSituationContext() {
+        let event = TestFixtures.makeEvent(
+            sequence: 2,
+            headline: "Shea Langeliers strikes out swinging.",
+            detail: "Leaves two aboard",
+            clockLabel: "2 outs",
+            eventType: "Strikeout",
+            sportMetadata: [
+                "baseState": .string("runners_on_second_and_third"),
+                "count": .string("1-2")
+            ]
+        )
+
+        let presentation = BaseballRenderer().eventPresentation(for: event, periodGroupLabel: "9th")
+
+        XCTAssertEqual(presentation.detail, "Leaves two aboard · Runners on 2nd and 3rd · 2 outs · 1-2 count")
+    }
+
     private func assertNoScoreLeak(texts: [String?], forbidden: [String], file: StaticString = #filePath, line: UInt = #line) {
         let combined = texts.compactMap { $0 }.joined(separator: " | ")
         for value in forbidden {

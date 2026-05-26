@@ -102,11 +102,68 @@ final class SportsThemeTests: XCTestCase {
 
         let section = SportRendererRegistry.renderer(for: detail.game).statsPresentation(for: detail).playerSections[0]
 
-        XCTAssertEqual(section.highlights.map(\.title), ["J. Rivers", "M. Stone"])
+        XCTAssertEqual(section.highlights.map(\.title), ["J. Rivers"])
         XCTAssertEqual(section.highlights[0].stats.map(\.label), ["MIN", "PTS", "REB"])
         XCTAssertEqual(section.tables[0].title, "Full Stats")
-        XCTAssertEqual(section.tables[0].columns.map(\.label), ["Player", "Team", "MIN", "PTS", "REB", "AST", "YDS", "TD"])
+        XCTAssertEqual(section.tables[0].columns.map(\.label), ["Player", "Team", "MIN", "PTS", "REB", "AST"])
         XCTAssertTrue(section.cards.isEmpty)
+    }
+
+    func testSportSpecificFallbackStatsDoNotLeakWrongColumns() {
+        let baseballDetail = GameDetail(
+            game: makeGame(leagueCode: "mlb"),
+            teamStats: [],
+            playerStats: [
+                PlayerStat(
+                    team: "SEA",
+                    playerName: "M. Reed",
+                    minutes: 0,
+                    points: 0,
+                    rebounds: 0,
+                    assists: 0,
+                    yards: nil,
+                    touchdowns: nil,
+                    rawStats: ["hits": .number(3), "rbi": .number(2), "homeRuns": .number(1), "strikeOuts": .number(1)]
+                )
+            ],
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+        let baseballSection = SportRendererRegistry.renderer(for: baseballDetail.game).statsPresentation(for: baseballDetail).playerSections[0]
+
+        XCTAssertEqual(baseballSection.tables[0].columns.map(\.label), ["Player", "Team", "H", "RBI", "HR", "K"])
+        XCTAssertEqual(baseballSection.highlights[0].headline, "3 H, 2 RBI, 1 HR")
+        XCTAssertFalse(baseballSection.tables[0].columns.map(\.label).contains("PTS"))
+
+        let footballDetail = GameDetail(
+            game: makeGame(leagueCode: "nfl"),
+            teamStats: [],
+            playerStats: [
+                PlayerStat(
+                    team: "NYG",
+                    playerName: "T. Field",
+                    minutes: nil,
+                    points: 14,
+                    rebounds: nil,
+                    assists: nil,
+                    yards: 110,
+                    touchdowns: 2,
+                    rawStats: [:]
+                )
+            ],
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+        let footballSection = SportRendererRegistry.renderer(for: footballDetail.game).statsPresentation(for: footballDetail).playerSections[0]
+
+        XCTAssertEqual(footballSection.tables[0].columns.map(\.label), ["Player", "Team", "YDS", "TD"])
+        XCTAssertFalse(footballSection.tables[0].columns.map(\.label).contains("PTS"))
     }
 
     func testHockeyStatsIncludeGoalieImpactAndSavePercentageTable() {

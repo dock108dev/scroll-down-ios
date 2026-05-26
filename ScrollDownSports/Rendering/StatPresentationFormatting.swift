@@ -29,6 +29,15 @@ extension StatPresentationBuilder {
         return rawParts.prefix(3).joined(separator: ", ")
     }
 
+    static func genericHeadline(
+        for player: PlayerStat,
+        columns: [StatTableColumnPresentation]
+    ) -> String {
+        let cells = genericStatCells(for: player, columns: columns)
+        guard !cells.isEmpty else { return genericHeadline(for: player) }
+        return cells.prefix(3).map { "\($0.value) \($0.label)" }.joined(separator: ", ")
+    }
+
     static func batterHeadline(for player: MLBBatterStat) -> String {
         var parts: [String] = []
         if let hits = player.hits, let atBats = player.atBats {

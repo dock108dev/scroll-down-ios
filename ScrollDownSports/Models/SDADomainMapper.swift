@@ -404,10 +404,13 @@ enum SDADomainMapper {
         if let body = presentation?.body?.nilIfBlank, body != headline {
             return body
         }
+        let playerDetail = playerName?.nilIfBlank.flatMap { name in
+            headline.range(of: name, options: [.caseInsensitive, .diacriticInsensitive]) == nil ? name : nil
+        }
         return [
             presentation?.scoreLabel,
             presentation?.tertiaryLabel,
-            playerName
+            playerDetail
         ].firstNonBlank
     }
 

@@ -1,9 +1,12 @@
 import SwiftUI
 
 extension StatPresentationBuilder {
-    static func genericPlayerTable(from scoredPlayers: [ScoredPlayerStat]) -> StatTablePresentation {
+    static func genericPlayerTable(
+        from scoredPlayers: [ScoredPlayerStat],
+        statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns
+    ) -> StatTablePresentation {
         let sortedPlayers = scoredPlayers.sorted(by: sortScoredPlayers).prefix(80)
-        let statColumns = Array(genericStatColumns.filter { column in
+        let statColumns = Array(availableColumns.filter { column in
             sortedPlayers.contains { genericValue(column.id, for: $0.player) != nil }
         }.prefix(8))
         let columns = [
@@ -125,8 +128,34 @@ extension StatPresentationBuilder {
             tableColumn("min", "MIN"), tableColumn("pts", "PTS"), tableColumn("reb", "REB"),
             tableColumn("ast", "AST"), tableColumn("yds", "YDS"), tableColumn("td", "TD"),
             tableColumn("g", "G"), tableColumn("a", "A"), tableColumn("sog", "SOG", width: 48),
-            tableColumn("sv", "SV"), tableColumn("k", "K"), tableColumn("rbi", "RBI", width: 46)
+            tableColumn("sv", "SV"), tableColumn("h", "H"), tableColumn("r", "R"),
+            tableColumn("rbi", "RBI", width: 46), tableColumn("hr", "HR"), tableColumn("bb", "BB"),
+            tableColumn("k", "K"), tableColumn("rank", "Rank", width: 52), tableColumn("score", "Score", width: 58),
+            tableColumn("thru", "Thru", width: 52)
         ]
+    }
+
+    static func genericStatColumns(for sport: Sport) -> [StatTableColumnPresentation] {
+        let ids: [String]
+        switch sport {
+        case .mlb:
+            ids = ["h", "r", "rbi", "hr", "bb", "k"]
+        case .nfl:
+            ids = ["yds", "td"]
+        case .nba:
+            ids = ["min", "pts", "reb", "ast"]
+        case .nhl:
+            ids = ["g", "a", "pts", "sog", "sv"]
+        case .soccer:
+            ids = ["g", "a", "sog"]
+        case .golf:
+            ids = ["rank", "score", "thru"]
+        case .tennis, .other:
+            return genericStatColumns
+        }
+        return ids.compactMap { id in
+            genericStatColumns.first { $0.id == id }
+        }
     }
 
     static func genericValue(_ columnID: String, for player: PlayerStat) -> String? {
@@ -141,14 +170,24 @@ extension StatPresentationBuilder {
         case "a": return rawString(["assists", "ast"], in: player.rawStats)
         case "sog": return rawString(["shots", "shotsOnGoal", "sog"], in: player.rawStats)
         case "sv": return rawString(["saves", "sv"], in: player.rawStats)
-        case "k": return rawString(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats)
+        case "h": return rawString(["hits", "h"], in: player.rawStats)
+        case "r": return rawString(["runs", "r"], in: player.rawStats)
         case "rbi": return rawString(["rbi", "runsBattedIn"], in: player.rawStats)
+        case "hr": return rawString(["homeRuns", "hr"], in: player.rawStats)
+        case "bb": return rawString(["walks", "baseOnBalls", "bb"], in: player.rawStats)
+        case "k": return rawString(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats)
+        case "rank": return rawString(["rank", "position"], in: player.rawStats)
+        case "score": return rawString(["score", "total", "strokes"], in: player.rawStats)
+        case "thru": return rawString(["thru", "holesThru", "through"], in: player.rawStats)
         default: return nil
         }
     }
 
-    static func genericStatCells(for player: PlayerStat) -> [StatPillPresentation] {
-        genericStatColumns.compactMap { column in
+    static func genericStatCells(
+        for player: PlayerStat,
+        columns: [StatTableColumnPresentation] = genericStatColumns
+    ) -> [StatPillPresentation] {
+        columns.compactMap { column in
             guard let value = genericValue(column.id, for: player), value != "-" else { return nil }
             return StatPillPresentation(label: column.label, value: value)
         }

@@ -54,6 +54,19 @@ final class EventLabelResolverTests: XCTestCase {
         XCTAssertFalse((presentation.accessibilityLabel ?? "").contains("SOME_UNKNOWN_EVENT"))
     }
 
+    func testMapperDoesNotUsePlayerNameAsDuplicateEventDetail() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(try SDAFixtures.gameDetail("mlb_live_new_events"))],
+            protocolClass: MockRawEventURLProtocol.self
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+        let event = try XCTUnwrap(detail.events.first)
+
+        XCTAssertEqual(event.headline, "Evan Vale lines a single to center.")
+        XCTAssertNil(event.detail)
+    }
+
     func testClientStillRejectsStructurallyUnusableDetail() async throws {
         let payload = try rawDetailPayload(displayType: "SINGLE", description: "A single.", periodLabel: "")
         let client = TestFixtures.makeAPIClient(

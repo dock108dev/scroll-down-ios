@@ -104,7 +104,7 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     func genericPlayerSections(for detail: GameDetail) -> [StatSectionPresentation] {
-        StatPresentationBuilder.genericPlayerSections(for: detail)
+        StatPresentationBuilder.genericPlayerSections(for: detail, sport: Sport(leagueCode: leagueCode))
     }
 
     func statusText(for game: Game) -> String {

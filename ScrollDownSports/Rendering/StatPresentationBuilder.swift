@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum StatPresentationBuilder {
-    static func genericPlayerSections(for detail: GameDetail) -> [StatSectionPresentation] {
+    static func genericPlayerSections(for detail: GameDetail, sport: Sport = .other("generic")) -> [StatSectionPresentation] {
         guard !detail.playerStats.isEmpty else {
             return [
                 StatSectionPresentation(
@@ -13,14 +13,15 @@ enum StatPresentationBuilder {
             ]
         }
 
-        let scoredPlayers = detail.playerStats.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0)) }
+        let statColumns = genericStatColumns(for: sport)
+        let scoredPlayers = detail.playerStats.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: statColumns)) }
         return [
             StatSectionPresentation(
                 id: "player-stats",
                 title: nil,
-                highlights: genericImpactPlayers(from: scoredPlayers),
+                highlights: genericImpactPlayers(from: scoredPlayers, columns: statColumns),
                 cards: [],
-                tables: [genericPlayerTable(from: scoredPlayers)],
+                tables: [genericPlayerTable(from: scoredPlayers, statColumns: statColumns)],
                 emptyMessage: nil
             )
         ]
@@ -30,7 +31,7 @@ enum StatPresentationBuilder {
         let batters = detail.mlbBatters ?? []
         let pitchers = detail.mlbPitchers ?? []
         guard !batters.isEmpty || !pitchers.isEmpty else {
-            return genericPlayerSections(for: detail)
+            return genericPlayerSections(for: detail, sport: .mlb)
         }
 
         let scoredBatters = batters.map { ScoredBatter(player: $0, score: batterImpactScore($0)) }
@@ -69,7 +70,7 @@ enum StatPresentationBuilder {
         let skaters = detail.nhlSkaters ?? []
         let goalies = detail.nhlGoalies ?? []
         guard !skaters.isEmpty || !goalies.isEmpty else {
-            return genericPlayerSections(for: detail)
+            return genericPlayerSections(for: detail, sport: .nhl)
         }
 
         let scoredSkaters = skaters.map { ScoredNHLPlayer(player: $0, role: "Skater", score: skaterImpactScore($0)) }
@@ -229,6 +230,34 @@ extension StatPresentationBuilder {
             + rawDouble(["rbi", "runsBattedIn"], in: player.rawStats) * 1.2
     }
 
+    static func genericImpactScore(_ player: PlayerStat, columns: [StatTableColumnPresentation]) -> Double {
+        columns.reduce(0) { score, column in
+            score + genericImpactValue(column.id, for: player)
+        }
+    }
+
+    static func genericImpactValue(_ columnID: String, for player: PlayerStat) -> Double {
+        switch columnID {
+        case "min": return player.minutes.orZero * 0.02
+        case "pts": return player.points.orZero + rawDouble(["points", "pts"], in: player.rawStats)
+        case "reb": return player.rebounds.orZero * 0.7
+        case "ast": return player.assists.orZero * 0.8 + rawDouble(["assists", "ast"], in: player.rawStats) * 1.5
+        case "yds": return player.yards.orZero * 0.04
+        case "td": return player.touchdowns.orZero * 6
+        case "g": return rawDouble(["goals", "goal"], in: player.rawStats) * 3
+        case "a": return rawDouble(["assists", "ast"], in: player.rawStats) * 1.5
+        case "sog": return rawDouble(["shots", "shotsOnGoal", "sog"], in: player.rawStats) * 0.25
+        case "sv": return rawDouble(["saves", "sv"], in: player.rawStats) * 0.2
+        case "h": return rawDouble(["hits", "h"], in: player.rawStats) * 1.5
+        case "r": return rawDouble(["runs", "r"], in: player.rawStats) * 1.25
+        case "rbi": return rawDouble(["rbi", "runsBattedIn"], in: player.rawStats) * 1.2
+        case "hr": return rawDouble(["homeRuns", "hr"], in: player.rawStats) * 5
+        case "bb": return rawDouble(["walks", "baseOnBalls", "bb"], in: player.rawStats) * 0.75
+        case "k": return rawDouble(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats) * 0.7
+        default: return 0
+        }
+    }
+
     static func batterImpactScore(_ player: MLBBatterStat) -> Double {
         max(
             0,
@@ -268,17 +297,21 @@ extension StatPresentationBuilder {
 }
 
 extension StatPresentationBuilder {
-    static func genericImpactPlayers(from players: [ScoredPlayerStat]) -> [StatHighlightPresentation] {
+    static func genericImpactPlayers(
+        from players: [ScoredPlayerStat],
+        columns: [StatTableColumnPresentation] = genericStatColumns
+    ) -> [StatHighlightPresentation] {
         let eligible = players.filter { $0.score > 0 }.sorted(by: sortScoredPlayers)
         guard let top = eligible.first, top.score >= 8 || eligible.count >= 2 else { return [] }
         return eligible.prefix(4).enumerated().map { index, scored in
-            StatHighlightPresentation(
+            let cells = genericStatCells(for: scored.player, columns: columns)
+            return StatHighlightPresentation(
                 id: scored.player.id,
                 rank: index + 1,
                 title: scored.player.playerName,
                 subtitle: scored.player.team,
-                headline: genericHeadline(for: scored.player),
-                stats: genericStatCells(for: scored.player).prefix(3).map { $0 },
+                headline: genericHeadline(for: scored.player, columns: columns),
+                stats: cells.prefix(3).map { $0 },
                 accentTone: .scoring
             )
         }

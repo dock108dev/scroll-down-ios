@@ -69,7 +69,9 @@ extension GenericSportRendererBacked {
     }
 
     func eventPresentation(for event: GameEvent, periodGroupLabel: String?) -> GameEventPresentation {
-        generic.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
+        var presentation = eventPresentation(for: event)
+        presentation.clockText = rowClockText(for: event, periodGroupLabel: periodGroupLabel)
+        return presentation
     }
 
     func periodGroupLabel(for event: GameEvent) -> String {
