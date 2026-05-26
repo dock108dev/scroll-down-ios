@@ -20,6 +20,10 @@ struct StatSectionList: View {
                     StatHighlightGroup(highlights: section.highlights)
                 }
 
+                if let comparison = section.comparison {
+                    TeamComparisonTable(comparison: comparison)
+                }
+
                 ForEach(section.tables) { table in
                     CompactStatTable(table: table)
                 }
@@ -56,17 +60,15 @@ private struct StatHighlightRow: View {
     let highlight: StatHighlightPresentation
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if let rank = highlight.rank {
-                Text("\(rank)")
-                    .font(SportsTheme.Typography.statusPill.monospacedDigit())
-                    .foregroundStyle(SportsTheme.Colors.textOnFill)
-                    .frame(width: 20, height: 20)
-                    .background(highlight.accentTone.accent, in: Circle())
-            }
-
+        HStack(alignment: .top, spacing: 9) {
+            SportsTeamRail(color: highlight.accentTone.accent)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if let rank = highlight.rank {
+                        Text("#\(rank)")
+                            .font(SportsTheme.Typography.statusPill.monospacedDigit())
+                            .foregroundStyle(highlight.accentTone.accent)
+                    }
                     Text(highlight.title)
                         .font(SportsTheme.Typography.momentHeadline)
                         .foregroundStyle(SportsTheme.Colors.ink)
@@ -101,6 +103,73 @@ private struct StatHighlightRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sportsSurface(.statSummary, accent: highlight.accentTone.accent)
+    }
+}
+
+private struct TeamComparisonTable: View {
+    let comparison: StatComparisonPresentation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(comparison.title)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Colors.secondaryInk)
+
+            Grid(alignment: .trailing, horizontalSpacing: 8, verticalSpacing: 0) {
+                GridRow {
+                    Text("")
+                    ForEach(comparison.columns) { column in
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(column.title)
+                                .font(SportsTheme.Typography.statTable)
+                                .foregroundStyle(SportsTheme.Colors.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.82)
+                            if let subtitle = column.subtitle {
+                                Text(subtitle)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                }
+                .padding(.vertical, 7)
+
+                Divider().gridCellColumns(comparison.columns.count + 1)
+
+                ForEach(Array(comparison.rows.enumerated()), id: \.element.id) { index, row in
+                    GridRow {
+                        Text(row.label)
+                            .font(SportsTheme.Typography.statTable)
+                            .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        ForEach(comparison.columns) { column in
+                            Text(row.values[column.id] ?? "-")
+                                .font(.subheadline.weight(.semibold).monospacedDigit())
+                                .foregroundStyle(SportsTheme.Colors.ink)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                    }
+                    .padding(.vertical, 7)
+                    .background(index.isMultiple(of: 2) ? SportsTheme.Colors.paperInset.opacity(0.55) : Color.clear)
+
+                    if index < comparison.rows.count - 1 {
+                        Divider().gridCellColumns(comparison.columns.count + 1)
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+            .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row))
+            .overlay(
+                RoundedRectangle(cornerRadius: SportsTheme.Radius.row)
+                    .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
+            )
+        }
     }
 }
 

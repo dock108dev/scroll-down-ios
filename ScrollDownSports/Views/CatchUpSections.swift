@@ -153,7 +153,7 @@ struct PlayRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 7) {
-            EventMarker(importance: importance, accent: accentColor)
+            EventMarker(importance: importance, accent: teamColor)
             VStack(alignment: .leading, spacing: importance == .low ? 3 : 4) {
                 contextLine
                 Text(presentation.headline)
@@ -177,12 +177,13 @@ struct PlayRow: View {
                 rawFeedDisclosure
             }
         }
-        .padding(.horizontal, importance == .low ? 8 : 10)
-        .padding(.vertical, importance == .low ? 7 : 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
         .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: importance == .low ? 0 : 0.75)
+                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: 0.75)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(presentation.accessibilityLabel ?? presentation.headline)
@@ -198,21 +199,28 @@ struct PlayRow: View {
                 }
             }
             if let team = presentation.teamAbbreviation?.nilIfBlank {
-                Text(team)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(teamColor)
+                teamBadge(team)
             }
             if let eventLabel = presentation.eventLabel?.nilIfBlank {
                 Text(eventLabel)
                     .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(accentColor)
             }
-            if importance != .low, !importance.title.isEmpty {
-                Text(importance.title)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(accentColor)
-            }
+            Spacer(minLength: 0)
         }
+    }
+
+    private func teamBadge(_ team: String) -> some View {
+        Text(team)
+            .font(SportsTheme.Typography.statusPill)
+            .foregroundStyle(teamColor)
+            .padding(.vertical, 2)
+            .padding(.horizontal, 6)
+            .background(teamColor.opacity(0.12), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous)
+                    .stroke(teamColor.opacity(0.22), lineWidth: SportsTheme.Stroke.standard)
+            )
     }
 
     @ViewBuilder
@@ -295,11 +303,11 @@ struct PlayRow: View {
     private var cardBackground: Color {
         switch importance {
         case .critical:
-            return Color(red: 1.000, green: 0.969, blue: 0.910)
+            return SportsTheme.Colors.paperRaised
         case .high, .medium:
             return SportsTheme.Surface.eventCard.background
         case .low:
-            return SportsTheme.Colors.paperRaised.opacity(0.82)
+            return SportsTheme.Colors.paperRaised
         }
     }
 

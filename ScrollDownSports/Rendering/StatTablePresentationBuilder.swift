@@ -154,7 +154,7 @@ extension StatPresentationBuilder {
         )
     }
 
-    private static func shortTeamCode(_ name: String) -> String {
+    static func shortTeamCode(_ name: String) -> String {
         String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
     }
 }

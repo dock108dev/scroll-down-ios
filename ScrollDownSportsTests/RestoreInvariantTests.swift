@@ -53,6 +53,29 @@ final class RestoreInvariantTests: XCTestCase {
         XCTAssertEqual(visible?.anchorID, "near-top")
         XCTAssertEqual(DetailVisibleEventState(frame: visible!).label, "spot")
 
+        let read = GameDetailScrollLogic.readCandidate(
+            from: [
+                DetailEventVisibilityFrame(
+                    anchorID: "near-top",
+                    readIndex: 1,
+                    sequence: 2,
+                    eventID: "event-2",
+                    label: "",
+                    frame: CGRect(x: 0, y: -12, width: 320, height: 80)
+                ),
+                DetailEventVisibilityFrame(
+                    anchorID: "bottom",
+                    readIndex: 2,
+                    sequence: 3,
+                    eventID: "event-3",
+                    label: "Bottom",
+                    frame: CGRect(x: 0, y: 92, width: 320, height: 80)
+                )
+            ],
+            viewportHeight: 160
+        )
+        XCTAssertEqual(read?.anchorID, "bottom")
+
         XCTAssertTrue(GameDetailScrollLogic.hasFinalScore(for: TestFixtures.makeGame(status: "final", isLive: false, isFinal: true)))
         XCTAssertFalse(GameDetailScrollLogic.hasFinalScore(for: TestFixtures.makeGame(awayScore: nil, homeScore: nil)))
     }

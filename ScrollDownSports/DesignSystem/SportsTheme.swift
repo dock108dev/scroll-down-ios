@@ -4,15 +4,15 @@ import UIKit
 enum SportsTheme {
     enum Colors {
         static let paper = adaptive(
-            light: UIColor(red: 0.945, green: 0.938, blue: 0.895, alpha: 1),
+            light: UIColor(red: 0.963, green: 0.964, blue: 0.952, alpha: 1),
             dark: UIColor(red: 0.071, green: 0.075, blue: 0.086, alpha: 1)
         )
         static let paperInset = adaptive(
-            light: UIColor(red: 0.980, green: 0.969, blue: 0.930, alpha: 1),
+            light: UIColor(red: 0.988, green: 0.986, blue: 0.973, alpha: 1),
             dark: UIColor(red: 0.103, green: 0.108, blue: 0.122, alpha: 1)
         )
         static let paperRaised = adaptive(
-            light: UIColor(red: 0.996, green: 0.984, blue: 0.941, alpha: 1),
+            light: UIColor(red: 1.000, green: 0.998, blue: 0.982, alpha: 1),
             dark: UIColor(red: 0.133, green: 0.138, blue: 0.157, alpha: 1)
         )
         static let ink = adaptive(
@@ -24,11 +24,11 @@ enum SportsTheme {
             dark: UIColor(red: 0.710, green: 0.702, blue: 0.659, alpha: 1)
         )
         static let hairline = adaptive(
-            light: UIColor(red: 0.749, green: 0.784, blue: 0.718, alpha: 1),
+            light: UIColor(red: 0.764, green: 0.777, blue: 0.748, alpha: 1),
             dark: UIColor(red: 0.263, green: 0.271, blue: 0.302, alpha: 1)
         )
         static let scorebookLine = adaptive(
-            light: UIColor(red: 0.433, green: 0.503, blue: 0.389, alpha: 1),
+            light: UIColor(red: 0.488, green: 0.539, blue: 0.486, alpha: 1),
             dark: UIColor(red: 0.220, green: 0.286, blue: 0.255, alpha: 1)
         )
         static let textOnFill = Color.white
@@ -88,16 +88,16 @@ enum SportsTheme {
 
     enum Background {
         static let darkWashAccent = Color(red: 0.080, green: 0.112, blue: 0.116).opacity(0.62)
-        static let lightGridOpacity = 0.07
+        static let lightGridOpacity = 0.04
         static let darkGridOpacity = 0.10
-        static let lightPaperVeilOpacity = 0.22
+        static let lightPaperVeilOpacity = 0.34
         static let darkPaperVeilOpacity = 0.16
 
         static let wash = LinearGradient(
             colors: [
                 Colors.paper,
                 Colors.paperInset,
-                Color(red: 0.903, green: 0.938, blue: 0.934).opacity(0.62)
+                Color(red: 0.918, green: 0.940, blue: 0.934).opacity(0.42)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -134,9 +134,9 @@ enum SportsTheme {
             case .pinned:
                 return Color(red: 0.365, green: 0.243, blue: 0.529)
             case .scoring:
-                return Color(red: 0.730, green: 0.352, blue: 0.132)
+                return Color(red: 0.635, green: 0.273, blue: 0.102)
             case .critical:
-                return Color(red: 0.706, green: 0.329, blue: 0.110)
+                return Color(red: 0.596, green: 0.251, blue: 0.082)
             case .defensivePitching:
                 return Color(red: 0.168, green: 0.383, blue: 0.494)
             case .neutral:

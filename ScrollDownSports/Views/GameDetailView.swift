@@ -626,7 +626,12 @@ struct GameDetailView: View {
     ) {
         guard
             let detail = viewModel.detail,
-            let frame = GameDetailScrollLogic.visibleCandidate(
+            let orientationFrame = GameDetailScrollLogic.visibleCandidate(
+                from: frames,
+                viewportHeight: viewportHeight,
+                obscuredBottomHeight: obscuredBottomHeight
+            ),
+            let readFrame = GameDetailScrollLogic.readCandidate(
                 from: frames,
                 viewportHeight: viewportHeight,
                 obscuredBottomHeight: obscuredBottomHeight
@@ -637,29 +642,29 @@ struct GameDetailView: View {
             return
         }
 
-        currentVisibleEvent = DetailVisibleEventState(frame: frame)
-        lastAcceptedVisibleFrame = frame
+        currentVisibleEvent = DetailVisibleEventState(frame: readFrame)
+        lastAcceptedVisibleFrame = orientationFrame
 
         guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge && !programmaticScrollInFlight) else {
             return
         }
 
         let now = Date()
-        guard frame.anchorID != lastVisibleEventAnchorID || now.timeIntervalSince(lastVisibleEventSaveAt) >= 0.35 else {
+        guard readFrame.anchorID != lastVisibleEventAnchorID || now.timeIntervalSince(lastVisibleEventSaveAt) >= 0.35 else {
             return
         }
 
-        lastVisibleEventAnchorID = frame.anchorID
+        lastVisibleEventAnchorID = readFrame.anchorID
         lastVisibleEventSaveAt = now
-        streamOrientationAnchorID = frame.anchorID
+        streamOrientationAnchorID = orientationFrame.anchorID
         viewModel.recordReadEvent(
-            eventIndex: frame.readIndex,
-            eventID: frame.eventID,
+            eventIndex: readFrame.readIndex,
+            eventID: readFrame.eventID,
             knownEventCount: detail.events.count
         )
         viewModel.recordScrollFallback(
-            eventSequence: frame.sequence,
-            approximateOffset: Double(frame.frame.minY)
+            eventSequence: readFrame.sequence,
+            approximateOffset: Double(readFrame.frame.minY)
         )
     }
 

@@ -135,6 +135,7 @@ struct StatSectionPresentation: Identifiable, Hashable {
     let id: String
     let title: String?
     var highlights: [StatHighlightPresentation] = []
+    var comparison: StatComparisonPresentation? = nil
     let cards: [StatCardPresentation]
     var tables: [StatTablePresentation] = []
     let emptyMessage: String?
@@ -162,6 +163,25 @@ struct StatHighlightPresentation: Identifiable, Hashable {
     let headline: String
     let stats: [StatPillPresentation]
     let accentTone: SportsTheme.Tone
+}
+
+struct StatComparisonPresentation: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let columns: [StatComparisonColumnPresentation]
+    let rows: [StatComparisonRowPresentation]
+}
+
+struct StatComparisonColumnPresentation: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let subtitle: String?
+}
+
+struct StatComparisonRowPresentation: Identifiable, Hashable {
+    let id: String
+    let label: String
+    let values: [String: String]
 }
 
 struct StatTablePresentation: Identifiable, Hashable {

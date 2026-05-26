@@ -268,7 +268,32 @@ final class FormattingUtilityCoverageTests: XCTestCase {
         let rawTeam = TeamStat(team: "Seattle", isHome: true, stats: ["totalYards": .number(440), "empty": .string("-")], normalizedStats: nil)
         XCTAssertEqual(StatPresentationBuilder.compactTeamItems(normalizedTeam).first?.label, "Hits")
         XCTAssertEqual(StatPresentationBuilder.compactTeamItems(rawTeam).first?.label, "Total Yards")
+        XCTAssertEqual(StatPresentationBuilder.teamComparison(for: [normalizedTeam, rawTeam])?.rows.map(\.label), ["Hits", "Total Yards"])
         XCTAssertEqual(StatPresentationBuilder.tableColumn("pts", "PTS", alignment: .leading).alignment, .leading)
+
+        let splitDetail = GameDetail(
+            game: TestFixtures.makeGame(leagueCode: "mlb"),
+            teamStats: [normalizedTeam, rawTeam],
+            playerStats: [],
+            events: [],
+            mlbBatters: [batter()],
+            mlbPitchers: [pitcher()],
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+        XCTAssertEqual(StatPresentationBuilder.baseballPlayerSections(for: splitDetail).map(\.title), ["Batters", "Pitchers"])
+
+        let hockeyDetail = GameDetail(
+            game: TestFixtures.makeGame(leagueCode: "nhl"),
+            teamStats: [normalizedTeam, rawTeam],
+            playerStats: [],
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: [skater(goals: 1, assists: 0, points: 1, shots: 3)],
+            nhlGoalies: [goalie(saves: 28, goalsAgainst: 2)]
+        )
+        XCTAssertEqual(StatPresentationBuilder.hockeyPlayerSections(for: hockeyDetail).map(\.title), ["Skaters", "Goalies"])
     }
 
     private func withEnvironment(_ values: [String: String], body: () throws -> Void) rethrows {

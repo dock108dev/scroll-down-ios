@@ -70,6 +70,49 @@ enum GameDetailScrollLogic {
         readingTopY: CGFloat = 0,
         obscuredBottomHeight: CGFloat = 0
     ) -> DetailEventVisibilityFrame? {
+        visibleCandidates(
+            from: frames,
+            viewportHeight: viewportHeight,
+            readingTopY: readingTopY,
+            obscuredBottomHeight: obscuredBottomHeight
+        )
+        .min { left, right in
+            let readableMinY = max(0, readingTopY)
+            let leftDistance = abs(left.frame.minY - readableMinY)
+            let rightDistance = abs(right.frame.minY - readableMinY)
+            if leftDistance != rightDistance {
+                return leftDistance < rightDistance
+            }
+            return left.sequence < right.sequence
+        }
+    }
+
+    static func readCandidate(
+        from frames: [DetailEventVisibilityFrame],
+        viewportHeight: CGFloat,
+        readingTopY: CGFloat = 0,
+        obscuredBottomHeight: CGFloat = 0
+    ) -> DetailEventVisibilityFrame? {
+        visibleCandidates(
+            from: frames,
+            viewportHeight: viewportHeight,
+            readingTopY: readingTopY,
+            obscuredBottomHeight: obscuredBottomHeight
+        )
+        .max { left, right in
+            if left.readIndex != right.readIndex {
+                return left.readIndex < right.readIndex
+            }
+            return left.sequence < right.sequence
+        }
+    }
+
+    private static func visibleCandidates(
+        from frames: [DetailEventVisibilityFrame],
+        viewportHeight: CGFloat,
+        readingTopY: CGFloat,
+        obscuredBottomHeight: CGFloat
+    ) -> [DetailEventVisibilityFrame] {
         let readableMinY = max(0, readingTopY)
         let readableMaxY = max(readableMinY, viewportHeight - max(0, obscuredBottomHeight))
         return frames
@@ -77,14 +120,6 @@ enum GameDetailScrollLogic {
                 guard frame.frame.height > 0 else { return false }
                 let visibleHeight = min(frame.frame.maxY, readableMaxY) - max(frame.frame.minY, readableMinY)
                 return visibleHeight >= min(48, frame.frame.height) || visibleHeight / frame.frame.height >= 0.4
-            }
-            .min { left, right in
-                let leftDistance = abs(left.frame.minY - readableMinY)
-                let rightDistance = abs(right.frame.minY - readableMinY)
-                if leftDistance != rightDistance {
-                    return leftDistance < rightDistance
-                }
-                return left.sequence < right.sequence
             }
     }
 
