@@ -87,11 +87,27 @@ enum SportsTheme {
     }
 
     enum Background {
+        static let darkWashAccent = Color(red: 0.080, green: 0.112, blue: 0.116).opacity(0.62)
+        static let lightGridOpacity = 0.07
+        static let darkGridOpacity = 0.10
+        static let lightPaperVeilOpacity = 0.22
+        static let darkPaperVeilOpacity = 0.16
+
         static let wash = LinearGradient(
             colors: [
                 Colors.paper,
                 Colors.paperInset,
                 Color(red: 0.903, green: 0.938, blue: 0.934).opacity(0.62)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        static let darkWash = LinearGradient(
+            colors: [
+                Colors.paper,
+                Colors.paperInset,
+                darkWashAccent
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -201,15 +217,44 @@ enum SportsTheme {
 }
 
 struct SportsPageBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     var body: some View {
-        SportsTheme.Background.wash
+        backgroundWash
             .overlay {
                 ScorebookGrid()
-                    .stroke(SportsTheme.Colors.scorebookLine.opacity(0.07), lineWidth: 0.75)
+                    .stroke(gridLineColor, lineWidth: 0.75)
             }
             .overlay {
-                SportsTheme.Colors.paper.opacity(0.22)
+                paperVeilColor
             }
+    }
+
+    private var backgroundWash: LinearGradient {
+        usesRegularWidthDarkTreatment ? SportsTheme.Background.darkWash : SportsTheme.Background.wash
+    }
+
+    private var gridLineColor: Color {
+        let opacity = usesRegularWidthDarkTreatment
+            ? SportsTheme.Background.darkGridOpacity
+            : SportsTheme.Background.lightGridOpacity
+
+        return SportsTheme.Colors.scorebookLine.opacity(
+            opacity
+        )
+    }
+
+    private var paperVeilColor: Color {
+        SportsTheme.Colors.paper.opacity(
+            usesRegularWidthDarkTreatment
+                ? SportsTheme.Background.darkPaperVeilOpacity
+                : SportsTheme.Background.lightPaperVeilOpacity
+        )
+    }
+
+    private var usesRegularWidthDarkTreatment: Bool {
+        colorScheme == .dark && horizontalSizeClass == .regular
     }
 }
 

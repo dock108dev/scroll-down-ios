@@ -220,4 +220,178 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
             height: 620
         )
     }
+
+    func testReadableDetailTopChromeOnIPadPortrait() {
+        let game = ComponentSnapshotFixtures.game(
+            id: 4_106,
+            status: "in_progress",
+            isLive: true,
+            awayScore: 4,
+            homeScore: 5,
+            eventCount: 31,
+            periodOrdinal: 7,
+            periodLabel: "B7",
+            clockLabel: "2 outs"
+        )
+        let events = [
+            ComponentSnapshotFixtures.event(sequence: 1, importance: .primary),
+            ComponentSnapshotFixtures.event(sequence: 2, importance: .secondary),
+            ComponentSnapshotFixtures.event(sequence: 3, importance: .contextual)
+        ]
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                DetailStickyNavigationBar(
+                    title: "B7 2 outs · 18/31 read",
+                    endLabel: "Latest",
+                    returnLabel: nil,
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
+                ResumeBanner(description: "Resume from B6 · 7 new", onResume: {}, onJumpLatest: {}, onStartOver: {})
+                StreamControlBar(
+                    game: game,
+                    renderer: SportRendererRegistry.renderer(for: game),
+                    events: events,
+                    isGamePinned: true,
+                    isFollowingLiveEdge: false,
+                    newPlayCount: 7,
+                    canResume: true,
+                    selectedMode: .constant(.key),
+                    onToggleGamePin: {},
+                    onToggleFollowLive: {},
+                    onResume: {},
+                    onJumpLatest: {}
+                )
+            }
+            .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset)
+            .padding(.vertical, 14)
+            .background(SportsTheme.Colors.paper),
+            named: "readable-detail-top-chrome",
+            width: .iPad11Full,
+            height: 330,
+            device: .iPad11Portrait
+        )
+    }
+
+    func testDetailTopControlsAccessibilityDynamicTypeCompactWidth() {
+        let game = ComponentSnapshotFixtures.game(
+            id: 4_107,
+            status: "in_progress",
+            isLive: true,
+            awayScore: 4,
+            homeScore: 5,
+            eventCount: 31,
+            periodOrdinal: 7,
+            periodLabel: "B7",
+            clockLabel: "2 outs"
+        )
+        let events = [
+            ComponentSnapshotFixtures.event(sequence: 1, importance: .primary),
+            ComponentSnapshotFixtures.event(sequence: 2, importance: .secondary),
+            ComponentSnapshotFixtures.event(sequence: 3, importance: .contextual)
+        ]
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                ResumeBanner(
+                    description: "Resume from Period 4 · 01:12 · Bay Harbor scoring drive",
+                    onResume: {},
+                    onJumpLatest: {},
+                    onStartOver: {}
+                )
+                DetailStickyNavigationBar(
+                    title: "B7 2 outs · 18/31 read",
+                    endLabel: "Latest",
+                    returnLabel: "Back to 31 new",
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
+                StreamControlBar(
+                    game: game,
+                    renderer: SportRendererRegistry.renderer(for: game),
+                    events: events,
+                    isGamePinned: true,
+                    isFollowingLiveEdge: true,
+                    newPlayCount: 31,
+                    canResume: true,
+                    selectedMode: .constant(.full),
+                    onToggleGamePin: {},
+                    onToggleFollowLive: {},
+                    onResume: {},
+                    onJumpLatest: {}
+                )
+                NewPlaysAffordance(count: 31, onJumpLatest: {})
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "detail-top-controls-accessibility-compact",
+            width: .standard,
+            height: 640,
+            device: .phoneCompact,
+            dynamicTypeSize: .accessibility3
+        )
+    }
+
+    func testDetailTopControlsWideAccessibilityPressure() {
+        let game = ComponentSnapshotFixtures.game(
+            id: 4_108,
+            status: "in_progress",
+            isLive: true,
+            awayScore: 4,
+            homeScore: 5,
+            eventCount: 31,
+            periodOrdinal: 7,
+            periodLabel: "B7",
+            clockLabel: "2 outs"
+        )
+        let events = [
+            ComponentSnapshotFixtures.event(sequence: 1, importance: .primary),
+            ComponentSnapshotFixtures.event(sequence: 2, importance: .secondary),
+            ComponentSnapshotFixtures.event(sequence: 3, importance: .contextual)
+        ]
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                DetailStickyNavigationBar(
+                    title: "B7 2 outs · 18/31 read",
+                    endLabel: "Latest",
+                    returnLabel: nil,
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
+                ResumeBanner(
+                    description: "Resume from Period 4 · 01:12 · Bay Harbor scoring drive",
+                    onResume: {},
+                    onJumpLatest: {},
+                    onStartOver: {}
+                )
+                StreamControlBar(
+                    game: game,
+                    renderer: SportRendererRegistry.renderer(for: game),
+                    events: events,
+                    isGamePinned: true,
+                    isFollowingLiveEdge: true,
+                    newPlayCount: 12,
+                    canResume: false,
+                    selectedMode: .constant(.full),
+                    onToggleGamePin: {},
+                    onToggleFollowLive: {},
+                    onResume: {},
+                    onJumpLatest: {}
+                )
+            }
+            .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset)
+            .padding(.vertical, 14)
+            .background(SportsTheme.Colors.paper),
+            named: "detail-top-controls-wide-accessibility",
+            width: .tabletReadable,
+            height: 700,
+            device: .iPad11Portrait,
+            dynamicTypeSize: .accessibility4
+        )
+    }
 }

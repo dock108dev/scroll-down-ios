@@ -33,6 +33,21 @@ final class HomeGameCardSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testTabletLongTeamNamesKeepPinChromeReadable() {
+        let longNameItem = ComponentSnapshotFixtures.longNameHomeItem()
+        let pinnedItem = ComponentSnapshotFixtures.homeItem(game: longNameItem.game, isPinned: true)
+
+        assertSwiftUISnapshot(
+            of: cardChrome(item: pinnedItem)
+                .padding(.horizontal, 24),
+            named: "long-team-names-pin-chrome",
+            width: .tabletReadable,
+            height: 240,
+            device: .iPad11Portrait,
+            dynamicTypeSize: .accessibility2
+        )
+    }
+
     func testMissingAbbreviationFallsBack() {
         assertCardSnapshot(item: ComponentSnapshotFixtures.missingAbbreviationHomeItem(), named: "missing-abbreviation")
     }
@@ -73,8 +88,8 @@ final class HomeGameCardSnapshotTests: SnapshotTestCase {
         ZStack(alignment: .topTrailing) {
             GameRowView(item: item)
             HomePinButton(isPinned: item.isPinned) {}
-                .padding(.top, 12)
-                .padding(.trailing, 12)
+                .padding(.top, HomeGameCardLayout.pinOverlayPadding)
+                .padding(.trailing, HomeGameCardLayout.pinOverlayPadding)
         }
         .padding(12)
         .background(SportsTheme.Colors.paper)

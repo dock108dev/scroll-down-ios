@@ -17,8 +17,16 @@ func assertSwiftUISnapshot<V: View>(
     testName: String = #function,
     line: UInt = #line
 ) {
+    precondition(
+        device.supports(width: width),
+        "iPad snapshot widths must use an iPad SnapshotDevice."
+    )
+
+    let resolvedTraits = device.resolvedTraits(for: width)
     let host = SnapshotHost(
         width: width.points,
+        horizontalSizeClass: resolvedTraits.swiftUIHorizontalSizeClass,
+        verticalSizeClass: resolvedTraits.swiftUIVerticalSizeClass,
         colorScheme: colorScheme,
         dynamicTypeSize: dynamicTypeSize
     ) {
@@ -36,11 +44,57 @@ func assertSwiftUISnapshot<V: View>(
             precision: precision,
             perceptualPrecision: perceptualPrecision,
             layout: layout,
-            traits: device.traits
+            traits: resolvedTraits.uiTraits
         ),
         named: [
             name,
             width.rawValue,
+            device.rawValue,
+            colorScheme.snapshotName,
+            dynamicTypeSize.snapshotName
+        ].joined(separator: "-"),
+        file: file,
+        testName: testName,
+        line: line
+    )
+}
+
+@MainActor
+func assertSwiftUIDeviceSnapshot<V: View>(
+    of view: V,
+    named name: String,
+    device: SnapshotDevice,
+    colorScheme: ColorScheme = SnapshotEnvironment.colorScheme,
+    dynamicTypeSize: DynamicTypeSize = SnapshotEnvironment.dynamicTypeSize,
+    precision: Float = 0.995,
+    perceptualPrecision: Float = 0.98,
+    file: StaticString = #filePath,
+    testName: String = #function,
+    line: UInt = #line
+) {
+    let width = SnapshotWidth.fullWidth(for: device)
+    let resolvedTraits = device.resolvedTraits(for: width)
+    let host = SnapshotHost(
+        width: device.size.width,
+        minHeight: device.size.height,
+        horizontalSizeClass: resolvedTraits.swiftUIHorizontalSizeClass,
+        verticalSizeClass: resolvedTraits.swiftUIVerticalSizeClass,
+        colorScheme: colorScheme,
+        dynamicTypeSize: dynamicTypeSize
+    ) {
+        view
+    }
+
+    assertSnapshot(
+        of: host,
+        as: .image(
+            precision: precision,
+            perceptualPrecision: perceptualPrecision,
+            layout: .fixed(width: device.size.width, height: device.size.height),
+            traits: resolvedTraits.uiTraits
+        ),
+        named: [
+            name,
             device.rawValue,
             colorScheme.snapshotName,
             dynamicTypeSize.snapshotName

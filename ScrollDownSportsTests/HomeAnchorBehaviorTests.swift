@@ -108,7 +108,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
             status: "scheduled",
             isLive: false,
             isFinal: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
     }
 
@@ -136,26 +136,4 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         )
     }
 
-    private func previewPresentation() -> GamePresentationData {
-        GamePresentationData(
-            headline: "Preview",
-            shortHeadline: nil,
-            subheadline: nil,
-            matchupLabel: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            accessibilityLabel: nil,
-            displayState: nil,
-            visualPriority: nil,
-            sortBucket: nil,
-            accentRole: nil,
-            statusTone: nil,
-            eventCounts: nil,
-            statusLabel: nil,
-            primaryActionLabel: "Preview",
-            secondaryContextLabel: nil,
-            scoreboardPlacement: nil
-        )
-    }
 }

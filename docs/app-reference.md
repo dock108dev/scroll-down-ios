@@ -4,7 +4,7 @@
 
 `ScrollDownSportsApp` creates a game-state store and passes it into `ContentView`. Debug UI-test runs use `InMemoryGameStateStore`; other runs use `UserDefaultsGameStateStore`. The same store is assigned to `BackgroundDataScheduler`.
 
-`ContentView` hosts `HomeView` in a `NavigationStack`. `HomeView` has a sticky league picker, team filter, refresh toolbar button, pull-to-refresh, an optional pinned section, and a timeline section. Timeline date sections are built from older catch-up games, yesterday, today, live games, later today, and upcoming games when those groups contain visible games.
+`ContentView` hosts `HomeView` in a compact `NavigationStack` or a regular-width `NavigationSplitView` based on `SportsLayoutMetrics`. `HomeView` has a sticky filter header with league selection and team search, a refresh toolbar button, pull-to-refresh, an optional pinned section, and a timeline section. Timeline date sections are built from older catch-up games, yesterday, today, live games, later today, and upcoming games when those groups contain visible games.
 
 `GameDetailView` loads one game by id. When detail data is available, it renders the game header, optional resume banner, stream controls, play-by-play, player stats, team stats, and a box-score section. The detail screen starts a five-minute foreground refresh loop while visible and stops it on disappear.
 
@@ -61,4 +61,4 @@ Home card state hides score rows behind a `score at bottom` cue when a game has 
 
 `project.yml` defines one iOS application target, `ScrollDownSports`, one unit-test target, `ScrollDownSportsTests`, and one UI-test target, `ScrollDownSportsUITests`. The shared `ScrollDownSports` scheme builds the app and UI-test targets, runs both test targets, and gathers coverage for the app target. XcodeGen should be rerun after changes to `project.yml`.
 
-The app target uses `ScrollDownSports/Resources/Info.plist`, `ScrollDownSports/Resources/ScrollDownSports.entitlements`, and `ScrollDownSports/Resources/PrivacyInfo.xcprivacy`. `Info.plist` permits the background refresh task identifier and declares `fetch` in `UIBackgroundModes`. The privacy manifest declares no collected data types, no accessed API types, no tracking domains, and tracking disabled.
+The app target uses `ScrollDownSports/Resources/Info.plist`, `ScrollDownSports/Resources/ScrollDownSports.entitlements`, and `ScrollDownSports/Resources/PrivacyInfo.xcprivacy`. `Info.plist` permits the background refresh task identifier, declares `fetch` in `UIBackgroundModes`, supports portrait and landscape orientations, and does not declare `UIRequiresFullScreen`. The privacy manifest declares no collected data types, no accessed API types, no tracking domains, and tracking disabled.

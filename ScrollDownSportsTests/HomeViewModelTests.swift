@@ -1,6 +1,7 @@
 import XCTest
 @testable import ScrollDownSports
 
+// Size note: this fixture-heavy view-model suite stays grouped by timeline/card-state behavior; see cleanup report.
 @MainActor
 final class HomeViewModelTests: XCTestCase {
     func testBuildsPinnedAndChronologicalTimelineWithUpcomingGames() throws {
@@ -11,7 +12,7 @@ final class HomeViewModelTests: XCTestCase {
             scheduledStart: TestFixtures.fixedDate("2026-05-22T23:00:00Z"),
             status: "scheduled",
             isLive: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let earlier = TestFixtures.makeGame(
             id: 3,
@@ -25,7 +26,7 @@ final class HomeViewModelTests: XCTestCase {
             scheduledStart: TestFixtures.fixedDate("2026-05-23T23:00:00Z"),
             status: "scheduled",
             isLive: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let store = InMemoryGameStateStore(now: { now })
         store.pin(pinned)
@@ -108,7 +109,7 @@ final class HomeViewModelTests: XCTestCase {
             scheduledStart: TestFixtures.fixedDate("2026-05-22T19:00:00Z"),
             status: "scheduled",
             isLive: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let store = InMemoryGameStateStore(now: { now })
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
@@ -155,7 +156,7 @@ final class HomeViewModelTests: XCTestCase {
             status: "scheduled",
             isLive: false,
             isFinal: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
         viewModel.games = [upcoming, live, yesterday, older]
@@ -177,7 +178,7 @@ final class HomeViewModelTests: XCTestCase {
             status: "scheduled",
             isLive: false,
             isFinal: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let placeholder = TestFixtures.makeGame(
             id: 36,
@@ -207,7 +208,7 @@ final class HomeViewModelTests: XCTestCase {
             homeScore: nil,
             eventCount: nil,
             hasTimeline: false,
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let scheduledState = HomeGameCardState(item: makeItem(game: scheduled))
         XCTAssertEqual(scheduledState.phase, .scheduled)
@@ -344,26 +345,7 @@ final class HomeViewModelTests: XCTestCase {
             isFinal: true,
             eventCount: nil,
             hasTimeline: false,
-            presentation: GamePresentationData(
-                headline: nil,
-                shortHeadline: nil,
-                subheadline: nil,
-                matchupLabel: nil,
-                primaryLabel: nil,
-                secondaryLabel: nil,
-                tertiaryLabel: nil,
-                accessibilityLabel: nil,
-                displayState: nil,
-                visualPriority: nil,
-                sortBucket: nil,
-                accentRole: nil,
-                statusTone: nil,
-                eventCounts: nil,
-                statusLabel: nil,
-                primaryActionLabel: "Catch up",
-                secondaryContextLabel: nil,
-                scoreboardPlacement: nil
-            )
+            presentation: TestFixtures.previewPresentation(headline: nil, primaryActionLabel: "Catch up")
         )
 
         let state = HomeGameCardState(item: makeItem(game: game))
@@ -412,7 +394,11 @@ final class HomeViewModelTests: XCTestCase {
             homeScore: nil,
             eventCount: nil,
             hasTimeline: false,
-            presentation: presentation(statusLabel: "Weather delay", primaryActionLabel: "Open stream")
+            presentation: TestFixtures.previewPresentation(
+                headline: nil,
+                statusLabel: "Weather delay",
+                primaryActionLabel: "Open stream"
+            )
         )
         let liveState = HomeGameCardState(item: makeItem(game: liveWithoutTimeline))
         XCTAssertEqual(liveState.statusText, "Weather delay")
@@ -481,29 +467,6 @@ final class HomeViewModelTests: XCTestCase {
         return section.games.map(\.id)
     }
 
-    private func previewPresentation() -> GamePresentationData {
-        GamePresentationData(
-            headline: "Preview",
-            shortHeadline: nil,
-            subheadline: nil,
-            matchupLabel: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            accessibilityLabel: nil,
-            displayState: nil,
-            visualPriority: nil,
-            sortBucket: nil,
-            accentRole: nil,
-            statusTone: nil,
-            eventCounts: nil,
-            statusLabel: nil,
-            primaryActionLabel: "Preview",
-            secondaryContextLabel: nil,
-            scoreboardPlacement: nil
-        )
-    }
-
     private func firstPinnedItem(in sections: [HomeSection]) -> HomeGameItem? {
         guard case .pinned(let section) = sections.first(where: { $0.id == "pinned" }) else {
             return nil
@@ -539,29 +502,6 @@ final class HomeViewModelTests: XCTestCase {
             isPinned: isPinned,
             pinnedRecord: nil,
             progress: progress
-        )
-    }
-
-    private func presentation(statusLabel: String? = nil, primaryActionLabel: String? = nil) -> GamePresentationData {
-        GamePresentationData(
-            headline: nil,
-            shortHeadline: nil,
-            subheadline: nil,
-            matchupLabel: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            accessibilityLabel: nil,
-            displayState: nil,
-            visualPriority: nil,
-            sortBucket: nil,
-            accentRole: nil,
-            statusTone: nil,
-            eventCounts: nil,
-            statusLabel: statusLabel,
-            primaryActionLabel: primaryActionLabel,
-            secondaryContextLabel: nil,
-            scoreboardPlacement: nil
         )
     }
 

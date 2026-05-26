@@ -358,6 +358,21 @@ final class SportsThemeTests: XCTestCase {
         }
     }
 
+    func testPageBackgroundTokensUseDarkSpecificWashAndOverlayStrength() {
+        let lightTraits = UITraitCollection(userInterfaceStyle: .light)
+        let darkTraits = UITraitCollection(userInterfaceStyle: .dark)
+
+        let lightPaper = UIColor(SportsTheme.Colors.paper).resolvedColor(with: lightTraits)
+        let darkPaper = UIColor(SportsTheme.Colors.paper).resolvedColor(with: darkTraits)
+        let darkWashAccent = UIColor(SportsTheme.Background.darkWashAccent).resolvedColor(with: darkTraits)
+
+        XCTAssertGreaterThan(relativeLuminance(lightPaper), 0.78)
+        XCTAssertLessThan(relativeLuminance(darkPaper), 0.01)
+        XCTAssertLessThan(relativeLuminance(darkWashAccent), 0.03)
+        XCTAssertGreaterThan(SportsTheme.Background.darkGridOpacity, SportsTheme.Background.lightGridOpacity)
+        XCTAssertLessThan(SportsTheme.Background.darkPaperVeilOpacity, SportsTheme.Background.lightPaperVeilOpacity)
+    }
+
     private func makeGame(leagueCode: String, scoreboard: GameScoreboardData? = nil) -> Game {
         Game(
             id: 10,

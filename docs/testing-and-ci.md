@@ -16,6 +16,11 @@ coverage
 ui-smoke
 visual
 accessibility
+multitasking
+ipad-ui-smoke
+ipad-visual
+ipad-accessibility
+ipad-multitasking
 performance-smoke
 full-local
 script-checks
@@ -24,15 +29,15 @@ clean-artifacts
 
 `fast` and `build` generate the project and build the simulator app. `unit` runs `ScrollDownSportsTests` without coverage enforcement. `coverage` runs `ScrollDownSportsTests` with coverage, writes `.build/TestResults/Coverage.xcresult`, emits `.build/coverage/xccov-report.json` and `.build/coverage/xccov-files.json`, and runs `Scripts/check_xccov_thresholds.swift`.
 
-`ui-smoke` runs `ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests`. `visual` runs the committed snapshot regression test classes selected in the wrapper. `accessibility` runs `ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests`. `performance-smoke` runs `ScrollDownSportsTests/PerformanceSmokeTests` and `ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests`.
+`ui-smoke` runs `ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests`. `visual` runs the committed snapshot regression test classes selected in the wrapper. `accessibility` runs `ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests`. `multitasking` runs project and app-shape checks that preserve iPad multitasking eligibility. The `ipad-ui-smoke`, `ipad-accessibility`, and `ipad-multitasking` gates run the matching iPad-family checks; `ipad-visual` runs the iPad snapshot gate on the pinned canonical iPad destination. `performance-smoke` runs `ScrollDownSportsTests/PerformanceSmokeTests` and `ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests`.
 
-`full-local` runs build, coverage, repository script checks, and UI smoke. `script-checks` runs `Scripts/test_xccov_thresholds.sh`, `Scripts/test_ci_workflow_shape.sh`, and `Scripts/test_local_gate.sh`. `clean-artifacts` removes generated local gate artifacts under `.build`.
+`full-local` runs build, coverage, repository script checks, and UI smoke. `script-checks` runs `Scripts/test_xccov_thresholds.sh`, `Scripts/test_ci_workflow_shape.sh`, `Scripts/test_local_gate.sh`, and `Scripts/check_multitasking_project_invariants.rb`. `clean-artifacts` removes generated local gate artifacts under `.build`.
 
 ## Simulator Destination
 
-The canonical local simulator destination is iPhone 17 Pro on iOS 26.2. `Scripts/local_gate.sh` tries that destination first. If it is unavailable, the wrapper chooses an installed iPhone simulator; callers can override the destination with `TEST_DESTINATION`.
+The canonical phone simulator destination is iPhone 17 Pro on iOS 26.2. The canonical iPad simulator destination is iPad Pro 13-inch (M4) on iOS 26.2. `Scripts/local_gate.sh` preserves simulator family during fallback: an iPhone request can fall back only to an installed iPhone simulator, and an iPad request can fall back only to an installed iPad simulator. Callers can override nonvisual simulator gates with `TEST_DESTINATION`.
 
-Visual baselines are committed under `ScrollDownSportsTests/__Snapshots__`. Snapshot recording is disabled by default and is enabled only when `SNAPSHOT_RECORD=1` is set for a visual gate run.
+Visual baselines are committed under `ScrollDownSportsTests/__Snapshots__`. Snapshot recording is disabled by default and is enabled only when `SNAPSHOT_RECORD=1` is set for a visual gate run. The default `visual` gate keeps the canonical phone baseline stable even if a phone matrix destination is present. An explicit iPad visual run uses the pinned iPad Pro 13-inch (M4) iOS 26.2 destination and fails clearly if that simulator is unavailable.
 
 ## Coverage Policy
 
@@ -42,4 +47,4 @@ Visual baselines are committed under `ScrollDownSportsTests/__Snapshots__`. Snap
 
 `.github/workflows/ci.yml` runs on pull requests, pushes to `main`, schedules, and manual dispatch. The PR job installs XcodeGen, blocks `SNAPSHOT_RECORD=1`, runs `Scripts/local_gate.sh build`, `coverage`, `script-checks`, and `ui-smoke`, then uploads XCTest result bundles, coverage reports, snapshot artifacts, simulator diagnostics, and the generated Xcode project.
 
-Scheduled and manually dispatched jobs run heavier gates. The visual matrix runs `visual` on iPhone 16 and iPhone 16 Pro Max destinations with `OS=latest`. The UI/accessibility matrix runs `ui-smoke` and `accessibility` on iPhone SE (3rd generation), iPhone 16, and iPhone 16 Pro Max destinations with `OS=latest`. The performance job runs `performance-smoke`.
+Scheduled and manually dispatched jobs run heavier gates. The visual matrix keeps phone visual coverage separate from iPad coverage. The UI/accessibility matrix runs `ui-smoke` and `accessibility` on iPhone SE (3rd generation), iPhone 16, and iPhone 16 Pro Max destinations with `OS=latest`. The iPad job runs `ipad-visual`, `ipad-ui-smoke`, `ipad-accessibility`, and `ipad-multitasking` against iPad-family destinations. The performance job runs `performance-smoke`.

@@ -23,19 +23,10 @@ final class EventLabelResolverTests: XCTestCase {
             sequence: 1,
             headline: "Game update",
             eventType: "SOME_UNKNOWN_EVENT",
-            presentation: EventPresentationData(
-                headline: nil,
-                shortHeadline: nil,
-                body: nil,
-                primaryLabel: nil,
-                secondaryLabel: nil,
-                tertiaryLabel: nil,
+            presentation: TestFixtures.eventPresentation(
                 timeLabel: "Q1 10:00",
                 accessibilityLabel: "SOME_UNKNOWN_EVENT",
-                eventTypeLabel: "SOME_UNKNOWN_EVENT",
-                teamLabel: nil,
-                playerLabel: nil,
-                scoreLabel: nil
+                eventTypeLabel: "SOME_UNKNOWN_EVENT"
             )
         )
 

@@ -199,26 +199,7 @@ enum ComponentSnapshotFixtures {
     }
 
     static func previewPresentation() -> GamePresentationData {
-        GamePresentationData(
-            headline: "Preview notes available",
-            shortHeadline: nil,
-            subheadline: nil,
-            matchupLabel: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            accessibilityLabel: nil,
-            displayState: nil,
-            visualPriority: nil,
-            sortBucket: nil,
-            accentRole: nil,
-            statusTone: nil,
-            eventCounts: nil,
-            statusLabel: nil,
-            primaryActionLabel: "Preview",
-            secondaryContextLabel: nil,
-            scoreboardPlacement: nil
-        )
+        TestFixtures.previewPresentation(headline: "Preview notes available")
     }
 
     static func timelineSection(

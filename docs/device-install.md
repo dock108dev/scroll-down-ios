@@ -2,12 +2,14 @@
 
 ## Backend Targeting
 
-Direct iPhone builds use the same backend settings as simulator builds:
+Direct iPhone builds use the backend settings from the Xcode project configuration:
 
 - `SDA_API_BASE_URL` becomes `SDABaseURL` in `Info.plist`.
 - `SDA_API_KEY` becomes `SDAApiKey` in `Info.plist`.
 - The checked-in default backend is `https://sda.dock108.dev`.
 - `Config/Local.xcconfig` can override either value and is ignored by git.
+
+`Scripts/local_gate.sh` intentionally overrides simulator gate builds to use `SDA_API_BASE_URL=http://127.0.0.1.invalid` and an empty API key. That keeps automated simulator gates deterministic and does not change the checked-in Debug or Release defaults used by normal Xcode builds.
 
 For a local backend on a physical phone, do not use `127.0.0.1` or `localhost`; those point at the phone. Use a reachable HTTPS URL such as a tunnel or LAN HTTPS endpoint, then set it in `Config/Local.xcconfig`.
 

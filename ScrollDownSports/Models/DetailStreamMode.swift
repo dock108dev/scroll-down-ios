@@ -123,7 +123,7 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
             event.eventType,
             event.teamAbbreviation
         ]
-        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank }
+        .compactMap { $0?.nilIfBlank }
 
         if parts.isEmpty {
             return "sequence:\(event.sequence):\(event.id)"
@@ -153,7 +153,11 @@ struct GameDetailRestoreTargetResolver {
         guard !sortedEvents.isEmpty else { return nil }
 
         if let eventID = progress.lastReadEventID,
-           let exact = sortedEvents.first(where: { $0.normalizedSourceEventID == eventID || $0.id == eventID || $0.detailAnchorID == eventID }) {
+           let exact = sortedEvents.first(where: {
+               $0.normalizedSourceEventID == eventID
+                   || $0.id == eventID
+                   || $0.detailAnchorID == eventID
+           }) {
             return exact
         }
 
@@ -177,7 +181,11 @@ struct GameDetailRestoreTargetResolver {
         return mode.visibleDedupedEvents(sortedEvents).first
     }
 
-    static func streamModeToReveal(target: GameEvent, currentMode: DetailStreamMode, events: [GameEvent]) -> DetailStreamMode {
+    static func streamModeToReveal(
+        target: GameEvent,
+        currentMode: DetailStreamMode,
+        events: [GameEvent]
+    ) -> DetailStreamMode {
         if currentMode.visibleEvents(in: events).contains(where: { $0.id == target.id }) {
             return currentMode
         }
@@ -299,7 +307,11 @@ extension GameEvent {
     }
 }
 
-func normalizedPeriodClockText(periodLabel: String?, clockLabel: String?, presentationTimeLabel: String? = nil) -> String? {
+func normalizedPeriodClockText(
+    periodLabel: String?,
+    clockLabel: String?,
+    presentationTimeLabel: String? = nil
+) -> String? {
     PeriodLabelFormatter.output(
         sport: .other("generic"),
         leagueCode: "generic",

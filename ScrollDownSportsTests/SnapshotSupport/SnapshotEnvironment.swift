@@ -12,6 +12,8 @@ enum SnapshotEnvironment {
 struct SnapshotEnvironmentModifier: ViewModifier {
     let colorScheme: ColorScheme
     let dynamicTypeSize: DynamicTypeSize
+    let horizontalSizeClass: UserInterfaceSizeClass?
+    let verticalSizeClass: UserInterfaceSizeClass?
 
     func body(content: Content) -> some View {
         content
@@ -21,6 +23,8 @@ struct SnapshotEnvironmentModifier: ViewModifier {
             .environment(\.colorScheme, colorScheme)
             .environment(\.dynamicTypeSize, dynamicTypeSize)
             .environment(\.layoutDirection, SnapshotEnvironment.layoutDirection)
+            .environment(\.horizontalSizeClass, horizontalSizeClass)
+            .environment(\.verticalSizeClass, verticalSizeClass)
             .transaction { transaction in
                 transaction.animation = nil
             }
@@ -30,8 +34,17 @@ struct SnapshotEnvironmentModifier: ViewModifier {
 extension View {
     func snapshotEnvironment(
         colorScheme: ColorScheme = SnapshotEnvironment.colorScheme,
-        dynamicTypeSize: DynamicTypeSize = SnapshotEnvironment.dynamicTypeSize
+        dynamicTypeSize: DynamicTypeSize = SnapshotEnvironment.dynamicTypeSize,
+        horizontalSizeClass: UserInterfaceSizeClass? = nil,
+        verticalSizeClass: UserInterfaceSizeClass? = nil
     ) -> some View {
-        modifier(SnapshotEnvironmentModifier(colorScheme: colorScheme, dynamicTypeSize: dynamicTypeSize))
+        modifier(
+            SnapshotEnvironmentModifier(
+                colorScheme: colorScheme,
+                dynamicTypeSize: dynamicTypeSize,
+                horizontalSizeClass: horizontalSizeClass,
+                verticalSizeClass: verticalSizeClass
+            )
+        )
     }
 }

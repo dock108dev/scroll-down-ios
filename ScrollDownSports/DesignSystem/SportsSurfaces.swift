@@ -1,30 +1,5 @@
 import SwiftUI
 
-struct ScoreRow: View {
-    let team: String
-    let abbreviation: String?
-    let score: Int?
-    var scoreText: String? = nil
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(abbreviation ?? team)
-                    .font(SportsTheme.Typography.teamName)
-                    .foregroundStyle(SportsTheme.Team.accent(for: abbreviation, fallback: SportsTheme.Tone.scoreboard.accent))
-                Text(team)
-                    .font(.caption)
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            }
-            Spacer()
-            Text(scoreText ?? score.map(String.init) ?? "-")
-                .font(SportsTheme.Typography.scoreNumber)
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .monospacedDigit()
-        }
-    }
-}
-
 struct CatchUpSection<Content: View>: View {
     let title: String
     let systemImage: String

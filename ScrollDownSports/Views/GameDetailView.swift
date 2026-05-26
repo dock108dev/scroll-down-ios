@@ -5,11 +5,13 @@ struct GameDetailView: View {
     let gameId: Int
     let summary: Game?
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var viewModel: GameDetailViewModel
     @State private var streamOrientationAnchorID: String?
     @State private var lastVisibleEventAnchorID: String?
     @State private var lastVisibleEventSaveAt = Date.distantPast
-    @State private var showStartOverConfirmation = false
     @State private var visibilityTrackingSuppressed = true
     @State private var liveEdgeMode: DetailLiveEdgeMode = .following
     @State private var isNearLiveEdge = true
@@ -18,10 +20,16 @@ struct GameDetailView: View {
     @State private var lastUserScrollAt = Date.distantPast
     @State private var currentVisibleEvent: DetailVisibleEventState?
     @State private var returnAnchor: DetailVisibleEventState?
+    @State private var lastAcceptedVisibleFrame: DetailEventVisibilityFrame?
+    @State private var lastViewportSize: CGSize = .zero
+    @State private var resizeRestoreSnapshot: DetailResizeRestoreSnapshot?
+    @State private var resizeGeneration = 0
+    @State private var resizeStabilizationWorkItem: DispatchWorkItem?
     @State private var stickyTopRequest = 0
     @State private var stickyEndRequest = 0
     @State private var stickyReturnRequest = 0
     @State private var uiTestScoreboardRevealed = false
+    @State private var bottomAffordanceHeight: CGFloat = 0
 
     private let playerStatsSectionID = "player-stats"
     private let teamStatsSectionID = "team-stats"
@@ -29,6 +37,7 @@ struct GameDetailView: View {
     init(
         gameId: Int,
         summary: Game? = nil,
+        apiClient: SDAApiClient = .shared,
         gameStateStore: any GameStateStore
     ) {
         self.gameId = gameId
@@ -36,6 +45,7 @@ struct GameDetailView: View {
         _viewModel = StateObject(
             wrappedValue: GameDetailViewModel(
                 gameId: gameId,
+                apiClient: apiClient,
                 gameStateStore: gameStateStore
             )
         )
@@ -43,9 +53,22 @@ struct GameDetailView: View {
 
     var body: some View {
         GeometryReader { viewport in
+            let layout = SportsLayoutMetrics(
+                availableWidth: viewport.size.width,
+                availableHeight: viewport.size.height,
+                horizontalSizeClass: horizontalSizeClass,
+                verticalSizeClass: verticalSizeClass,
+                dynamicTypeSize: dynamicTypeSize
+            )
+            let bottomObscuredHeight = bottomAffordanceObscuredHeight(
+                measuredHeight: bottomAffordanceHeight,
+                safeAreaBottom: viewport.safeAreaInsets.bottom,
+                layout: layout
+            )
+
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
+                    LazyVStack(alignment: .leading, spacing: layout.stackSpacing, pinnedViews: []) {
                         if let detail = viewModel.detail {
                             Color.clear
                                 .frame(height: 1)
@@ -70,7 +93,8 @@ struct GameDetailView: View {
                                         scrollToEndOrLatest(proxy)
                                     },
                                     onStartOver: {
-                                        showStartOverConfirmation = true
+                                        visibilityTrackingSuppressed = false
+                                        startOver(proxy)
                                     }
                                 )
                             }
@@ -167,23 +191,16 @@ struct GameDetailView: View {
                                         )
                                     }
                                 }
-                        } else if viewModel.loading {
-                            ProgressView()
-                                .frame(maxWidth: .infinity, minHeight: 240)
-                        } else if let error = viewModel.errorMessage {
-                            ContentUnavailableView(
-                                "Unable to load game",
-                                systemImage: "wifi.exclamationmark",
-                                description: Text(error)
-                            )
-                            .padding(.top, 80)
-                        } else if let summary {
-                            GameHeaderPlaceholder(summary: summary, renderer: SportRendererRegistry.renderer(for: summary))
+                        } else {
+                            unavailableDetailState(layout: layout)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 18)
+                    .sportsReadableContent(
+                        maxWidth: \.detailContentMaxWidth,
+                        horizontalInset: \.detailHorizontalInset
+                    )
+                    .padding(.top, layout.detailScrollTopPadding)
+                    .padding(.bottom, layout.detailScrollBottomPadding)
                 }
                 .accessibilityIdentifier("detail.scroll")
                 .coordinateSpace(name: "game-detail-scroll")
@@ -216,31 +233,66 @@ struct GameDetailView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 5)
+                        .sportsReadableContent(
+                            maxWidth: \.detailContentMaxWidth,
+                            horizontalInset: \.detailHorizontalInset
+                        )
+                        .padding(.vertical, layout.stickyChromeVerticalPadding)
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
                     if showsNewPlaysAffordance {
-                        NewPlaysAffordance(count: pendingNewPlayCount) {
-                            visibilityTrackingSuppressed = false
-                            scrollToEndOrLatest(proxy)
+                        HStack {
+                            Spacer(minLength: 0)
+                            NewPlaysAffordance(count: pendingNewPlayCount) {
+                                visibilityTrackingSuppressed = false
+                                scrollToEndOrLatest(proxy)
+                            }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .sportsReadableContent(
+                            maxWidth: \.detailContentMaxWidth,
+                            horizontalInset: \.detailHorizontalInset
+                        )
+                        .padding(.vertical, layout.bottomAffordanceVerticalPadding)
+                        .padding(.bottom, layout.bottomInsetPadding)
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear.preference(
+                                    key: DetailBottomAffordanceHeightPreferenceKey.self,
+                                    value: geometry.size.height
+                                )
+                            }
+                        }
                     }
                 }
                 .onPreferenceChange(DetailEventVisibilityPreferenceKey.self) { frames in
-                    updateVisibleEvent(from: frames, viewportHeight: viewport.size.height)
+                    updateVisibleEvent(
+                        from: frames,
+                        viewportHeight: viewport.size.height,
+                        obscuredBottomHeight: bottomObscuredHeight
+                    )
                 }
                 .onPreferenceChange(DetailScoreboardVisibilityPreferenceKey.self) { frame in
-                    updateScoreboardReach(from: frame, viewportHeight: viewport.size.height)
+                    updateScoreboardReach(
+                        from: frame,
+                        viewportHeight: viewport.size.height,
+                        obscuredBottomHeight: bottomObscuredHeight
+                    )
+                }
+                .onPreferenceChange(DetailBottomAffordanceHeightPreferenceKey.self) { height in
+                    bottomAffordanceHeight = height
                 }
                 .onPreferenceChange(DetailLatestAnchorPreferenceKey.self) { anchorY in
                     updateLiveEdgeDistance(anchorY: anchorY, viewportHeight: viewport.size.height)
                 }
                 .onPreferenceChange(DetailTopChromePreferenceKey.self) { frame in
                     isTopChromeVisible = (frame?.maxY ?? 0) > 20
+                }
+                .onAppear {
+                    lastViewportSize = viewport.size
+                }
+                .onChange(of: viewport.size) { oldSize, newSize in
+                    handleViewportSizeChange(oldSize: oldSize, newSize: newSize, proxy: proxy)
                 }
                 .onChange(of: stickyTopRequest) { _, _ in
                     scrollToTop(proxy)
@@ -259,23 +311,11 @@ struct GameDetailView: View {
                         visibilityTrackingSuppressed = false
                     }
                 )
-                .confirmationDialog(
-                    "Start over?",
-                    isPresented: $showStartOverConfirmation,
-                    titleVisibility: .visible
-                ) {
-                    Button("Start Over", role: .destructive) {
-                        visibilityTrackingSuppressed = false
-                        startOver(proxy)
-                    }
-                    Button("Keep Saved Position", role: .cancel) {}
-                } message: {
-                    Text("This clears your saved play position for this game, but keeps the game pinned and keeps scoreboard progress.")
-                }
                 .onChange(of: viewModel.updateToken) { _, _ in
                     handleDetailRefresh(proxy)
                 }
             }
+            .environment(\.sportsLayoutMetrics, layout)
         }
         .navigationTitle("Catch Up")
         .navigationBarTitleDisplayMode(.inline)
@@ -292,6 +332,7 @@ struct GameDetailView: View {
             viewModel.startAutoRefresh()
         }
         .onDisappear {
+            resizeStabilizationWorkItem?.cancel()
             viewModel.stopAutoRefresh()
             viewModel.markViewed()
         }
@@ -311,6 +352,27 @@ struct GameDetailView: View {
                 .accessibilityIdentifier("detail.refresh")
             }
         }
+    }
+
+    @ViewBuilder
+    private func unavailableDetailState(layout: SportsLayoutMetrics) -> some View {
+        VStack(alignment: .leading, spacing: layout.stackSpacing) {
+            if let summary {
+                GameHeaderPlaceholder(summary: summary, renderer: SportRendererRegistry.renderer(for: summary))
+            }
+
+            if viewModel.loading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: layout.loadingStateMinHeight)
+                    .accessibilityIdentifier("detail.loading")
+            } else if let error = viewModel.errorMessage {
+                DetailLoadErrorState(message: error) {
+                    Task { await viewModel.refresh() }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, summary == nil ? 80 : 0)
     }
 
     private var pendingNewPlayCount: Int {
@@ -383,6 +445,16 @@ struct GameDetailView: View {
             return min(progress.newEventCount, visibleEvents.count)
         }
         return visibleEvents.filter { $0.sequence > readSequence }.count
+    }
+
+    private func bottomAffordanceObscuredHeight(
+        measuredHeight: CGFloat,
+        safeAreaBottom: CGFloat,
+        layout: SportsLayoutMetrics
+    ) -> CGFloat {
+        guard showsNewPlaysAffordance else { return 0 }
+        let fallbackHeight = 44 + layout.bottomAffordanceVerticalPadding * 2 + layout.bottomInsetPadding
+        return max(measuredHeight, fallbackHeight) + max(0, safeAreaBottom)
     }
 
     private func scrollToLatest(_ proxy: ScrollViewProxy, preservesReturnAnchor: Bool = true) {
@@ -547,15 +619,28 @@ struct GameDetailView: View {
         }
     }
 
-    private func updateVisibleEvent(from frames: [DetailEventVisibilityFrame], viewportHeight: CGFloat) {
+    private func updateVisibleEvent(
+        from frames: [DetailEventVisibilityFrame],
+        viewportHeight: CGFloat,
+        obscuredBottomHeight: CGFloat
+    ) {
         guard
             let detail = viewModel.detail,
-            let frame = GameDetailScrollLogic.visibleCandidate(from: frames, viewportHeight: viewportHeight)
+            let frame = GameDetailScrollLogic.visibleCandidate(
+                from: frames,
+                viewportHeight: viewportHeight,
+                obscuredBottomHeight: obscuredBottomHeight
+            )
         else { return }
 
-        currentVisibleEvent = DetailVisibleEventState(frame: frame)
+        guard resizeRestoreSnapshot == nil else {
+            return
+        }
 
-        guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge) else {
+        currentVisibleEvent = DetailVisibleEventState(frame: frame)
+        lastAcceptedVisibleFrame = frame
+
+        guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge && !programmaticScrollInFlight) else {
             return
         }
 
@@ -578,9 +663,13 @@ struct GameDetailView: View {
         )
     }
 
-    private func updateScoreboardReach(from frame: CGRect?, viewportHeight: CGFloat) {
-        guard viewModel.localProgress?.reachedScoreboard != true, let frame else { return }
-        let viewportFrame = CGRect(x: 0, y: 0, width: frame.width, height: viewportHeight)
+    private func updateScoreboardReach(from frame: CGRect?, viewportHeight: CGFloat, obscuredBottomHeight: CGFloat) {
+        guard resizeRestoreSnapshot == nil, viewModel.localProgress?.reachedScoreboard != true, let frame else { return }
+        let viewportFrame = scoreboardReachViewportFrame(
+            width: frame.width,
+            height: viewportHeight,
+            obscuredBottomHeight: obscuredBottomHeight
+        )
         if hasScoreboardEnteredViewport(itemFrame: frame, viewportFrame: viewportFrame) {
             if let events = viewModel.detail?.events {
                 viewModel.recordLatestEventRead(events: events)
@@ -590,6 +679,7 @@ struct GameDetailView: View {
     }
 
     private func updateLiveEdgeDistance(anchorY: CGFloat, viewportHeight: CGFloat) {
+        guard resizeRestoreSnapshot == nil else { return }
         let threshold = max(72, min(180, viewportHeight * 0.14))
         let near = anchorY >= -threshold && anchorY <= viewportHeight + threshold
         if isNearLiveEdge != near {
@@ -615,6 +705,95 @@ struct GameDetailView: View {
             get: { viewModel.localProgress?.expandedSectionIDs.contains(sectionID) == true },
             set: { viewModel.setExpandedSection(sectionID, isExpanded: $0) }
         )
+    }
+
+    private func handleViewportSizeChange(oldSize: CGSize, newSize: CGSize, proxy: ScrollViewProxy) {
+        let priorSize = lastViewportSize == .zero ? oldSize : lastViewportSize
+        lastViewportSize = newSize
+        guard GameDetailScrollLogic.isMeaningfulViewportChange(from: priorSize, to: newSize) else { return }
+        guard let snapshot = makeResizeRestoreSnapshot() else { return }
+
+        resizeGeneration += 1
+        resizeRestoreSnapshot = snapshot
+        visibilityTrackingSuppressed = true
+        programmaticScrollInFlight = true
+        scheduleResizeRestore(proxy: proxy, generation: resizeGeneration)
+    }
+
+    private func makeResizeRestoreSnapshot() -> DetailResizeRestoreSnapshot? {
+        if let frame = lastAcceptedVisibleFrame {
+            return DetailResizeRestoreSnapshot(
+                frame: frame,
+                readingTopY: 0,
+                wasFollowingLiveEdge: viewModel.isFollowingLiveEdge && isNearLiveEdge,
+                wasVisibilityTrackingSuppressed: visibilityTrackingSuppressed
+            )
+        }
+        if let currentVisibleEvent {
+            return DetailResizeRestoreSnapshot(
+                visibleEvent: currentVisibleEvent,
+                wasFollowingLiveEdge: viewModel.isFollowingLiveEdge && isNearLiveEdge,
+                wasVisibilityTrackingSuppressed: visibilityTrackingSuppressed
+            )
+        }
+        return nil
+    }
+
+    private func scheduleResizeRestore(proxy: ScrollViewProxy, generation: Int) {
+        resizeStabilizationWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            guard generation == resizeGeneration else { return }
+            restoreAfterViewportResize(proxy)
+        }
+        resizeStabilizationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
+    }
+
+    private func restoreAfterViewportResize(_ proxy: ScrollViewProxy) {
+        guard let snapshot = resizeRestoreSnapshot else {
+            programmaticScrollInFlight = false
+            return
+        }
+
+        if snapshot.wasFollowingLiveEdge {
+            restoreLiveEdgeAfterResize(proxy)
+        } else if
+            let detail = viewModel.detail,
+            let anchorID = GameDetailScrollLogic.restoredVisibleAnchorID(
+                currentAnchorID: snapshot.visibleEvent.anchorID,
+                currentSequence: snapshot.visibleEvent.sequence,
+                mode: viewModel.selectedStreamMode,
+                events: detail.events
+            ) {
+            streamOrientationAnchorID = anchorID
+            let anchor = anchorID == snapshot.visibleEvent.anchorID
+                ? UnitPoint(x: 0.5, y: snapshot.offsetFraction)
+                : UnitPoint.center
+            performProgrammaticScroll {
+                proxy.scrollTo(GameDetailScrollAnchor.event(anchorID), anchor: anchor)
+            }
+        }
+
+        finishResizeRestore(snapshot: snapshot)
+    }
+
+    private func restoreLiveEdgeAfterResize(_ proxy: ScrollViewProxy) {
+        if let detail = viewModel.detail,
+           let target = DetailStreamMode.dedupedEvents(from: detail.events).last {
+            streamOrientationAnchorID = target.detailAnchorID
+        }
+        performProgrammaticScroll {
+            proxy.scrollTo(GameDetailScrollAnchor.latest, anchor: .bottom)
+        }
+    }
+
+    private func finishResizeRestore(snapshot: DetailResizeRestoreSnapshot) {
+        let delay = AppEnvironment.isRunningUITests ? 0 : 0.55
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            resizeRestoreSnapshot = nil
+            visibilityTrackingSuppressed = snapshot.wasVisibilityTrackingSuppressed
+            programmaticScrollInFlight = false
+        }
     }
 
 }

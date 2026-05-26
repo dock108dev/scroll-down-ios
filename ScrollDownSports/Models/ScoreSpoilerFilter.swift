@@ -2,8 +2,7 @@ import Foundation
 
 enum ScoreSpoilerFilter {
     static func topRegionText(_ value: String?, for game: Game) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !trimmed.isEmpty else {
+        guard let trimmed = value?.nilIfBlank else {
             return nil
         }
         return containsScoreBearingText(trimmed, for: game) ? nil : trimmed

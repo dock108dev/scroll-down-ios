@@ -42,11 +42,11 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         assertNoPlaceholderLabels()
         XCTAssertFalse(app.staticTexts["TBD"].exists)
 
-        app.buttons["NBA"].tap()
+        selectLeague("NBA")
         XCTAssertTrue(row("9003").waitForExistence(timeout: 3))
         XCTAssertFalse(row("9001").isHittable)
 
-        app.buttons["All"].tap()
+        selectLeague("All")
         XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
 
         let teamFilter = app.textFields["home.teamFilter"]
@@ -57,6 +57,37 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         XCTAssertFalse(row("9003").isHittable)
 
         clearTextField(teamFilter)
+        XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
+        XCTAssertTrue(row("9003").exists)
+    }
+
+    @MainActor
+    func testHomeTeamSearchKeyboardFlowKeepsRowsReachable() {
+        configureApp()
+        app.launch()
+        assertHomeLoaded()
+
+        let teamFilter = app.textFields["home.teamFilter"]
+        teamFilter.tap()
+        teamFilter.typeText("Canyon")
+
+        XCTAssertTrue(element("home.stickyHeader").exists)
+        XCTAssertTrue(element("home.leaguePicker").exists)
+        XCTAssertTrue(teamFilter.exists)
+        XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
+        XCTAssertFalse(row("9003").isHittable)
+
+        dismissKeyboardIfVisible()
+        app.swipeUp()
+        XCTAssertTrue(row("9001").exists)
+
+        teamFilter.tap()
+        clearTextField(teamFilter)
+        teamFilter.typeText("No Such Team")
+        dismissKeyboardIfVisible()
+
+        XCTAssertTrue(app.staticTexts["No games match these filters"].waitForExistence(timeout: 3))
+        app.buttons["Clear filters"].tap()
         XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
         XCTAssertTrue(row("9003").exists)
     }
@@ -81,7 +112,9 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         unpin.tap()
         XCTAssertTrue(app.buttons["home.gameRow.9001.pin"].waitForExistence(timeout: 3))
         XCTAssertEqual(app.buttons["home.gameRow.9001.pin"].label, "Pin game")
-        XCTAssertTrue(app.navigationBars["Scroll Down"].exists)
+        if !isRegularWidth {
+            XCTAssertTrue(app.navigationBars["Scroll Down"].exists)
+        }
     }
 
     @MainActor
@@ -90,11 +123,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         app.launch()
         openFinalGame()
 
-        let header = element("detail.header")
-        XCTAssertTrue(header.exists)
-        XCTAssertTrue(header.label.contains("Harbor Pilots"))
-        XCTAssertTrue(header.label.contains("Canyon Owls"))
-        XCTAssertTrue(header.label.contains("Final"))
+        assertDetailHeaderContains(["Harbor Pilots", "Canyon Owls", "Final"])
         XCTAssertTrue(element("detail.streamControls").waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Important"].exists)
         XCTAssertTrue(app.buttons["Standard"].exists)
@@ -123,11 +152,24 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         let savedSpot = element("detail.event.evt-9001-003")
         XCTAssertTrue(savedSpot.exists)
 
-        app.navigationBars["Catch Up"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Scroll Down"].waitForExistence(timeout: 5))
-        openFinalGame()
+        if isRegularWidth {
+            tap(row("9003"))
+            assertHomeAndDetailCoexist(gameId: "9003")
+            assertDetailHeaderContains(["Prairie Jets"])
+            tap(row("9001"))
+        } else {
+            app.navigationBars["Catch Up"].buttons.element(boundBy: 0).tap()
+            XCTAssertTrue(element("home.stickyHeader").waitForExistence(timeout: 5))
+            openFinalGame()
+        }
 
         XCTAssertTrue(element("detail.resumeBanner").waitForExistence(timeout: 5))
+        let resumeMore = app.buttons["detail.resume.more"]
+        XCTAssertTrue(resumeMore.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(identifier: "detail.resume").count, 1)
+        XCTAssertEqual(app.buttons.matching(identifier: "detail.resume.more").count, 1)
+        XCTAssertEqual(resumeMore.label, "More resume actions")
+        assertMinimumTapTarget(resumeMore, named: "Resume actions")
         app.buttons["detail.resume"].tap()
         XCTAssertTrue(element("detail.event.evt-9001-003").waitForExistence(timeout: 5))
 
@@ -146,9 +188,42 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
+    func testIPadSmokeRoutePreservesSplitSelectionAndHomeState() throws {
+        configureApp()
+        app.launch()
+        assertHomeLoaded()
+        guard isRegularWidth else {
+            throw XCTSkip("Regular-width iPad smoke route")
+        }
+
+        openFinalGame()
+        assertHomeAndDetailCoexist(gameId: "9001")
+
+        XCTAssertTrue(element("detail.stickyNav").waitForExistence(timeout: 5))
+        app.buttons["detail.stickyNav.end"].tap()
+        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+
+        selectLeague("NBA")
+        XCTAssertTrue(row("9003").waitForExistence(timeout: 3))
+        XCTAssertTrue(element("home.stickyHeader").exists)
+        XCTAssertTrue(element("home.section.timeline").exists)
+
+        tap(row("9003"))
+        assertHomeAndDetailCoexist(gameId: "9003")
+        assertDetailHeaderContains(["Prairie Jets", "Summit Bears"])
+
+        selectLeague("All")
+        XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
+        tap(row("9001"))
+        assertHomeAndDetailCoexist(gameId: "9001")
+        assertDetailHeaderContains(["Harbor Pilots"])
+    }
+
+    @MainActor
     private func configureApp() {
         continueAfterFailure = false
         app = XCUIApplication()
+        XCUIDevice.shared.orientation = .portrait
         app.launchArguments = ["--ui-testing"]
         app.launchEnvironment["SDS_UI_TEST_FIXTURE"] = "critical-final-game"
         app.launchEnvironment["SDS_RESET_STATE"] = "1"
@@ -156,19 +231,83 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
     @MainActor
     private func assertHomeLoaded() {
-        XCTAssertTrue(app.navigationBars["Scroll Down"].waitForExistence(timeout: 5))
         XCTAssertTrue(element("home.stickyHeader").waitForExistence(timeout: 5))
         XCTAssertTrue(element("home.leaguePicker").exists)
         XCTAssertTrue(app.textFields["home.teamFilter"].exists)
         XCTAssertTrue(element("home.section.timeline").waitForExistence(timeout: 5))
         XCTAssertTrue(row("9001").waitForExistence(timeout: 5))
+        if !isRegularWidth {
+            XCTAssertTrue(app.navigationBars["Scroll Down"].waitForExistence(timeout: 5))
+        }
     }
 
     @MainActor
     private func openFinalGame() {
         assertHomeLoaded()
         tap(row("9001"))
-        XCTAssertTrue(app.navigationBars["Catch Up"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element("detail.header").waitForExistence(timeout: 5))
+        if isRegularWidth {
+            assertHomeAndDetailCoexist(gameId: "9001")
+        } else {
+            XCTAssertTrue(app.navigationBars["Catch Up"].waitForExistence(timeout: 5))
+        }
+    }
+
+    @MainActor
+    private var isRegularWidth: Bool {
+        app.frame.width >= 700
+    }
+
+    @MainActor
+    private func assertHomeAndDetailCoexist(gameId: String) {
+        XCTAssertTrue(element("home.stickyHeader").exists)
+        XCTAssertTrue(element("home.section.timeline").exists)
+        XCTAssertTrue(row(gameId).exists)
+        XCTAssertTrue(element("detail.header").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("detail.streamControls").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("detail.playByPlay").waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
+        let directButton = app.buttons[league]
+        if directButton.exists {
+            tap(directButton)
+            return
+        }
+
+        let picker = app.buttons["home.leaguePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "League picker is missing", file: file, line: line)
+        tap(picker)
+
+        let menuButton = app.buttons[league]
+        if menuButton.waitForExistence(timeout: 3) {
+            tap(menuButton)
+            return
+        }
+
+        let menuText = app.staticTexts[league]
+        XCTAssertTrue(menuText.waitForExistence(timeout: 3), "League option \(league) is missing", file: file, line: line)
+        tap(menuText)
+    }
+
+    @MainActor
+    private func assertDetailHeaderContains(
+        _ expectedParts: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let firstPart = expectedParts.first else { return }
+        let predicate = NSPredicate(format: "label CONTAINS %@", firstPart)
+        let header = app.descendants(matching: .any)
+            .matching(identifier: "detail.header")
+            .matching(predicate)
+            .firstMatch
+
+        XCTAssertTrue(header.waitForExistence(timeout: 5), "No detail header contained \(firstPart)", file: file, line: line)
+        for part in expectedParts.dropFirst() {
+            XCTAssertTrue(header.label.contains(part), "Detail header missing \(part): \(header.label)", file: file, line: line)
+        }
     }
 
     @MainActor
@@ -216,6 +355,13 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
+    private func assertMinimumTapTarget(_ element: XCUIElement, named name: String) {
+        XCTAssertTrue(element.waitForExistence(timeout: 3), "\(name) does not exist")
+        XCTAssertGreaterThanOrEqual(element.frame.width, 44, "\(name) width is below 44 points")
+        XCTAssertGreaterThanOrEqual(element.frame.height, 44, "\(name) height is below 44 points")
+    }
+
+    @MainActor
     private func anyHittable(_ elements: [XCUIElement]) -> Bool {
         elements.contains { $0.exists && $0.isHittable }
     }
@@ -225,6 +371,25 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         textField.tap()
         let delete = String(repeating: XCUIKeyboardKey.delete.rawValue, count: textField.valueText.count)
         textField.typeText(delete)
+    }
+
+    @MainActor
+    private func dismissKeyboardIfVisible() {
+        let done = app.buttons["home.teamFilter.done"]
+        if done.waitForExistence(timeout: 1) {
+            done.tap()
+            return
+        }
+
+        let search = app.keyboards.buttons["Search"]
+        if search.waitForExistence(timeout: 1) {
+            search.tap()
+            return
+        }
+
+        if app.keyboards.firstMatch.exists {
+            app.keyboards.firstMatch.typeText("\n")
+        }
     }
 
     @MainActor

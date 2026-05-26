@@ -28,6 +28,29 @@ final class StatSectionSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testStatSectionWideTableRegularWidthUsesCappedExpansion() {
+        assertSwiftUISnapshot(
+            of: StatSectionList(sections: [ComponentSnapshotFixtures.wideStatSection()])
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "stats-wide-regular",
+            width: .standard,
+            height: 330
+        )
+    }
+
+    func testStatSectionWideTableTabletWidthKeepsNumericColumnsDense() {
+        assertSwiftUISnapshot(
+            of: StatSectionList(sections: [ComponentSnapshotFixtures.wideStatSection()])
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "stats-wide-tablet",
+            width: .tabletReadable,
+            height: 330,
+            device: .iPad11Portrait
+        )
+    }
+
     func testPlayerAndTeamSectionsExpandedAndCollapsed() {
         let detail = ComponentSnapshotFixtures.statDetail()
         let renderer = SportRendererRegistry.renderer(for: detail.game)

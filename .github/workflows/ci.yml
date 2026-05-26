@@ -238,6 +238,85 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+  nightly-ipad:
+    name: Nightly iPad Coverage (${{ matrix.device.name }})
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - name: ipad-11
+            destination: "platform=iOS Simulator,name=iPad Pro 11-inch (M4),OS=latest"
+          - name: ipad-13
+            destination: "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=latest"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          brew update
+          brew install xcodegen
+
+      - name: Guard snapshot recording mode
+        run: |
+          set -euo pipefail
+          if [ "${SNAPSHOT_RECORD:-}" = "1" ]; then
+            echo "SNAPSHOT_RECORD must not be enabled in CI"
+            exit 1
+          fi
+
+      - name: Run iPad visual regression gate
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ipad-visual
+
+      - name: Run iPad UI smoke gate
+        env:
+          TEST_DESTINATION: ${{ matrix.device.destination }}
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ipad-ui-smoke
+
+      - name: Run iPad accessibility gate
+        env:
+          TEST_DESTINATION: ${{ matrix.device.destination }}
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ipad-accessibility
+
+      - name: Run iPad multitasking gate
+        env:
+          TEST_DESTINATION: ${{ matrix.device.destination }}
+        run: |
+          set -euo pipefail
+          bash Scripts/local_gate.sh ipad-multitasking
+
+      - name: Collect simulator diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p .build/artifacts/simulator
+          xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-${{ matrix.device.name }}.png || true
+          xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-${{ matrix.device.name }}.logarchive || true
+
+      - name: Upload iPad artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrollDownSports-ipad-${{ matrix.device.name }}
+          path: |
+            .build/TestResults/*.xcresult
+            ScrollDownSportsTests/__Snapshots__
+            .build/DerivedData/Logs/Test
+            .build/artifacts/simulator
+          if-no-files-found: ignore
+          retention-days: 30
+
   nightly-performance:
     name: Nightly Performance Smoke
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

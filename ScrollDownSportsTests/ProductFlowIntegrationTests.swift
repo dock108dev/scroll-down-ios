@@ -130,7 +130,7 @@ final class ProductFlowIntegrationTests: XCTestCase {
             awayAbbreviation: "BOS",
             homeName: "Miami Heat",
             homeAbbreviation: "MIA",
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let tbd = TestFixtures.makeGame(
             id: 3015,
@@ -142,7 +142,7 @@ final class ProductFlowIntegrationTests: XCTestCase {
             awayAbbreviation: "TBD",
             homeName: "Seattle Mariners",
             homeAbbreviation: "SEA",
-            presentation: previewPresentation()
+            presentation: TestFixtures.previewPresentation()
         )
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
 
@@ -390,29 +390,6 @@ final class ProductFlowIntegrationTests: XCTestCase {
             ],
             segments: [ScoreboardSegmentData(label: "9", away: "1", home: "0")],
             totals: ScoreboardTotalsData(away: "7", home: "6")
-        )
-    }
-
-    private func previewPresentation() -> GamePresentationData {
-        GamePresentationData(
-            headline: "Preview",
-            shortHeadline: nil,
-            subheadline: nil,
-            matchupLabel: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            accessibilityLabel: nil,
-            displayState: nil,
-            visualPriority: nil,
-            sortBucket: nil,
-            accentRole: nil,
-            statusTone: nil,
-            eventCounts: nil,
-            statusLabel: nil,
-            primaryActionLabel: "Preview",
-            secondaryContextLabel: nil,
-            scoreboardPlacement: nil
         )
     }
 

@@ -175,7 +175,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
         let backendLabel = TestFixtures.makeEvent(
             sequence: 1,
             scoreDelta: scoreDelta,
-            presentation: eventPresentation(scoreLabel: "SEA 4, NYY 3"),
+            presentation: TestFixtures.eventPresentation(scoreLabel: "SEA 4, NYY 3"),
             importanceMetadata: scoringMetadata,
             homeScore: 4,
             awayScore: 3
@@ -295,20 +295,26 @@ final class ProductPresentationInvariantTests: XCTestCase {
         )
     }
 
-    private func eventPresentation(scoreLabel: String?) -> EventPresentationData {
-        EventPresentationData(
-            headline: nil,
-            shortHeadline: nil,
-            body: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            timeLabel: nil,
-            accessibilityLabel: nil,
-            eventTypeLabel: nil,
-            teamLabel: nil,
-            playerLabel: nil,
-            scoreLabel: scoreLabel
-        )
+    func testScoreboardReachIgnoresAreaBehindBottomAffordance() {
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate() })
+        let viewModel = GameDetailViewModel(gameId: 901, gameStateStore: store)
+        let viewport = scoreboardReachViewportFrame(width: 390, height: 800, obscuredBottomHeight: 86)
+
+        if hasScoreboardEnteredViewport(
+            itemFrame: CGRect(x: 0, y: 700, width: 390, height: 240),
+            viewportFrame: viewport
+        ) {
+            viewModel.setReachedScoreboard(true)
+        }
+        XCTAssertFalse(store.progress(for: 901)?.reachedScoreboard == true)
+
+        if hasScoreboardEnteredViewport(
+            itemFrame: CGRect(x: 0, y: 640, width: 390, height: 240),
+            viewportFrame: viewport
+        ) {
+            viewModel.setReachedScoreboard(true)
+        }
+        XCTAssertTrue(store.progress(for: 901)?.reachedScoreboard == true)
     }
+
 }

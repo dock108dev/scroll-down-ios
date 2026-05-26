@@ -32,6 +32,14 @@ struct DetailScoreboardVisibilityPreferenceKey: PreferenceKey {
     }
 }
 
+struct DetailBottomAffordanceHeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct DetailLatestAnchorPreferenceKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
 

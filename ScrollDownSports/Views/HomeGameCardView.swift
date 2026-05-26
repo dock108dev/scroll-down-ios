@@ -1,5 +1,13 @@
 import SwiftUI
 
+enum HomeGameCardLayout {
+    static let pinVisibleSize: CGFloat = 34
+    static let pinHitTargetSize: CGFloat = 44
+    static let pinOverlayPadding: CGFloat = 9
+    static let pinContentGap: CGFloat = 6
+    static let pinTrailingReservation = pinHitTargetSize + pinOverlayPadding + pinContentGap
+}
+
 struct GameRowView: View {
     let item: HomeGameItem
 
@@ -20,7 +28,6 @@ struct GameRowView: View {
                     state: cardState,
                     presentation: presentation
                 )
-                .padding(.trailing, 38)
 
                 VStack(alignment: .leading, spacing: 1) {
                     if let away = game.awayParticipant {
@@ -44,6 +51,7 @@ struct GameRowView: View {
                 HomeCardContext(state: cardState)
                     .accessibilityIdentifier("home.gameRow.\(game.id).status")
             }
+            .padding(.trailing, HomeGameCardLayout.pinTrailingReservation)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
@@ -109,11 +117,12 @@ struct HomePinButton: View {
             Image(systemName: isPinned ? "pin.slash.fill" : "pin")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(isPinned ? SportsTheme.Colors.textOnFill : SportsTheme.Tone.pinned.accent)
-                .frame(width: 34, height: 34)
+                .frame(width: HomeGameCardLayout.pinVisibleSize, height: HomeGameCardLayout.pinVisibleSize)
                 .background(
                     isPinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Tone.pinned.subtleFill,
                     in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
                 )
+                .frame(width: HomeGameCardLayout.pinHitTargetSize, height: HomeGameCardLayout.pinHitTargetSize)
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())

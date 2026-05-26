@@ -113,39 +113,54 @@ private struct CompactStatTable: View {
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    tableHeader
-                    Divider()
-                    ForEach(Array(table.rows.enumerated()), id: \.element.id) { index, row in
-                        tableRow(row, isTinted: index.isMultiple(of: 2))
-                        if index < table.rows.count - 1 {
-                            Divider()
+            WidthAwareContent(fallbackWidth: intrinsicContentWidth) { availableWidth in
+                let metrics = statTableWidthMetrics(availableWidth: availableWidth)
+
+                ScrollView(.horizontal, showsIndicators: metrics.requiresHorizontalScroll) {
+                    LazyVStack(spacing: 0) {
+                        tableHeader(metrics: metrics)
+                        Divider()
+                        ForEach(Array(table.rows.enumerated()), id: \.element.id) { index, row in
+                            tableRow(row, isTinted: index.isMultiple(of: 2), metrics: metrics)
+                            if index < table.rows.count - 1 {
+                                Divider()
+                            }
                         }
                     }
+                    .frame(width: metrics.contentWidth, alignment: .leading)
+                    .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SportsTheme.Radius.row)
+                            .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
+                    )
                 }
-                .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row))
-                .overlay(
-                    RoundedRectangle(cornerRadius: SportsTheme.Radius.row)
-                        .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
-                )
             }
         }
     }
 
-    private var tableHeader: some View {
+    private var intrinsicContentWidth: CGFloat {
+        table.columns.reduce(CGFloat.zero) { partialResult, column in
+            partialResult + column.width + Self.cellHorizontalPadding
+        }
+    }
+
+    private func tableHeader(metrics: StatTableWidthMetrics) -> some View {
         HStack(spacing: 0) {
             ForEach(table.columns) { column in
-                tableCell(column.label, column: column, isHeader: true)
+                tableCell(column.label, column: column, isHeader: true, metrics: metrics)
             }
         }
         .padding(.vertical, 6)
     }
 
-    private func tableRow(_ row: StatTableRowPresentation, isTinted: Bool) -> some View {
+    private func tableRow(
+        _ row: StatTableRowPresentation,
+        isTinted: Bool,
+        metrics: StatTableWidthMetrics
+    ) -> some View {
         HStack(spacing: 0) {
             ForEach(table.columns) { column in
-                tableCell(row.values[column.id] ?? "-", column: column, isHeader: false)
+                tableCell(row.values[column.id] ?? "-", column: column, isHeader: false, metrics: metrics)
             }
         }
         .padding(.vertical, 6)
@@ -155,7 +170,8 @@ private struct CompactStatTable: View {
     private func tableCell(
         _ value: String,
         column: StatTableColumnPresentation,
-        isHeader: Bool
+        isHeader: Bool,
+        metrics: StatTableWidthMetrics
     ) -> some View {
         Text(value)
             .font(isHeader ? SportsTheme.Typography.statTable : .caption)
@@ -163,8 +179,76 @@ private struct CompactStatTable: View {
             .monospacedDigit()
             .lineLimit(1)
             .truncationMode(.tail)
-            .frame(width: column.width, alignment: column.alignment.swiftUIAlignment)
+            .frame(width: metrics.columnWidths[column.id] ?? column.width, alignment: column.alignment.swiftUIAlignment)
             .padding(.horizontal, 6)
+    }
+
+    private func statTableWidthMetrics(availableWidth: CGFloat) -> StatTableWidthMetrics {
+        let baseContentWidth = intrinsicContentWidth
+        let primaryExpandableID = table.columns.first(where: { $0.alignment == .leading })?.id
+        let allowedSlack = max(0, min(availableWidth - baseContentWidth, Self.maxTextExpansion))
+        var columnWidths: [String: CGFloat] = [:]
+
+        for column in table.columns {
+            let resolvedWidth = if column.id == primaryExpandableID {
+                min(column.width + allowedSlack, Self.maxTextColumnWidth)
+            } else {
+                column.width
+            }
+            columnWidths[column.id] = resolvedWidth
+        }
+
+        let resolvedContentWidth = table.columns.reduce(CGFloat.zero) { partialResult, column in
+            partialResult + (columnWidths[column.id] ?? column.width) + Self.cellHorizontalPadding
+        }
+
+        return StatTableWidthMetrics(
+            contentWidth: max(baseContentWidth, resolvedContentWidth),
+            columnWidths: columnWidths,
+            requiresHorizontalScroll: resolvedContentWidth > availableWidth + 0.5
+        )
+    }
+
+    private static let cellHorizontalPadding: CGFloat = 12
+    private static let maxTextExpansion: CGFloat = 96
+    private static let maxTextColumnWidth: CGFloat = 220
+}
+
+private struct StatTableWidthMetrics {
+    let contentWidth: CGFloat
+    let columnWidths: [String: CGFloat]
+    let requiresHorizontalScroll: Bool
+}
+
+private struct WidthAwareContent<Content: View>: View {
+    @State private var measuredWidth: CGFloat = 0
+
+    let fallbackWidth: CGFloat
+    private let content: (CGFloat) -> Content
+
+    init(fallbackWidth: CGFloat, @ViewBuilder content: @escaping (CGFloat) -> Content) {
+        self.fallbackWidth = fallbackWidth
+        self.content = content
+    }
+
+    var body: some View {
+        content(measuredWidth > 0 ? measuredWidth : fallbackWidth)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: AvailableWidthPreferenceKey.self, value: proxy.size.width)
+                }
+            }
+            .onPreferenceChange(AvailableWidthPreferenceKey.self) { measuredWidth = $0 }
+    }
+}
+
+private struct AvailableWidthPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

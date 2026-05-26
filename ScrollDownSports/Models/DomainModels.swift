@@ -52,7 +52,9 @@ struct Game: Codable, Identifiable, Hashable, Sendable {
 
     var homeParticipant: GameParticipant? { participants.first { $0.role == .home } }
     var awayParticipant: GameParticipant? { participants.first { $0.role == .away } }
-    var matchupText: String { presentation?.matchupLabel ?? "\(awayParticipant?.name ?? "Away") at \(homeParticipant?.name ?? "Home")" }
+    var matchupText: String {
+        presentation?.matchupLabel ?? "\(awayParticipant?.name ?? "Away") at \(homeParticipant?.name ?? "Home")"
+    }
 }
 
 struct GameParticipant: Codable, Identifiable, Hashable, Sendable {
@@ -237,9 +239,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
     }
 
     var normalizedSourceEventID: String? {
-        guard let sourceEventID else { return nil }
-        let trimmed = sourceEventID.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+        sourceEventID?.nilIfBlank
     }
 
     var diffKey: GameEventDiffKey {
@@ -338,7 +338,12 @@ enum GameEventListDiffer {
     ) -> GameEventListDiff {
         guard !previous.isEmpty || !current.isEmpty else { return .unchanged }
         guard !previous.isEmpty else {
-            return GameEventListDiff(kind: .appended, insertedEvents: current, modifiedEvents: [], countDelta: current.count)
+            return GameEventListDiff(
+                kind: .appended,
+                insertedEvents: current,
+                modifiedEvents: [],
+                countDelta: current.count
+            )
         }
         guard !current.isEmpty else {
             return GameEventListDiff(kind: .reset, insertedEvents: [], modifiedEvents: [], countDelta: -previous.count)

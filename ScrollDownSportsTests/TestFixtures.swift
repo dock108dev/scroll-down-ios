@@ -160,6 +160,55 @@ enum TestFixtures {
         )
     }
 
+    static func previewPresentation(
+        headline: String? = "Preview",
+        statusLabel: String? = nil,
+        primaryActionLabel: String? = "Preview"
+    ) -> GamePresentationData {
+        GamePresentationData(
+            headline: headline,
+            shortHeadline: nil,
+            subheadline: nil,
+            matchupLabel: nil,
+            primaryLabel: nil,
+            secondaryLabel: nil,
+            tertiaryLabel: nil,
+            accessibilityLabel: nil,
+            displayState: nil,
+            visualPriority: nil,
+            sortBucket: nil,
+            accentRole: nil,
+            statusTone: nil,
+            eventCounts: nil,
+            statusLabel: statusLabel,
+            primaryActionLabel: primaryActionLabel,
+            secondaryContextLabel: nil,
+            scoreboardPlacement: nil
+        )
+    }
+
+    static func eventPresentation(
+        timeLabel: String? = nil,
+        accessibilityLabel: String? = nil,
+        eventTypeLabel: String? = nil,
+        scoreLabel: String? = nil
+    ) -> EventPresentationData {
+        EventPresentationData(
+            headline: nil,
+            shortHeadline: nil,
+            body: nil,
+            primaryLabel: nil,
+            secondaryLabel: nil,
+            tertiaryLabel: nil,
+            timeLabel: timeLabel,
+            accessibilityLabel: accessibilityLabel,
+            eventTypeLabel: eventTypeLabel,
+            teamLabel: nil,
+            playerLabel: nil,
+            scoreLabel: scoreLabel
+        )
+    }
+
     static func sdaGameListJSON(ids: [Int]) -> Data {
         do {
             return try SDAFixturePayloadFactory.gameList(ids: ids)

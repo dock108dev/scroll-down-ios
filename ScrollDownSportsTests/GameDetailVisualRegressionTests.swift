@@ -84,7 +84,64 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
         )
     }
 
+    func testDetailFinalScoreAndExpandedStatsIPadLandscape() {
+        let detail = VisualRegressionFixtures.detail()
+        let renderer = SportRendererRegistry.renderer(for: detail.game)
+
+        assertSwiftUISnapshot(
+            of: VStack(alignment: .leading, spacing: 18) {
+                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                TeamStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                BoxScoreSection(game: detail.game, renderer: renderer)
+            }
+            .padding(.vertical, 14)
+            .background(SportsTheme.Colors.paper)
+            .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset),
+            named: "detail-final-score-expanded-stats-ipad-landscape",
+            width: .iPad11LandscapeFull,
+            height: 1_040,
+            device: .iPad11Landscape
+        )
+    }
+
     func testDetailEmptyPlayByPlayDarkModeAccessibilityText() {
+        assertSwiftUISnapshot(
+            of: emptyPlayByPlaySnapshotView(),
+            named: "detail-empty-play-by-play",
+            width: .standard,
+            height: 230,
+            device: .phoneCompact,
+            colorScheme: .dark,
+            dynamicTypeSize: .accessibility2
+        )
+    }
+
+    func testDetailEmptyPlayByPlaySplitNarrowIPad() {
+        assertSwiftUISnapshot(
+            of: emptyPlayByPlaySnapshotView(),
+            named: "detail-empty-play-by-play-split-narrow",
+            width: .splitNarrow,
+            height: 260,
+            device: .iPadMiniPortrait,
+            dynamicTypeSize: .accessibility2
+        )
+    }
+
+    func testDetailDarkModeIPadShowsChromeControlsAndStats() {
+        let detail = VisualRegressionFixtures.detail()
+        let renderer = SportRendererRegistry.renderer(for: detail.game)
+
+        assertSwiftUISnapshot(
+            of: DetailDarkModeIPadSnapshotView(detail: detail, renderer: renderer),
+            named: "detail-dark-mode-ipad",
+            width: .iPad11Full,
+            height: SnapshotDevice.iPad11Portrait.size.height,
+            device: .iPad11Portrait,
+            colorScheme: .dark
+        )
+    }
+
+    private func emptyPlayByPlaySnapshotView() -> some View {
         let detail = TestFixtures.makeDetail(
             game: ComponentSnapshotFixtures.game(
                 id: 5_700,
@@ -100,24 +157,16 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
         )
         let renderer = SportRendererRegistry.renderer(for: detail.game)
 
-        assertSwiftUISnapshot(
-            of: PlayByPlaySection(
-                game: detail.game,
-                events: detail.events,
-                renderer: renderer,
-                selectedMode: .full,
-                expandedRawFeedKeys: [],
-                onRawFeedExpansionChange: { _, _ in }
-            )
-            .padding(12)
-            .background(SportsTheme.Colors.paper),
-            named: "detail-empty-play-by-play",
-            width: .standard,
-            height: 230,
-            device: .phoneCompact,
-            colorScheme: .dark,
-            dynamicTypeSize: .accessibility2
+        return PlayByPlaySection(
+            game: detail.game,
+            events: detail.events,
+            renderer: renderer,
+            selectedMode: .full,
+            expandedRawFeedKeys: [],
+            onRawFeedExpansionChange: { _, _ in }
         )
+        .padding(12)
+        .background(SportsTheme.Colors.paper)
     }
 }
 
@@ -168,5 +217,46 @@ private struct DetailTopVisualRegressionView: View {
         }
         .padding(12)
         .background(SportsTheme.Colors.paper)
+    }
+}
+
+private struct DetailDarkModeIPadSnapshotView: View {
+    let detail: GameDetail
+    let renderer: any SportRenderer
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            SportsPageBackground()
+            VStack(alignment: .leading, spacing: 12) {
+                GameHeaderView(game: detail.game, renderer: renderer, isPinned: true, newPlayCount: 3)
+                DetailStickyNavigationBar(
+                    title: "Final · 4/4 read",
+                    endLabel: "End",
+                    returnLabel: "Back to Q3",
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
+                StreamControlBar(
+                    game: detail.game,
+                    renderer: renderer,
+                    events: detail.events,
+                    isGamePinned: true,
+                    isFollowingLiveEdge: false,
+                    newPlayCount: 3,
+                    canResume: true,
+                    selectedMode: .constant(.full),
+                    onToggleGamePin: {},
+                    onToggleFollowLive: {},
+                    onResume: {},
+                    onJumpLatest: {}
+                )
+                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                BoxScoreSection(game: detail.game, renderer: renderer)
+            }
+            .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset)
+            .padding(.vertical, 18)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }

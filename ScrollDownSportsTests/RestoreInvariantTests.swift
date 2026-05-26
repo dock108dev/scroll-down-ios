@@ -101,6 +101,87 @@ final class RestoreInvariantTests: XCTestCase {
         )
     }
 
+    func testResizeRestoreKeepsSemanticAnchorAcrossWidthChange() {
+        let events = [
+            TestFixtures.makeEvent(sequence: 10, sourceEventID: "event-10", importance: .primary),
+            TestFixtures.makeEvent(sequence: 20, sourceEventID: "event-20", importance: .secondary)
+        ]
+        let firstAnchor = events[0].detailAnchorID
+        let secondAnchor = events[1].detailAnchorID
+
+        let snapshot = DetailResizeRestoreSnapshot(
+            frame: DetailEventVisibilityFrame(
+                anchorID: firstAnchor,
+                readIndex: 0,
+                sequence: 10,
+                eventID: events[0].id,
+                label: "Q1 10:00",
+                frame: CGRect(x: 0, y: -20, width: 760, height: 96)
+            ),
+            readingTopY: 0,
+            wasFollowingLiveEdge: false,
+            wasVisibilityTrackingSuppressed: false
+        )
+        let transientPostResizeCandidate = GameDetailScrollLogic.visibleCandidate(
+            from: [
+                DetailEventVisibilityFrame(
+                    anchorID: firstAnchor,
+                    readIndex: 0,
+                    sequence: 10,
+                    eventID: events[0].id,
+                    label: "Q1 10:00",
+                    frame: CGRect(x: 0, y: -140, width: 420, height: 210)
+                ),
+                DetailEventVisibilityFrame(
+                    anchorID: secondAnchor,
+                    readIndex: 1,
+                    sequence: 20,
+                    eventID: events[1].id,
+                    label: "Q1 09:30",
+                    frame: CGRect(x: 0, y: 80, width: 420, height: 280)
+                )
+            ],
+            viewportHeight: 900
+        )
+
+        XCTAssertTrue(
+            GameDetailScrollLogic.isMeaningfulViewportChange(
+                from: CGSize(width: 760, height: 900),
+                to: CGSize(width: 420, height: 900)
+            )
+        )
+        XCTAssertEqual(transientPostResizeCandidate?.anchorID, secondAnchor)
+        XCTAssertEqual(snapshot.visibleEvent.anchorID, firstAnchor)
+        XCTAssertEqual(snapshot.offsetFraction, 20.0 / 96.0, accuracy: 0.001)
+        XCTAssertEqual(
+            GameDetailScrollLogic.restoredVisibleAnchorID(
+                currentAnchorID: snapshot.visibleEvent.anchorID,
+                currentSequence: snapshot.visibleEvent.sequence,
+                mode: .full,
+                events: events
+            ),
+            firstAnchor
+        )
+    }
+
+    func testResizeRestoreFallsBackToNearestVisibleEventWhenCurrentAnchorIsFilteredOut() {
+        let events = [
+            TestFixtures.makeEvent(sequence: 10, sourceEventID: "event-10", importance: .primary),
+            TestFixtures.makeEvent(sequence: 20, sourceEventID: "event-20", importance: .contextual),
+            TestFixtures.makeEvent(sequence: 30, sourceEventID: "event-30", importance: .secondary)
+        ]
+
+        XCTAssertEqual(
+            GameDetailScrollLogic.restoredVisibleAnchorID(
+                currentAnchorID: events[1].detailAnchorID,
+                currentSequence: events[1].sequence,
+                mode: .key,
+                events: events
+            ),
+            events[0].detailAnchorID
+        )
+    }
+
     func testMissingSavedEventFallsBackToNearestPersistedPosition() {
         let events = [
             TestFixtures.makeEvent(sequence: 10, sourceEventID: "event-10", importance: .primary),

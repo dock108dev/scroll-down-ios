@@ -383,7 +383,7 @@ final class GameDetailViewModelTests: XCTestCase {
             importance: importance,
             eligibleModes: eligibleModes(for: importance),
             usesBackendModeEligibility: true,
-            presentation: presentationTimeLabel.map { makeEventPresentation(timeLabel: $0) },
+            presentation: presentationTimeLabel.map { TestFixtures.eventPresentation(timeLabel: $0) },
             importanceMetadata: nil,
             headline: headline ?? "Game update \(sequence)",
             detail: nil,
@@ -406,23 +406,6 @@ final class GameDetailViewModelTests: XCTestCase {
         case .contextual:
             return [.stream]
         }
-    }
-
-    private func makeEventPresentation(timeLabel: String) -> EventPresentationData {
-        EventPresentationData(
-            headline: nil,
-            shortHeadline: nil,
-            body: nil,
-            primaryLabel: nil,
-            secondaryLabel: nil,
-            tertiaryLabel: nil,
-            timeLabel: timeLabel,
-            accessibilityLabel: nil,
-            eventTypeLabel: nil,
-            teamLabel: nil,
-            playerLabel: nil,
-            scoreLabel: nil
-        )
     }
 
 }

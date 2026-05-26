@@ -19,6 +19,9 @@ assert_contains() {
 assert_not_contains() {
   local file="$1"
   local forbidden="$2"
+  if [ ! -e "$file" ]; then
+    return 0
+  fi
   if grep -Fq -- "$forbidden" "$file"; then
     echo "Unexpected local gate output: $forbidden"
     echo "Output file: $file"
@@ -33,12 +36,73 @@ assert_contains "$WORK_DIR/help.out" "coverage"
 assert_contains "$WORK_DIR/help.out" "ui-smoke"
 assert_contains "$WORK_DIR/help.out" "visual"
 assert_contains "$WORK_DIR/help.out" "accessibility"
+assert_contains "$WORK_DIR/help.out" "multitasking"
+assert_contains "$WORK_DIR/help.out" "ipad-ui-smoke"
+assert_contains "$WORK_DIR/help.out" "ipad-visual"
+assert_contains "$WORK_DIR/help.out" "ipad-accessibility"
+assert_contains "$WORK_DIR/help.out" "ipad-multitasking"
 assert_contains "$WORK_DIR/help.out" "performance-smoke"
 assert_contains "$WORK_DIR/help.out" "full-local"
 assert_contains "$WORK_DIR/help.out" "clean-artifacts"
 assert_contains "$GATE" "resolve_requested_destination"
 assert_contains "$GATE" "latest_destination_id_for_name"
-assert_contains "$GATE" "Using an available iPhone simulator because requested destination"
+assert_contains "$GATE" "fallback_destination_id_for_family"
+assert_contains "$GATE" 'destination_id="$(fallback_destination_id_for_family "$requested_family")"'
+assert_contains "$GATE" "No usable \$requested_family simulator destination was found."
+
+FAKE_BIN="$WORK_DIR/fake-bin"
+mkdir -p "$FAKE_BIN"
+cat > "$FAKE_BIN/xcodegen" <<'FAKE_XCODEGEN'
+#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+FAKE_XCODEGEN
+cat > "$FAKE_BIN/xcodebuild" <<'FAKE_XCODEBUILD'
+#!/usr/bin/env bash
+set -euo pipefail
+if printf '%s\n' "$@" | grep -Fq -- "-showdestinations"; then
+  cat "${FAKE_DESTINATIONS_FILE:?}"
+  exit 0
+fi
+printf '%s\n' "$*" >> "${FAKE_XCODEBUILD_LOG:?}"
+exit 0
+FAKE_XCODEBUILD
+chmod +x "$FAKE_BIN/xcodegen" "$FAKE_BIN/xcodebuild"
+
+cat > "$WORK_DIR/mixed-destinations.txt" <<'EOF_DESTINATIONS'
+Available destinations for the "ScrollDownSports" scheme:
+  { platform:iOS Simulator, id:IPHONE-FALLBACK-ID, OS:26.2, name:iPhone 17 Pro }
+  { platform:iOS Simulator, id:IPAD-FALLBACK-ID, OS:26.1, name:iPad Air 13-inch (M3) }
+EOF_DESTINATIONS
+
+FAKE_XCODEBUILD_LOG="$WORK_DIR/ipad-fallback-xcodebuild.log" \
+FAKE_DESTINATIONS_FILE="$WORK_DIR/mixed-destinations.txt" \
+PATH="$FAKE_BIN:$PATH" \
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" \
+  bash "$GATE" unit > "$WORK_DIR/ipad-fallback.out" 2> "$WORK_DIR/ipad-fallback.err"
+assert_contains "$WORK_DIR/ipad-fallback-xcodebuild.log" "-destination platform=iOS Simulator,id=IPAD-FALLBACK-ID"
+assert_contains "$WORK_DIR/ipad-fallback.err" "Using an available ipad simulator because requested destination"
+assert_not_contains "$WORK_DIR/ipad-fallback-xcodebuild.log" "IPHONE-FALLBACK-ID"
+
+cat > "$WORK_DIR/phone-only-destinations.txt" <<'EOF_DESTINATIONS'
+Available destinations for the "ScrollDownSports" scheme:
+  { platform:iOS Simulator, id:IPHONE-FALLBACK-ID, OS:26.2, name:iPhone 17 Pro }
+EOF_DESTINATIONS
+
+set +e
+FAKE_XCODEBUILD_LOG="$WORK_DIR/ipad-missing-xcodebuild.log" \
+FAKE_DESTINATIONS_FILE="$WORK_DIR/phone-only-destinations.txt" \
+PATH="$FAKE_BIN:$PATH" \
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" \
+  bash "$GATE" unit > "$WORK_DIR/ipad-missing.out" 2> "$WORK_DIR/ipad-missing.err"
+missing_status=$?
+set -e
+if [ "$missing_status" -eq 0 ]; then
+  echo "Expected iPad destination resolution to fail when only iPhone simulators are available"
+  exit 1
+fi
+assert_contains "$WORK_DIR/ipad-missing.err" "No usable ipad simulator destination was found."
+assert_not_contains "$WORK_DIR/ipad-missing-xcodebuild.log" "IPHONE-FALLBACK-ID"
 
 bash "$GATE" --dry-run build > "$WORK_DIR/build.out"
 assert_contains "$WORK_DIR/build.out" "xcodegen generate --spec"
@@ -66,17 +130,69 @@ assert_contains "$WORK_DIR/ui-smoke.out" "-only-testing:ScrollDownSportsUITests/
 
 bash "$GATE" --dry-run visual > "$WORK_DIR/visual.out"
 assert_contains "$WORK_DIR/visual.out" ".build/TestResults/Visual.xcresult"
+assert_contains "$WORK_DIR/visual.out" "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2"
 assert_contains "$WORK_DIR/visual.out" "-only-testing:ScrollDownSportsTests/HomeVisualRegressionTests"
 assert_contains "$WORK_DIR/visual.out" "-only-testing:ScrollDownSportsTests/StatSectionSnapshotTests"
+
+TEST_DESTINATION="platform=iOS Simulator,name=iPhone 16,OS=latest" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-phone-override.out"
+assert_contains "$WORK_DIR/visual-phone-override.out" "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2"
+assert_not_contains "$WORK_DIR/visual-phone-override.out" "iPhone 16,OS=latest"
+
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-ipad-override.out"
+assert_contains "$WORK_DIR/visual-ipad-override.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+
+set +e
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Air 13-inch (M3),OS=26.2" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-ipad-wrong-device.out" 2> "$WORK_DIR/visual-ipad-wrong-device.err"
+wrong_visual_status=$?
+set -e
+if [ "$wrong_visual_status" -eq 0 ]; then
+  echo "Expected noncanonical iPad visual destination to fail"
+  exit 1
+fi
+assert_contains "$WORK_DIR/visual-ipad-wrong-device.err" "iPad visual runs require the pinned destination"
 
 bash "$GATE" --dry-run accessibility > "$WORK_DIR/accessibility.out"
 assert_contains "$WORK_DIR/accessibility.out" ".build/TestResults/Accessibility.xcresult"
 assert_contains "$WORK_DIR/accessibility.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests"
 
+bash "$GATE" --dry-run multitasking > "$WORK_DIR/multitasking.out"
+assert_contains "$WORK_DIR/multitasking.out" "Scripts/check_multitasking_project_invariants.rb"
+
+bash "$GATE" --dry-run ipad-ui-smoke > "$WORK_DIR/ipad-ui-smoke.out"
+assert_contains "$WORK_DIR/ipad-ui-smoke.out" ".build/TestResults/IPadUISmoke.xcresult"
+assert_contains "$WORK_DIR/ipad-ui-smoke.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-ui-smoke.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests"
+
+set +e
+TEST_DESTINATION="platform=iOS Simulator,name=iPhone 16,OS=latest" bash "$GATE" --dry-run ipad-ui-smoke > "$WORK_DIR/ipad-ui-smoke-phone.out" 2> "$WORK_DIR/ipad-ui-smoke-phone.err"
+wrong_ipad_smoke_status=$?
+set -e
+if [ "$wrong_ipad_smoke_status" -eq 0 ]; then
+  echo "Expected iPad UI smoke gate to reject an iPhone destination"
+  exit 1
+fi
+assert_contains "$WORK_DIR/ipad-ui-smoke-phone.err" "iPad gate requires an iPad simulator destination."
+
+bash "$GATE" --dry-run ipad-visual > "$WORK_DIR/ipad-visual.out"
+assert_contains "$WORK_DIR/ipad-visual.out" ".build/TestResults/IPadVisual.xcresult"
+assert_contains "$WORK_DIR/ipad-visual.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-visual.out" "-only-testing:ScrollDownSportsTests/HomeVisualRegressionTests"
+
+bash "$GATE" --dry-run ipad-accessibility > "$WORK_DIR/ipad-accessibility.out"
+assert_contains "$WORK_DIR/ipad-accessibility.out" ".build/TestResults/IPadAccessibility.xcresult"
+assert_contains "$WORK_DIR/ipad-accessibility.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-accessibility.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests"
+
+bash "$GATE" --dry-run ipad-multitasking > "$WORK_DIR/ipad-multitasking.out"
+assert_contains "$WORK_DIR/ipad-multitasking.out" "Scripts/check_multitasking_project_invariants.rb"
+
 bash "$GATE" --dry-run performance-smoke > "$WORK_DIR/performance.out"
 assert_contains "$WORK_DIR/performance.out" ".build/TestResults/PerformanceSmoke.xcresult"
 assert_contains "$WORK_DIR/performance.out" "-only-testing:ScrollDownSportsTests/PerformanceSmokeTests"
 assert_contains "$WORK_DIR/performance.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests"
+
+bash "$GATE" --dry-run script-checks > "$WORK_DIR/script-checks.out"
+assert_contains "$WORK_DIR/script-checks.out" "Scripts/check_multitasking_project_invariants.rb"
 
 bash "$GATE" --dry-run clean-artifacts > "$WORK_DIR/clean.out"
 assert_contains "$WORK_DIR/clean.out" ".build/DerivedData"

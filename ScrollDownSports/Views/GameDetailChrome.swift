@@ -163,21 +163,75 @@ struct DetailRefreshErrorBanner: View {
     }
 }
 
+struct DetailLoadErrorState: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                "Unable to load game",
+                systemImage: "wifi.exclamationmark",
+                description: Text(message)
+            )
+
+            Button {
+                SportsFeedback.impact()
+                retry()
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.sportsControl(tone: .critical, compact: false))
+            .accessibilityIdentifier("detail.retry")
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("detail.loadError")
+    }
+}
+
 struct ResumeBanner: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.sportsLayoutMetrics) private var layout
+
+    @State private var showStartOverConfirmation = false
+
     let description: String
     let onResume: () -> Void
     let onJumpLatest: () -> Void
     let onStartOver: () -> Void
 
     var body: some View {
+        let density = DetailChromeDensity.resolve(
+            dynamicTypeSize: dynamicTypeSize,
+            availableWidth: layout.detailContentWidth,
+            contentWeight: contentWeight
+        )
+
+        Group {
+            switch density {
+            case .regular:
+                inlineLayout(descriptionLineLimit: nil)
+            case .compact:
+                inlineLayout(descriptionLineLimit: 2)
+            case .stacked:
+                stackedLayout
+            case .accessibility:
+                accessibilityLayout
+            }
+        }
+        .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func inlineLayout(descriptionLineLimit: Int?) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: "bookmark.fill")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+            resumeIcon
 
             Text(description)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.ink)
+                .lineLimit(descriptionLineLimit)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("detail.resumeBanner")
 
@@ -191,144 +245,141 @@ struct ResumeBanner: View {
             }
             .accessibilityIdentifier("detail.resume")
             .buttonStyle(.sportsControl(tone: .newPlay, filled: true, compact: true))
+            .frame(minHeight: 44)
 
-            Menu {
+            resumeOverflowMenu(iconOnly: true)
+        }
+    }
+
+    private var stackedLayout: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .top, spacing: 8) {
+                resumeIcon
+
+                Text(description)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("detail.resumeBanner")
+            }
+
+            HStack(spacing: 8) {
+                resumeButton(compact: false)
+                    .frame(maxWidth: .infinity)
+
+                resumeOverflowMenu(iconOnly: false)
+            }
+        }
+    }
+
+    private var accessibilityLayout: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                resumeIcon
+
+                Text(description)
+                    .font(SportsTheme.Typography.metadata)
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("detail.resumeBanner")
+            }
+
+            resumeButton(compact: false)
+                .frame(maxWidth: .infinity)
+
+            HStack(spacing: 8) {
                 Button {
                     SportsFeedback.impact()
                     onJumpLatest()
                 } label: {
                     Label("Jump latest", systemImage: "arrow.down.to.line")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.sportsControl(tone: .newPlay, compact: false))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .accessibilityLabel("Jump to latest")
+                .accessibilityIdentifier("detail.jumpEnd")
 
-                Button(role: .destructive) {
-                    SportsFeedback.selection()
-                    onStartOver()
-                } label: {
-                    Label("Start over", systemImage: "restart")
-                }
+                resumeOverflowMenu(iconOnly: false)
+            }
+        }
+    }
+
+    private var resumeIcon: some View {
+        Image(systemName: "bookmark.fill")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+            .frame(width: 18, height: 18)
+    }
+
+    private func resumeButton(compact: Bool) -> some View {
+        Button {
+            SportsFeedback.impact()
+            onResume()
+        } label: {
+            Text("Resume")
+                .frame(maxWidth: compact ? nil : .infinity)
+        }
+        .accessibilityIdentifier("detail.resume")
+        .buttonStyle(.sportsControl(tone: .newPlay, filled: true, compact: compact))
+        .frame(minHeight: 44)
+    }
+
+    private func resumeOverflowMenu(iconOnly: Bool) -> some View {
+        Menu {
+            Button {
+                SportsFeedback.impact()
+                onJumpLatest()
             } label: {
+                Label("Jump latest", systemImage: "arrow.down.to.line")
+            }
+
+            Button(role: .destructive) {
+                SportsFeedback.selection()
+                showStartOverConfirmation = true
+            } label: {
+                Label("Start over", systemImage: "restart")
+            }
+        } label: {
+            if iconOnly {
                 Image(systemName: "ellipsis")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
-            }
-            .accessibilityLabel("More resume actions")
-            .accessibilityIdentifier("detail.jumpEnd")
-        }
-        .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-struct DetailStickyNavigationBar: View {
-    let title: String
-    let endLabel: String
-    let returnLabel: String?
-    let onTop: () -> Void
-    let onEnd: () -> Void
-    let onReturn: () -> Void
-
-    var body: some View {
-        HStack(spacing: 7) {
-            if let returnLabel {
-                Button {
-                    SportsFeedback.impact()
-                    onReturn()
-                } label: {
-                    Text(returnLabel)
-                        .lineLimit(1)
-                }
-                .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: true))
-                .accessibilityIdentifier("detail.stickyNav.return")
             } else {
-                if AppEnvironment.isRunningUITests {
-                    Color.clear
-                        .frame(width: 1, height: 1)
-                        .accessibilityHidden(true)
-                } else {
-                    Text(title)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(SportsTheme.Colors.textOnFill)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(SportsTheme.Colors.ink, in: Capsule())
-                        .accessibilityHidden(true)
-                }
-
-                Spacer(minLength: 0)
-
-                Button {
-                    SportsFeedback.selection()
-                    onTop()
-                } label: {
-                    Text("Top")
-                }
-                .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: true))
-                .accessibilityIdentifier("detail.stickyNav.top")
+                Label("More", systemImage: "ellipsis")
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
             }
-
-            Spacer(minLength: 0)
-
-            Button {
-                SportsFeedback.selection()
-                onEnd()
-            } label: {
-                Text(endLabel)
+        }
+        .buttonStyle(.sportsControl(tone: .newPlay, compact: false))
+        .frame(minHeight: 44)
+        .accessibilityLabel("More resume actions")
+        .accessibilityIdentifier("detail.resume.more")
+        .confirmationDialog(
+            "Start over?",
+            isPresented: $showStartOverConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Start Over", role: .destructive) {
+                onStartOver()
             }
-            .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: true))
-            .accessibilityIdentifier("detail.stickyNav.end")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(SportsTheme.Colors.paperRaised, in: Capsule())
-        .overlay {
-            Capsule().strokeBorder(SportsTheme.Colors.hairline.opacity(0.7), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
-        .overlay(alignment: .topLeading) {
-            Color.clear
-                .frame(width: 44, height: 44)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(title)
-                .accessibilityIdentifier("detail.stickyNav")
+            Button("Keep Saved Position", role: .cancel) {}
+        } message: {
+            Text("This clears your saved play position for this game, but keeps the game pinned and keeps scoreboard progress.")
         }
     }
-}
 
-struct NewPlaysAffordance: View {
-    let count: Int
-    let onJumpLatest: () -> Void
-
-    var body: some View {
-        Button {
-            SportsFeedback.impact()
-            onJumpLatest()
-        } label: {
-            HStack(spacing: 7) {
-                Text(count == 1 ? "1 new" : "\(count) new")
-                    .font(SportsTheme.Typography.metadata)
-                Text("·")
-                    .font(SportsTheme.Typography.metadata)
-                    .opacity(0.8)
-                    .accessibilityHidden(true)
-                Text("jump latest")
-                    .font(SportsTheme.Typography.metadata)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
-                    .fill(SportsTheme.Tone.newPlay.accent)
-            )
-            .shadow(color: .black.opacity(0.14), radius: 6, y: 2)
+    private var contentWeight: CGFloat {
+        var weight: CGFloat = 1
+        if description.count > 24 {
+            weight += 0.20
         }
-        .buttonStyle(.plain)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .accessibilityLabel(count == 1 ? "1 new play. Jump to latest" : "\(count) new plays. Jump to latest")
-        .accessibilityIdentifier("detail.newPlaysAffordance")
+        if description.count > 40 {
+            weight += 0.35
+        }
+        return weight
     }
 }

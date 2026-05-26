@@ -26,6 +26,7 @@ Scripts/local_gate.sh coverage
 Scripts/local_gate.sh ui-smoke
 Scripts/local_gate.sh visual
 Scripts/local_gate.sh accessibility
+Scripts/local_gate.sh multitasking
 Scripts/local_gate.sh performance-smoke
 ```
 

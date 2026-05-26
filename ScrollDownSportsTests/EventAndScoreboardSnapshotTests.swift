@@ -110,6 +110,28 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testScoreboardContentWideWidthKeepsRowsDense() {
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 14) {
+                ScoreboardContent(presentation: ComponentSnapshotFixtures.segmentScoreboard(periodCount: 4))
+                Divider()
+                ScoreboardContent(presentation: ComponentSnapshotFixtures.segmentScoreboard(periodCount: 8))
+                Divider()
+                ScoreboardContent(presentation: ComponentSnapshotFixtures.simpleTotalScoreboard())
+                Divider()
+                ScoreboardContent(presentation: ComponentSnapshotFixtures.leaderboardScoreboard())
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paperRaised, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card))
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "scoreboard-layouts-wide",
+            width: .tabletReadable,
+            height: 560,
+            device: .iPad11Portrait
+        )
+    }
+
     func testScoreboardAndEventHierarchyTogether() {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
@@ -129,6 +151,28 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             named: "event-scoreboard-hierarchy",
             width: .standard,
             height: 310
+        )
+    }
+
+    func testReadableDetailPlayStreamOnIPadLandscape() {
+        let detail = VisualRegressionFixtures.detail()
+
+        assertSwiftUISnapshot(
+            of: PlayByPlaySection(
+                game: detail.game,
+                events: detail.events,
+                renderer: SportRendererRegistry.renderer(for: detail.game),
+                selectedMode: .full,
+                expandedRawFeedKeys: [],
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset)
+            .padding(.vertical, 14)
+            .background(SportsTheme.Colors.paper),
+            named: "readable-detail-play-stream",
+            width: .iPad11LandscapeFull,
+            height: 720,
+            device: .iPad11Landscape
         )
     }
 }
