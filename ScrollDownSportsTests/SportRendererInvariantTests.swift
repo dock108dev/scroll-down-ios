@@ -75,8 +75,9 @@ final class SportRendererInvariantTests: XCTestCase {
 
         let stats = SportRendererRegistry.renderer(for: game).statsPresentation(for: detail)
 
-        XCTAssertEqual(stats.playerSections.map(\.id), ["baseball-player-stats"])
-        XCTAssertEqual(stats.playerSections.first?.tables.map(\.id), ["baseball-batters", "baseball-pitchers"])
+        XCTAssertEqual(stats.playerSections.map(\.id), ["baseball-batter-stats", "baseball-pitcher-stats"])
+        XCTAssertEqual(stats.playerSections.map(\.title), ["Batters", "Pitchers"])
+        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["baseball-batters", "baseball-pitchers"])
     }
 
     func testHockeyRendererRoutesToSkaterAndGoalieTables() {
@@ -118,8 +119,9 @@ final class SportRendererInvariantTests: XCTestCase {
 
         let stats = SportRendererRegistry.renderer(for: game).statsPresentation(for: detail)
 
-        XCTAssertEqual(stats.playerSections.map(\.id), ["hockey-player-stats"])
-        XCTAssertEqual(stats.playerSections.first?.tables.map(\.id), ["hockey-skaters", "hockey-goalies"])
+        XCTAssertEqual(stats.playerSections.map(\.id), ["hockey-skater-stats", "hockey-goalie-stats"])
+        XCTAssertEqual(stats.playerSections.map(\.title), ["Skaters", "Goalies"])
+        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["hockey-skaters", "hockey-goalies"])
     }
 
     func testStatFormattingCoversImpactLimitsMissingValuesPercentagesAndSportLabels() {
@@ -203,7 +205,7 @@ final class SportRendererInvariantTests: XCTestCase {
         let scoreboard = BaseballRenderer().scoreboardPresentation(for: game)
 
         XCTAssertEqual(stats.playerSections[0].tables[0].rows[0].values["team"], "BAL")
-        XCTAssertEqual(stats.playerSections[0].tables[1].rows[0].values["team"], "SEA")
+        XCTAssertEqual(stats.playerSections[1].tables[0].rows[0].values["team"], "SEA")
         XCTAssertEqual(scoreboard.rows[0].title, "Baltimore Orioles")
         XCTAssertEqual(scoreboard.rows[0].abbreviation, "BAL")
         XCTAssertFalse(scoreboard.rows.map(\.title).joined(separator: " ").contains("Baltimo..."))

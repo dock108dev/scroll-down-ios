@@ -54,12 +54,14 @@ final class SportsThemeTests: XCTestCase {
 
         let sections = SportRendererRegistry.renderer(for: detail.game).statsPresentation(for: detail).playerSections
 
-        XCTAssertEqual(sections.count, 1)
+        XCTAssertEqual(sections.count, 2)
         XCTAssertEqual(sections[0].highlights.first?.title, "Example Batter")
         XCTAssertEqual(sections[0].highlights.first?.headline, "2-for-4, 1 HR, 3 RBI")
-        XCTAssertEqual(sections[0].tables.map(\.title), ["Batters", "Pitchers"])
+        XCTAssertEqual(sections.map(\.title), ["Batters", "Pitchers"])
+        XCTAssertEqual(sections[0].tables.map(\.title), ["Batters"])
+        XCTAssertEqual(sections[1].tables.map(\.title), ["Pitchers"])
         XCTAssertEqual(sections[0].tables[0].columns.map(\.label), ["Player", "Team", "Pos", "AB", "H", "R", "RBI", "HR", "BB", "K"])
-        XCTAssertEqual(sections[0].tables[1].rows[0].values["ip"], "6.0")
+        XCTAssertEqual(sections[1].tables[0].rows[0].values["ip"], "6.0")
         XCTAssertTrue(sections[0].cards.isEmpty)
     }
 
@@ -143,12 +145,13 @@ final class SportsThemeTests: XCTestCase {
             ]
         )
 
-        let section = SportRendererRegistry.renderer(for: detail.game).statsPresentation(for: detail).playerSections[0]
+        let sections = SportRendererRegistry.renderer(for: detail.game).statsPresentation(for: detail).playerSections
 
-        XCTAssertEqual(section.highlights.map(\.title), ["A. Nolan", "B. Cross"])
-        XCTAssertEqual(section.tables.map(\.title), ["Skaters", "Goalies"])
-        XCTAssertEqual(section.tables[1].columns.map(\.label), ["Player", "Team", "SV", "GA", "SV%"])
-        XCTAssertEqual(section.tables[1].rows[0].values["svp"], ".944")
+        XCTAssertEqual(sections.count, 2)
+        XCTAssertEqual(sections.flatMap { $0.highlights.map(\.title) }, ["A. Nolan", "B. Cross"])
+        XCTAssertEqual(sections.map(\.title), ["Skaters", "Goalies"])
+        XCTAssertEqual(sections[1].tables[0].columns.map(\.label), ["Player", "Team", "SV", "GA", "SV%"])
+        XCTAssertEqual(sections[1].tables[0].rows[0].values["svp"], ".944")
     }
 
     func testTeamStatsUseHighlightsAndCompactTable() {
@@ -184,9 +187,13 @@ final class SportsThemeTests: XCTestCase {
 
         let section = SportRendererRegistry.renderer(for: detail.game).statsPresentation(for: detail).teamSection
 
-        XCTAssertEqual(section.highlights.map(\.title), ["Away", "Home"])
-        XCTAssertEqual(section.highlights[0].headline, "H 9, E 1")
-        XCTAssertEqual(section.tables[0].columns.map(\.label), ["Team", "Side", "H", "E"])
+        XCTAssertEqual(section.highlights.map(\.title), [])
+        XCTAssertEqual(section.comparison?.columns.map(\.title), ["AWA", "HOM"])
+        XCTAssertEqual(section.comparison?.columns.map(\.subtitle), ["Away", "Home"])
+        XCTAssertEqual(section.comparison?.rows.map(\.label), ["H", "E"])
+        XCTAssertEqual(section.comparison?.rows[0].values["Away-false-0"], "9")
+        XCTAssertEqual(section.comparison?.rows[0].values["Home-true-1"], "6")
+        XCTAssertTrue(section.tables.isEmpty)
         XCTAssertTrue(section.cards.isEmpty)
     }
 

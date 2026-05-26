@@ -284,44 +284,6 @@ extension StatPresentationBuilder {
         }
     }
 
-    static func baseballImpactPlayers(
-        batters: [ScoredBatter],
-        pitchers: [ScoredPitcher]
-    ) -> [StatHighlightPresentation] {
-        let sortedBatters = batters.filter { $0.score > 0 }.sorted(by: sortScoredBatters)
-        let sortedPitchers = pitchers.filter { $0.score > 0 }.sorted(by: sortScoredPitchers)
-        let batterHighlights = sortedBatters.map { scored in
-            StatHighlightPresentation(
-                id: scored.player.id,
-                rank: nil,
-                title: scored.player.playerName,
-                subtitle: [scored.player.team, scored.player.position].compactMap(\.self).joined(separator: " "),
-                headline: batterHeadline(for: scored.player),
-                stats: batterCells(for: scored.player).prefix(3).map { $0 },
-                accentTone: .scoring
-            )
-        }
-        let pitcherHighlights = sortedPitchers.map { scored in
-            StatHighlightPresentation(
-                id: scored.player.id,
-                rank: nil,
-                title: scored.player.playerName,
-                subtitle: "\(scored.player.team) Pitcher",
-                headline: pitcherHeadline(for: scored.player),
-                stats: pitcherCells(for: scored.player).prefix(3).map { $0 },
-                accentTone: .defensivePitching
-            )
-        }
-
-        var selected = mergeHighlights(
-            batterHighlights.map { ($0, scoreForBatter(id: $0.id, in: sortedBatters)) },
-            pitcherHighlights.map { ($0, scoreForPitcher(id: $0.id, in: sortedPitchers)) }
-        )
-        includeDiverseHighlight(&selected, candidate: pitcherHighlights.first, score: sortedPitchers.first?.score ?? 0)
-        includeDiverseHighlight(&selected, candidate: batterHighlights.first, score: sortedBatters.first?.score ?? 0)
-        return ranked(selected)
-    }
-
     static func baseballBatterHighlights(from batters: [ScoredBatter]) -> [StatHighlightPresentation] {
         ranked(
             batters
@@ -366,46 +328,6 @@ extension StatPresentationBuilder {
                     )
                 }
         )
-    }
-
-    static func hockeyImpactPlayers(
-        skaters: [ScoredNHLPlayer],
-        goalies: [ScoredNHLPlayer]
-    ) -> [StatHighlightPresentation] {
-        let skaterHighlights = skaters.filter { $0.score > 0 }.sorted(by: sortScoredNHLPlayers).map { scored in
-            StatHighlightPresentation(
-                id: "\(scored.player.id)-skater",
-                rank: nil,
-                title: scored.player.playerName,
-                subtitle: "\(scored.player.team) Skater",
-                headline: skaterHeadline(for: scored.player),
-                stats: skaterCells(for: scored.player).prefix(3).map { $0 },
-                accentTone: .scoring
-            )
-        }
-        let goalieHighlights = goalies.filter { $0.score > 0 }.sorted(by: sortScoredNHLPlayers).map { scored in
-            StatHighlightPresentation(
-                id: "\(scored.player.id)-goalie",
-                rank: nil,
-                title: scored.player.playerName,
-                subtitle: "\(scored.player.team) Goalie",
-                headline: goalieHeadline(for: scored.player),
-                stats: goalieCells(for: scored.player).prefix(3).map { $0 },
-                accentTone: .defensivePitching
-            )
-        }
-
-        var selected = mergeHighlights(
-            skaterHighlights.map { ($0, scoreForNHL(id: $0.id, in: skaters, suffix: "-skater")) },
-            goalieHighlights.map { ($0, scoreForNHL(id: $0.id, in: goalies, suffix: "-goalie")) }
-        )
-        if selected.allSatisfy({ !$0.0.id.hasSuffix("-goalie") }),
-           let goalie = goalieHighlights.first,
-           let bestGoalie = goalies.sorted(by: sortScoredNHLPlayers).first,
-           bestGoalie.score >= 6 {
-            replaceLast(&selected, with: (goalie, bestGoalie.score))
-        }
-        return ranked(selected)
     }
 
     static func hockeySkaterHighlights(from skaters: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {

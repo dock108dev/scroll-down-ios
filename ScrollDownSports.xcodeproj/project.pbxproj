@@ -70,6 +70,7 @@
 		48AF5195D02BFF090DFB8F29 /* StatTablePresentationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD239E317A6E32FE4BDF5AD8 /* StatTablePresentationBuilder.swift */; };
 		4906452CD32291C94D550BF9 /* SDAFixturePayloadFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19F5DF475C3FFB1CF2A264 /* SDAFixturePayloadFactory.swift */; };
 		4BADAD9B539944C06073D62D /* EventLabelResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257B975325762495AAB934D /* EventLabelResolver.swift */; };
+		4DED4BC59EF17A8C7595B25A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = D91C5AD565D8764E0275753A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png */; };
 		4F0F77EFC09A4B07E65E1F2D /* full_mobile_presentation.json in Resources */ = {isa = PBXBuildFile; fileRef = 36C6ABB4EC030652FB860DF2 /* full_mobile_presentation.json */; };
 		555382865FFC72EEA90687C7 /* missing_mode_eligibility.json in Resources */ = {isa = PBXBuildFile; fileRef = 4682BFBEBA85CCBB1D405DE4 /* missing_mode_eligibility.json */; };
 		55D38F07B4BD405090B2943C /* scheduled_real_teams.json in Resources */ = {isa = PBXBuildFile; fileRef = BFD4C3015C118FEE02AB11EF /* scheduled_real_teams.json */; };
@@ -375,6 +376,7 @@
 		D7F3B23236B4419F1B85F9EF /* testStreamControlBarModesAndAffordances.stream-control-affordances-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testStreamControlBarModesAndAffordances.stream-control-affordances-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		D8540864CA9E32111240E0BD /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
 		D90FA7D223732E6E537B9577 /* GameStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStateStore.swift; sourceTree = "<group>"; };
+		D91C5AD565D8764E0275753A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		DA3038ED1F59DD920F05E7EB /* mlb_inning_line_score.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_inning_line_score.json; sourceTree = "<group>"; };
 		DA4EAEDB20CEA427902CA8CD /* GameWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWindow.swift; sourceTree = "<group>"; };
 		DAE297C6548C97A971B330FF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -693,6 +695,7 @@
 				0668AD18CD724A96016EBB11 /* testDetailTopControlsAccessibilityDynamicTypeCompactWidth.detail-top-controls-accessibility-compact-standard-phoneCompact-light-accessibility3.png */,
 				148A8FFE8D0634A4350E0FE3 /* testDetailTopControlsWideAccessibilityPressure.detail-top-controls-wide-accessibility-tabletReadable-iPad11Portrait-light-accessibility4.png */,
 				189416934E02162FF5BF4883 /* testHeaderLiveNewAndFinalCatchUpStates.header-live-new-final-catch-up-standard-phoneCompact-light-medium.png */,
+				D91C5AD565D8764E0275753A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png */,
 				2908F5CFD176001802F2661A /* testReadableDetailTopChromeOnIPadPortrait.readable-detail-top-chrome-iPad11Full-iPad11Portrait-light-medium.png */,
 				2B279E9AED9051C839296D01 /* testResumeBannerCopyAndCompactLayout.resume-copy-compact-compact-phoneCompact-light-medium.png */,
 				A05E222AA3D0771DF4FE68A6 /* testScorelessScheduledHeader.header-scoreless-preview-standard-phoneCompact-light-medium.png */,
@@ -1028,6 +1031,7 @@
 				EB8AE5AE8A13AF4537A0AB49 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png in Resources */,
 				D137A9876DF90F636A8FAB72 /* testPinnedSectionEmptyStateHasNoPlaceholderRows.pinned-empty-no-placeholder-standard-phoneCompact-light-medium.png in Resources */,
 				DE4EBE97BDC13C930ECECFD2 /* testPinnedSectionWithRealPinnedGames.pinned-real-games-standard-phoneCompact-light-medium.png in Resources */,
+				4DED4BC59EF17A8C7595B25A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png in Resources */,
 				774D498F1AB3F0534D9F4743 /* testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png in Resources */,
 				6CECCAD3BA0963DA30E55AC0 /* testPlayRowsCoverImportanceScoringAndRawFeedStates.play-row-importance-states-standard-phoneCompact-light-medium.png in Resources */,
 				C8F394D57F67591F8FE1E834 /* testPlayerAndTeamSectionsExpandedAndCollapsed.player-team-expanded-collapsed-standard-phoneCompact-light-medium.png in Resources */,

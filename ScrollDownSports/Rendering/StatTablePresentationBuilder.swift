@@ -114,46 +114,6 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "hockey-goalies", title: "Goalies", columns: columns, rows: rows)
     }
 
-    static func teamStatTable(for teams: [TeamStat]) -> StatTablePresentation {
-        let teamItems = teams.map { ($0, compactTeamItems($0)) }
-        let statKeys = teamItems.flatMap(\.1).reduce(into: [String]()) { keys, item in
-            guard !keys.contains(item.key) else { return }
-            keys.append(item.key)
-        }.prefix(8)
-        let columns = [
-            tableColumn("team", "Team", width: 132, alignment: .leading),
-            tableColumn("side", "Side", width: 54, alignment: .leading)
-        ] + statKeys.map { key in
-            let label = teamItems.flatMap(\.1).first(where: { $0.key == key })?.label ?? key.camelTitle
-            return tableColumn(key, label, width: max(46, CGFloat(min(72, max(2, label.count) * 8))))
-        }
-        let rows = teamItems.enumerated().map { index, pair in
-            let (team, items) = pair
-            var values = ["team": team.team, "side": team.isHome ? "Home" : "Away"]
-            statKeys.forEach { key in
-                values[key] = items.first(where: { $0.key == key })?.value ?? "-"
-            }
-            return StatTableRowPresentation(id: "\(team.id)-\(index)", values: values)
-        }
-        return StatTablePresentation(id: "team-stats-table", title: "Full Team Stats", columns: columns, rows: rows)
-    }
-
-    static func teamHighlight(for team: TeamStat) -> StatHighlightPresentation {
-        let items = compactTeamItems(team).prefix(3).map {
-            StatPillPresentation(label: $0.label, value: $0.value)
-        }
-        let headline = items.prefix(2).map { "\($0.label) \($0.value)" }.joined(separator: ", ")
-        return StatHighlightPresentation(
-            id: team.id,
-            rank: nil,
-            title: team.team,
-            subtitle: team.isHome ? "Home" : "Away",
-            headline: headline.isEmpty ? "Team totals available" : headline,
-            stats: items,
-            accentTone: .neutral
-        )
-    }
-
     static func shortTeamCode(_ name: String) -> String {
         String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
     }

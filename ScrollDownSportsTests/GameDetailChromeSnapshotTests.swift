@@ -65,6 +65,44 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testPlaceholderErrorAndFallbackChromeStates() {
+        let fallbackGame = ComponentSnapshotFixtures.game(
+            id: 4_109,
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            awayName: "Lakeside United",
+            awayAbbreviation: nil,
+            homeName: "Harbor City",
+            homeAbbreviation: nil,
+            hasTimeline: false,
+            hasScoreboard: false,
+            presentation: ComponentSnapshotFixtures.previewPresentation()
+        )
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                GameHeaderView(
+                    game: fallbackGame,
+                    renderer: SportRendererRegistry.renderer(for: fallbackGame),
+                    isPinned: false,
+                    newPlayCount: 0
+                )
+                GameHeaderPlaceholder(
+                    summary: fallbackGame,
+                    renderer: SportRendererRegistry.renderer(for: fallbackGame)
+                )
+                DetailRefreshErrorBanner(message: "Could not reach the data service.") {}
+                DetailLoadErrorState(message: "Could not reach the data service.") {}
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "placeholder-error-fallback-chrome",
+            width: .standard,
+            height: 620
+        )
+    }
+
     func testResumeBannerCopyAndCompactLayout() {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
