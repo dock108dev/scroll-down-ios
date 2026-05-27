@@ -52,6 +52,29 @@ final class SituationDiagramLayoutSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testRichReservedSportDiagramRowsStandardWidth() {
+        assertSwiftUISnapshot(
+            of: Self.richReservedSportDiagramRows()
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "rich-reserved-sport-diagrams-standard",
+            width: .standard,
+            height: 760
+        )
+    }
+
+    func testRichReservedSportDiagramRowsAccessibilityWidth() {
+        assertSwiftUISnapshot(
+            of: Self.richReservedSportDiagramRows()
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "rich-reserved-sport-diagrams-accessibility",
+            width: .standard,
+            height: 1120,
+            dynamicTypeSize: .accessibility3
+        )
+    }
+
     private static func situationRows() -> some View {
         VStack(spacing: 12) {
             PlayRow(
@@ -68,6 +91,17 @@ final class SituationDiagramLayoutSnapshotTests: SnapshotTestCase {
                 isRawFeedExpanded: false,
                 onRawFeedExpansionChange: { _, _ in }
             )
+        }
+    }
+
+    private static func richReservedSportDiagramRows() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SituationSummaryPanel(situation: footballSituation())
+            ForEach(Array(hockeySituations().enumerated()), id: \.offset) { _, situation in
+                SituationSummaryPanel(situation: situation)
+            }
+            SituationSummaryPanel(situation: basketballSituationPanel())
+            SituationSummaryPanel(situation: soccerSituationPanel())
         }
     }
 
@@ -172,6 +206,141 @@ final class SituationDiagramLayoutSnapshotTests: SnapshotTestCase {
                 tone: .critical
             ),
             dataConfidence: .explicitGenericEventContext
+        )
+    }
+
+    private static func footballSituation() -> GameEventSituationPresentation {
+        let ownership = GameEventSituationOwnership(
+            role: .possession,
+            participantRole: .home,
+            teamAbbreviation: "BAY",
+            teamLabel: "Bay Harbor Lights",
+            confidence: .explicit
+        )
+        return GameEventSituationPresentation(
+            title: "Field position",
+            periodText: "Q4 01:42",
+            setupText: "3rd & 4 at OPP 18",
+            contextLine: "Red-zone possession",
+            pressureLine: "Goal-line pressure",
+            sport: .football,
+            layout: .football,
+            ownership: ownership,
+            diagram: .footballFieldStrip(
+                FootballFieldStripDiagram(
+                    downDistanceText: "3rd & 4",
+                    yardLineText: "OPP 18",
+                    possessionText: "BAY",
+                    lineOfScrimmageX: 82,
+                    firstDownX: 86,
+                    offenseDirection: .leftToRight,
+                    eventTypeText: "Pass",
+                    isRedZone: true
+                )
+            ),
+            accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "BAY", teamLabel: "Bay Harbor Lights", tone: .critical),
+            dataConfidence: .explicitPreEvent
+        )
+    }
+
+    private static func hockeySituations() -> [GameEventSituationPresentation] {
+        let variants: [(HockeyRinkZone, HockeyPuckLocation, String)] = [
+            (.offensive, .slot, "SEA"),
+            (.neutral, .highSlot, "SEA"),
+            (.defensive, .leftCircle, "VAN"),
+            (.offensive, .rightCircle, "SEA"),
+            (.neutral, .point, "SEA"),
+            (.defensive, .crease, "VAN"),
+            (.offensive, .behindNet, "SEA")
+        ]
+        return variants.enumerated().map { index, variant in
+            GameEventSituationPresentation(
+                title: "Rink pressure",
+                periodText: "P3 02:1\(index)",
+                setupText: variant.0.label,
+                contextLine: "Sustained possession",
+                pressureLine: "High-danger chance",
+                sport: .hockey,
+                layout: .hockey,
+                ownership: nil,
+                diagram: .hockeyRinkStrip(
+                    HockeyRinkStripDiagram(
+                        zone: variant.0,
+                        puckLocation: variant.1,
+                        attackingTeamAbbreviation: variant.2
+                    )
+                ),
+                accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: variant.2, teamLabel: nil, tone: .critical),
+                dataConfidence: .explicitPreEvent
+            )
+        }
+    }
+
+    private static func basketballSituationPanel() -> GameEventSituationPresentation {
+        let ownership = GameEventSituationOwnership(
+            role: .possession,
+            participantRole: .home,
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle",
+            confidence: .explicit
+        )
+        return GameEventSituationPresentation(
+            title: "Clock pressure",
+            periodText: "Q4 00:42",
+            setupText: "6 on clock · Right corner",
+            contextLine: "Down 2",
+            pressureLine: "Late clock",
+            sport: .basketball,
+            layout: .basketball,
+            ownership: ownership,
+            diagram: .basketballHalfCourt(
+                BasketballHalfCourtDiagram(
+                    possessionText: "SEA ball",
+                    clockText: "Q4 00:42",
+                    shotClockText: "6",
+                    scoreText: "Down 2",
+                    bonusText: "In bonus",
+                    shotText: "3PT made",
+                    locationText: "Right corner",
+                    freeThrowText: nil,
+                    shotLocation: BasketballDiagramShotLocation(x: 0.82, y: 0.32, label: "Right corner"),
+                    pressure: 0.74
+                )
+            ),
+            accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .critical),
+            dataConfidence: .explicitPreEvent
+        )
+    }
+
+    private static func soccerSituationPanel() -> GameEventSituationPresentation {
+        let ownership = GameEventSituationOwnership(
+            role: .attackingSide,
+            participantRole: .away,
+            teamAbbreviation: "POR",
+            teamLabel: "Portland",
+            confidence: .explicit
+        )
+        return GameEventSituationPresentation(
+            title: "Set piece",
+            periodText: "88'",
+            setupText: "Corner · Left channel",
+            contextLine: "Late equalizer chance",
+            pressureLine: "Box loaded",
+            sport: .soccer,
+            layout: .soccer,
+            ownership: ownership,
+            diagram: .soccerPitchStrip(
+                SoccerPitchStripDiagram(
+                    setPieceText: "Corner",
+                    locationText: "Left channel",
+                    attackingTeamAbbreviation: "POR",
+                    ballX: 0.91,
+                    ballY: 0.18,
+                    highlightsGoalArea: true
+                )
+            ),
+            accent: GameEventSituationAccent(ownership: .away, teamAbbreviation: "POR", teamLabel: "Portland", tone: .critical),
+            dataConfidence: .explicitPreEvent
         )
     }
 

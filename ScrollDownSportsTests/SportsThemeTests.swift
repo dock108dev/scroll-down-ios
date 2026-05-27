@@ -388,6 +388,186 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertEqual(presentation.rows.first?.totalText, "-12")
     }
 
+    func testGenericRendererCoversStatusLayoutsAndLeagueAccentBranches() {
+        let live = TestFixtures.makeGame(
+            id: 7001,
+            leagueCode: "ncaaf",
+            status: "in_progress",
+            isLive: true,
+            periodOrdinal: nil,
+            periodLabel: nil,
+            clockLabel: nil
+        )
+        let scheduled = TestFixtures.makeGame(id: 7002, leagueCode: "wnba", status: "scheduled", isLive: false, isFinal: false)
+        let final = TestFixtures.makeGame(id: 7003, leagueCode: "ncaab", status: "final", isLive: false, isFinal: true)
+        let catchUp = TestFixtures.makeGame(id: 7004, leagueCode: "nfl", status: "delayed", isLive: false, isFinal: false)
+
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "ncaaf").statusText(for: live), "In progress")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "wnba").statusText(for: scheduled), "Scheduled")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "ncaab").statusText(for: final), "Final")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "nfl").statusText(for: catchUp), "Catch up")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "ncaaf").scoreboardPresentation(for: live).stateText, "In progress")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "wnba").scoreboardPresentation(for: scheduled).stateText, "Scheduled")
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "ncaab").scoreboardPresentation(for: final).stateText, "Final")
+
+        for league in ["MLB", "NBA", "WNBA", "NHL", "NFL", "NCAAB", "NCAAF", " "] {
+            _ = UIColor(GenericSportRenderer(leagueCode: league).theme.accentColor)
+        }
+
+        let soccer = makeGame(
+            leagueCode: "mls",
+            scoreboard: GameScoreboardData(
+                layout: "goals_summary",
+                clockLabel: nil,
+                periodLabel: nil,
+                statusLabel: nil,
+                scoreline: nil,
+                competitors: [],
+                segments: [],
+                totals: nil
+            )
+        )
+        let simpleLineScore = makeGame(
+            leagueCode: "nba",
+            scoreboard: GameScoreboardData(
+                layout: "quarter_table",
+                clockLabel: nil,
+                periodLabel: nil,
+                statusLabel: nil,
+                scoreline: nil,
+                competitors: [],
+                segments: [],
+                totals: nil
+            )
+        )
+
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "mls").scoreboardPresentation(for: soccer).layout, .soccerSummary)
+        XCTAssertEqual(GenericSportRenderer(leagueCode: "nba").scoreboardPresentation(for: simpleLineScore).layout, .simpleTotal)
+    }
+
+    func testGenericSituationFallbackCoversSportMappingAndPriorityBranches() {
+        let sportCases: [(String, GameEventSituationSport)] = [
+            ("mlb", .baseball),
+            ("nfl", .football),
+            ("nhl", .hockey),
+            ("nba", .basketball),
+            ("mls", .soccer),
+            ("pga", .golf),
+            ("tennis", .tennis),
+            ("pickleball", .generic)
+        ]
+
+        for (offset, sportCase) in sportCases.enumerated() {
+            let event = genericSituationEvent(
+                sequence: 7200 + offset,
+                importance: .primary,
+                importanceMetadata: EventImportanceData(
+                    level: nil,
+                    rank: 75,
+                    bucket: nil,
+                    reasons: [],
+                    isKeyMoment: true,
+                    isScoringPlay: false,
+                    isLeadChange: false,
+                    isTyingPlay: false,
+                    winProbabilityDelta: nil
+                )
+            )
+            let situation = GenericSportRenderer(leagueCode: sportCase.0)
+                .eventSituationPresentation(for: event, context: genericSituationContext(for: event, leagueCode: sportCase.0))
+
+            XCTAssertEqual(situation?.sport, sportCase.1, sportCase.0)
+            XCTAssertEqual(situation?.layout, .pressureBoardFallback, sportCase.0)
+        }
+
+        let critical = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(
+                sequence: 7210,
+                importance: .secondary,
+                importanceMetadata: EventImportanceData(
+                    level: "primary",
+                    rank: nil,
+                    bucket: nil,
+                    reasons: [],
+                    isKeyMoment: true,
+                    isScoringPlay: false,
+                    isLeadChange: false,
+                    isTyingPlay: false,
+                    winProbabilityDelta: nil
+                )
+            )
+        )
+        let mediumScoring = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(
+                sequence: 7211,
+                importance: .secondary,
+                scoreDelta: ScoreDelta(participantID: "home", participantRole: .home, before: 10, after: 12, change: 2)
+            )
+        )
+        let mediumKey = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(
+                sequence: 7212,
+                importance: .secondary,
+                importanceMetadata: EventImportanceData(
+                    level: nil,
+                    rank: 45,
+                    bucket: nil,
+                    reasons: [],
+                    isKeyMoment: true,
+                    isScoringPlay: false,
+                    isLeadChange: false,
+                    isTyingPlay: false,
+                    winProbabilityDelta: nil
+                )
+            )
+        )
+        let mediumNotable = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(sequence: 7213, importance: .secondary)
+        )
+        let lowScoring = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(
+                sequence: 7214,
+                importance: .contextual,
+                scoreDelta: ScoreDelta(participantID: "home", participantRole: .home, before: 10, after: 13, change: 3)
+            )
+        )
+        let lowKey = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(
+                sequence: 7215,
+                importance: .contextual,
+                importanceMetadata: EventImportanceData(
+                    level: nil,
+                    rank: 55,
+                    bucket: nil,
+                    reasons: [],
+                    isKeyMoment: true,
+                    isScoringPlay: false,
+                    isLeadChange: false,
+                    isTyingPlay: false,
+                    winProbabilityDelta: nil
+                )
+            )
+        )
+        let lowRoutine = genericSituation(
+            leagueCode: "nba",
+            event: genericSituationEvent(sequence: 7216, importance: .contextual)
+        )
+
+        XCTAssertEqual(critical?.accent.tone, .neutral)
+        XCTAssertEqual(mediumScoring?.pressureLine, "Scoring play")
+        XCTAssertEqual(mediumKey?.pressureLine, "Key play")
+        XCTAssertEqual(mediumNotable?.pressureLine, "Notable play")
+        XCTAssertEqual(lowScoring?.pressureLine, "Scoring play")
+        XCTAssertEqual(lowKey?.pressureLine, "Key play")
+        XCTAssertNil(lowRoutine)
+    }
+
     func testSemanticToneInventoryCoversGameAndEventStates() {
         XCTAssertEqual(
             Set(SportsTheme.Tone.allCases),
@@ -437,4 +617,53 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertLessThan(SportsTheme.Background.darkPaperVeilOpacity, SportsTheme.Background.lightPaperVeilOpacity)
     }
 
+}
+
+private extension SportsThemeTests {
+    func genericSituation(
+        leagueCode: String,
+        event: GameEvent
+    ) -> GameEventSituationPresentation? {
+        GenericSportRenderer(leagueCode: leagueCode)
+            .eventSituationPresentation(for: event, context: genericSituationContext(for: event, leagueCode: leagueCode))
+    }
+
+    func genericSituationContext(
+        for event: GameEvent,
+        leagueCode: String
+    ) -> SportRendererSituationContext {
+        let selectedMode: DetailStreamMode
+        if event.eligibleModes.contains(.timeline) {
+            selectedMode = .key
+        } else if event.eligibleModes.contains(.flow) {
+            selectedMode = .flow
+        } else {
+            selectedMode = .full
+        }
+        return SportRendererSituationContext(
+            game: TestFixtures.makeGame(id: 7300 + event.sequence, leagueCode: leagueCode),
+            selectedMode: selectedMode,
+            visibleEvents: [event],
+            eventIndex: 0
+        )
+    }
+
+    func genericSituationEvent(
+        sequence: Int,
+        importance: GameEventImportance,
+        importanceMetadata: EventImportanceData? = nil,
+        scoreDelta: ScoreDelta? = nil
+    ) -> GameEvent {
+        TestFixtures.makeEvent(
+            sequence: sequence,
+            importance: importance,
+            periodLabel: "Q4",
+            clockLabel: "00:42",
+            scoreDelta: scoreDelta,
+            eventType: "Pressure play",
+            importanceMetadata: importanceMetadata,
+            homeScore: scoreDelta?.before ?? 10,
+            awayScore: 10
+        )
+    }
 }

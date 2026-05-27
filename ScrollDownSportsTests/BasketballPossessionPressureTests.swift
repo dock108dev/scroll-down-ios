@@ -134,6 +134,136 @@ final class BasketballPossessionPressureTests: XCTestCase {
         XCTAssertFalse(text.localizedCaseInsensitiveContains("corner"))
     }
 
+    func testFirstClassSnapshotBasketballSituationMergesClockContextAndAliases() {
+        let snapshot = GameEventSituationSnapshot(
+            schemaVersion: 1,
+            sport: "NBA",
+            display: nil,
+            score: nil,
+            period: GameEventSituationPeriod(ordinal: 1, label: "Q1", phase: nil),
+            clock: GameEventSituationClock(label: "07:30", secondsRemaining: 450),
+            possession: nil,
+            sportState: GameEventSituationSportState(
+                baseball: nil,
+                football: nil,
+                hockey: nil,
+                basketball: [
+                    "basketballSituation": .object([
+                        "schemaVersion": .number(1),
+                        "timing": .string("before_play"),
+                        "possession": .object([
+                            "side": .string("away"),
+                            "teamName": .string("Storm"),
+                            "phase": .string("inbound"),
+                            "confidence": .string("verified_derived")
+                        ]),
+                        "shot_clock": .object([
+                            "label": .string("6.5"),
+                            "seconds": .number(6.5),
+                            "status": .string("running"),
+                            "confidence": .string("verified")
+                        ]),
+                        "bonus": .object([
+                            "foulsToBonus": .number(1),
+                            "away": .object([
+                                "status": .string("none"),
+                                "foulsToBonus": .number(1)
+                            ]),
+                            "confidence": .string("derived")
+                        ]),
+                        "shot": .object([
+                            "points": .number(3),
+                            "result": .string("fouled"),
+                            "location": .object([
+                                "coordinateSystem": .string("normalized_half_court"),
+                                "x": .number(0.72),
+                                "y": .number(0.36),
+                                "zone": .string("right_corner_three"),
+                                "confidence": .string("explicit")
+                            ])
+                        ]),
+                        "free_throws": .object([
+                            "attempt": .number(1),
+                            "total": .number(2)
+                        ])
+                    ])
+                ],
+                soccer: nil,
+                golf: nil,
+                tennis: nil
+            ),
+            pressure: nil,
+            confidence: GameEventSituationConfidence(level: "verified", source: "fixture", reasons: [])
+        )
+        let event = basketballEvent(
+            sequence: 6,
+            eventType: "Shooting foul",
+            scoreBefore: scoreState(home: 55, away: 56),
+            situationBefore: snapshot,
+            sportMetadata: [:]
+        )
+
+        let situation = BasketballRenderer(leagueCode: "nba").eventSituationPresentation(for: event, context: context(for: event))
+
+        XCTAssertEqual(situation?.layout, .basketball)
+        XCTAssertEqual(situation?.title, "Shot profile")
+        XCTAssertEqual(situation?.periodText, "Q1 07:30")
+        XCTAssertEqual(situation?.setupText, "Inbound · 1 of 2 · 6.5 on clock · Right corner")
+        XCTAssertEqual(situation?.contextLine, "Up 1")
+        XCTAssertEqual(situation?.ownership?.teamLabel, "Storm")
+        guard case .basketballHalfCourt(let diagram) = situation?.diagram else {
+            return XCTFail("Expected first-class basketball metadata to render the half-court module")
+        }
+        XCTAssertEqual(diagram.possessionText, "Storm inbound")
+        XCTAssertEqual(diagram.shotClockText, "6.5")
+        XCTAssertEqual(diagram.shotText, "3PT fouled")
+        XCTAssertEqual(diagram.locationText, "Right corner")
+        XCTAssertEqual(diagram.freeThrowText, "1 of 2")
+        XCTAssertEqual(diagram.shotLocation, BasketballDiagramShotLocation(x: 0.72, y: 0.36, label: "Right corner"))
+    }
+
+    func testBasketballValueTypesExposeDisplayAndPressureVariants() {
+        XCTAssertEqual(
+            BasketballPossessionState(
+                participantRole: .other("Neutral"),
+                teamAbbreviation: nil,
+                teamLabel: nil,
+                phase: .jumpBall,
+                confidence: .explicit
+            ).displayText,
+            "Neutral"
+        )
+        XCTAssertEqual(BasketballPossessionPhase.deadBall.label, "Dead ball")
+
+        XCTAssertEqual(BasketballShotClockState(seconds: 4, displayText: nil, status: .running, confidence: .explicit).metricText, "4")
+        XCTAssertEqual(BasketballShotClockState(seconds: 6.5, displayText: nil, status: .stopped, confidence: .explicit).metricText, "Stopped at 6.5")
+        XCTAssertEqual(BasketballShotClockState(seconds: nil, displayText: nil, status: .off, confidence: .explicit).metricText, "Off")
+        XCTAssertEqual(BasketballShotClockState(seconds: nil, displayText: nil, status: .expired, confidence: .explicit).metricText, "Expired")
+        XCTAssertNil(BasketballShotClockState(seconds: nil, displayText: nil, status: .unknown, confidence: .missing).metricText)
+        XCTAssertEqual(BasketballShotClockState(seconds: 1, displayText: nil, status: .running, confidence: .explicit).pressureLabel, "End of clock")
+        XCTAssertEqual(BasketballShotClockState(seconds: 4, displayText: nil, status: .running, confidence: .explicit).pressureLabel, "Late clock")
+        XCTAssertEqual(BasketballShotClockState(seconds: 7, displayText: nil, status: .running, confidence: .explicit).pressureLabel, "Clock pressure")
+
+        XCTAssertEqual(BasketballBonusState(possessionTeamStatus: .doubleBonus, possessionTeamFoulsToBonus: nil, confidence: .explicit).metricText, "Double bonus")
+        XCTAssertEqual(BasketballBonusState(possessionTeamStatus: .some(BasketballBonusStatus.none), possessionTeamFoulsToBonus: 2, confidence: .explicit).metricText, "2 to bonus")
+        XCTAssertNil(BasketballBonusState(possessionTeamStatus: .unknown, possessionTeamFoulsToBonus: nil, confidence: .missing).metricText)
+
+        XCTAssertEqual(BasketballShotState(result: .made, value: 2, location: nil, confidence: .explicit).metricText, "2PT made")
+        XCTAssertEqual(BasketballShotResult.blocked.label, "blocked")
+        XCTAssertNil(BasketballShotResult.unknown.label)
+        XCTAssertEqual(BasketballShotZone.restrictedArea.label, "Restricted area")
+        XCTAssertEqual(BasketballShotZone.paint.label, "Paint")
+        XCTAssertEqual(BasketballShotZone.midrange.label, "Midrange")
+        XCTAssertEqual(BasketballShotZone.leftCornerThree.label, "Left corner")
+        XCTAssertEqual(BasketballShotZone.aboveBreakThree.label, "Above break")
+        XCTAssertEqual(BasketballShotZone.backcourt.label, "Backcourt")
+        XCTAssertNil(BasketballShotZone.unknown.label)
+
+        XCTAssertNil(BasketballFreeThrowState(attemptNumber: 0, totalAttempts: 2).metricText)
+        XCTAssertTrue(BasketballFieldConfidence.verifiedDerived.canRenderAssertiveState)
+        XCTAssertFalse(BasketballFieldConfidence.derived.canRenderAssertiveState)
+    }
+
     private func explicitSituation(
         possession: [String: JSONValue]?,
         shotClock: [String: JSONValue]? = nil,
@@ -165,6 +295,7 @@ final class BasketballPossessionPressureTests: XCTestCase {
         clockLabel: String = "00:42",
         eventType: String = "Jump shot",
         scoreBefore: ScoreState? = nil,
+        situationBefore: GameEventSituationSnapshot? = nil,
         sportMetadata: [String: JSONValue]
     ) -> GameEvent {
         GameEvent(
@@ -190,6 +321,7 @@ final class BasketballPossessionPressureTests: XCTestCase {
             scoreBefore: scoreBefore,
             scoreAfter: scoreState(home: nil, away: nil),
             scoreDelta: nil,
+            situationBefore: situationBefore,
             sportMetadata: sportMetadata
         )
     }

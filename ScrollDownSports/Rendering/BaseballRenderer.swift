@@ -47,7 +47,7 @@ struct BaseballRenderer: GenericSportRendererBacked {
                 for: event,
                 sport: .baseball,
                 decision: decision,
-                periodText: inputs.periodText,
+                periodText: inputs.fallbackPeriodText,
                 contextLine: contextLine,
                 tone: situationTone(for: event)
             )
@@ -105,7 +105,14 @@ struct BaseballRenderer: GenericSportRendererBacked {
         let periodText = baseballSituationPeriodText(
             for: event,
             prePitchState: prePitchState,
-            battingOwnership: battingOwnership
+            battingOwnership: battingOwnership,
+            style: .compact
+        )
+        let fallbackPeriodText = baseballSituationPeriodText(
+            for: event,
+            prePitchState: prePitchState,
+            battingOwnership: battingOwnership,
+            style: .expanded
         )
         let pressureLine = importanceContext(for: event, hasBaseState: baseState != nil)
         let contextLine = scorePressureLine(for: event)
@@ -125,6 +132,7 @@ struct BaseballRenderer: GenericSportRendererBacked {
             battingOwnership: battingOwnership,
             outs: outs,
             periodText: periodText,
+            fallbackPeriodText: fallbackPeriodText,
             contextLine: contextLine,
             pressureLine: pressureLine,
             count: count,
@@ -318,7 +326,8 @@ struct BaseballRenderer: GenericSportRendererBacked {
     private func baseballSituationPeriodText(
         for event: GameEvent,
         prePitchState: BaseballPrePitchState,
-        battingOwnership: GameEventSituationOwnership?
+        battingOwnership: GameEventSituationOwnership?,
+        style: BaseballSituationPeriodTextStyle
     ) -> String? {
         let formatterOutput = PeriodLabelFormatter.output(
             sport: .mlb,
@@ -332,7 +341,17 @@ struct BaseballRenderer: GenericSportRendererBacked {
             ?? baseballInningHalf(from: battingOwnership?.participantRole)
         let inning = prePitchState.inning ?? event.periodOrdinal
         if let inning, let inferredHalf {
-            return "\(inferredHalf.displayName) \(ordinal(inning))"
+            switch style {
+            case .compact:
+                return [
+                    "\(inferredHalf.compactPrefix)\(inning)",
+                    formatterOutput.rowClockText.nilIfBlank
+                ]
+                .compactMap(\.self)
+                .joined(separator: " ")
+            case .expanded:
+                return "\(inferredHalf.displayName) \(ordinal(inning))"
+            }
         }
         return formatterOutput.situationText
     }
@@ -505,8 +524,14 @@ private struct BaseballSituationInputs {
     let battingOwnership: GameEventSituationOwnership?
     let outs: Int?
     let periodText: String?
+    let fallbackPeriodText: String?
     let contextLine: String?
     let pressureLine: String?
     let count: String?
     let confidenceDecision: SituationBlockDecision
+}
+
+private enum BaseballSituationPeriodTextStyle {
+    case compact
+    case expanded
 }

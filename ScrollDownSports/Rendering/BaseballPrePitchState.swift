@@ -153,6 +153,15 @@ enum BaseballInningHalf: Hashable, Sendable {
             return "Bottom"
         }
     }
+
+    var compactPrefix: String {
+        switch self {
+        case .top:
+            return "T"
+        case .bottom:
+            return "B"
+        }
+    }
 }
 
 enum BaseballPrePitchSourceConfidence: Hashable, Sendable {

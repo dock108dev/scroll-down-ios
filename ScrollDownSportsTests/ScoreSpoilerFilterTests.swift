@@ -5,11 +5,16 @@ final class ScoreSpoilerFilterTests: XCTestCase {
     func testAbsoluteScoreDetectionCoversScoreLabelsAndFinalOutcomeText() {
         let game = finalGame()
 
+        XCTAssertTrue(ScoreSpoilerFilter.containsScoreBearingText("SEA 5, OAK 4", for: game))
         XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("SEA 5, OAK 4", for: game))
+        XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("5 Mariners", for: game))
+        XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Score: 5", for: game))
+        XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Mariners leads 5-4", for: game))
         XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Mariners 5", for: game))
         XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("5-4 Final", for: game))
         XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Mariners won in extras", for: game))
         XCTAssertTrue(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Rodriguez ties it at 4", for: game))
+        XCTAssertFalse(ScoreSpoilerFilter.containsAbsoluteScoreBearingText("Mariners rally", for: liveGame()))
     }
 
     func testRelativePressureDetectionAvoidsNonScoreBaseballContext() {
@@ -17,10 +22,22 @@ final class ScoreSpoilerFilterTests: XCTestCase {
         XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("Team was down by 3 before the play"))
         XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("Tied -> Up 2"))
         XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("Lead change"))
+        XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("go-ahead basket"))
+        XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("cuts the deficit"))
+        XCTAssertTrue(ScoreSpoilerFilter.containsRelativeScorePressureText("walk-off chance"))
 
         XCTAssertFalse(ScoreSpoilerFilter.containsRelativeScorePressureText("3rd and 7"))
         XCTAssertFalse(ScoreSpoilerFilter.containsRelativeScorePressureText("Shot from 24 feet"))
         XCTAssertFalse(ScoreSpoilerFilter.containsRelativeScorePressureText("2 outs"))
+    }
+
+    func testTopRegionAndMatchupFilteringFallBackWithoutScoreLeakage() {
+        let game = finalGame()
+
+        XCTAssertNil(ScoreSpoilerFilter.topRegionText("SEA 5, OAK 4", for: game))
+        XCTAssertNil(ScoreSpoilerFilter.topRegionText("   ", for: game))
+        XCTAssertEqual(ScoreSpoilerFilter.topRegionText("Late pitchers duel", for: game), "Late pitchers duel")
+        XCTAssertEqual(ScoreSpoilerFilter.matchupText(for: game), "Oakland Athletics at Seattle Mariners")
     }
 
     func testDefaultHiddenPolicyKeepsRelativeSituationButRemovesAbsoluteScores() {
@@ -89,12 +106,135 @@ final class ScoreSpoilerFilterTests: XCTestCase {
         }
     }
 
+    func testStrictPolicyRedactsBasketballAndPressureBoardScorePressure() {
+        let basketball = GameEventPresentation(
+            clockText: "Q4 00:42",
+            headline: "Seattle trims it to 79-78",
+            detail: "SEA 78, OAK 79",
+            eventLabel: nil,
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle",
+            scoringLabel: "3PT made",
+            scoreLabel: "SEA 78, OAK 79",
+            rawFeedText: "Down 4 before the shot",
+            rawFeedSource: nil,
+            accessibilityLabel: "Seattle makes it 79-78",
+            situation: GameEventSituationPresentation(
+                title: "Clock pressure",
+                periodText: "Q4 00:42",
+                setupText: "6 on clock",
+                contextLine: "Down 4",
+                pressureLine: "Late clock",
+                sport: .basketball,
+                layout: .basketball,
+                ownership: nil,
+                diagram: .basketballHalfCourt(
+                    BasketballHalfCourtDiagram(
+                        possessionText: "SEA ball",
+                        clockText: "Q4 00:42",
+                        shotClockText: "6",
+                        scoreText: "Down 4",
+                        bonusText: nil,
+                        shotText: "3PT made",
+                        locationText: "Right corner",
+                        freeThrowText: nil,
+                        shotLocation: BasketballDiagramShotLocation(x: 0.80, y: 0.32, label: "Right corner"),
+                        pressure: 0.68
+                    )
+                ),
+                accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .critical),
+                dataConfidence: .explicitPreEvent
+            ),
+            situationAccessibilityText: "Seattle down by 4 before the play."
+        )
+        let filteredBasketball = EventScoreSpoilerFilter.filtered(
+            presentation: basketball,
+            game: finalGame(),
+            policy: .hideAllScorePressure
+        )
+
+        XCTAssertEqual(filteredBasketball.headline, "3PT made")
+        XCTAssertNil(filteredBasketball.detail)
+        XCTAssertNil(filteredBasketball.rawFeedText)
+        XCTAssertNil(filteredBasketball.accessibilityLabel)
+        XCTAssertNil(filteredBasketball.situationAccessibilityText)
+        XCTAssertNil(filteredBasketball.situation?.contextLine)
+        XCTAssertNil(filteredBasketball.situation?.pressureLine)
+        guard case .basketballHalfCourt(let basketballDiagram) = filteredBasketball.situation?.diagram else {
+            return XCTFail("Expected basketball diagram to remain after score-pressure redaction")
+        }
+        XCTAssertNil(basketballDiagram.scoreText)
+        XCTAssertNil(basketballDiagram.pressure)
+
+        let board = GameEventPresentation(
+            clockText: "Q4 00:42",
+            headline: "SEA 78, OAK 79",
+            detail: nil,
+            eventLabel: nil,
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle",
+            scoringLabel: nil,
+            scoreLabel: "SEA 78, OAK 79",
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            situation: GameEventSituationPresentation(
+                title: "Context",
+                periodText: "Q4 00:42",
+                setupText: nil,
+                contextLine: "Down 1",
+                pressureLine: "Lead change",
+                sport: .basketball,
+                layout: .pressureBoardFallback,
+                ownership: nil,
+                diagram: .pressureBoardFallback(
+                    PressureBoardSituationDiagram(
+                        associations: [],
+                        metrics: [
+                            PressureBoardSituationMetric(label: "Score", value: "SEA 78, OAK 79", emphasis: .primary),
+                            PressureBoardSituationMetric(label: "Pressure", value: "Down 1", emphasis: .pressure),
+                            PressureBoardSituationMetric(label: "Clock", value: "00:42", emphasis: .secondary)
+                        ]
+                    )
+                ),
+                accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .critical),
+                dataConfidence: .explicitGenericEventContext
+            ),
+            situationAccessibilityText: nil
+        )
+        let filteredBoard = EventScoreSpoilerFilter.filtered(
+            presentation: board,
+            game: finalGame(),
+            policy: .hideAllScorePressure
+        )
+
+        guard case .pressureBoardFallback(let pressureBoard) = filteredBoard.situation?.diagram else {
+            return XCTFail("Expected pressure board fallback to remain after redaction")
+        }
+        XCTAssertEqual(pressureBoard.metrics.map(\.label), ["Clock"])
+    }
+
     private func finalGame() -> Game {
         TestFixtures.makeGame(
             leagueCode: "mlb",
             status: "final",
             isLive: false,
             isFinal: true,
+            awayName: "Oakland Athletics",
+            awayAbbreviation: "OAK",
+            homeName: "Seattle Mariners",
+            homeAbbreviation: "SEA",
+            awayScore: 4,
+            homeScore: 5
+        )
+    }
+
+    private func liveGame() -> Game {
+        TestFixtures.makeGame(
+            leagueCode: "mlb",
+            status: "live",
+            isLive: true,
+            isFinal: false,
             awayName: "Oakland Athletics",
             awayAbbreviation: "OAK",
             homeName: "Seattle Mariners",
