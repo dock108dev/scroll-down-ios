@@ -109,8 +109,7 @@ struct PlayRow: View {
     @ViewBuilder
     private var resultContextLine: some View {
         if let situation = presentation.situation,
-           situation.sport == .baseball,
-           situation.resultContextPieces.isEmpty == false {
+           PlayRowContentFilter.hasResultContext(for: situation) {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 6) {
                     resultContextContent(for: situation)
@@ -124,14 +123,14 @@ struct PlayRow: View {
 
     @ViewBuilder
     private func resultContextContent(for situation: GameEventSituationPresentation) -> some View {
-        if let pressureLine = situation.pressureLine?.nilIfBlank {
+        if let pressureLine = PlayRowContentFilter.resultContextText(situation.pressureLine) {
             Text(pressureLine)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(situation.accent.tone.accent)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
         }
-        if let contextLine = situation.contextLine?.nilIfBlank {
+        if let contextLine = PlayRowContentFilter.resultContextText(situation.contextLine) {
             Text(contextLine)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
@@ -295,6 +294,27 @@ struct PlayRowContentFilter {
         return duplicatesMeaning(supplement, comparedWith: existingText) ? "" : supplement
     }
 
+    static func hasResultContext(for situation: GameEventSituationPresentation) -> Bool {
+        resultContextText(situation.pressureLine) != nil
+            || resultContextText(situation.contextLine) != nil
+    }
+
+    static func resultContextText(_ text: String?) -> String? {
+        guard let text = text?.nilIfBlank,
+              isResultSensitiveSituationText(text) else {
+            return nil
+        }
+        return text
+    }
+
+    static func prePlaySituationText(_ text: String?) -> String? {
+        guard let text = text?.nilIfBlank,
+              !isResultSensitiveSituationText(text) else {
+            return nil
+        }
+        return text
+    }
+
     static func duplicatesMeaning(_ candidate: String, comparedWith existing: String) -> Bool {
         let normalizedCandidate = normalizedMeaning(candidate)
         let normalizedExisting = normalizedMeaning(existing)
@@ -324,6 +344,44 @@ struct PlayRowContentFilter {
         }
         let headlineTokens = Set(meaningfulTokens(in: headline))
         return detailTokens.allSatisfy { headlineTokens.contains($0) }
+    }
+
+    private static func isResultSensitiveSituationText(_ text: String) -> Bool {
+        let normalized = normalizedMeaning(text)
+        let metadataKey = normalizedSituationMetadataKey(text)
+        if text.contains("->") {
+            return true
+        }
+        if normalized.contains(" to up ")
+            || normalized.contains(" to tied")
+            || normalized.contains(" to down ")
+            || containsEmbeddedDirectionalMovement(normalized) {
+            return true
+        }
+        if normalized.hasPrefix("up ")
+            || normalized.hasPrefix("down ") {
+            return false
+        }
+        return metadataKey.contains("lead_change")
+            || metadataKey.contains("tying_play")
+            || metadataKey.contains("scoring_play")
+            || metadataKey.contains("scoring_swing")
+            || metadataKey.contains("power_play_finish")
+            || metadataKey.contains("finish")
+            || metadataKey.contains("go_ahead")
+            || metadataKey.contains("cuts_deficit")
+            || metadataKey.contains("extends_lead")
+    }
+
+    private static func containsEmbeddedDirectionalMovement(_ normalized: String) -> Bool {
+        let tokens = normalized.split(separator: " ").map(String.init)
+        guard tokens.count >= 3 else { return false }
+        for index in 1..<(tokens.count - 1) where (tokens[index] == "up" || tokens[index] == "down") {
+            if Int(tokens[index + 1]) != nil {
+                return true
+            }
+        }
+        return false
     }
 
     private static func meaningfulTokens(in text: String) -> [String] {

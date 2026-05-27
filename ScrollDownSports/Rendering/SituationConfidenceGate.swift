@@ -114,7 +114,7 @@ enum SituationConfidenceGate {
             sport: sport,
             periodText: resolvedPeriodText,
             association: association,
-            scoreLine: sport == .baseball ? scorePressure?.before.shortText : scorePressure?.text,
+            scoreLine: scorePressure?.before.shortText,
             pressureLine: resolvedPressureLine
         )
 
@@ -158,9 +158,10 @@ enum SituationConfidenceGate {
         pressureLine: String?
     ) -> [PressureBoardSituationMetric] {
         var metrics: [PressureBoardSituationMetric] = []
+        let timingMetric = timingMetric(for: sport, event: event, periodText: periodText)
         appendMetric(
-            label: sport == .baseball ? "Inning" : "Time",
-            value: sport == .baseball ? (periodText ?? event.clockText) : event.clockText,
+            label: timingMetric.label,
+            value: timingMetric.value,
             emphasis: .primary,
             to: &metrics
         )
@@ -172,10 +173,47 @@ enum SituationConfidenceGate {
         )
         appendMetric(label: "Play", value: eventLabel(for: event), emphasis: .secondary, to: &metrics)
         appendMetric(label: "Score", value: scoreLine, emphasis: .pressure, to: &metrics)
-        if scoreLine?.nilIfBlank == nil {
+        if scoreLine?.nilIfBlank == nil, !isResultSensitivePressureLine(pressureLine) {
             appendMetric(label: "Pressure", value: pressureLine, emphasis: .pressure, to: &metrics)
         }
         return metrics
+    }
+
+    private static func timingMetric(
+        for sport: GameEventSituationSport,
+        event: GameEvent,
+        periodText: String?
+    ) -> (label: String, value: String?) {
+        switch sport {
+        case .baseball:
+            return ("Inning", periodText ?? event.clockText)
+        case .football, .basketball:
+            return ("Quarter", event.clockText)
+        case .hockey:
+            return ("Period", event.clockText)
+        case .soccer:
+            return ("Minute", event.clockText)
+        case .golf:
+            return ("Hole", event.clockText)
+        case .tennis:
+            return ("Set", event.clockText)
+        case .generic:
+            return ("Time", event.clockText)
+        }
+    }
+
+    private static func isResultSensitivePressureLine(_ text: String?) -> Bool {
+        guard let normalized = text?.nilIfBlank.map(normalizedSituationMetadataKey) else {
+            return false
+        }
+        return normalized.contains("lead_change")
+            || normalized.contains("tying_play")
+            || normalized.contains("scoring_play")
+            || normalized.contains("scoring_swing")
+            || normalized.contains("finish")
+            || normalized.contains("go_ahead")
+            || normalized.contains("cuts_deficit")
+            || normalized.contains("extends_lead")
     }
 
     private static func appendMetric(

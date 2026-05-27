@@ -125,8 +125,8 @@ enum GolfPressureClassifier {
         if event.importanceMetadata?.isLeadChange == true {
             return "Lead change"
         }
-        if let movement = state.movement {
-            return movement
+        if state.movement != nil {
+            return nil
         }
         if state.strokesBack != nil {
             return "Leaderboard chase"
@@ -146,7 +146,6 @@ enum GolfPressureClassifier {
         appendMetric(label: "Rank", value: state.rank, emphasis: .pressure, to: &metrics)
         appendMetric(label: "To par", value: state.scoreToPar, emphasis: .pressure, to: &metrics)
         appendMetric(label: "Back", value: state.strokesBack, emphasis: .pressure, to: &metrics)
-        appendMetric(label: "Move", value: state.movement, emphasis: .pressure, to: &metrics)
         appendMetric(
             label: "Play",
             value: EventLabelResolver.customerLabel(from: event.presentation?.eventTypeLabel)

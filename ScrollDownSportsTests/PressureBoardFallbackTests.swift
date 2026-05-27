@@ -51,8 +51,9 @@ final class PressureBoardFallbackTests: XCTestCase {
         guard case .pressureBoardFallback(let board) = situation?.diagram else {
             return XCTFail("Expected pressure board fallback")
         }
-        XCTAssertEqual(board.metrics.map(\.label), ["Time", "Team", "Play", "Score"])
-        XCTAssertEqual(board.metrics.first(where: { $0.label == "Score" })?.value, "Down 3 -> Tied")
+        XCTAssertEqual(board.metrics.map(\.label), ["Quarter", "Team", "Play", "Score"])
+        XCTAssertEqual(board.metrics.first(where: { $0.label == "Quarter" })?.value, "Q4 00:42")
+        XCTAssertEqual(board.metrics.first(where: { $0.label == "Score" })?.value, "Down 3")
         XCTAssertFalse(board.metrics.map(\.value).joined(separator: " ").contains("99"))
         XCTAssertEqual(situation?.contextLine, "Down 3 -> Tied")
     }
@@ -179,7 +180,7 @@ final class PressureBoardFallbackTests: XCTestCase {
         XCTAssertEqual(decision, .none(.derivedState))
     }
 
-    func testPressureBoardFallsBackToTimeTeamAndEventMeaningWithoutScore() {
+    func testPressureBoardFallsBackToSportSpecificTimeTeamAndEventMeaningWithoutScore() {
         let event = pressureBoardEvent(sequence: 31, periodLabel: "P3", clockLabel: "02:11", eventType: "Save")
         let game = TestFixtures.makeGame(id: 1902, leagueCode: "nhl")
         let context = SportRendererSituationContext(game: game, selectedMode: .key, visibleEvents: [event], eventIndex: 0)
@@ -189,7 +190,7 @@ final class PressureBoardFallbackTests: XCTestCase {
         guard case .pressureBoardFallback(let board) = situation?.diagram else {
             return XCTFail("Expected pressure board fallback")
         }
-        XCTAssertEqual(board.metrics.map(\.label), ["Time", "Team", "Play", "Pressure"])
+        XCTAssertEqual(board.metrics.map(\.label), ["Period", "Team", "Play", "Pressure"])
         XCTAssertEqual(board.metrics.map(\.value), ["P3 02:11", "SEA", "Save", "Key play"])
         XCTAssertNil(situation?.contextLine)
         XCTAssertEqual(situation?.pressureLine, "Key play")
@@ -296,7 +297,7 @@ final class PressureBoardFallbackTests: XCTestCase {
                     "lie": .string("fairway"),
                     "coursePosition": .string("front bunker")
                 ],
-                forbiddenText: ["course", "hole", "fairway", "bunker", "green"],
+                forbiddenText: ["course", "fairway", "bunker", "green"],
                 render: { GolfRenderer(leagueCode: "pga").eventSituationPresentation(for: $0, context: $1) }
             ),
             ReservedPressureBoardCase(
@@ -354,7 +355,7 @@ final class PressureBoardFallbackTests: XCTestCase {
             }
 
             let boardText = pressureBoardText(situation: situation, board: board)
-            XCTAssertEqual(board.metrics.map(\.label), ["Time", "Team", "Play", "Pressure"], testCase.name)
+            XCTAssertEqual(board.metrics.map(\.label), expectedFallbackMetricLabels(for: testCase.expectedSport), testCase.name)
             for forbidden in testCase.forbiddenText {
                 XCTAssertFalse(
                     boardText.localizedCaseInsensitiveContains(forbidden),
@@ -418,6 +419,25 @@ final class PressureBoardFallbackTests: XCTestCase {
             + board.metrics.flatMap { [$0.label, $0.value] }
             + board.associations.map(\.displayLabel)
         return fragments.joined(separator: " ")
+    }
+
+    private func expectedFallbackMetricLabels(for sport: GameEventSituationSport) -> [String] {
+        switch sport {
+        case .baseball:
+            return ["Inning", "Team", "Play", "Pressure"]
+        case .football, .basketball:
+            return ["Quarter", "Team", "Play", "Pressure"]
+        case .hockey:
+            return ["Period", "Team", "Play", "Pressure"]
+        case .soccer:
+            return ["Minute", "Team", "Play", "Pressure"]
+        case .golf:
+            return ["Hole", "Team", "Play", "Pressure"]
+        case .tennis:
+            return ["Set", "Team", "Play", "Pressure"]
+        case .generic:
+            return ["Time", "Team", "Play", "Pressure"]
+        }
     }
 }
 

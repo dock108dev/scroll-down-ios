@@ -49,6 +49,27 @@ final class PlayRowContentFilterTests: XCTestCase {
         )
     }
 
+    func testResultContextWaitsUntilAfterPlayText() {
+        XCTAssertNil(PlayRowContentFilter.prePlaySituationText("Down 3 -> Tied"))
+        XCTAssertEqual(PlayRowContentFilter.resultContextText("Down 3 -> Tied"), "Down 3 -> Tied")
+        XCTAssertNil(PlayRowContentFilter.prePlaySituationText("Lead change"))
+        XCTAssertEqual(PlayRowContentFilter.resultContextText("Lead change"), "Lead change")
+    }
+
+    func testPrePlaySportContextCanRenderBeforePlayText() {
+        XCTAssertEqual(PlayRowContentFilter.prePlaySituationText("Third down"), "Third down")
+        XCTAssertEqual(PlayRowContentFilter.prePlaySituationText("Power play"), "Power play")
+        XCTAssertEqual(PlayRowContentFilter.prePlaySituationText("Down 2"), "Down 2")
+        XCTAssertNil(PlayRowContentFilter.resultContextText("Third down"))
+    }
+
+    func testLeaderboardMovementWaitsUntilAfterPlayText() {
+        let movementContext = "Rank T2 · To par -11 · 1 back · Up 2"
+
+        XCTAssertNil(PlayRowContentFilter.prePlaySituationText(movementContext))
+        XCTAssertEqual(PlayRowContentFilter.resultContextText(movementContext), movementContext)
+    }
+
     private func baseballPresentation(
         headline: String = "Julio Rodriguez singles to center. Two runs score.",
         detail: String? = "Seattle turns a bases-loaded chance into the first lead of the inning."

@@ -29,7 +29,8 @@ final class GolfTennisPressureBoardTests: XCTestCase {
         guard case .pressureBoardFallback(let board) = situation?.diagram else {
             return XCTFail("Expected golf to render a non-field pressure board")
         }
-        XCTAssertEqual(board.metrics.map(\.label), ["Hole", "Rank", "To par", "Back", "Move", "Play"])
+        XCTAssertEqual(board.metrics.map(\.label), ["Hole", "Rank", "To par", "Back", "Play"])
+        XCTAssertFalse(board.metrics.map(\.value).contains("Up 2"))
         XCTAssertFalse(boardText(situation: situation, board: board).localizedCaseInsensitiveContains("course"))
     }
 
@@ -53,7 +54,7 @@ final class GolfTennisPressureBoardTests: XCTestCase {
         guard case .pressureBoardFallback(let board) = situation?.diagram else {
             return XCTFail("Expected golf to fall back to the generic pressure board")
         }
-        XCTAssertEqual(board.metrics.map(\.label), ["Time", "Team", "Play", "Pressure"])
+        XCTAssertEqual(board.metrics.map(\.label), ["Hole", "Team", "Play", "Pressure"])
         let text = boardText(situation: situation, board: board)
         XCTAssertFalse(text.localizedCaseInsensitiveContains("fairway"))
         XCTAssertFalse(text.localizedCaseInsensitiveContains("bunker"))
@@ -157,7 +158,7 @@ final class GolfTennisPressureBoardTests: XCTestCase {
         guard case .pressureBoardFallback(let board) = situation?.diagram else {
             return XCTFail("Expected tennis to fall back to the generic pressure board")
         }
-        XCTAssertEqual(board.metrics.map(\.label), ["Time", "Team", "Play", "Pressure"])
+        XCTAssertEqual(board.metrics.map(\.label), ["Set", "Team", "Play", "Pressure"])
         XCTAssertFalse(boardText(situation: situation, board: board).localizedCaseInsensitiveContains("court"))
     }
 

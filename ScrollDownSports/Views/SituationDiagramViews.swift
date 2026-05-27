@@ -150,7 +150,7 @@ struct SituationSummaryPanel: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         if situation.sport != .baseball {
-            if let pressureLine = situation.pressureLine?.nilIfBlank {
+            if let pressureLine = PlayRowContentFilter.prePlaySituationText(situation.pressureLine) {
                 Text(pressureLine)
                     .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(situation.accent.tone.accent)
@@ -158,7 +158,7 @@ struct SituationSummaryPanel: View {
                     .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let contextLine = situation.contextLine?.nilIfBlank {
+            if let contextLine = PlayRowContentFilter.prePlaySituationText(situation.contextLine) {
                 Text(contextLine)
                     .font(SportsTheme.Typography.metadata)
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
