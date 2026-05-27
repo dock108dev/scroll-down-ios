@@ -12,6 +12,7 @@ struct PeriodLabelOutput: Equatable {
     let groupKey: String
     let rowClockText: String
     let combinedText: String?
+    let situationText: String?
     let resumeText: String?
 }
 enum PeriodLabelFormatter {
@@ -39,12 +40,14 @@ enum PeriodLabelFormatter {
         let rawClock = input.presentationTimeLabel.cleanPeriodInput ?? input.clockLabel.cleanPeriodInput
         let rowClockText = rowClockText(rawClock: rawClock, canonical: canonical)
         let combinedText = combinedText(canonical: canonical, rowClockText: rowClockText, rawClock: rawClock)
+        let situationText = situationText(sport: input.sport, canonical: canonical, rowClockText: rowClockText, rawClock: rawClock)
 
         return PeriodLabelOutput(
             groupLabel: canonical?.displayLabel,
             groupKey: canonical?.key ?? "period:game",
             rowClockText: rowClockText,
             combinedText: combinedText,
+            situationText: situationText,
             resumeText: combinedText
         )
     }
@@ -68,10 +71,8 @@ enum PeriodLabelFormatter {
             parseBaseballInning(input.clockLabel),
             parseBaseballInning(input.presentationTimeLabel)
         ].compactMap(\.self).first
-
         let inning = parsed?.inning ?? input.periodOrdinal
         guard let inning else { return genericPeriod(from: input) }
-
         let half = parsed?.half
         let label: String
         switch half {
@@ -82,13 +83,13 @@ enum PeriodLabelFormatter {
         case nil:
             label = ordinal(inning)
         }
-
         let halfKey = half?.rawValue ?? "unknown"
         let aliases = baseballAliases(inning: inning, half: half)
         return CanonicalPeriod(
             displayLabel: label,
             key: "mlb:inning:\(inning):\(halfKey)",
-            aliases: aliases
+            aliases: aliases,
+            compactLabel: half.map { "\($0.compactPrefix)\(inning)" } ?? ordinal(inning)
         )
     }
     private static func quarterPeriod(from input: PeriodLabelInput) -> CanonicalPeriod? {
@@ -99,7 +100,6 @@ enum PeriodLabelFormatter {
             input.periodOrdinal
         ].compactMap(\.self).first
         guard let period else { return genericPeriod(from: input) }
-
         let label: String
         if period <= 4 {
             label = "Q\(period)"
@@ -108,7 +108,6 @@ enum PeriodLabelFormatter {
         } else {
             label = "\(period - 4)OT"
         }
-
         return CanonicalPeriod(
             displayLabel: label,
             key: "\(input.leagueCode.periodKeyPrefix):period:\(period)",
@@ -123,7 +122,6 @@ enum PeriodLabelFormatter {
             input.periodOrdinal
         ].compactMap(\.self).first
         guard let period else { return genericPeriod(from: input) }
-
         let label: String
         if period == 4 {
             label = "OT"
@@ -132,7 +130,6 @@ enum PeriodLabelFormatter {
         } else {
             label = ordinal(period)
         }
-
         return CanonicalPeriod(
             displayLabel: label,
             key: "nhl:period:\(period)",
@@ -212,6 +209,25 @@ enum PeriodLabelFormatter {
             return canonical.displayLabel
         }
         return "\(canonical.displayLabel) · \(rowClockText)"
+    }
+    private static func situationText(sport: Sport, canonical: CanonicalPeriod?, rowClockText: String, rawClock: String?) -> String? {
+        guard let canonical else { return rawClock }
+        if case .soccer = sport, !rowClockText.isEmpty {
+            return rowClockText
+        }
+        if case .mlb = sport {
+            guard !rowClockText.isEmpty else { return canonical.displayLabel }
+            if rowClockText.normalizedPeriodAliasKey == canonical.displayLabel.normalizedPeriodAliasKey {
+                return canonical.displayLabel
+            }
+            return "\(canonical.displayLabel) \(rowClockText)"
+        }
+        let label = canonical.compactLabel ?? canonical.displayLabel
+        guard !rowClockText.isEmpty else { return label }
+        if rowClockText.normalizedPeriodAliasKey == label.normalizedPeriodAliasKey {
+            return label
+        }
+        return "\(label) \(rowClockText)"
     }
     private static func parseBaseballInning(_ value: String?) -> (inning: Int, half: InningHalf?)? {
         guard let raw = value.cleanPeriodInput else { return nil }
@@ -380,10 +396,20 @@ private struct CanonicalPeriod {
     let displayLabel: String
     let key: String
     let aliases: Set<String>
+    let compactLabel: String?
+
+    init(displayLabel: String, key: String, aliases: Set<String>, compactLabel: String? = nil) {
+        self.displayLabel = displayLabel
+        self.key = key
+        self.aliases = aliases
+        self.compactLabel = compactLabel
+    }
 }
 private enum InningHalf: String {
     case top
     case bottom
+
+    var compactPrefix: String { self == .top ? "T" : "B" }
 }
 private struct SoccerPeriod {
     let label: String

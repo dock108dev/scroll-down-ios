@@ -23,7 +23,7 @@ struct GameHeaderPresentation {
     let accessibilityLabel: String?
 }
 
-struct GameEventPresentation {
+struct GameEventPresentation: Hashable {
     var clockText: String
     var headline: String
     let detail: String?
@@ -35,6 +35,252 @@ struct GameEventPresentation {
     let rawFeedText: String?
     let rawFeedSource: String?
     let accessibilityLabel: String?
+    var situation: GameEventSituationPresentation? = nil
+    var situationAccessibilityText: String? = nil
+}
+
+struct GameEventSituationPresentation: Hashable {
+    let title: String
+    let periodText: String?
+    let setupText: String?
+    let contextLine: String?
+    let pressureLine: String?
+    let sport: GameEventSituationSport
+    let layout: GameEventSituationLayout
+    let ownership: GameEventSituationOwnership?
+    let diagram: GameEventSituationDiagram?
+    let accent: GameEventSituationAccent
+    let dataConfidence: GameEventSituationDataConfidence
+
+    var isEmpty: Bool {
+        [
+            title,
+            periodText,
+            setupText,
+            contextLine,
+            pressureLine
+        ].compactMap { $0?.nilIfBlank }.isEmpty
+    }
+}
+
+enum GameEventSituationSport: String, Hashable {
+    case baseball
+    case football
+    case hockey
+    case basketball
+    case soccer
+    case golf
+    case tennis
+    case generic
+}
+
+enum GameEventSituationLayout: String, Hashable {
+    case baseball
+    case football
+    case hockey
+    case basketball
+    case soccer
+    case golf
+    case tennis
+    case pressureBoardFallback
+}
+
+struct GameEventSituationOwnership: Hashable {
+    let role: GameEventSituationOwnershipRole
+    let participantRole: GameParticipantRole?
+    let teamAbbreviation: String?
+    let teamLabel: String?
+    let confidence: GameEventSituationOwnershipConfidence
+
+    var claimsPossession: Bool {
+        role == .possession
+    }
+
+    var displayLabel: String {
+        [
+            role.displayName,
+            teamAbbreviation?.nilIfBlank ?? teamLabel?.nilIfBlank ?? participantRole?.displayName
+        ].compactMap(\.self)
+            .joined(separator: " ")
+    }
+}
+
+enum GameEventSituationOwnershipRole: String, Hashable {
+    case batting
+    case possession
+    case offense
+    case defense
+    case attackingSide
+    case association
+
+    var displayName: String {
+        switch self {
+        case .batting:
+            return "Batting"
+        case .possession:
+            return "Possession"
+        case .offense:
+            return "Offense"
+        case .defense:
+            return "Defense"
+        case .attackingSide:
+            return "Attacking"
+        case .association:
+            return "Team"
+        }
+    }
+}
+
+enum GameEventSituationOwnershipConfidence: String, Hashable {
+    case explicit
+    case derivedFromPeriod
+    case eventFallback
+    case unknown
+}
+
+enum GameEventSituationDiagram: Hashable {
+    case baseballDiamond(BaseballSituationDiagram)
+    case footballFieldStrip(FootballFieldStripDiagram)
+    case hockeyRinkStrip(HockeyRinkStripDiagram)
+    case basketballHalfCourt(BasketballHalfCourtDiagram)
+    case soccerPitchStrip(SoccerPitchStripDiagram)
+    case pressureBoardFallback(PressureBoardSituationDiagram)
+}
+
+struct BaseballSituationDiagram: Hashable {
+    let occupiedBases: Set<BaseballBase>
+    let batting: GameEventSituationOwnership?
+    let outs: Int?
+    let count: String?
+}
+
+enum BaseballBase: String, CaseIterable, Hashable {
+    case first
+    case second
+    case third
+
+    var shortLabel: String {
+        switch self {
+        case .first:
+            return "1B"
+        case .second:
+            return "2B"
+        case .third:
+            return "3B"
+        }
+    }
+
+    var accessibilityName: String {
+        switch self {
+        case .first:
+            return "first"
+        case .second:
+            return "second"
+        case .third:
+            return "third"
+        }
+    }
+}
+
+struct PressureBoardSituationDiagram: Hashable {
+    let associations: [GameEventSituationOwnership]
+    let metrics: [PressureBoardSituationMetric]
+
+    init(
+        associations: [GameEventSituationOwnership],
+        metrics: [PressureBoardSituationMetric] = []
+    ) {
+        self.associations = associations
+        self.metrics = metrics
+    }
+}
+
+struct HockeyRinkStripDiagram: Hashable {
+    let zone: HockeyRinkZone
+    let puckLocation: HockeyPuckLocation?
+    let attackingTeamAbbreviation: String?
+}
+
+enum HockeyRinkZone: String, Hashable, Sendable {
+    case offensive
+    case neutral
+    case defensive
+
+    var label: String {
+        switch self {
+        case .offensive:
+            return "Offensive zone"
+        case .neutral:
+            return "Neutral zone"
+        case .defensive:
+            return "Defensive zone"
+        }
+    }
+}
+
+enum HockeyPuckLocation: String, Hashable, Sendable {
+    case slot
+    case highSlot
+    case leftCircle
+    case rightCircle
+    case point
+    case crease
+    case behindNet
+
+    var label: String {
+        switch self {
+        case .slot:
+            return "Slot"
+        case .highSlot:
+            return "High slot"
+        case .leftCircle:
+            return "Left circle"
+        case .rightCircle:
+            return "Right circle"
+        case .point:
+            return "Point"
+        case .crease:
+            return "Crease"
+        case .behindNet:
+            return "Behind net"
+        }
+    }
+}
+
+struct PressureBoardSituationMetric: Hashable {
+    let label: String
+    let value: String
+    let emphasis: PressureBoardSituationMetricEmphasis
+}
+
+enum PressureBoardSituationMetricEmphasis: Hashable {
+    case primary
+    case team
+    case pressure
+    case secondary
+}
+
+struct GameEventSituationAccent: Hashable {
+    let ownership: GameParticipantRole?
+    let teamAbbreviation: String?
+    let teamLabel: String?
+    let tone: SportsTheme.Tone
+
+    var color: Color {
+        SportsTheme.Team.accent(for: teamAbbreviation, fallback: tone.accent)
+    }
+}
+
+enum GameEventSituationDataConfidence: String, Hashable {
+    case explicitPreEvent
+    case explicitGenericEventContext
+    case derivedState
+    case ambiguousMetadata
+    case missingState
+    case contract
+    case feedProvided
+    case inferred
+    case fallback
 }
 
 extension GameEventPresentation {
@@ -42,11 +288,13 @@ extension GameEventPresentation {
         event: GameEvent,
         clockText: String? = nil,
         detail: String? = nil,
+        situation: GameEventSituationPresentation? = nil,
+        usesEventDetailFallback: Bool = true,
         scoringFallbackLabel: String = "Scoring"
     ) {
         let isScoring = event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil
         let resolvedClockText = clockText ?? event.clockText
-        let resolvedDetail = detail ?? event.detail
+        let resolvedDetail = detail ?? (usesEventDetailFallback ? event.detail : nil)
         let resolvedScoreLabel = [event.presentation?.scoreLabel].firstNonBlank
             ?? Self.fallbackScoreAfterLabel(for: event, isScoring: isScoring)
         self.init(
@@ -73,7 +321,9 @@ extension GameEventPresentation {
                     event.presentation?.teamLabel,
                     resolvedScoreLabel
                 ]
-            )
+            ),
+            situation: situation,
+            situationAccessibilityText: situation?.accessibilitySummary
         )
     }
 
@@ -84,6 +334,32 @@ extension GameEventPresentation {
             return nil
         }
         return "\(away)-\(home)"
+    }
+}
+
+extension GameEventSituationPresentation {
+    var resultContextPieces: [String] {
+        [
+            pressureLine,
+            contextLine
+        ].compactMap { $0?.nilIfBlank }
+    }
+
+    var accessibilitySummary: String? {
+        SituationAccessibilitySummary.make(for: self)
+    }
+}
+
+private extension GameParticipantRole {
+    var displayName: String {
+        switch self {
+        case .home:
+            return "Home"
+        case .away:
+            return "Away"
+        case .other(let value):
+            return value
+        }
     }
 }
 

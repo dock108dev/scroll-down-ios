@@ -483,6 +483,7 @@ run_visual_selection() {
     -only-testing:ScrollDownSportsTests/HomeSectionSnapshotTests \
     -only-testing:ScrollDownSportsTests/GameDetailChromeSnapshotTests \
     -only-testing:ScrollDownSportsTests/EventAndScoreboardSnapshotTests \
+    -only-testing:ScrollDownSportsTests/SituationDiagramLayoutSnapshotTests \
     -only-testing:ScrollDownSportsTests/StatSectionSnapshotTests
 }
 

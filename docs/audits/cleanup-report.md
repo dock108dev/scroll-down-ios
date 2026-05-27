@@ -1,25 +1,24 @@
 # Cleanup Audit
 
-This audit is a narrow note for current code comments that cite the cleanup report. It is not product documentation and is not linked from the root README.
+This file exists only because current code comments cite the cleanup report for large-file size notes. It is not product documentation and is intentionally not linked from the root README.
 
-## Current Cleanup References
+## Current Code References
 
-- `ScrollDownSports/Views/GameDetailView.swift` has an inline size note that points here.
-- `Scripts/local_gate.sh` has an inline size note that points here.
-- `ScrollDownSportsTests/HomeViewModelTests.swift` has an inline size note that points here.
-- `ScrollDownSportsTests/TestFixtures.swift` provides shared `previewPresentation(...)` and `eventPresentation(...)` builders used by home, detail, label, and snapshot tests.
-- `ScrollDownSportsTests/SnapshotSupport/ComponentSnapshotFixtures.swift` preserves snapshot-specific fixture defaults while delegating shared presentation construction to `TestFixtures`.
+- `ScrollDownSports/Views/GameDetailView.swift` has a size note for private SwiftUI scroll and progress state ownership.
+- `Scripts/local_gate.sh` has a size note for keeping shared local-gate command assembly in one script.
+- `ScrollDownSportsTests/HomeViewModelTests.swift` has a size note for keeping fixture-heavy timeline and card-state coverage together.
 
-## Files still >500 LOC
+## Files Still Over 500 LOC
 
-- `ScrollDownSports/Views/GameDetailView.swift` remains 799 LOC. Justification: scroll proxy actions, progress persistence, visibility preference handling, resize restoration, and refresh hooks share private SwiftUI `@State` ownership in this view. A clean next extraction would first move more pure, stateless scroll-target and viewport decision helpers into `GameDetailViewSupport.swift` without changing the public screen API. The file has a one-line size note pointing here.
-- `Scripts/local_gate.sh` remains 637 LOC. Justification: the gate modes share destination discovery, result-bundle cleanup, xcodebuild argument assembly, and dry-run behavior. A clean next extraction would move reusable command/result helpers into a sourced `Scripts/local_gate_lib.sh` after `Scripts/test_local_gate.sh` covers the sourced-library path. The file has a one-line size note pointing here.
-- `ScrollDownSportsTests/HomeViewModelTests.swift` remains 508 LOC. Justification: the suite is fixture-heavy and grouped around home timeline/card-state behavior; mechanically splitting it would duplicate setup helpers. A clean next extraction would separate card-state phase assertions from timeline section assertions after introducing shared scenario builders. The file has a one-line size note pointing here.
+- `ScrollDownSports/Views/GameDetailView.swift` is 810 LOC. The view owns scroll proxy actions, progress persistence, visibility preference handling, resize restoration, sticky controls, score reveal state, and refresh hooks through private SwiftUI `@State`. A clean extraction would need to preserve that state ownership and should only move pure scroll-target or viewport decision helpers into `GameDetailViewSupport.swift`.
+- `Scripts/local_gate.sh` is 638 LOC. The gate modes share destination discovery, family-preserving simulator fallback, result-bundle cleanup, XcodeGen regeneration, simulator API overrides, xcodebuild argument assembly, dry-run output, and focused rerun files. A clean extraction would first need coverage for sourcing shared shell helpers from `Scripts/test_local_gate.sh`.
+- `ScrollDownSportsTests/HomeViewModelTests.swift` is 508 LOC. The suite is fixture-heavy and grouped around home timeline, filtering, pinning, persisted snapshot, and card-state behavior. Splitting it without shared scenario builders would duplicate setup rather than remove current complexity.
 
 ## Validation
 
-Current documentation-pass validation is recorded in `docs/audits/docs-consolidation.md`.
+- Current file references were checked with `rg "Size note|cleanup report|cleanup-report"`.
+- Current line counts were checked with `wc -l ScrollDownSports/Views/GameDetailView.swift Scripts/local_gate.sh ScrollDownSportsTests/HomeViewModelTests.swift`.
 
 ## Escalations
 
-- None.
+None.

@@ -1,6 +1,6 @@
 # Scroll Down Sports iOS
 
-Scroll Down Sports iOS is a SwiftUI app for browsing Scroll Down Sports game feeds, pinning games, resuming catch-up progress, and reading play-by-play before score and box-score payoff sections near the bottom of each game detail screen. It reads the SDA admin sports API base URL and optional API key from Xcode build settings that are expanded into the app `Info.plist`.
+Scroll Down Sports iOS is a SwiftUI app for browsing Scroll Down Sports game feeds, pinning games, resuming catch-up progress, and reading sport-rendered play-by-play before score and box-score payoff sections near the bottom of each game detail screen. It reads the SDA admin sports API base URL and optional API key from Xcode build settings that are expanded into the app `Info.plist`.
 
 ## Run Locally
 

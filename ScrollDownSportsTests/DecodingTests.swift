@@ -191,6 +191,97 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(event.sportMetadata["strength"], .string("even"))
     }
 
+    func testSportMetadataOnlySurvivesEventMapping() throws {
+        let metadata = try mappedSportMetadata(
+            sportMetadata: [
+                "baseState": "runner_on_first",
+                "count": ["balls": 2, "strikes": 1],
+                "runners": ["first", "second"]
+            ],
+            playIndex: 12
+        )
+
+        XCTAssertEqual(metadata["baseState"], .string("runner_on_first"))
+        XCTAssertEqual(metadata["count"], .object(["balls": .number(2), "strikes": .number(1)]))
+        XCTAssertEqual(metadata["runners"], .array([.string("first"), .string("second")]))
+        XCTAssertEqual(metadata["playIndex"], .number(12))
+        XCTAssertEqual(metadata.count, 4)
+    }
+
+    func testMetadataOnlySurvivesEventMapping() throws {
+        let metadata = try mappedSportMetadata(
+            metadata: [
+                "providerEventType": "single",
+                "confidence": 0.97
+            ],
+            playIndex: 13
+        )
+
+        XCTAssertEqual(metadata["providerEventType"], .string("single"))
+        XCTAssertEqual(metadata["confidence"], .number(0.97))
+        XCTAssertEqual(metadata["playIndex"], .number(13))
+        XCTAssertEqual(metadata.count, 3)
+    }
+
+    func testEmptyMetadataDoesNotReplaceSportMetadata() throws {
+        let metadata = try mappedSportMetadata(
+            sportMetadata: [
+                "outs": 1,
+                "baseState": "runners_on_corners"
+            ],
+            metadata: [:],
+            playIndex: 14
+        )
+
+        XCTAssertEqual(metadata["outs"], .number(1))
+        XCTAssertEqual(metadata["baseState"], .string("runners_on_corners"))
+        XCTAssertEqual(metadata["playIndex"], .number(14))
+        XCTAssertEqual(metadata.count, 3)
+    }
+
+    func testNonOverlappingMetadataSourcesMergePerKey() throws {
+        let metadata = try mappedSportMetadata(
+            sportMetadata: [
+                "inning": 8,
+                "baseState": "runner_on_second"
+            ],
+            metadata: [
+                "providerEventType": "double",
+                "review": ["source": "official"]
+            ],
+            playIndex: 15
+        )
+
+        XCTAssertEqual(metadata["inning"], .number(8))
+        XCTAssertEqual(metadata["baseState"], .string("runner_on_second"))
+        XCTAssertEqual(metadata["providerEventType"], .string("double"))
+        XCTAssertEqual(metadata["review"], .object(["source": .string("official")]))
+        XCTAssertEqual(metadata["playIndex"], .number(15))
+        XCTAssertEqual(metadata.count, 5)
+    }
+
+    func testMetadataOverridesSportMetadataOnMatchingKeys() throws {
+        let metadata = try mappedSportMetadata(
+            sportMetadata: [
+                "strength": "even",
+                "playIndex": 999,
+                "shot": ["type": "wrist"]
+            ],
+            metadata: [
+                "strength": "power_play",
+                "playIndex": NSNull(),
+                "providerEventType": "goal"
+            ],
+            playIndex: 16
+        )
+
+        XCTAssertEqual(metadata["strength"], .string("power_play"))
+        XCTAssertEqual(metadata["shot"], .object(["type": .string("wrist")]))
+        XCTAssertEqual(metadata["providerEventType"], .string("goal"))
+        XCTAssertEqual(metadata["playIndex"], .number(16))
+        XCTAssertEqual(metadata.count, 4)
+    }
+
     func testPartialPayloadsDegradeWithoutFabricatingScoresOrStats() throws {
         let response = try JSONDecoder.sda.decode(
             SDAGameDetailResponseDTO.self,
@@ -274,6 +365,67 @@ final class DecodingTests: XCTestCase {
             XCTFail("Unexpected error: \(error)", file: file, line: line)
         }
     }
+
+    private func mappedSportMetadata(
+        sportMetadata: [String: Any]? = nil,
+        metadata: [String: Any]? = nil,
+        playIndex: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> [String: JSONValue] {
+        var play: [String: Any] = [
+            "eventId": "metadata-\(playIndex)",
+            "playIndex": playIndex,
+            "displayType": "Play",
+            "periodLabel": "Q1",
+            "description": "Mapped event",
+            "score": ["home": 0, "away": 0],
+            "importance": [
+                "schemaVersion": 1,
+                "level": "contextual",
+                "rank": 10,
+                "bucket": "context",
+                "reasons": [],
+                "isKeyMoment": false,
+                "isScoringPlay": false,
+                "isLeadChange": false,
+                "isTyingPlay": false,
+                "isLateGame": false,
+                "isFinalPlay": false,
+                "isRunEnding": false
+            ],
+            "modeEligibility": ["important": false, "standard": true, "all": true]
+        ]
+        if let sportMetadata {
+            play["sportMetadata"] = sportMetadata
+        }
+        if let metadata {
+            play["metadata"] = metadata
+        }
+
+        let payload: [String: Any] = [
+            "detailContractVersion": 2,
+            "game": [
+                "id": 99,
+                "leagueCode": "mlb",
+                "gameDate": "2026-05-22T23:30:00Z",
+                "status": "in_progress",
+                "homeTeam": "Home Club",
+                "awayTeam": "Away Club",
+                "homeTeamAbbr": "HOM",
+                "awayTeamAbbr": "AWY",
+                "score": ["home": 0, "away": 0]
+            ],
+            "teamStats": [],
+            "playerStats": [],
+            "plays": [play]
+        ]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        let response = try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: data)
+        let event = try XCTUnwrap(SDADomainMapper.detail(from: response).events.first, file: file, line: line)
+        return event.sportMetadata
+    }
+
 }
 
 private final class MockWrongContractURLProtocol: MockHTTPURLProtocol {}

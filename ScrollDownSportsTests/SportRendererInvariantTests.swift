@@ -235,6 +235,139 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertFalse(visuals.map(\.title).joined(separator: " ").localizedCaseInsensitiveContains("tertiary"))
     }
 
+    func testDefaultSituationHookIsNilWithVisibleStreamContext() {
+        let game = TestFixtures.makeGame(id: 1508, leagueCode: "nba")
+        let event = TestFixtures.makeEvent(sequence: 1, importance: .contextual)
+        let renderer = GenericSportRenderer(leagueCode: "nba")
+        let context = SportRendererSituationContext(
+            game: game,
+            selectedMode: .key,
+            visibleEvents: [event],
+            eventIndex: 0
+        )
+
+        XCTAssertNil(renderer.eventSituationPresentation(for: event))
+        XCTAssertNil(renderer.eventSituationPresentation(for: event, context: context))
+        XCTAssertNil(renderer.eventPresentation(for: event, periodGroupLabel: "Q1", context: context).situation)
+    }
+
+    func testGenericSituationGateUsesPressureBoardForEventLocalContext() {
+        let event = GameEvent(
+            id: "event-pressure-board",
+            sourceEventID: "event-pressure-board",
+            sequence: 2,
+            periodOrdinal: 4,
+            periodLabel: "Q4",
+            clockLabel: "00:42",
+            teamOwnership: .home,
+            teamAbbreviation: "SEA",
+            eventType: "Three pointer",
+            importance: .primary,
+            eligibleModes: [.timeline, .flow, .stream],
+            usesBackendModeEligibility: true,
+            presentation: TestFixtures.eventPresentation(timeLabel: "Q4 00:42"),
+            importanceMetadata: EventImportanceData(
+                level: "primary",
+                rank: 85,
+                bucket: "scoring",
+                reasons: [],
+                isKeyMoment: true,
+                isScoringPlay: true,
+                isLeadChange: false,
+                isTyingPlay: true,
+                winProbabilityDelta: nil
+            ),
+            headline: "Seattle ties it from the corner.",
+            detail: nil,
+            rawText: nil,
+            rawFeedSource: nil,
+            rawFeedUpdatedAt: nil,
+            scoreBefore: ScoreState(
+                participantScores: [
+                    ParticipantScore(participantID: "home", participantRole: .home, score: 76),
+                    ParticipantScore(participantID: "away", participantRole: .away, score: 79)
+                ]
+            ),
+            scoreAfter: ScoreState(
+                participantScores: [
+                    ParticipantScore(participantID: "home", participantRole: .home, score: 79),
+                    ParticipantScore(participantID: "away", participantRole: .away, score: 79)
+                ]
+            ),
+            scoreDelta: ScoreDelta(participantID: "home", participantRole: .home, before: 76, after: 79, change: 3),
+            sportMetadata: [:]
+        )
+
+        let context = SportRendererSituationContext(
+            game: TestFixtures.makeGame(id: 1510, leagueCode: "nba"),
+            selectedMode: .key,
+            visibleEvents: [event],
+            eventIndex: 0
+        )
+        let situation = BasketballRenderer(leagueCode: "nba").eventPresentation(
+            for: event,
+            periodGroupLabel: "Q4",
+            context: context
+        ).situation
+
+        XCTAssertEqual(situation?.layout, .pressureBoardFallback)
+        XCTAssertEqual(situation?.sport, .basketball)
+        XCTAssertEqual(situation?.dataConfidence, .explicitGenericEventContext)
+        XCTAssertEqual(situation?.ownership?.role, .association)
+        XCTAssertFalse(situation?.ownership?.claimsPossession == true)
+    }
+
+    func testFootballMetadataDoesNotClaimFieldSituationWithoutStructuredSupport() {
+        let event = TestFixtures.makeEvent(
+            sequence: 3,
+            importance: .primary,
+            periodLabel: "Q2",
+            clockLabel: "08:14",
+            eventType: "Pass",
+            sportMetadata: [
+                "down": .number(3),
+                "distance": .number(7),
+                "yardLine": .string("SEA 42")
+            ]
+        )
+
+        let situation = FootballRenderer(leagueCode: "nfl").eventPresentation(
+            for: event,
+            periodGroupLabel: "Q2"
+        ).situation
+
+        XCTAssertNil(situation)
+    }
+
+    func testBaseballSituationHookCanUseVisibleStreamContext() {
+        let game = TestFixtures.makeGame(id: 1509, leagueCode: "mlb")
+        let event = TestFixtures.makeEvent(
+            sequence: 1,
+            importance: .primary,
+            periodLabel: "T8",
+            clockLabel: "1 out",
+            sportMetadata: [
+                "baseStateBefore": .string("runner_on_second"),
+                "outsBefore": .number(1),
+                "ballsBefore": .number(2),
+                "strikesBefore": .number(1)
+            ]
+        )
+        let context = SportRendererSituationContext(
+            game: game,
+            selectedMode: .key,
+            visibleEvents: [event],
+            eventIndex: 0
+        )
+
+        let situation = BaseballRenderer().eventSituationPresentation(for: event, context: context)
+        let presentation = BaseballRenderer().eventPresentation(for: event, periodGroupLabel: "Top 8th", context: context)
+
+        XCTAssertEqual(situation?.setupText, "Runner on 2nd · 1 out · 2-1 count")
+        XCTAssertEqual(presentation.situation, situation)
+        XCTAssertEqual(presentation.clockText, "1 out")
+    }
+
     func testPresentationBuildersExposeSemanticRolesAndEmptyStates() {
         let game = TestFixtures.makeGame(id: 1507, leagueCode: "nhl", scoreboard: scoreboardWithDuplicateRunSegment())
         let emptyDetail = GameDetail(

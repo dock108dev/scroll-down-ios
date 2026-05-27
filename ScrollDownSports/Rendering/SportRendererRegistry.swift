@@ -21,7 +21,9 @@ enum SportRendererRegistry {
             SoccerRenderer(leagueCode: leagueCode)
         case .golf:
             GolfRenderer(leagueCode: leagueCode)
-        case .tennis, .other:
+        case .tennis:
+            TennisRenderer(leagueCode: leagueCode)
+        case .other:
             GenericSportRenderer(leagueCode: leagueCode, sportLabel: sport.displayName)
         }
     }

@@ -63,6 +63,7 @@ struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable, Sendable {
 
 struct SDAGameDetailResponseDTO: Decodable, Sendable {
     let detailContractVersion: Int
+    let situationContract: SDASituationContractDTO?
     let game: SDAGameDTO
     let teamStats: [TeamStat]
     let playerStats: [PlayerStat]
@@ -151,8 +152,93 @@ struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
     let scoreAfter: SDAScoreSnapshotDTO?
     let scoreDelta: SDAScoreDeltaDTO?
     let scoreboard: SDAEventScoreboardDTO?
+    let situationBefore: SDAEventSituationDTO?
+    let situationAfter: SDAEventSituationDTO?
     let sportMetadata: [String: JSONValue]?
     let metadata: [String: JSONValue]?
+}
+
+struct SDASituationContractDTO: Decodable, Hashable, Sendable {
+    let schemaVersion: Int
+    let supportsSituationBefore: Bool
+    let supportsSituationAfter: Bool?
+    let supportedSports: [String]?
+    let minimumDetailContractVersion: Int?
+    let generatedAt: String?
+}
+
+struct SDAEventSituationDTO: Decodable, Hashable, Sendable {
+    let schemaVersion: Int
+    let sport: String
+    let display: SDASituationDisplayDTO?
+    let score: SDAScoreSnapshotDTO?
+    let period: SDASituationPeriodDTO?
+    let clock: SDASituationClockDTO?
+    let possession: [String: JSONValue]?
+    let sportState: SDASituationSportStateDTO?
+    let pressure: SDASituationPressureDTO?
+    let confidence: SDASituationConfidenceDTO?
+}
+
+struct SDASituationDisplayDTO: Decodable, Hashable, Sendable {
+    let headline: String?
+    let subheadline: String?
+    let tokens: [String]?
+    let accessibilityLabel: String?
+}
+
+struct SDASituationPeriodDTO: Decodable, Hashable, Sendable {
+    let ordinal: Int?
+    let label: String?
+    let phase: String?
+}
+
+struct SDASituationClockDTO: Decodable, Hashable, Sendable {
+    let label: String?
+    let secondsRemaining: Double?
+}
+
+struct SDASituationPressureDTO: Decodable, Hashable, Sendable {
+    let level: String?
+    let rank: Int?
+    let winProbability: Double?
+    let leverageIndex: Double?
+}
+
+struct SDASituationConfidenceDTO: Decodable, Hashable, Sendable {
+    let level: String?
+    let source: String?
+    let reasons: [String]?
+}
+
+struct SDASituationSportStateDTO: Decodable, Hashable, Sendable {
+    let baseball: SDABaseballSituationDTO?
+    let football: [String: JSONValue]?
+    let hockey: [String: JSONValue]?
+    let basketball: [String: JSONValue]?
+    let soccer: [String: JSONValue]?
+    let golf: [String: JSONValue]?
+    let tennis: [String: JSONValue]?
+}
+
+struct SDABaseballSituationDTO: Decodable, Hashable, Sendable {
+    let inning: Int?
+    let half: String?
+    let outs: Int?
+    let balls: Int?
+    let strikes: Int?
+    let bases: SDABasesOccupiedDTO?
+    let baseState: String?
+    let battingTeamAbbreviation: String?
+    let fieldingTeamAbbreviation: String?
+    let batterName: String?
+    let pitcherName: String?
+}
+
+struct SDABasesOccupiedDTO: Decodable, Hashable, Sendable {
+    let first: Bool?
+    let second: Bool?
+    let third: Bool?
 }
 
 struct TeamStat: Codable, Identifiable, Hashable, Sendable {

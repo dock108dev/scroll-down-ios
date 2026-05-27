@@ -21,11 +21,13 @@ final class PeriodLabelFormatterTests: XCTestCase {
         XCTAssertEqual(topFirst.groupLabel, "Top 1st")
         XCTAssertEqual(topFirst.rowClockText, "")
         XCTAssertEqual(topFirst.combinedText, "Top 1st")
+        XCTAssertEqual(topFirst.situationText, "Top 1st")
         XCTAssertEqual(topFirst.resumeText, "Top 1st")
         XCTAssertEqual(topFirst.groupKey, "mlb:inning:1:top")
         XCTAssertEqual(bottomSixth.groupLabel, "Bottom 6th")
         XCTAssertEqual(bottomSixth.rowClockText, "1 out")
         XCTAssertEqual(bottomSixth.combinedText, "Bottom 6th · 1 out")
+        XCTAssertEqual(bottomSixth.situationText, "Bottom 6th 1 out")
         XCTAssertEqual(bottomSixth.groupKey, "mlb:inning:6:bottom")
     }
 
@@ -62,15 +64,19 @@ final class PeriodLabelFormatterTests: XCTestCase {
         XCTAssertEqual(nflSecond.groupLabel, "Q2")
         XCTAssertEqual(nflSecond.rowClockText, "08:14")
         XCTAssertEqual(nflSecond.combinedText, "Q2 · 08:14")
+        XCTAssertEqual(nflSecond.situationText, "Q2 08:14")
         XCTAssertEqual(nbaThird.groupLabel, "Q3")
         XCTAssertEqual(nbaThird.rowClockText, "10:00")
         XCTAssertEqual(nbaThird.combinedText, "Q3 · 10:00")
+        XCTAssertEqual(nbaThird.situationText, "Q3 10:00")
         XCTAssertEqual(nhlThird.groupLabel, "3rd")
         XCTAssertEqual(nhlThird.rowClockText, "02:14")
         XCTAssertEqual(nhlThird.combinedText, "3rd · 02:14")
+        XCTAssertEqual(nhlThird.situationText, "3rd 02:14")
         XCTAssertEqual(soccerStoppage.groupLabel, "1st Half")
         XCTAssertEqual(soccerStoppage.rowClockText, "45'+2'")
         XCTAssertEqual(soccerStoppage.combinedText, "1st Half · 45'+2'")
+        XCTAssertEqual(soccerStoppage.situationText, "45'+2'")
     }
 
     func testFormatterCollapsesDuplicatePeriodLabels() {

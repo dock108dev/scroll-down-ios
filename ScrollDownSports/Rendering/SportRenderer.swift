@@ -1,10 +1,42 @@
+struct SportRendererSituationContext {
+    let game: Game
+    let selectedMode: DetailStreamMode
+    let visibleEvents: [GameEvent]
+    let eventIndex: Int
+    let scoreSpoilerPolicy: ScoreSpoilerPolicy
+
+    init(
+        game: Game,
+        selectedMode: DetailStreamMode,
+        visibleEvents: [GameEvent],
+        eventIndex: Int,
+        scoreSpoilerPolicy: ScoreSpoilerPolicy = .revealed
+    ) {
+        self.game = game
+        self.selectedMode = selectedMode
+        self.visibleEvents = visibleEvents
+        self.eventIndex = eventIndex
+        self.scoreSpoilerPolicy = scoreSpoilerPolicy
+    }
+}
+
 protocol SportRenderer {
     var theme: SportRenderingTheme { get }
 
     func gameCardPresentation(for game: Game) -> GameCardPresentation
     func gameHeaderPresentation(for game: Game) -> GameHeaderPresentation
     func eventPresentation(for event: GameEvent) -> GameEventPresentation
+    func eventSituationPresentation(for event: GameEvent) -> GameEventSituationPresentation?
+    func eventSituationPresentation(
+        for event: GameEvent,
+        context: SportRendererSituationContext
+    ) -> GameEventSituationPresentation?
     func eventPresentation(for event: GameEvent, periodGroupLabel: String?) -> GameEventPresentation
+    func eventPresentation(
+        for event: GameEvent,
+        periodGroupLabel: String?,
+        context: SportRendererSituationContext?
+    ) -> GameEventPresentation
     func periodGroupLabel(for event: GameEvent) -> String
     func periodGroupKey(for event: GameEvent) -> String
     func rowClockText(for event: GameEvent, periodGroupLabel: String?) -> String
@@ -41,9 +73,39 @@ extension SportRenderer {
     }
 
     func eventPresentation(for event: GameEvent, periodGroupLabel: String?) -> GameEventPresentation {
+        eventPresentation(for: event, periodGroupLabel: periodGroupLabel, context: nil)
+    }
+
+    func eventPresentation(
+        for event: GameEvent,
+        periodGroupLabel: String?,
+        context: SportRendererSituationContext?
+    ) -> GameEventPresentation {
         var presentation = eventPresentation(for: event)
         presentation.clockText = rowClockText(for: event, periodGroupLabel: periodGroupLabel)
+        if presentation.situation == nil, let context {
+            presentation.situation = eventSituationPresentation(for: event, context: context)
+            presentation.situationAccessibilityText = presentation.situation?.accessibilitySummary
+        }
+        if let context {
+            presentation = EventScoreSpoilerFilter.filtered(
+                presentation: presentation,
+                game: context.game,
+                policy: context.scoreSpoilerPolicy
+            )
+        }
         return presentation
+    }
+
+    func eventSituationPresentation(for event: GameEvent) -> GameEventSituationPresentation? {
+        nil
+    }
+
+    func eventSituationPresentation(
+        for event: GameEvent,
+        context: SportRendererSituationContext
+    ) -> GameEventSituationPresentation? {
+        eventSituationPresentation(for: event)
     }
 }
 
@@ -68,9 +130,39 @@ extension GenericSportRendererBacked {
         generic.eventPresentation(for: event)
     }
 
+    func eventSituationPresentation(for event: GameEvent) -> GameEventSituationPresentation? {
+        generic.eventSituationPresentation(for: event)
+    }
+
+    func eventSituationPresentation(
+        for event: GameEvent,
+        context: SportRendererSituationContext
+    ) -> GameEventSituationPresentation? {
+        generic.eventSituationPresentation(for: event, context: context)
+    }
+
     func eventPresentation(for event: GameEvent, periodGroupLabel: String?) -> GameEventPresentation {
+        eventPresentation(for: event, periodGroupLabel: periodGroupLabel, context: nil)
+    }
+
+    func eventPresentation(
+        for event: GameEvent,
+        periodGroupLabel: String?,
+        context: SportRendererSituationContext?
+    ) -> GameEventPresentation {
         var presentation = eventPresentation(for: event)
         presentation.clockText = rowClockText(for: event, periodGroupLabel: periodGroupLabel)
+        if presentation.situation == nil, let context {
+            presentation.situation = eventSituationPresentation(for: event, context: context)
+            presentation.situationAccessibilityText = presentation.situation?.accessibilitySummary
+        }
+        if let context {
+            presentation = EventScoreSpoilerFilter.filtered(
+                presentation: presentation,
+                game: context.game,
+                policy: context.scoreSpoilerPolicy
+            )
+        }
         return presentation
     }
 

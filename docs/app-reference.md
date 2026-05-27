@@ -6,7 +6,7 @@
 
 `ContentView` hosts `HomeView` in a compact `NavigationStack` or a regular-width `NavigationSplitView` based on `SportsLayoutMetrics`. `HomeView` has a sticky filter header with league selection and team search, a refresh toolbar button, pull-to-refresh, an optional pinned section, and a timeline section. Timeline date sections are built from older catch-up games, yesterday, today, live games, later today, and upcoming games when those groups contain visible games.
 
-`GameDetailView` loads one game by id. When detail data is available, it renders the game header, optional resume banner, stream controls, play-by-play, player stats, team stats, and a box-score section. The detail screen starts a five-minute foreground refresh loop while visible and stops it on disappear.
+`GameDetailView` loads one game by id. When detail data is available, it renders the game header, optional resume banner, stream controls, play-by-play, player stats, team stats, and a box-score section. Play rows can include sport-rendered situation panels and expandable raw-feed details when the mapped event data supports them. The detail screen starts a five-minute foreground refresh loop while visible and stops it on disappear.
 
 ## API And Configuration
 
@@ -23,7 +23,7 @@ GET /api/admin/sports/games?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&limit=200
 GET /api/admin/sports/games/{id}
 ```
 
-The list call can also include `league=<league>` when the home league filter is not `All`. The detail call rejects responses that do not satisfy the v2 detail contract checks in `SDAApiClient`.
+The list call can also include `league=<league>` when the home league filter is not `All`. The detail call rejects responses whose `detailContractVersion` is below 2, whose plays are missing all-mode eligibility, display type, period label, or usable event text, or whose required v2 fields cannot decode.
 
 ## Game Window
 
@@ -53,7 +53,11 @@ Progress for unpinned games is pruned after 30 days. Pinned game records are kep
 
 `DetailStreamMode` exposes three stream modes: `Important`, `Standard`, and `All Plays`. The modes map to stored `GameMode` values `timeline`, `flow`, and `stream`.
 
-`SportRendererRegistry` routes MLB to `BaseballRenderer`, NHL to `HockeyRenderer`, NFL to `FootballRenderer`, NBA to `BasketballRenderer`, soccer leagues to `SoccerRenderer`, golf to `GolfRenderer`, and tennis or other sports to `GenericSportRenderer`.
+`SportRendererRegistry` routes MLB to `BaseballRenderer`, NHL to `HockeyRenderer`, NFL to `FootballRenderer`, NBA to `BasketballRenderer`, soccer leagues to `SoccerRenderer`, golf to `GolfRenderer`, tennis to `TennisRenderer`, and other sports to `GenericSportRenderer`.
+
+Detail event mapping keeps score-before, score-after, score-delta, optional `situationBefore` and `situationAfter` snapshots, and merged sport metadata on each `GameEvent`. `PlayByPlaySection` passes the selected stream mode, visible event list, event index, game, and score-spoiler policy into the renderer so situation cards are only built for events visible in the current stream.
+
+Situation cards use `SituationCardPolicy` and `SituationConfidenceGate` before rendering. Baseball can render a typed diamond when explicit pre-event base state is present, while ambiguous or generic context can fall back to a pressure board. Football, basketball, hockey, soccer, golf, tennis, and unknown sports route their supported situation metadata through sport-specific renderers or the generic pressure-board fallback without fabricating richer diagrams when the required state is missing.
 
 Home card state hides score rows behind a `score at bottom` cue when a game has a score, the local record has not reached the scoreboard, and the game is final or catch-up capable. Once the scoreboard enters the detail viewport, `GameDetailView` records `reachedScoreboard`.
 

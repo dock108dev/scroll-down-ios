@@ -66,24 +66,49 @@ struct PlayByPlaySection: View {
     let events: [GameEvent]
     let renderer: any SportRenderer
     let selectedMode: DetailStreamMode
+    let scoreSpoilerPolicy: ScoreSpoilerPolicy
     let expandedRawFeedKeys: Set<String>
     let onRawFeedExpansionChange: (String, Bool) -> Void
 
+    init(
+        game: Game,
+        events: [GameEvent],
+        renderer: any SportRenderer,
+        selectedMode: DetailStreamMode,
+        scoreSpoilerPolicy: ScoreSpoilerPolicy = .revealed,
+        expandedRawFeedKeys: Set<String>,
+        onRawFeedExpansionChange: @escaping (String, Bool) -> Void
+    ) {
+        self.game = game
+        self.events = events
+        self.renderer = renderer
+        self.selectedMode = selectedMode
+        self.scoreSpoilerPolicy = scoreSpoilerPolicy
+        self.expandedRawFeedKeys = expandedRawFeedKeys
+        self.onRawFeedExpansionChange = onRawFeedExpansionChange
+    }
+
     var body: some View {
+        let rowVisibleEvents = visibleEvents
+
         CatchUpSection(title: selectedMode.sectionTitle, systemImage: "sparkles") {
             if events.isEmpty {
                 UnavailableText("No play-by-play data yet.")
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-                    if visibleEvents.isEmpty {
+                    if rowVisibleEvents.isEmpty {
                         UnavailableText(selectedMode.emptyStateMessage)
                     } else {
-                        ForEach(periodGroups) { group in
+                        ForEach(periodGroups(for: rowVisibleEvents)) { group in
                             VStack(alignment: .leading, spacing: 7) {
                                 PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)
                                 ForEach(group.events) { event in
                                     let readIndex = readIndex(for: event)
-                                    let presentation = eventPresentation(for: event, periodGroupLabel: group.label)
+                                    let presentation = eventPresentation(
+                                        for: event,
+                                        periodGroupLabel: group.label,
+                                        visibleEvents: rowVisibleEvents
+                                    )
                                     let rawFeedKey = event.rawFeedExpansionKey(game: game)
                                     PlayRow(
                                         presentation: presentation,
@@ -131,7 +156,7 @@ struct PlayByPlaySection: View {
         DetailStreamMode.dedupedEvents(from: events)
     }
 
-    private var periodGroups: [GameEventPeriodGroup] {
+    private func periodGroups(for visibleEvents: [GameEvent]) -> [GameEventPeriodGroup] {
         renderer.periodGroups(for: visibleEvents)
     }
 
@@ -139,219 +164,25 @@ struct PlayByPlaySection: View {
         dedupedEvents.firstIndex(of: event) ?? 0
     }
 
-    private func eventPresentation(for event: GameEvent, periodGroupLabel: String) -> GameEventPresentation {
-        renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
-    }
-}
-
-struct PlayRow: View {
-    let presentation: GameEventPresentation
-    let importance: EventVisualImportance
-    let rawFeedKey: String?
-    let isRawFeedExpanded: Bool
-    let onRawFeedExpansionChange: (String, Bool) -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 7) {
-            EventMarker(importance: importance, accent: teamColor)
-            VStack(alignment: .leading, spacing: importance == .low ? 3 : 4) {
-                contextLine
-                Text(presentation.headline)
-                    .font(headlineFont)
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .lineSpacing(1)
-                    .fixedSize(horizontal: false, vertical: true)
-                if importance != .low, let detail = presentation.detail?.nilIfBlank {
-                    Text(detail)
-                        .font(SportsTheme.Typography.momentDetail)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                        .lineSpacing(1)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else if let detail = presentation.detail?.nilIfBlank {
-                    Text(detail)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                        .lineLimit(2)
-                }
-                detailLine
-                rawFeedDisclosure
-            }
+    private func eventPresentation(
+        for event: GameEvent,
+        periodGroupLabel: String,
+        visibleEvents: [GameEvent]
+    ) -> GameEventPresentation {
+        guard let visibleEventIndex = visibleEvents.firstIndex(of: event) else {
+            return renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: 0.75)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(presentation.accessibilityLabel ?? presentation.headline)
-    }
-
-    private var contextLine: some View {
-        HStack(spacing: 5) {
-            if !presentation.clockText.isEmpty {
-                if !AppEnvironment.isRunningUITests {
-                    Text(presentation.clockText)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.ink)
-                }
-            }
-            if let team = presentation.teamAbbreviation?.nilIfBlank {
-                teamBadge(team)
-            }
-            if let eventLabel = presentation.eventLabel?.nilIfBlank {
-                Text(eventLabel)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(accentColor)
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func teamBadge(_ team: String) -> some View {
-        Text(team)
-            .font(SportsTheme.Typography.statusPill)
-            .foregroundStyle(teamColor)
-            .padding(.vertical, 2)
-            .padding(.horizontal, 6)
-            .background(teamColor.opacity(0.12), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous)
-                    .stroke(teamColor.opacity(0.22), lineWidth: SportsTheme.Stroke.standard)
+        return renderer.eventPresentation(
+            for: event,
+            periodGroupLabel: periodGroupLabel,
+            context: SportRendererSituationContext(
+                game: game,
+                selectedMode: selectedMode,
+                visibleEvents: visibleEvents,
+                eventIndex: visibleEventIndex,
+                scoreSpoilerPolicy: scoreSpoilerPolicy
             )
-    }
-
-    @ViewBuilder
-    private var detailLine: some View {
-        if let scoringLabel = presentation.scoringLabel?.nilIfBlank {
-            Text(scoringLabel)
-                .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(SportsTheme.Tone.scoring.accent)
-        } else if let teamLabel = presentation.teamLabel?.nilIfBlank,
-                  presentation.teamAbbreviation?.nilIfBlank == nil {
-            Text(teamLabel)
-                .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(teamColor)
-        }
-        if importance != .low,
-           let scoreLabel = presentation.scoreLabel?.nilIfBlank {
-            Text(scoreLabel)
-                .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(SportsTheme.Colors.ink)
-        } else {
-            if let scoreLabel = presentation.scoreLabel?.nilIfBlank {
-                Text(scoreLabel)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.ink)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var rawFeedDisclosure: some View {
-        if let rawFeedKey,
-           let rawFeedText = presentation.rawFeedText?.nilIfBlank {
-            Button {
-                SportsFeedback.selection()
-                onRawFeedExpansionChange(rawFeedKey, !isRawFeedExpanded)
-            } label: {
-                Label("Feed details", systemImage: isRawFeedExpanded ? "chevron.up" : "chevron.down")
-                    .font(SportsTheme.Typography.metadata)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            .padding(.top, 1)
-            .frame(minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
-            .accessibilityLabel(isRawFeedExpanded ? "Hide feed details" : "Show feed details")
-            .accessibilityValue(isRawFeedExpanded ? "Expanded" : "Collapsed")
-
-            if isRawFeedExpanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(rawFeedText)
-                        .font(SportsTheme.Typography.rawFeedText)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let source = presentation.rawFeedSource?.nilIfBlank {
-                        Text(source)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(SportsTheme.Colors.secondaryInk.opacity(0.75))
-                    }
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SportsTheme.Colors.paper, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous))
-            }
-        }
-    }
-
-    private var headlineFont: Font {
-        switch importance {
-        case .critical:
-            return SportsTheme.Typography.momentHeadline
-        case .high:
-            return SportsTheme.Typography.momentHeadline
-        case .medium:
-            return SportsTheme.Typography.momentHeadline
-        case .low:
-            return SportsTheme.Typography.momentHeadline
-        }
-    }
-
-    private var cardBackground: Color {
-        switch importance {
-        case .critical:
-            return SportsTheme.Colors.paperRaised
-        case .high, .medium:
-            return SportsTheme.Surface.eventCard.background
-        case .low:
-            return SportsTheme.Colors.paperRaised
-        }
-    }
-
-    private var accentColor: Color {
-        switch importance {
-        case .critical:
-            return SportsTheme.Tone.critical.accent
-        case .high:
-            return SportsTheme.Tone.scoring.accent
-        case .medium:
-            return SportsTheme.Tone.newPlay.accent
-        case .low:
-            return SportsTheme.Tone.neutral.accent
-        }
-    }
-
-    private var teamColor: Color {
-        SportsTheme.Team.accent(for: presentation.teamAbbreviation, fallback: accentColor)
-    }
-}
-
-private struct EventMarker: View {
-    let importance: EventVisualImportance
-    let accent: Color
-
-    var body: some View {
-        VStack(spacing: 3) {
-            Circle()
-                .fill(accent)
-                .frame(width: markerSize, height: markerSize)
-            Rectangle()
-                .fill(accent.opacity(importance == .low ? 0.16 : 0.28))
-                .frame(width: importance == .critical ? 2 : 1)
-        }
-        .frame(width: 10)
-    }
-
-    private var markerSize: CGFloat {
-        switch importance {
-        case .critical: return 10
-        case .high: return 9
-        case .medium: return 7
-        case .low: return 6
-        }
+        )
     }
 }
 
@@ -394,19 +225,31 @@ struct TeamStatsSection: View {
 struct BoxScoreSection: View {
     let game: Game
     let renderer: any SportRenderer
-    @State private var scoreRevealed: Bool
+    @Binding private var externalScoreRevealed: Bool
+    @State private var localScoreRevealed: Bool
+    private let usesExternalScoreRevealed: Bool
 
     init(game: Game, renderer: any SportRenderer, scoreInitiallyRevealed: Bool = true) {
         self.game = game
         self.renderer = renderer
-        _scoreRevealed = State(initialValue: scoreInitiallyRevealed)
+        _externalScoreRevealed = .constant(scoreInitiallyRevealed)
+        _localScoreRevealed = State(initialValue: scoreInitiallyRevealed)
+        usesExternalScoreRevealed = false
+    }
+
+    init(game: Game, renderer: any SportRenderer, scoreRevealed: Binding<Bool>) {
+        self.game = game
+        self.renderer = renderer
+        _externalScoreRevealed = scoreRevealed
+        _localScoreRevealed = State(initialValue: scoreRevealed.wrappedValue)
+        usesExternalScoreRevealed = true
     }
 
     var body: some View {
         let presentation = renderer.scoreboardPresentation(for: game)
 
         CatchUpSection(title: presentation.title, systemImage: presentation.systemImage) {
-            if scoreRevealed {
+            if isScoreRevealed {
                 VStack(spacing: 9) {
                     ScoreboardCardHeader(presentation: presentation)
                     if let finalScoreText {
@@ -443,7 +286,7 @@ struct BoxScoreSection: View {
 
                     Button {
                         SportsFeedback.impact()
-                        scoreRevealed = true
+                        revealScore()
                     } label: {
                         Label(presentation.revealButtonTitle, systemImage: "eye")
                             .font(.subheadline.weight(.semibold))
@@ -453,6 +296,18 @@ struct BoxScoreSection: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
             }
+        }
+    }
+
+    private var isScoreRevealed: Bool {
+        usesExternalScoreRevealed ? externalScoreRevealed : localScoreRevealed
+    }
+
+    private func revealScore() {
+        if usesExternalScoreRevealed {
+            externalScoreRevealed = true
+        } else {
+            localScoreRevealed = true
         }
     }
 

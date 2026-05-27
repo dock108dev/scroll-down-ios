@@ -29,6 +29,7 @@ struct GameDetailView: View {
     @State private var stickyEndRequest = 0
     @State private var stickyReturnRequest = 0
     @State private var uiTestScoreboardRevealed = false
+    @State private var scoreRevealed = false
     @State private var bottomAffordanceHeight: CGFloat = 0
 
     private let playerStatsSectionID = "player-stats"
@@ -75,6 +76,7 @@ struct GameDetailView: View {
                                 .id(GameDetailScrollAnchor.top)
                                 .accessibilityIdentifier("detail.anchor.top")
                             let renderer = SportRendererRegistry.renderer(for: detail.game)
+                            let scoreSpoilerPolicy: ScoreSpoilerPolicy = scoreRevealed ? .revealed : .hideAbsoluteScores
                             GameHeaderView(
                                 game: detail.game,
                                 renderer: renderer,
@@ -134,7 +136,8 @@ struct GameDetailView: View {
                             if AppEnvironment.isRunningUITests, uiTestScoreboardRevealed {
                                 BoxScoreSection(
                                     game: detail.game,
-                                    renderer: renderer
+                                    renderer: renderer,
+                                    scoreRevealed: $scoreRevealed
                                 )
                                     .accessibilityIdentifier("detail.boxScore")
                             }
@@ -158,6 +161,7 @@ struct GameDetailView: View {
                                 events: detail.events,
                                 renderer: renderer,
                                 selectedMode: viewModel.selectedStreamMode,
+                                scoreSpoilerPolicy: scoreSpoilerPolicy,
                                 expandedRawFeedKeys: viewModel.localProgress?.expandedRawFeedKeys ?? [],
                                 onRawFeedExpansionChange: viewModel.setRawFeedExpanded
                             )
@@ -179,7 +183,8 @@ struct GameDetailView: View {
                                 .accessibilityIdentifier("detail.teamStats")
                             BoxScoreSection(
                                 game: detail.game,
-                                renderer: renderer
+                                renderer: renderer,
+                                scoreRevealed: $scoreRevealed
                             )
                                 .id(GameDetailScrollAnchor.scoreboard)
                                 .accessibilityIdentifier("detail.boxScore")
@@ -216,6 +221,7 @@ struct GameDetailView: View {
                                 onEnd: {
                                     if AppEnvironment.isRunningUITests {
                                         uiTestScoreboardRevealed = true
+                                        scoreRevealed = true
                                     }
                                     stickyEndRequest += 1
                                 },

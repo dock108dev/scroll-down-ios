@@ -87,6 +87,127 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testPlayRowSituationCollapsedRawFeed() {
+        assertSwiftUISnapshot(
+            of: PlayRow(
+                presentation: Self.baseballSituationPresentation(),
+                importance: .critical,
+                rawFeedKey: "baseball-threat",
+                isRawFeedExpanded: false,
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "play-row-situation-collapsed-raw-feed",
+            width: .standard,
+            height: 380
+        )
+    }
+
+    func testPlayRowSituationExpandedRawFeed() {
+        assertSwiftUISnapshot(
+            of: PlayRow(
+                presentation: Self.baseballSituationPresentation(),
+                importance: .critical,
+                rawFeedKey: "baseball-threat",
+                isRawFeedExpanded: true,
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "play-row-situation-expanded-raw-feed",
+            width: .standard,
+            height: 500
+        )
+    }
+
+    func testPlayRowSituationCompactWidth() {
+        assertSwiftUISnapshot(
+            of: PlayRow(
+                presentation: Self.baseballSituationPresentation(
+                    headline: "Jeff McNeil walks after a long plate appearance to load the bases",
+                    detail: "The pressure keeps building with the go-ahead run now on second.",
+                    situation: Self.baseballSituation(diagram: nil)
+                ),
+                importance: .high,
+                rawFeedKey: nil,
+                isRawFeedExpanded: false,
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "play-row-situation-compact-width",
+            width: .compact,
+            height: 340
+        )
+    }
+
+    func testPlayRowSituationNoCountVariant() {
+        assertSwiftUISnapshot(
+            of: PlayRow(
+                presentation: Self.baseballSituationPresentation(
+                    headline: "Cal Raleigh moves the tying run into scoring position",
+                    detail: "The card keeps the bases and outs readable without inventing a pitch count.",
+                    situation: Self.baseballSituation(
+                        setupText: "Runners on corners · 2 outs",
+                        contextLine: "Down 1 -> Tied",
+                        pressureLine: "Rally threat",
+                        diagram: .baseballDiamond(
+                            BaseballSituationDiagram(
+                                occupiedBases: [.first, .third],
+                                batting: Self.baseballOwnership(),
+                                outs: 2,
+                                count: "4-2"
+                            )
+                        )
+                    )
+                ),
+                importance: .high,
+                rawFeedKey: nil,
+                isRawFeedExpanded: false,
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "play-row-situation-no-count",
+            width: .standard,
+            height: 360
+        )
+    }
+
+    func testPlayRowSituationNoScoreDeltaVariant() {
+        assertSwiftUISnapshot(
+            of: PlayRow(
+                presentation: Self.baseballSituationPresentation(
+                    headline: "J.P. Crawford works the count with the bases loaded",
+                    detail: nil,
+                    situation: Self.baseballSituation(
+                        setupText: "Bases loaded · 0 outs · 3-2 count",
+                        contextLine: nil,
+                        pressureLine: "Big chance",
+                        diagram: .baseballDiamond(
+                            BaseballSituationDiagram(
+                                occupiedBases: [.first, .second, .third],
+                                batting: Self.baseballOwnership(),
+                                outs: 0,
+                                count: "3-2"
+                            )
+                        )
+                    )
+                ),
+                importance: .critical,
+                rawFeedKey: nil,
+                isRawFeedExpanded: false,
+                onRawFeedExpansionChange: { _, _ in }
+            )
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "play-row-situation-no-score-delta",
+            width: .standard,
+            height: 340
+        )
+    }
+
     func testScoreboardContentLayouts() {
         assertSwiftUISnapshot(
             of: VStack(spacing: 14) {
@@ -173,6 +294,71 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             width: .iPad11LandscapeFull,
             height: 720,
             device: .iPad11Landscape
+        )
+    }
+
+    private static func baseballSituationPresentation(
+        headline: String = "Julio Rodriguez singles to center. Two runs score.",
+        detail: String? = "Seattle turns a bases-loaded chance into the first lead of the inning.",
+        situation: GameEventSituationPresentation = baseballSituation()
+    ) -> GameEventPresentation {
+        GameEventPresentation(
+            clockText: "B8 1 out",
+            headline: headline,
+            detail: detail,
+            eventLabel: "Single",
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle Mariners",
+            scoringLabel: "Scoring play",
+            scoreLabel: "SEA 5, OAK 4",
+            rawFeedText: "single to center, runners on second and third score",
+            rawFeedSource: "component-feed",
+            accessibilityLabel: "Seattle scoring single. Seattle leads 5 to 4.",
+            situation: situation,
+            situationAccessibilityText: situation.accessibilitySummary
+        )
+    }
+
+    private static func baseballSituation(
+        setupText: String = "Runners on 2nd and 3rd · 1 out · 2-1 count",
+        contextLine: String? = "Tied -> Up 1",
+        pressureLine: String? = "Lead change",
+        diagram: GameEventSituationDiagram? = .baseballDiamond(
+            BaseballSituationDiagram(
+                occupiedBases: [.second, .third],
+                batting: baseballOwnership(),
+                outs: 1,
+                count: "2-1"
+            )
+        )
+    ) -> GameEventSituationPresentation {
+        GameEventSituationPresentation(
+            title: "Situation",
+            periodText: "B8 1 out",
+            setupText: setupText,
+            contextLine: contextLine,
+            pressureLine: pressureLine,
+            sport: .baseball,
+            layout: .baseball,
+            ownership: baseballOwnership(),
+            diagram: diagram,
+            accent: GameEventSituationAccent(
+                ownership: .home,
+                teamAbbreviation: "SEA",
+                teamLabel: "Seattle Mariners",
+                tone: .critical
+            ),
+            dataConfidence: .explicitPreEvent
+        )
+    }
+
+    private static func baseballOwnership() -> GameEventSituationOwnership {
+        GameEventSituationOwnership(
+            role: .batting,
+            participantRole: .home,
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle Mariners",
+            confidence: .explicit
         )
     }
 }

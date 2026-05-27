@@ -51,6 +51,31 @@ struct GenericSportRenderer: SportRenderer {
         GameEventPresentation(event: event)
     }
 
+    func eventSituationPresentation(for event: GameEvent) -> GameEventSituationPresentation? {
+        nil
+    }
+
+    func eventSituationPresentation(
+        for event: GameEvent,
+        context: SportRendererSituationContext
+    ) -> GameEventSituationPresentation? {
+        let decision = SituationConfidenceGate.decision(for: SituationConfidenceGate.genericEvidence(for: event))
+        return SituationCardPolicy.presentation(
+            for: event,
+            context: context,
+            decision: genericSituationDecision(for: event, confidenceDecision: decision),
+            densityKeyForEvent: genericDensityKey(for:)
+        ) {
+            SituationConfidenceGate.pressureBoardPresentation(
+                for: event,
+                sport: situationSport,
+                decision: decision,
+                title: pressureBoardTitle,
+                tone: situationTone(for: event)
+            )
+        }
+    }
+
     func periodGroupLabel(for event: GameEvent) -> String {
         periodOutput(for: event).groupLabel ?? "Game"
     }
@@ -178,6 +203,98 @@ struct GenericSportRenderer: SportRenderer {
         return trimmed.isEmpty ? "SPORT" : trimmed.uppercased()
     }
 
+    private var situationSport: GameEventSituationSport {
+        switch Sport(leagueCode: leagueCode) {
+        case .mlb:
+            return .baseball
+        case .nfl:
+            return .football
+        case .nhl:
+            return .hockey
+        case .nba:
+            return .basketball
+        case .soccer:
+            return .soccer
+        case .golf:
+            return .golf
+        case .tennis:
+            return .tennis
+        case .other:
+            return .generic
+        }
+    }
+
+    private var pressureBoardTitle: String {
+        switch Sport(leagueCode: leagueCode) {
+        case .golf:
+            return "Leaderboard pressure"
+        case .tennis:
+            return "Score pressure"
+        default:
+            return "Context"
+        }
+    }
+
+    private func genericSituationDecision(
+        for event: GameEvent,
+        confidenceDecision: SituationBlockDecision
+    ) -> SituationCardLayoutDecision {
+        guard case .pressureBoardFallback = confidenceDecision else {
+            return .suppress
+        }
+        let priority = genericSituationPriority(for: event)
+        guard priority != .routine else {
+            return .suppress
+        }
+        return .pressureBoardFallback(priority: priority, densityKey: genericDensityKey(for: event))
+    }
+
+    private func genericSituationPriority(for event: GameEvent) -> SituationCardPriority {
+        switch event.visualImportance {
+        case .critical:
+            return .bigMoment
+        case .high:
+            return .keyMoment
+        case .medium:
+            if event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil {
+                return .scoringSwing
+            }
+            if event.importanceMetadata?.isKeyMoment == true || event.isKeyMoment {
+                return .keyMoment
+            }
+            return .notable
+        case .low:
+            if event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil {
+                return .scoringSwing
+            }
+            if event.importanceMetadata?.isKeyMoment == true || event.isKeyMoment {
+                return .keyMoment
+            }
+            return .routine
+        }
+    }
+
+    private func situationTone(for event: GameEvent) -> SportsTheme.Tone {
+        if event.importanceMetadata?.isLeadChange == true || event.importanceMetadata?.isTyingPlay == true {
+            return .critical
+        }
+        if event.importanceMetadata?.isScoringPlay == true || event.scoreDelta != nil {
+            return .scoring
+        }
+        return .neutral
+    }
+
+    private func genericDensityKey(for event: GameEvent) -> String? {
+        [
+            event.periodLabel,
+            event.clockLabel,
+            event.teamAbbreviation,
+            event.eventType
+        ].compactMap { $0?.nilIfBlank }
+            .joined(separator: "|")
+            .nilIfBlank
+    }
+
     private func periodOutput(for event: GameEvent) -> PeriodLabelOutput {
         PeriodLabelFormatter.output(
             sport: Sport(leagueCode: leagueCode),
@@ -222,6 +339,8 @@ struct GenericSportRenderer: SportRenderer {
             return "R"
         case .golf:
             return "Score"
+        case .tennis:
+            return "Sets"
         default:
             return "T"
         }

@@ -140,6 +140,8 @@ enum SDADomainMapper {
             scoreBefore: scoreBefore,
             scoreAfter: scoreAfter,
             scoreDelta: delta,
+            situationBefore: situation(from: dto.situationBefore, participants: participants),
+            situationAfter: situation(from: dto.situationAfter, participants: participants),
             sportMetadata: sportMetadata(from: dto)
         )
     }
@@ -463,7 +465,8 @@ enum SDADomainMapper {
     }
 
     private static func sportMetadata(from dto: SDAPlayDTO) -> [String: JSONValue] {
-        var metadata = dto.metadata ?? dto.sportMetadata ?? [:]
+        var metadata = dto.sportMetadata ?? [:]
+        metadata.merge(dto.metadata ?? [:]) { _, new in new }
         metadata["playIndex"] = .number(Double(dto.playIndex))
         return metadata
     }
