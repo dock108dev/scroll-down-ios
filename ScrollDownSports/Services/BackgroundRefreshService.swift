@@ -132,7 +132,7 @@ final class BackgroundRefreshService {
 
     private func priorityScore(for record: PinnedGameRecord, now: Date) -> Double {
         let calendar = Calendar.sda
-        let liveBoost = GameStatus(rawValue: record.statusRawValue, isLiveOverride: nil, isFinalOverride: nil).isLive ? 1_000.0 : 0.0
+        let liveBoost = GameStatus(rawValue: record.statusRawValue).isLive ? 1_000.0 : 0.0
         let todayBoost = calendar.isDate(record.gameDate, inSameDayAs: now) ? 300.0 : 0.0
         let hoursSinceStart = now.timeIntervalSince(record.gameDate) / 3_600
         let recentCompletionBoost = hoursSinceStart >= 0 && hoursSinceStart <= 2 ? 150.0 : 0.0

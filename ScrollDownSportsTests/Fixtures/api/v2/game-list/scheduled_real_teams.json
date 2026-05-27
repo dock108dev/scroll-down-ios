@@ -14,12 +14,8 @@
       "currentPeriodLabel": null,
       "gameClock": null,
       "score": null,
-      "homeScore": null,
-      "awayScore": null,
       "hasPbp": false,
-      "playCount": 0,
-      "isLive": false,
-      "isFinal": false
+      "playCount": 0
     }
   ],
   "total": 1,

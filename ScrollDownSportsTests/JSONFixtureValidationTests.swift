@@ -10,8 +10,7 @@ final class JSONFixtureValidationTests: XCTestCase {
             "pinned_real_empty",
             "home_72h_timeline",
             "presentation_scoreboard_game",
-            "leaderboard_scoreboard_game",
-            "legacy_status_fallbacks"
+            "leaderboard_scoreboard_game"
         ] {
             _ = try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: try SDAFixtures.gameList(name))
         }
@@ -101,7 +100,7 @@ final class JSONFixtureValidationTests: XCTestCase {
         XCTAssertEqual(detail.events.map(\.id), ["event-1"])
     }
 
-    func testLegacyPayloadHelpersAreBackedByNamedFixtures() throws {
+    func testPayloadHelpersAreBackedByNamedFixtures() throws {
         let list = try JSONDecoder.sda.decode(
             SDAGameListResponseDTO.self,
             from: TestFixtures.sdaGameListJSON(ids: [701, 702])

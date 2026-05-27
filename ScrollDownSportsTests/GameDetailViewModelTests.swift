@@ -330,7 +330,7 @@ final class GameDetailViewModelTests: XCTestCase {
             leagueCode: "mlb",
             scheduledStart: Date(timeIntervalSince1970: 1_779_480_000),
             localDateLabel: "2026-05-22",
-            status: GameStatus(rawValue: "in_progress", isLiveOverride: true, isFinalOverride: nil),
+            status: GameStatus(rawValue: "in_progress"),
             participants: [
                 GameParticipant(id: "away", role: .away, name: "New York Yankees", abbreviation: "NYY"),
                 GameParticipant(id: "home", role: .home, name: "Seattle Mariners", abbreviation: "SEA")

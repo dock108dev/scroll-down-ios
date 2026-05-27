@@ -8,13 +8,9 @@
 
 `GameDetailView` loads one game by id. When detail data is available, it renders the game header, optional resume banner, stream controls, play-by-play, player stats, team stats, and a box-score section. Play rows can include sport-rendered situation panels and expandable raw-feed details when the mapped event data supports them. The detail screen starts a five-minute foreground refresh loop while visible and stops it on disappear.
 
-## API And Configuration
+## API Contract
 
-`SDAApiClient` reads `SDABaseURL` and `SDAApiKey` from `Info.plist`. Those plist values are backed by `SDA_API_BASE_URL` and `SDA_API_KEY` in `Config/Secrets.xcconfig`, with optional overrides from ignored `Config/Local.xcconfig`. The checked-in app default is the production SDA backend at `https://sda.dock108.dev`.
-
-If `SDABaseURL` is absent or invalid, the client falls back to `https://sda.dock108.dev`. If `SDAApiKey` is empty or still an unresolved build-setting placeholder, requests are sent without `X-API-Key`.
-
-For physical-device builds, `project.yml` enables automatic signing for the app target and reads `DEVELOPMENT_TEAM` from `SDS_DEVELOPMENT_TEAM`. Keep that private value in `Config/Local.xcconfig` unless the team id should become a repo default.
+`SDAApiClient` reads `SDABaseURL` and `SDAApiKey` from `Info.plist`. Backend setup, signing, and local override mechanics are documented in [Local development](local-development.md).
 
 The client calls:
 
@@ -23,7 +19,18 @@ GET /api/admin/sports/games?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&limit=200
 GET /api/admin/sports/games/{id}
 ```
 
-The list call can also include `league=<league>` when the home league filter is not `All`. The detail call rejects responses whose `detailContractVersion` is below 2, whose plays are missing all-mode eligibility, display type, period label, or usable event text, or whose required v2 fields cannot decode.
+The list call can also include `league=<league>` when the home league filter is not `All`. Game phase comes from `presentation.displayState` when present and otherwise from the canonical `status` value.
+
+The current list payload contract does not support removed flat compatibility fields:
+
+- `isLive`
+- `isFinal`
+- flat `homeScore`
+- flat `awayScore`
+
+Scores come from `scoreboard.competitors` or the canonical nested `score` object. Detail event score changes come from explicit `scoreDelta`, not inferred `scoreChanged`.
+
+The detail call rejects responses whose `detailContractVersion` is below 2, whose plays are missing all-mode eligibility, display type, period label, or usable event text, or whose required v2 fields cannot decode.
 
 ## Game Window
 
@@ -45,7 +52,7 @@ Progress for unpinned games is pruned after 30 days. Pinned game records are kep
 
 `GameDetailViewModel` fetches game detail by id, records event-list diffs, updates pinned game detail when applicable, records event refresh state in the local store, and starts a five-minute foreground refresh loop while the detail view is active.
 
-`AppDelegate` registers a background app-refresh task with identifier `com.dock108.scrolldownsports.refresh`. When the scene enters the background, `AppScenePhaseHandler` prunes local state and asks `BackgroundDataScheduler` to schedule a refresh no earlier than five minutes later. The scheduler cancels pending refresh when the scene becomes active.
+`AppDelegate` registers a background app-refresh task with identifier `com.dock108.scrolldownsports.refresh`. When the scene enters the background, `AppScenePhaseHandler` prunes local state and asks `BackgroundDataScheduler` to schedule a refresh no earlier than five minutes later. The scheduler cancels pending refresh when the scene becomes active. iOS may still reject or skip background scheduling; the app treats that as a nonfatal scheduling outcome.
 
 `BackgroundRefreshService` refreshes the home window, updates pinned game summaries, and fetches detail for up to eight prioritized pinned games. Priority favors live games, today's games, games that started within the last two hours, games starting within 12 hours, and records that have not been refreshed recently.
 

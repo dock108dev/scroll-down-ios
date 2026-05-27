@@ -14,10 +14,6 @@
     "currentPeriodLabel": null,
     "gameClock": null,
     "score": null,
-    "homeScore": null,
-    "awayScore": null,
-    "isLive": false,
-    "isFinal": false,
     "providerExtra": {
       "unused": true
     }

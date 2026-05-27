@@ -100,7 +100,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(finalPlay.scoreAfter.home, 5)
     }
 
-    func testMapsUnknownSafeSportAndLegacyScores() throws {
+    func testMapsUnknownSafeSportAndCanonicalScoreObject() throws {
         let json = """
         {
           "games": [
@@ -111,8 +111,7 @@ final class DecodingTests: XCTestCase {
               "status": "scheduled",
               "homeTeam": "Home Club",
               "awayTeam": "Away Club",
-              "homeScore": 3,
-              "awayScore": 4
+              "score": { "home": 3, "away": 4 }
             }
           ]
         }
@@ -127,7 +126,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(game.status.phase, .pregame)
     }
 
-    func testGamePresentationFieldsOverrideLegacyFallbacks() throws {
+    func testGamePresentationFieldsDriveMappedPresentation() throws {
         let response = try JSONDecoder.sda.decode(
             SDAGameListResponseDTO.self,
             from: try SDAFixtures.gameList("presentation_scoreboard_game")
@@ -307,20 +306,32 @@ final class DecodingTests: XCTestCase {
         XCTAssertNil(detail.events.first?.scoreAfter.home)
     }
 
-    func testLegacyGameSummaryFallbacksRemainButDetailRequiresV2Contract() async throws {
-        let games = SDADomainMapper.games(
-            from: try JSONDecoder.sda.decode(
-                SDAGameListResponseDTO.self,
-                from: try SDAFixtures.gameList("legacy_status_fallbacks")
-            )
-        )
+    func testRemovedStatusFlagsAreIgnored() throws {
+        let json = """
+        {
+          "games": [
+            {
+              "id": 91,
+              "leagueCode": "nba",
+              "gameDate": "2026-05-22T23:30:00Z",
+              "status": "scheduled",
+              "homeTeam": "Boston Celtics",
+              "awayTeam": "New York Knicks",
+              "isLive": true,
+              "isFinal": true
+            }
+          ]
+        }
+        """.data(using: .utf8)!
 
-        XCTAssertTrue(games[0].status.isPregame)
-        XCTAssertFalse(games[0].availableFeatures.hasScoreboard)
-        XCTAssertTrue(games[1].status.isLive)
-        XCTAssertTrue(games[2].status.isFinal)
-        XCTAssertEqual(games[0].matchupText, "New York Knicks at Boston Celtics")
+        let games = SDADomainMapper.games(from: try JSONDecoder.sda.decode(SDAGameListResponseDTO.self, from: json))
 
+        XCTAssertEqual(games.first?.status.phase, .pregame)
+        XCTAssertFalse(games.first?.status.isLive ?? true)
+        XCTAssertFalse(games.first?.status.isFinal ?? true)
+    }
+
+    func testDetailRequiresV2Contract() async throws {
         _ = try JSONDecoder.sda.decode(
             SDAGameDetailResponseDTO.self,
             from: try SDAFixtures.malformed("wrong_detail_contract_version")

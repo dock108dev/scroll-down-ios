@@ -1,12 +1,12 @@
 # Scroll Down Sports iOS
 
-Scroll Down Sports iOS is a SwiftUI app for browsing Scroll Down Sports game feeds, pinning games, resuming catch-up progress, and reading sport-rendered play-by-play before score and box-score payoff sections near the bottom of each game detail screen. It reads the SDA admin sports API base URL and optional API key from Xcode build settings that are expanded into the app `Info.plist`.
+Scroll Down Sports iOS is a SwiftUI app for browsing SDA game feeds. It supports league and team filtering, pinned games, catch-up progress, sport-rendered play-by-play, and score/box-score payoff sections on game detail screens.
+
+The app is generated from `project.yml` with XcodeGen. Runtime SDA API settings come from Xcode build settings expanded into `Info.plist`.
 
 ## Run Locally
 
-Install Xcode and XcodeGen. The local gate wrapper regenerates `ScrollDownSports.xcodeproj` from `project.yml` before build and test gates.
-
-Run the fast local build gate:
+Install Xcode and XcodeGen, then run the fast local build gate:
 
 ```sh
 Scripts/local_gate.sh fast
@@ -30,12 +30,6 @@ Scripts/local_gate.sh multitasking
 Scripts/local_gate.sh performance-smoke
 ```
 
-Clean generated local gate artifacts:
-
-```sh
-Scripts/local_gate.sh clean-artifacts
-```
-
 For local API credentials or direct-device signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set the private values there. `Config/Local.xcconfig` is ignored by git and is included by `Config/Secrets.xcconfig` when present.
 
 ## Deployment Basics
@@ -49,6 +43,8 @@ The checked-in GitHub Actions workflow runs `Scripts/local_gate.sh` gates on pul
 ## Docs
 
 - [App reference](docs/app-reference.md)
+- [Local development](docs/local-development.md)
 - [Testing and CI](docs/testing-and-ci.md)
-- [Device install](docs/device-install.md)
-- [Documentation consolidation audit](docs/audits/docs-consolidation.md)
+- [Maintenance notes](docs/maintenance.md)
+
+Supporting documentation lives under `docs/`. Root-level documentation is intentionally limited to this README.

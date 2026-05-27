@@ -11,10 +11,6 @@
     "homeTeamAbbr": null,
     "awayTeamAbbr": "NYY",
     "score": { "home": null, "away": 2 },
-    "homeScore": null,
-    "awayScore": 2,
-    "isLive": true,
-    "isFinal": false,
     "scoreboard": {
       "schemaVersion": 1,
       "layout": "line_score",
@@ -69,12 +65,9 @@
       "displayType": "Single",
       "teamAbbreviation": "NYY",
       "description": "Cal Rios singles to right.",
-      "homeScore": null,
-      "awayScore": 2,
       "score": { "home": null, "away": 2 },
       "periodLabel": "T4",
       "clockLabel": "12:14",
-      "scoreChanged": false,
       "importance": {
         "schemaVersion": 1,
         "level": "secondary",

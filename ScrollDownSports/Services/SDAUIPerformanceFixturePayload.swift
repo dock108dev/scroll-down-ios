@@ -101,11 +101,7 @@ enum SDAUIPerformanceFixturePayload {
             "gameClock": isFinal ? "Final" : "1 out",
             "hasPbp": true,
             "playCount": playCount,
-            "isLive": isLive,
-            "isFinal": isFinal,
             "score": ["away": awayScore, "home": homeScore],
-            "awayScore": awayScore,
-            "homeScore": homeScore,
             "eligibility": eligibility(),
             "presentation": presentation(
                 headline: "\(away) at \(home)",
@@ -130,7 +126,7 @@ enum SDAUIPerformanceFixturePayload {
         copy["playCount"] = playCount
         copy["presentation"] = presentation(
             headline: "\(copy["awayTeam"] ?? "Away") at \(copy["homeTeam"] ?? "Home")",
-            displayState: (copy["isLive"] as? Bool) == true ? "live" : "final",
+            displayState: (copy["status"] as? String) == "in_progress" ? "live" : "final",
             playCount: playCount
         )
         return copy
@@ -175,14 +171,11 @@ enum SDAUIPerformanceFixturePayload {
             "displayType": scoring ? "Scoring play" : "Play",
             "playerName": "",
             "description": headline,
-            "homeScore": home,
-            "awayScore": away,
             "score": ["away": away, "home": home],
             "periodLabel": period,
             "clockLabel": period,
             "timeLabel": period,
             "tier": scoring ? 1 : 2,
-            "scoreChanged": scoring,
             "scoreDisplay": "\(away)-\(home)",
             "teamAbbreviation": team ?? "",
             "presentation": [

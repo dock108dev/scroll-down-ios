@@ -98,14 +98,10 @@ struct ScoreDelta: Codable, Hashable, Sendable {
 
 struct GameStatus: Codable, Hashable, Sendable {
     let rawValue: String
-    let isLiveOverride: Bool?
-    let isFinalOverride: Bool?
     let displayStateOverride: String?
 
-    init(rawValue: String, isLiveOverride: Bool?, isFinalOverride: Bool?, displayStateOverride: String? = nil) {
+    init(rawValue: String, displayStateOverride: String? = nil) {
         self.rawValue = rawValue
-        self.isLiveOverride = isLiveOverride
-        self.isFinalOverride = isFinalOverride
         self.displayStateOverride = displayStateOverride
     }
 
@@ -123,14 +119,14 @@ struct GameStatus: Codable, Hashable, Sendable {
         if let displayState = normalizedDisplayState {
             return ["live", "halftime", "intermission"].contains(displayState)
         }
-        return isLiveOverride ?? ["in_progress", "live"].contains(normalized)
+        return ["in_progress", "live"].contains(normalized)
     }
 
     var isFinal: Bool {
         if let displayState = normalizedDisplayState {
             return displayState == "final"
         }
-        return isFinalOverride ?? ["completed", "final", "recap_ready", "archived"].contains(normalized)
+        return ["completed", "final"].contains(normalized)
     }
 
     var isPregame: Bool {

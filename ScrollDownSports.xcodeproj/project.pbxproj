@@ -184,7 +184,6 @@
 		C24AF2D8A74FE7A9C5D37559 /* ScorePressurePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAF97627B5BA58ADFFCDA6E /* ScorePressurePresentation.swift */; };
 		C2B00E104F7C748DFA62B807 /* SDAUIPerformanceFixturePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD1218B24A4D4AFFB8FA2EA /* SDAUIPerformanceFixturePayload.swift */; };
 		C4347DED7F3B09CD8515FAFF /* BasketballSituationPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE2193CDA846FAAB18A529C /* BasketballSituationPresentation.swift */; };
-		C54DAFE1A529244A0169DC70 /* legacy_status_fallbacks.json in Resources */ = {isa = PBXBuildFile; fileRef = 90FEF84291E9FCAFEF2B5D4C /* legacy_status_fallbacks.json */; };
 		C60AA6D88CE32A9904BD7F7B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 99A04F981F34C650D120E280 /* PrivacyInfo.xcprivacy */; };
 		C8F394D57F67591F8FE1E834 /* testPlayerAndTeamSectionsExpandedAndCollapsed.player-team-expanded-collapsed-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = ECE4DF4CC85D89E516835663 /* testPlayerAndTeamSectionsExpandedAndCollapsed.player-team-expanded-collapsed-standard-phoneCompact-light-medium.png */; };
 		C9117E640081E34D436D1E5C /* FootballFieldStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E41F554300101E2896EF043 /* FootballFieldStripView.swift */; };
@@ -416,7 +415,6 @@
 		8A7520E0CAA72F5AF534E4F5 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		8BAF3CB05B50F693E96EA548 /* NonFieldPressureBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonFieldPressureBoard.swift; sourceTree = "<group>"; };
 		8FBFD6F1D0F5A3964A9D40B3 /* testStatSectionWideTableTabletWidthKeepsNumericColumnsDense.stats-wide-tablet-tabletReadable-iPad11Portrait-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testStatSectionWideTableTabletWidthKeepsNumericColumnsDense.stats-wide-tablet-tabletReadable-iPad11Portrait-light-medium.png"; sourceTree = "<group>"; };
-		90FEF84291E9FCAFEF2B5D4C /* legacy_status_fallbacks.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = legacy_status_fallbacks.json; sourceTree = "<group>"; };
 		9249EFE41F27E90C5C76E27E /* mlb_scoring_progression.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_scoring_progression.json; sourceTree = "<group>"; };
 		927CACC07486D57651DACF97 /* PlayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRow.swift; sourceTree = "<group>"; };
 		93999E174AF3F3B0A8617887 /* testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
@@ -630,7 +628,6 @@
 			children = (
 				D496029394B0B4F905EA12C0 /* home_72h_timeline.json */,
 				C1F54E1104466E8C28A5B4B1 /* leaderboard_scoreboard_game.json */,
-				90FEF84291E9FCAFEF2B5D4C /* legacy_status_fallbacks.json */,
 				F548C8A2B72EFEEDAD920CE7 /* live_mlb_two_games.json */,
 				C7FC4E2723AC07E62657716A /* pinned_real_empty.json */,
 				12487507F0F6E062E287BE3F /* placeholder_tbd.json */,
@@ -1165,7 +1162,6 @@
 				4F0F77EFC09A4B07E65E1F2D /* full_mobile_presentation.json in Resources */,
 				FF175560B089609094A86EA4 /* home_72h_timeline.json in Resources */,
 				D857428855D1DD68A17DBF71 /* leaderboard_scoreboard_game.json in Resources */,
-				C54DAFE1A529244A0169DC70 /* legacy_status_fallbacks.json in Resources */,
 				F8526D6E5BE651C414C2C774 /* live_mlb_two_games.json in Resources */,
 				02C57640E9B1967CAAD02A8B /* missing_all_usable_event_text.json in Resources */,
 				555382865FFC72EEA90687C7 /* missing_mode_eligibility.json in Resources */,

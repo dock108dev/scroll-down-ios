@@ -14,12 +14,8 @@
       "currentPeriodLabel": "T4",
       "gameClock": "1 out",
       "score": { "home": 2, "away": 1 },
-      "homeScore": 2,
-      "awayScore": 1,
       "hasPbp": true,
-      "playCount": 12,
-      "isLive": true,
-      "isFinal": false
+      "playCount": 12
     },
     {
       "id": 505,
@@ -35,12 +31,8 @@
       "currentPeriodLabel": null,
       "gameClock": null,
       "score": { "home": 0, "away": 0 },
-      "homeScore": 0,
-      "awayScore": 0,
       "hasPbp": false,
-      "playCount": 0,
-      "isLive": false,
-      "isFinal": false
+      "playCount": 0
     }
   ],
   "total": 2,

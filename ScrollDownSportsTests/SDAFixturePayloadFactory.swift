@@ -58,8 +58,6 @@ enum SDAFixturePayloadFactory {
             play["clockLabel"] = "10:0\(index)"
             play["timeLabel"] = "10:0\(index)"
             play["description"] = "Game update \(index + 1)"
-            play["homeScore"] = index
-            play["awayScore"] = 0
             play["score"] = ["home": index, "away": 0]
             play["scoreBefore"] = NSNull()
             play["scoreAfter"] = NSNull()
@@ -105,4 +103,3 @@ enum SDAFixturePayloadFactory {
         try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
     }
 }
-

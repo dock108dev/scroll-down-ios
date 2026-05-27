@@ -25,40 +25,11 @@ struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable, Sendable {
     let currentPeriodLabel: String?
     let gameClock: String?
     let score: SDAScoreDTO?
-    let homeScore: Int?
-    let awayScore: Int?
     let hasPbp: Bool?
     let playCount: Int?
-    let isLiveFlag: Bool?
-    let isFinalFlag: Bool?
     let presentation: SDAMobilePresentationDTO?
     let eligibility: SDAGameEligibilityDTO?
     let scoreboard: SDAScoreboardDTO?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case leagueCode
-        case gameDate
-        case localGameDate
-        case status
-        case homeTeam
-        case awayTeam
-        case homeTeamAbbr
-        case awayTeamAbbr
-        case currentPeriod
-        case currentPeriodLabel
-        case gameClock
-        case score
-        case homeScore
-        case awayScore
-        case hasPbp
-        case playCount
-        case isLiveFlag = "isLive"
-        case isFinalFlag = "isFinal"
-        case presentation
-        case eligibility
-        case scoreboard
-    }
 }
 
 struct SDAGameDetailResponseDTO: Decodable, Sendable {
@@ -88,36 +59,9 @@ struct SDAGameDTO: Decodable, Identifiable, Hashable, Sendable {
     let currentPeriodLabel: String?
     let gameClock: String?
     let score: SDAScoreDTO?
-    let homeScore: Int?
-    let awayScore: Int?
-    let isLiveFlag: Bool?
-    let isFinalFlag: Bool?
     let presentation: SDAMobilePresentationDTO?
     let eligibility: SDAGameEligibilityDTO?
     let scoreboard: SDAScoreboardDTO?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case leagueCode
-        case gameDate
-        case localGameDate
-        case status
-        case homeTeam
-        case awayTeam
-        case homeTeamAbbr
-        case awayTeamAbbr
-        case currentPeriod
-        case currentPeriodLabel
-        case gameClock
-        case score
-        case homeScore
-        case awayScore
-        case isLiveFlag = "isLive"
-        case isFinalFlag = "isFinal"
-        case presentation
-        case eligibility
-        case scoreboard
-    }
 }
 
 struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
@@ -131,14 +75,11 @@ struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
     let teamAbbreviation: String?
     let playerName: String?
     let description: String?
-    let homeScore: Int?
-    let awayScore: Int?
     let score: SDAScoreDTO?
     let periodLabel: String
     let clockLabel: String?
     let timeLabel: String?
     let tier: Int?
-    let scoreChanged: Bool?
     let scoreDisplay: String?
     let presentation: SDAMobilePresentationDTO?
     let importance: SDAEventImportanceDTO

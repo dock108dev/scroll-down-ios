@@ -114,8 +114,8 @@ assert_contains "$ROOT_DIR/Config/Secrets.xcconfig" 'SDA_API_BASE_URL = https:/$
 assert_contains "$ROOT_DIR/Config/Secrets.xcconfig" "SDS_DEVELOPMENT_TEAM ="
 assert_contains "$ROOT_DIR/project.yml" "CODE_SIGN_STYLE: Automatic"
 assert_contains "$ROOT_DIR/project.yml" 'DEVELOPMENT_TEAM: "$(SDS_DEVELOPMENT_TEAM)"'
-assert_contains "$ROOT_DIR/docs/device-install.md" "The checked-in default backend is"
-assert_contains "$ROOT_DIR/README.md" "Device install"
+assert_contains "$ROOT_DIR/docs/local-development.md" "The checked-in default backend is"
+assert_contains "$ROOT_DIR/README.md" "Local development"
 
 bash "$GATE" --dry-run coverage > "$WORK_DIR/coverage.out"
 assert_contains "$WORK_DIR/coverage.out" ".build/TestResults/Coverage.xcresult"

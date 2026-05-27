@@ -10,9 +10,7 @@
     "awayTeam": "New York Yankees",
     "homeTeamAbbr": "SEA",
     "awayTeamAbbr": "NYY",
-    "score": { "home": 2, "away": 1 },
-    "isLive": true,
-    "isFinal": false
+    "score": { "home": 2, "away": 1 }
   },
   "teamStats": [],
   "playerStats": [],
@@ -26,8 +24,6 @@
       "displayType": "SOME_UNKNOWN_EVENT",
       "teamAbbreviation": "SEA",
       "description": null,
-      "homeScore": 2,
-      "awayScore": 1,
       "score": { "home": 2, "away": 1 },
       "periodLabel": "T4",
       "clockLabel": "12:14",

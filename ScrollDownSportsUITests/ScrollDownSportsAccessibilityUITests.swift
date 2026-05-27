@@ -332,7 +332,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         let forbiddenPatterns = [
             #"\b[a-z]+_[a-z0-9_]+\b"#,
             #"\b(homeTeam|awayTeam|gameStatus|periodType|score_state|rawValue)\b"#,
-            #"\b(pre_game|in_progress|post_game|recap_ready)\b"#,
+            #"\b(pre_game|in_progress|post_game)\b"#,
             #"\b(UNKNOWN|undefined|null|nil)\b"#
         ]
 

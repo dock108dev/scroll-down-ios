@@ -10,15 +10,13 @@
     "awayTeam": "New York Knicks",
     "homeTeamAbbr": "BOS",
     "awayTeamAbbr": "NYK",
-    "score": { "home": 104, "away": 99 },
-    "isLive": false,
-    "isFinal": true
+    "score": { "home": 104, "away": 99 }
   },
   "teamStats": [],
   "playerStats": [],
   "plays": [
     {
-      "eventId": "legacy-901-001",
+      "eventId": "unsupported-contract-901-001",
       "playIndex": 1,
       "quarter": 4,
       "gameClock": "00:14",
@@ -27,8 +25,6 @@
       "teamAbbreviation": "BOS",
       "playerName": "Mara Vale",
       "description": "Mara Vale makes a three-pointer.",
-      "homeScore": 104,
-      "awayScore": 99,
       "score": { "home": 104, "away": 99 },
       "periodLabel": "Q4",
       "clockLabel": "00:14",

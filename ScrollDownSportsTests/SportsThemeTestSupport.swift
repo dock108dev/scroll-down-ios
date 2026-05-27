@@ -12,7 +12,7 @@ extension SportsThemeTests {
             leagueCode: leagueCode,
             scheduledStart: Date(timeIntervalSince1970: 1_770_000_000),
             localDateLabel: nil,
-            status: GameStatus(rawValue: "final", isLiveOverride: false, isFinalOverride: true),
+            status: GameStatus(rawValue: "final"),
             participants: [
                 GameParticipant(id: "away", role: .away, name: "Away Team", abbreviation: "AWY"),
                 GameParticipant(id: "home", role: .home, name: "Home Team", abbreviation: "HME")

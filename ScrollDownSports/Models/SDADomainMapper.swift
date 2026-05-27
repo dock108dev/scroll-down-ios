@@ -38,12 +38,8 @@ enum SDADomainMapper {
             currentPeriodLabel: dto.currentPeriodLabel,
             gameClock: dto.gameClock,
             score: dto.score,
-            homeScore: dto.homeScore,
-            awayScore: dto.awayScore,
             hasPbp: dto.hasPbp,
             playCount: dto.playCount,
-            isLiveFlag: dto.isLiveFlag,
-            isFinalFlag: dto.isFinalFlag,
             presentation: dto.presentation,
             eligibility: dto.eligibility,
             scoreboard: dto.scoreboard
@@ -69,12 +65,8 @@ enum SDADomainMapper {
             currentPeriodLabel: dto.currentPeriodLabel,
             gameClock: dto.gameClock,
             score: dto.score,
-            homeScore: dto.homeScore,
-            awayScore: dto.awayScore,
             hasPbp: hasPbp,
             playCount: playCount,
-            isLiveFlag: dto.isLiveFlag,
-            isFinalFlag: dto.isFinalFlag,
             presentation: dto.presentation,
             eligibility: dto.eligibility,
             scoreboard: dto.scoreboard
@@ -91,12 +83,10 @@ enum SDADomainMapper {
         let scoreAfter = scoreState(
             scoreSnapshot: dto.scoreboard?.scoreAfter ?? dto.scoreAfter,
             score: dto.score,
-            homeScore: dto.homeScore,
-            awayScore: dto.awayScore,
             participants: participants
         )
         let scoreBefore = (dto.scoreboard?.scoreBefore ?? dto.scoreBefore).map {
-            scoreState(scoreSnapshot: $0, score: nil, homeScore: nil, awayScore: nil, participants: participants)
+            scoreState(scoreSnapshot: $0, score: nil, participants: participants)
         }
         let owningRole = participantRole(for: dto.teamAbbreviation, participants: participants)
         let headline = EventLabelResolver.customerHeadline(
@@ -109,7 +99,6 @@ enum SDADomainMapper {
         let importanceMetadata = eventImportance(from: dto.importance)
         let delta = scoreDelta(
             dto.scoreboard?.scoreDelta ?? dto.scoreDelta,
-            fallbackScoreChanged: dto.scoreChanged,
             owningRole: owningRole,
             scoreBefore: scoreBefore,
             scoreAfter: scoreAfter,
@@ -160,12 +149,8 @@ enum SDADomainMapper {
         currentPeriodLabel: String?,
         gameClock: String?,
         score: SDAScoreDTO?,
-        homeScore: Int?,
-        awayScore: Int?,
         hasPbp: Bool?,
         playCount: Int?,
-        isLiveFlag: Bool?,
-        isFinalFlag: Bool?,
         presentation: SDAMobilePresentationDTO?,
         eligibility: SDAGameEligibilityDTO?,
         scoreboard: SDAScoreboardDTO?
@@ -175,7 +160,7 @@ enum SDADomainMapper {
             GameParticipant(id: "home", role: .home, name: homeTeam, abbreviation: homeTeamAbbr)
         ]
         let mappedScoreboard = gameScoreboard(from: scoreboard)
-        let scoreState = scoreState(scoreboard: scoreboard, score: score, homeScore: homeScore, awayScore: awayScore, participants: participants)
+        let scoreState = scoreState(scoreboard: scoreboard, score: score, participants: participants)
         let mappedEligibility = gameEligibility(from: eligibility)
 
         return Game(
@@ -186,8 +171,6 @@ enum SDADomainMapper {
             localDateLabel: localGameDate,
             status: GameStatus(
                 rawValue: status,
-                isLiveOverride: isLiveFlag,
-                isFinalOverride: isFinalFlag,
                 displayStateOverride: presentation?.displayState
             ),
             participants: participants,
@@ -218,8 +201,6 @@ enum SDADomainMapper {
     private static func scoreState(
         scoreboard: SDAScoreboardDTO?,
         score: SDAScoreDTO?,
-        homeScore: Int?,
-        awayScore: Int?,
         participants: [GameParticipant]
     ) -> ScoreState {
         return ScoreState(participantScores: participants.map { participant in
@@ -229,9 +210,9 @@ enum SDADomainMapper {
             let value: Int?
             switch participant.role {
             case .home:
-                value = scoreboardScore ?? score?.home ?? homeScore
+                value = scoreboardScore ?? score?.home
             case .away:
-                value = scoreboardScore ?? score?.away ?? awayScore
+                value = scoreboardScore ?? score?.away
             case .other:
                 value = nil
             }
@@ -242,17 +223,15 @@ enum SDADomainMapper {
     private static func scoreState(
         scoreSnapshot: SDAScoreSnapshotDTO?,
         score: SDAScoreDTO?,
-        homeScore: Int?,
-        awayScore: Int?,
         participants: [GameParticipant]
     ) -> ScoreState {
         ScoreState(participantScores: participants.map { participant in
             let value: Int?
             switch participant.role {
             case .home:
-                value = scoreSnapshot?.home ?? score?.home ?? homeScore
+                value = scoreSnapshot?.home ?? score?.home
             case .away:
-                value = scoreSnapshot?.away ?? score?.away ?? awayScore
+                value = scoreSnapshot?.away ?? score?.away
             case .other:
                 value = nil
             }
@@ -446,21 +425,20 @@ enum SDADomainMapper {
 
     private static func scoreDelta(
         _ dto: SDAScoreDeltaDTO?,
-        fallbackScoreChanged: Bool?,
         owningRole: GameParticipantRole?,
         scoreBefore: ScoreState?,
         scoreAfter: ScoreState,
         participants: [GameParticipant]
     ) -> ScoreDelta? {
-        let role = participantRole(forSide: dto?.side ?? dto?.participantRole) ?? owningRole
-        guard dto != nil || fallbackScoreChanged == true else { return nil }
+        guard let dto else { return nil }
+        let role = participantRole(forSide: dto.side ?? dto.participantRole) ?? owningRole
         let participant = participants.first { $0.role == role }
         return ScoreDelta(
-            participantID: dto?.participantID ?? participant?.id,
+            participantID: dto.participantID ?? participant?.id,
             participantRole: role,
-            before: dto?.before ?? role.flatMap { scoreBefore?.score(for: $0) },
-            after: dto?.after ?? role.flatMap { scoreAfter.score(for: $0) },
-            change: dto?.change
+            before: dto.before ?? role.flatMap { scoreBefore?.score(for: $0) },
+            after: dto.after ?? role.flatMap { scoreAfter.score(for: $0) },
+            change: dto.change
         )
     }
 

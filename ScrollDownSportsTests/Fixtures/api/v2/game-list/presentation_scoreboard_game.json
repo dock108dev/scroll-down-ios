@@ -9,7 +9,6 @@
       "awayTeam": "New York Yankees",
       "score": { "home": 0, "away": 0 },
       "playCount": 1,
-      "isLive": false,
       "presentation": {
         "schemaVersion": 1,
         "headline": "Yankees rally in Seattle",

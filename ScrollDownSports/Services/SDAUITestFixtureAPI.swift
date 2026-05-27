@@ -212,8 +212,6 @@ private enum SDAUITestFixturePayload {
             "gameClock": isFinal ? "Final" : "12:44",
             "hasPbp": hasTimeline,
             "playCount": playCount,
-            "isLive": isLive,
-            "isFinal": isFinal,
             "eligibility": eligibility(hasTimeline: hasTimeline, hasScoreboard: hasScoreboard),
             "presentation": presentation(
                 headline: "\(away) at \(home)",
@@ -225,8 +223,6 @@ private enum SDAUITestFixturePayload {
         ]
         if let awayScore, let homeScore {
             payload["score"] = ["away": awayScore, "home": homeScore]
-            payload["awayScore"] = awayScore
-            payload["homeScore"] = homeScore
             payload["scoreboard"] = SDAUIFixturePayload.lineScoreboard(
                 away: away,
                 awayAbbr: awayAbbr,
@@ -283,14 +279,11 @@ private enum SDAUITestFixturePayload {
             "displayType": scoring ? "Scoring play" : "Play",
             "playerName": "",
             "description": headline,
-            "homeScore": home,
-            "awayScore": away,
             "score": ["away": away, "home": home],
             "periodLabel": period,
             "clockLabel": period,
             "timeLabel": period,
             "tier": scoring ? 1 : 2,
-            "scoreChanged": scoring,
             "scoreDisplay": "\(away)-\(home)",
             "presentation": [
                 "headline": headline,

@@ -53,7 +53,7 @@ enum TestFixtures {
             leagueCode: leagueCode,
             scheduledStart: scheduledStart,
             localDateLabel: "2026-05-22",
-            status: GameStatus(rawValue: status, isLiveOverride: isLive, isFinalOverride: isFinal),
+            status: GameStatus(rawValue: Self.statusRawValue(status: status, isLive: isLive, isFinal: isFinal)),
             participants: participants,
             scoreState: ScoreState(
                 participantScores: [
@@ -145,6 +145,12 @@ enum TestFixtures {
         case .contextual:
             return [.stream]
         }
+    }
+
+    private static func statusRawValue(status: String, isLive: Bool?, isFinal: Bool?) -> String {
+        if isLive == true { return "in_progress" }
+        if isFinal == true { return "final" }
+        return status
     }
 
     static func makeDetail(game: Game, events: [GameEvent]) -> GameDetail {

@@ -14,12 +14,8 @@
       "currentPeriodLabel": "Final",
       "gameClock": null,
       "score": { "home": 4, "away": 6 },
-      "homeScore": 4,
-      "awayScore": 6,
       "hasPbp": true,
-      "playCount": 92,
-      "isLive": false,
-      "isFinal": true
+      "playCount": 92
     },
     {
       "id": 651,
@@ -35,12 +31,8 @@
       "currentPeriodLabel": "T4",
       "gameClock": "1 out",
       "score": { "home": 2, "away": 1 },
-      "homeScore": 2,
-      "awayScore": 1,
       "hasPbp": true,
-      "playCount": 12,
-      "isLive": true,
-      "isFinal": false
+      "playCount": 12
     },
     {
       "id": 652,
@@ -56,12 +48,8 @@
       "currentPeriodLabel": null,
       "gameClock": null,
       "score": null,
-      "homeScore": null,
-      "awayScore": null,
       "hasPbp": false,
-      "playCount": 0,
-      "isLive": false,
-      "isFinal": false
+      "playCount": 0
     }
   ],
   "total": 3,
