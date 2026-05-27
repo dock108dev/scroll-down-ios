@@ -119,9 +119,10 @@ enum VisualRegressionFixtures {
         ]
     }
 
-    static func detail() -> GameDetail {
+    static func detail(leagueCode: String = "mlb") -> GameDetail {
         let game = ComponentSnapshotFixtures.game(
             id: 5_500,
+            leagueCode: leagueCode,
             status: "final",
             isLive: false,
             isFinal: true,

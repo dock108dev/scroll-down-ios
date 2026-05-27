@@ -66,7 +66,7 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
     }
 
     func testDetailFinalScoreAndExpandedStats() {
-        let detail = VisualRegressionFixtures.detail()
+        let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
         let renderer = SportRendererRegistry.renderer(for: detail.game)
 
         assertSwiftUISnapshot(
@@ -85,7 +85,7 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
     }
 
     func testDetailFinalScoreAndExpandedStatsIPadLandscape() {
-        let detail = VisualRegressionFixtures.detail()
+        let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
         let renderer = SportRendererRegistry.renderer(for: detail.game)
 
         assertSwiftUISnapshot(
@@ -128,7 +128,7 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
     }
 
     func testDetailDarkModeIPadShowsChromeControlsAndStats() {
-        let detail = VisualRegressionFixtures.detail()
+        let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
         let renderer = SportRendererRegistry.renderer(for: detail.game)
 
         assertSwiftUISnapshot(

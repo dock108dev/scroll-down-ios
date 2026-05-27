@@ -425,7 +425,7 @@ enum ComponentSnapshotFixtures {
     }
 
     static func statDetail() -> GameDetail {
-        let game = game(id: 4_900, status: "final", isFinal: true, awayScore: 91, homeScore: 98)
+        let game = game(id: 4_900, leagueCode: "nba", status: "final", isFinal: true, awayScore: 91, homeScore: 98)
         return GameDetail(
             game: game,
             teamStats: [
