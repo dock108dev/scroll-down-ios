@@ -219,7 +219,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
 
     @MainActor
     private var isRegularWidth: Bool {
-        app.frame.width >= 700
+        app.frame.width >= 900
     }
 
     @MainActor

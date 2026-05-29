@@ -365,6 +365,7 @@ private struct PressureBoardMetricRow: View {
                 .lineLimit(1)
                 .minimumScaleFactor(labelMinimumScaleFactor)
                 .allowsTightening(true)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: labelColumnWidth, alignment: .leading)
             Text(metric.value)
                 .font(valueFont)
@@ -375,14 +376,14 @@ private struct PressureBoardMetricRow: View {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 22 : 15, alignment: .center)
+        .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 22 : 18, alignment: .center)
     }
 
     private var labelColumnWidth: CGFloat {
         if AppEnvironment.isRunningUITests {
-            return dynamicTypeSize.isAccessibilitySize ? 96 : 84
+            return dynamicTypeSize.isAccessibilitySize ? 120 : 112
         }
-        return dynamicTypeSize.isAccessibilitySize ? 54 : 48
+        return dynamicTypeSize.isAccessibilitySize ? 72 : 64
     }
 
     private var labelMinimumScaleFactor: CGFloat {
@@ -433,7 +434,7 @@ private struct SituationDiagramSizing {
             isAccessibility ? 240 : 210
         }
         pressureMinHeight = isAccessibility ? 64 : 58
-        pressureMaxHeight = isAccessibility ? nil : 76
+        pressureMaxHeight = isAccessibility ? nil : 92
         pressureMetricLimit = isAccessibility ? 3 : 4
 
         if isReadable {

@@ -187,7 +187,7 @@ struct StreamControlBar: View {
             Image(systemName: actionMenuSystemImage(emphasizesJumpLatest: emphasizesJumpLatest))
                 .font(.caption.weight(.bold))
                 .foregroundStyle(actionMenuColor(emphasizesJumpLatest: emphasizesJumpLatest))
-                .frame(width: 44, height: 44)
+                .frame(width: 46, height: 46)
                 .background(SportsTheme.Colors.paperInset, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous))
         }
         .accessibilityLabel(actionMenuAccessibilityLabel(emphasizesJumpLatest: emphasizesJumpLatest))

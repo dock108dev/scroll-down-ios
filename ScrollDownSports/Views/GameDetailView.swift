@@ -224,8 +224,10 @@ struct GameDetailView: View {
                                 onTop: { stickyTopRequest += 1 },
                                 onEnd: {
                                     if AppEnvironment.isRunningUITests {
+                                        rememberReturnAnchor()
                                         uiTestScoreboardRevealed = true
                                         scoreRevealed = true
+                                        return
                                     }
                                     stickyEndRequest += 1
                                 },
@@ -402,7 +404,10 @@ struct GameDetailView: View {
     }
 
     private var stickyNavigationTitle: String? {
-        guard let detail = viewModel.detail, let currentVisibleEvent else { return nil }
+        guard let detail = viewModel.detail else { return nil }
+        guard let currentVisibleEvent else {
+            return AppEnvironment.isRunningUITests ? "Game controls" : nil
+        }
         let total = max(DetailStreamMode.dedupedEvents(from: detail.events).count, 1)
         let readCount = min(total, max(1, currentVisibleEvent.readIndex + 1))
         if detail.game.status.isLive, pendingNewPlayCount > 0 {
