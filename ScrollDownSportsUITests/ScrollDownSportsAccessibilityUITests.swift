@@ -72,15 +72,15 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         XCTAssertTrue(app.buttons["detail.gameActions"].exists)
         assertMinimumTapTarget(app.buttons["detail.gameActions"], named: "Detail actions")
         XCTAssertTrue(element("detail.playByPlay").exists)
-        scrollUntilVisible(element("detail.playerStats"), direction: .up, maxSwipes: 4)
-        XCTAssertTrue(element("detail.playerStats").exists)
-        scrollUntilVisible(element("detail.teamStats"), direction: .up, maxSwipes: 6)
-        XCTAssertTrue(element("detail.teamStats").exists)
 
         XCTAssertTrue(app.buttons["detail.stickyNav.end"].waitForExistence(timeout: 5))
         assertMinimumTapTarget(app.buttons["detail.stickyNav.end"], named: "Sticky end")
         app.buttons["detail.stickyNav.end"].tap()
         XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        scrollUntilVisible(element("detail.playerStats"), direction: .up, maxSwipes: 2)
+        XCTAssertTrue(element("detail.playerStats").exists)
+        scrollUntilVisible(element("detail.teamStats"), direction: .up, maxSwipes: 3)
+        XCTAssertTrue(element("detail.teamStats").exists)
     }
 
     @MainActor
@@ -425,11 +425,13 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
     @MainActor
     private func scrollUntilVisible(_ element: XCUIElement, direction: ScrollDirection, maxSwipes: Int) {
         for _ in 0..<maxSwipes where !element.isHittable {
+            let detailScroll = app.scrollViews["detail.scroll"]
+            let scrollTarget: XCUIElement = detailScroll.exists ? detailScroll : app
             switch direction {
             case .up:
-                app.swipeUp()
+                scrollTarget.swipeUp()
             case .down:
-                app.swipeDown()
+                scrollTarget.swipeDown()
             }
         }
     }

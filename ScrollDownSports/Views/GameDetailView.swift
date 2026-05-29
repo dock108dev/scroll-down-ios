@@ -140,6 +140,10 @@ struct GameDetailView: View {
                                     scoreRevealed: $scoreRevealed
                                 )
                                     .accessibilityIdentifier("detail.boxScore")
+                                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(playerStatsSectionID))
+                                    .accessibilityIdentifier("detail.playerStats")
+                                TeamStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(teamStatsSectionID))
+                                    .accessibilityIdentifier("detail.teamStats")
                             }
                             Color.clear
                                 .frame(height: 1)
@@ -524,8 +528,30 @@ struct GameDetailView: View {
     }
 
     private func rememberReturnAnchor() {
-        guard let currentVisibleEvent else { return }
-        returnAnchor = currentVisibleEvent
+        returnAnchor = explicitStreamReturnAnchor()
+            ?? lastAcceptedVisibleFrame.map(DetailVisibleEventState.init(frame:))
+            ?? currentVisibleEvent
+    }
+
+    private func explicitStreamReturnAnchor() -> DetailVisibleEventState? {
+        guard
+            let detail = viewModel.detail,
+            let streamOrientationAnchorID
+        else { return nil }
+
+        let dedupedEvents = DetailStreamMode.dedupedEvents(from: detail.events)
+        guard
+            let readIndex = dedupedEvents.firstIndex(where: { $0.detailAnchorID == streamOrientationAnchorID }),
+            viewModel.selectedStreamMode.visibleDedupedEvents(dedupedEvents).contains(where: { $0.detailAnchorID == streamOrientationAnchorID })
+        else { return nil }
+
+        let event = dedupedEvents[readIndex]
+        return DetailVisibleEventState(
+            anchorID: event.detailAnchorID,
+            readIndex: readIndex,
+            sequence: event.sequence,
+            label: event.resumePositionText
+        )
     }
 
     private func restoreReaderAnchor(_ proxy: ScrollViewProxy) {

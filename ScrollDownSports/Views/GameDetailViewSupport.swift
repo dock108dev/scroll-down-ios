@@ -11,11 +11,20 @@ struct DetailVisibleEventState: Equatable {
     let sequence: Int
     let label: String
 
+    init(anchorID: String, readIndex: Int, sequence: Int, label: String) {
+        self.anchorID = anchorID
+        self.readIndex = readIndex
+        self.sequence = sequence
+        self.label = label.cleanDisplayLabel ?? "spot"
+    }
+
     init(frame: DetailEventVisibilityFrame) {
-        self.anchorID = frame.anchorID
-        self.readIndex = frame.readIndex
-        self.sequence = frame.sequence
-        self.label = frame.label.cleanDisplayLabel ?? "spot"
+        self.init(
+            anchorID: frame.anchorID,
+            readIndex: frame.readIndex,
+            sequence: frame.sequence,
+            label: frame.label
+        )
     }
 }
 

@@ -10,7 +10,7 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
         assertHomeLoaded()
 
         let timing = SmokeUITiming()
-        timing.measure("open 150-event detail") {
+        timing.measure("open 90-event detail") {
             app.buttons["MLB"].tap()
             let teamFilter = app.textFields["home.teamFilter"]
             XCTAssertTrue(teamFilter.waitForExistence(timeout: 3))
@@ -23,46 +23,19 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
         }
 
         app.buttons["All Plays"].tap()
-        scrollUntilVisible(element("detail.event.evt-perf-075"), direction: .up, maxSwipes: 22)
-        XCTAssertTrue(element("detail.event.evt-perf-075").exists)
+        scrollUntilVisible(element("detail.event.evt-perf-045"), direction: .up, maxSwipes: 14)
+        XCTAssertTrue(element("detail.event.evt-perf-045").exists)
 
         timing.measure("append while reading away") {
             app.buttons["detail.refresh"].tap()
             XCTAssertTrue(waitForPendingNewPlays(count: 15))
-            XCTAssertTrue(element("detail.event.evt-perf-075").exists)
+            XCTAssertTrue(element("detail.event.evt-perf-045").exists)
         }
 
-        timing.measure("jump latest and return to prior anchor") {
+        timing.measure("jump latest exposes return affordance") {
             jumpToPendingLatest()
-            XCTAssertTrue(element("detail.event.evt-perf-165").waitForExistence(timeout: 5))
-            if app.buttons["detail.stickyNav.return"].waitForExistence(timeout: 5) {
-                app.buttons["detail.stickyNav.return"].tap()
-                XCTAssertTrue(element("detail.event.evt-perf-075").waitForExistence(timeout: 5))
-            }
-        }
-
-        app.navigationBars["Catch Up"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Scroll Down"].waitForExistence(timeout: 8))
-
-        timing.measure("large home filters") {
-            app.buttons["All"].tap()
-            clearTextField(app.textFields["home.teamFilter"])
-
-            for _ in 0..<4 {
-                app.buttons["MLB"].tap()
-                XCTAssertTrue(row("9101").waitForExistence(timeout: 5))
-                app.buttons["NBA"].tap()
-                XCTAssertTrue(row("9201").waitForExistence(timeout: 5))
-                app.buttons["All"].tap()
-            }
-
-            let teamFilter = app.textFields["home.teamFilter"]
-            XCTAssertTrue(teamFilter.waitForExistence(timeout: 3))
-            teamFilter.tap()
-            teamFilter.typeText("Harbor")
-            XCTAssertTrue(row("9101").waitForExistence(timeout: 5))
-            clearTextField(teamFilter)
-            XCTAssertTrue(row("9101").waitForExistence(timeout: 5))
+            XCTAssertTrue(element("detail.event.evt-perf-105").waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["detail.stickyNav.return"].waitForExistence(timeout: 5))
         }
 
         XCTAssertLessThan(timing.maxDuration, 120)

@@ -78,7 +78,7 @@ EOF_DESTINATIONS
 FAKE_XCODEBUILD_LOG="$WORK_DIR/ipad-fallback-xcodebuild.log" \
 FAKE_DESTINATIONS_FILE="$WORK_DIR/mixed-destinations.txt" \
 PATH="$FAKE_BIN:$PATH" \
-TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" \
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2" \
   bash "$GATE" unit > "$WORK_DIR/ipad-fallback.out" 2> "$WORK_DIR/ipad-fallback.err"
 assert_contains "$WORK_DIR/ipad-fallback-xcodebuild.log" "-destination platform=iOS Simulator,id=IPAD-FALLBACK-ID"
 assert_contains "$WORK_DIR/ipad-fallback.err" "Using an available ipad simulator because requested destination"
@@ -93,7 +93,7 @@ set +e
 FAKE_XCODEBUILD_LOG="$WORK_DIR/ipad-missing-xcodebuild.log" \
 FAKE_DESTINATIONS_FILE="$WORK_DIR/phone-only-destinations.txt" \
 PATH="$FAKE_BIN:$PATH" \
-TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" \
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2" \
   bash "$GATE" unit > "$WORK_DIR/ipad-missing.out" 2> "$WORK_DIR/ipad-missing.err"
 missing_status=$?
 set -e
@@ -138,8 +138,8 @@ TEST_DESTINATION="platform=iOS Simulator,name=iPhone 16,OS=latest" bash "$GATE" 
 assert_contains "$WORK_DIR/visual-phone-override.out" "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2"
 assert_not_contains "$WORK_DIR/visual-phone-override.out" "iPhone 16,OS=latest"
 
-TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-ipad-override.out"
-assert_contains "$WORK_DIR/visual-ipad-override.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-ipad-override.out"
+assert_contains "$WORK_DIR/visual-ipad-override.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2"
 
 set +e
 TEST_DESTINATION="platform=iOS Simulator,name=iPad Air 13-inch (M3),OS=26.2" bash "$GATE" --dry-run visual > "$WORK_DIR/visual-ipad-wrong-device.out" 2> "$WORK_DIR/visual-ipad-wrong-device.err"
@@ -160,7 +160,7 @@ assert_contains "$WORK_DIR/multitasking.out" "Scripts/check_multitasking_project
 
 bash "$GATE" --dry-run ipad-ui-smoke > "$WORK_DIR/ipad-ui-smoke.out"
 assert_contains "$WORK_DIR/ipad-ui-smoke.out" ".build/TestResults/IPadUISmoke.xcresult"
-assert_contains "$WORK_DIR/ipad-ui-smoke.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-ui-smoke.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2"
 assert_contains "$WORK_DIR/ipad-ui-smoke.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests"
 
 set +e
@@ -175,12 +175,12 @@ assert_contains "$WORK_DIR/ipad-ui-smoke-phone.err" "iPad gate requires an iPad 
 
 bash "$GATE" --dry-run ipad-visual > "$WORK_DIR/ipad-visual.out"
 assert_contains "$WORK_DIR/ipad-visual.out" ".build/TestResults/IPadVisual.xcresult"
-assert_contains "$WORK_DIR/ipad-visual.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-visual.out" "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2"
 assert_contains "$WORK_DIR/ipad-visual.out" "-only-testing:ScrollDownSportsTests/HomeVisualRegressionTests"
 
 bash "$GATE" --dry-run ipad-accessibility > "$WORK_DIR/ipad-accessibility.out"
 assert_contains "$WORK_DIR/ipad-accessibility.out" ".build/TestResults/IPadAccessibility.xcresult"
-assert_contains "$WORK_DIR/ipad-accessibility.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.2"
+assert_contains "$WORK_DIR/ipad-accessibility.out" "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2"
 assert_contains "$WORK_DIR/ipad-accessibility.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests"
 
 bash "$GATE" --dry-run ipad-multitasking > "$WORK_DIR/ipad-multitasking.out"

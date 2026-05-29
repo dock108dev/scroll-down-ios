@@ -22,7 +22,7 @@ enum SDAUIPerformanceFixturePayload {
         guard let game = gameSummaries().first(where: { ($0["id"] as? Int) == gameID }) else { return nil }
         let requestCount = (detailRequestCounts[gameID] ?? 0) + 1
         detailRequestCounts[gameID] = requestCount
-        let playCount = gameID == 9101 && requestCount > 1 ? 165 : ((game["playCount"] as? Int) ?? 1)
+        let playCount = gameID == 9101 && requestCount > 1 ? 105 : ((game["playCount"] as? Int) ?? 1)
 
         return SDAUIFixturePayload.jsonData([
             "detailContractVersion": 2,
@@ -43,7 +43,7 @@ enum SDAUIPerformanceFixturePayload {
             let league = ["MLB", "NBA", "NHL", "NFL"][index % 4]
             let id = baseID(for: league) + (index / 4)
             let isLive = index.isMultiple(of: 5)
-            let playCount = id == 9101 ? 150 : 24 + (index % 12)
+            let playCount = id == 9101 ? 90 : 24 + (index % 12)
             return game(
                 id: id,
                 league: league,

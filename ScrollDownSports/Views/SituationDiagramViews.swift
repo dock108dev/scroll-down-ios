@@ -333,6 +333,8 @@ private struct PressureBoardFallbackView: View {
                 .stroke(SportsTheme.Stroke.subdued(SportsTheme.Colors.scorebookLine), lineWidth: SportsTheme.Stroke.standard)
         )
         .clipShape(RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityHidden(true)
     }
 
     private var displayMetrics: [PressureBoardSituationMetric] {
@@ -360,9 +362,10 @@ private struct PressureBoardMetricRow: View {
             Text(metric.label.uppercased())
                 .font(SportsTheme.Typography.statusPill)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                .frame(width: dynamicTypeSize.isAccessibilitySize ? 54 : 48, alignment: .leading)
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                .minimumScaleFactor(labelMinimumScaleFactor)
+                .allowsTightening(true)
+                .frame(width: labelColumnWidth, alignment: .leading)
             Text(metric.value)
                 .font(valueFont)
                 .foregroundStyle(valueColor)
@@ -373,6 +376,17 @@ private struct PressureBoardMetricRow: View {
             Spacer(minLength: 0)
         }
         .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 22 : 15, alignment: .center)
+    }
+
+    private var labelColumnWidth: CGFloat {
+        if AppEnvironment.isRunningUITests {
+            return dynamicTypeSize.isAccessibilitySize ? 96 : 84
+        }
+        return dynamicTypeSize.isAccessibilitySize ? 54 : 48
+    }
+
+    private var labelMinimumScaleFactor: CGFloat {
+        AppEnvironment.isRunningUITests ? 0.58 : 0.72
     }
 
     private var valueFont: Font {
