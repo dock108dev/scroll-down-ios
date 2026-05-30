@@ -19,165 +19,6 @@ struct HomeViewportSizeReader: View {
     }
 }
 
-struct HomeStickyHeader: View {
-    @ObservedObject var viewModel: HomeViewModel
-    @Environment(\.sportsLayoutMetrics) private var layout
-
-    var body: some View {
-        FilterHeader(viewModel: viewModel)
-            .sportsReadableContent()
-            .padding(.top, layout.stickyHeaderTopPadding)
-            .padding(.bottom, layout.stickyHeaderBottomPadding)
-            .background(SportsTheme.Colors.paper)
-            .overlay(alignment: .bottom) {
-                Divider()
-                    .overlay(SportsTheme.Colors.hairline)
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("home.stickyHeader")
-    }
-}
-
-private struct FilterHeader: View {
-    @ObservedObject var viewModel: HomeViewModel
-    @Environment(\.sportsLayoutMetrics) private var layout
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @FocusState private var isTeamSearchFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if usesInlineControls {
-                HStack(alignment: .center, spacing: 10) {
-                    leagueControl
-                        .frame(maxWidth: leagueControlMaxWidth, alignment: .leading)
-                    teamSearchField
-                        .frame(maxWidth: teamSearchMaxWidth, alignment: .leading)
-                    Spacer(minLength: 0)
-                }
-            } else {
-                leagueControl
-                    .frame(maxWidth: leagueControlMaxWidth, alignment: .leading)
-                teamSearchField
-                    .frame(maxWidth: teamSearchMaxWidth, alignment: .leading)
-            }
-
-            if let lastUpdated = viewModel.lastUpdated {
-                Text("Updated \(lastUpdated.formatted(date: .omitted, time: .shortened))")
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private var leagueControl: some View {
-        if usesLeagueMenu {
-            Menu {
-                ForEach(LeagueFilter.allCases) { league in
-                    Button {
-                        viewModel.league = league
-                    } label: {
-                        if viewModel.league == league {
-                            Label(league.rawValue, systemImage: "checkmark")
-                        } else {
-                            Text(league.rawValue)
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(viewModel.league.rawValue)
-                        .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.bold))
-                        .accessibilityHidden(true)
-                }
-                .frame(minHeight: HomeFilterLayout.controlMinHeight)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
-            .accessibilityIdentifier("home.leaguePicker")
-            .accessibilityLabel("League")
-            .accessibilityValue(viewModel.league.rawValue)
-        } else {
-            Picker("League", selection: $viewModel.league) {
-                ForEach(LeagueFilter.allCases) { league in
-                    Text(league.rawValue).tag(league)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(minHeight: HomeFilterLayout.controlMinHeight)
-            .accessibilityIdentifier("home.leaguePicker")
-        }
-    }
-
-    private var teamSearchField: some View {
-        TextField("Filter by team", text: $viewModel.teamQuery)
-            .textInputAutocapitalization(.words)
-            .autocorrectionDisabled()
-            .submitLabel(.search)
-            .focused($isTeamSearchFocused)
-            .font(SportsTheme.Typography.teamName)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .frame(minHeight: HomeFilterLayout.controlMinHeight, alignment: .leading)
-            .background(
-                SportsTheme.Colors.paperRaised,
-                in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                    .stroke(SportsTheme.Stroke.subdued(), lineWidth: SportsTheme.Stroke.standard)
-            }
-            .accessibilityLabel("Filter by team")
-            .accessibilityIdentifier("home.teamFilter")
-            .onSubmit {
-                isTeamSearchFocused = false
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        isTeamSearchFocused = false
-                    }
-                    .accessibilityIdentifier("home.teamFilter.done")
-                }
-            }
-    }
-
-    private var usesInlineControls: Bool {
-        layout.homeContentWidth >= 640 && !dynamicTypeSize.isAccessibilitySize
-    }
-
-    private var usesLeagueMenu: Bool {
-        dynamicTypeSize.isAccessibilitySize
-            || verticalSizeClass == .compact
-            || layout.homeContentWidth < 360
-            || (horizontalSizeClass == .compact && layout.availableWidth > 430)
-    }
-
-    private var leagueControlMaxWidth: CGFloat {
-        if usesLeagueMenu {
-            if dynamicTypeSize.isAccessibilitySize {
-                return 220
-            }
-            return usesInlineControls ? 180 : 132
-        }
-        return usesInlineControls ? 300 : .infinity
-    }
-
-    private var teamSearchMaxWidth: CGFloat {
-        usesInlineControls ? 360 : .infinity
-    }
-}
-
-private enum HomeFilterLayout {
-    static let controlMinHeight: CGFloat = 44
-}
-
 struct PinnedSectionView<Row: View>: View {
     let section: HomePinnedSection
     let row: (HomeGameItem) -> Row
@@ -227,8 +68,16 @@ struct TimelineSectionView<Row: View>: View {
                         .accessibilityIdentifier("home.dateSection.\(dateSection.id)")
                         .padding(.top, 4)
 
-                    ForEach(dateSection.games) { item in
-                        row(item)
+                    if let emptyState = dateSection.emptyState, dateSection.games.isEmpty {
+                        FutureEmptyRow(
+                            emptyState: emptyState,
+                            hasActiveFilters: hasActiveFilters,
+                            clearFilters: clearFilters
+                        )
+                    } else {
+                        ForEach(dateSection.games) { item in
+                            row(item)
+                        }
                     }
                 }
             }
@@ -299,7 +148,7 @@ private struct TodayEmptyRow: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "calendar")
-                    .foregroundStyle(SportsTheme.Tone.neutral.accent)
+                    .foregroundStyle(SportsTheme.Tone.neutral.foreground)
                     .accessibilityHidden(true)
                 Text("No games on today's slate for these filters.")
                     .font(.subheadline)
@@ -321,6 +170,86 @@ private struct TodayEmptyRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sportsSurface(.eventCard)
+        .accessibilityIdentifier("home.empty.timeline")
+    }
+}
+
+private struct FutureEmptyRow: View {
+    let emptyState: HomeTimelineEmptyState
+    let hasActiveFilters: Bool
+    let clearFilters: () -> Void
+
+    private var title: String {
+        switch emptyState {
+        case .laterToday:
+            return hasActiveFilters ? "No matching games later today." : "No games later today."
+        case .upcoming:
+            return hasActiveFilters ? "No matching upcoming games." : "No upcoming games."
+        }
+    }
+
+    private var detail: String {
+        switch emptyState {
+        case .laterToday:
+            if hasActiveFilters {
+                return "Clear filters to check the full remaining slate."
+            }
+            return "Upcoming games will appear here when the schedule is available."
+        case .upcoming:
+            if hasActiveFilters {
+                return "Clear filters to check every scheduled matchup."
+            }
+            return "Pull to refresh for the next scheduled slate."
+        }
+    }
+
+    private var accessibilityID: String {
+        switch emptyState {
+        case .laterToday:
+            return "home.empty.laterToday"
+        case .upcoming:
+            return "home.empty.upcoming"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar.badge.clock")
+                    .foregroundStyle(SportsTheme.Tone.neutral.foreground)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+            }
+
+            Text(detail)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(SportsTheme.Colors.secondaryInk)
+
+            if hasActiveFilters {
+                Button("Clear filters") {
+                    SportsFeedback.selection()
+                    clearFilters()
+                }
+                .buttonStyle(.sportsControl(tone: .scoreboard, compact: true))
+                .controlSize(.small)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sportsSurface(.eventCard)
+        .accessibilityIdentifier(accessibilityID)
+    }
+}
+
+struct NoGamesEmptyState: View {
+    var body: some View {
+        ContentUnavailableView(
+            "No games available",
+            systemImage: "calendar",
+            description: Text("Pull to refresh or check back when the next slate is available.")
+        )
+        .accessibilityIdentifier("home.empty.noGames")
     }
 }
 
@@ -340,6 +269,7 @@ struct FilteredEmptyState: View {
             }
             .buttonStyle(.sportsControl(tone: .scoreboard, filled: true))
         }
+        .accessibilityIdentifier("home.empty.filtered")
     }
 }
 
@@ -350,7 +280,7 @@ struct InlineErrorState: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "wifi.exclamationmark")
-                .foregroundStyle(SportsTheme.Tone.critical.accent)
+                .foregroundStyle(SportsTheme.Tone.critical.foreground)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Showing last known games")
@@ -369,6 +299,7 @@ struct InlineErrorState: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sportsSurface(.eventCard, accent: SportsTheme.Tone.critical.accent)
+        .accessibilityIdentifier("home.error.inline")
     }
 }
 
@@ -389,5 +320,6 @@ struct ErrorState: View {
             }
             .buttonStyle(.sportsControl(tone: .critical, filled: true))
         }
+        .accessibilityIdentifier("home.empty.error")
     }
 }

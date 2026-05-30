@@ -304,17 +304,19 @@ final class SportRendererInvariantTests: XCTestCase {
             visibleEvents: [event],
             eventIndex: 0
         )
-        let situation = BasketballRenderer(leagueCode: "nba").eventPresentation(
+        let presentation = BasketballRenderer(leagueCode: "nba").eventPresentation(
             for: event,
             periodGroupLabel: "Q4",
             context: context
-        ).situation
+        )
+        let situation = presentation.situation
 
         XCTAssertEqual(situation?.layout, .pressureBoardFallback)
         XCTAssertEqual(situation?.sport, .basketball)
         XCTAssertEqual(situation?.dataConfidence, .explicitGenericEventContext)
         XCTAssertEqual(situation?.ownership?.role, .association)
         XCTAssertFalse(situation?.ownership?.claimsPossession == true)
+        XCTAssertTrue(PlayRowContentFilter.situationMetricSuppressionText(for: presentation).contains("Three pointer"))
     }
 
     func testFootballMetadataDoesNotClaimFieldSituationWithoutStructuredSupport() {
@@ -366,6 +368,7 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(situation?.setupText, "Runner on 2nd · 1 out · 2-1 count")
         XCTAssertEqual(presentation.situation, situation)
         XCTAssertEqual(presentation.clockText, "1 out")
+        XCTAssertTrue(PlayRowContentFilter.situationMetricSuppressionText(for: presentation).contains("Runner on 2nd · 1 out · 2-1 count"))
     }
 
     func testPresentationBuildersExposeSemanticRolesAndEmptyStates() {

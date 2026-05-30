@@ -1,5 +1,6 @@
 import Foundation
 
+// Size note: Baseball situation parsing, confidence gating, and diagram assembly stay together; see cleanup report.
 struct BaseballRenderer: GenericSportRendererBacked {
     let generic = GenericSportRenderer(leagueCode: "MLB", sportLabel: "Baseball")
 

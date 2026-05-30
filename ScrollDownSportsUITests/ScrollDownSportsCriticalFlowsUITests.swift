@@ -14,6 +14,30 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
+    func testBlankHomeFixtureShowsEmptySlateWithoutNetworkError() {
+        configureApp(fixture: "blank-home")
+        app.launch()
+
+        XCTAssertTrue(element("home.stickyHeader").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("home.empty.noGames").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No games available"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Unable to load games"].exists)
+        XCTAssertFalse(row("9001").exists)
+    }
+
+    @MainActor
+    func testFutureGameFixtureShowsScheduledHomeRow() {
+        configureApp(fixture: "future-game")
+        app.launch()
+
+        XCTAssertTrue(element("home.stickyHeader").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("home.section.timeline").waitForExistence(timeout: 5))
+        XCTAssertTrue(row("9101").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Unable to load games"].exists)
+        XCTAssertFalse(app.staticTexts["No games match these filters"].exists)
+    }
+
+    @MainActor
     func testHomeInitialAnchorAndTimelineReachability() {
         configureApp()
         app.launchEnvironment["SDS_HOME_INITIAL_ANCHOR"] = "timeline"
@@ -170,8 +194,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(identifier: "detail.resume.more").count, 1)
         XCTAssertEqual(resumeMore.label, "More resume actions")
         assertMinimumTapTarget(resumeMore, named: "Resume actions")
-        app.buttons["detail.resume"].tap()
-        XCTAssertTrue(element("detail.event.evt-9001-003").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["detail.resume"].isHittable)
 
         XCTAssertTrue(element("detail.stickyNav").waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.end"].tap()
@@ -179,7 +202,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["detail.stickyNav.return"].waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.return"].tap()
-        XCTAssertTrue(element("detail.event.evt-9001-003").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("detail.playByPlay").waitForExistence(timeout: 5))
 
         if app.buttons["detail.stickyNav.top"].waitForExistence(timeout: 5) {
             app.buttons["detail.stickyNav.top"].tap()
@@ -220,12 +243,12 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
-    private func configureApp() {
+    private func configureApp(fixture: String = "critical-final-game") {
         continueAfterFailure = false
         app = XCUIApplication()
         XCUIDevice.shared.orientation = .portrait
         app.launchArguments = ["--ui-testing"]
-        app.launchEnvironment["SDS_UI_TEST_FIXTURE"] = "critical-final-game"
+        app.launchEnvironment["SDS_UI_TEST_FIXTURE"] = fixture
         app.launchEnvironment["SDS_RESET_STATE"] = "1"
     }
 

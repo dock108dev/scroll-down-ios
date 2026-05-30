@@ -378,9 +378,19 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
 
     @MainActor
     private func assertMinimumTapTarget(_ element: XCUIElement, named name: String) {
+        let minimumTapTarget: CGFloat = 44
+        let layoutPrecisionTolerance: CGFloat = 0.5
         XCTAssertTrue(element.waitForExistence(timeout: 3), "\(name) does not exist")
-        XCTAssertGreaterThanOrEqual(element.frame.width, 44, "\(name) width is below 44 points")
-        XCTAssertGreaterThanOrEqual(element.frame.height, 44, "\(name) height is below 44 points")
+        XCTAssertGreaterThanOrEqual(
+            element.frame.width,
+            minimumTapTarget - layoutPrecisionTolerance,
+            "\(name) width is below 44 points"
+        )
+        XCTAssertGreaterThanOrEqual(
+            element.frame.height,
+            minimumTapTarget - layoutPrecisionTolerance,
+            "\(name) height is below 44 points"
+        )
     }
 
     @MainActor

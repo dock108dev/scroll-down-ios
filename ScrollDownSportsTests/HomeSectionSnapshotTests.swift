@@ -96,4 +96,43 @@ final class HomeSectionSnapshotTests: SnapshotTestCase {
             height: 220
         )
     }
+
+    func testTimelineEmptyStateWithoutActiveFilters() {
+        assertSwiftUISnapshot(
+            of: TimelineSectionView(
+                section: HomeTimelineFeedSection(title: "Timeline", dateSections: []),
+                hasActiveFilters: false,
+                clearFilters: {}
+            ) { item in
+                GameRowView(item: item)
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "timeline-empty-no-filters",
+            width: .standard,
+            height: 210
+        )
+    }
+
+    func testInlineErrorState() {
+        assertSwiftUISnapshot(
+            of: InlineErrorState(message: "The data service returned HTTP 503.", retry: {})
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "inline-error-state",
+            width: .standard,
+            height: 170
+        )
+    }
+
+    func testErrorState() {
+        assertSwiftUISnapshot(
+            of: ErrorState(message: "The data service returned HTTP 503.", retry: {})
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "error-state",
+            width: .standard,
+            height: 230
+        )
+    }
 }

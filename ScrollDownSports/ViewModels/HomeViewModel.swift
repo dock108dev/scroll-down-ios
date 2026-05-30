@@ -74,6 +74,10 @@ final class HomeViewModel: ObservableObject {
         hasActiveFilters && hasAnyHomeSourceGames && filteredVisibleGameCount == 0
     }
 
+    var showsNoGamesEmptyState: Bool {
+        !loading && errorMessage == nil && !hasAnyHomeSourceGames
+    }
+
     private var sortedGames: [Game] {
         games.sorted { left, right in
             if left.scheduledStart != right.scheduledStart {
@@ -238,6 +242,7 @@ final class HomeViewModel: ObservableObject {
                 && $0.scheduledStart >= now
         }
         let upcoming = games.filter { $0.scheduledStart >= tomorrow && $0.status.isPregame }
+        let showsFutureEmptyStates = laterToday.isEmpty && upcoming.isEmpty
 
         return [
             makeTimelineSection(
@@ -278,7 +283,8 @@ final class HomeViewModel: ObservableObject {
                 subtitle: DateFormatters.daySubtitle.string(from: today),
                 date: today,
                 anchorRole: .laterToday,
-                games: laterToday
+                games: laterToday,
+                emptyState: showsFutureEmptyStates ? .laterToday : nil
             ),
             makeTimelineSection(
                 id: "timeline-upcoming",
@@ -286,7 +292,8 @@ final class HomeViewModel: ObservableObject {
                 subtitle: DateFormatters.daySubtitle.string(from: tomorrow),
                 date: tomorrow,
                 anchorRole: .upcoming,
-                games: upcoming
+                games: upcoming,
+                emptyState: showsFutureEmptyStates ? .upcoming : nil
             )
         ]
         .compactMap { $0 }
@@ -298,13 +305,14 @@ final class HomeViewModel: ObservableObject {
         subtitle: String,
         date: Date,
         anchorRole: HomeTimelineAnchorRole,
-        games: [Game]
+        games: [Game],
+        emptyState: HomeTimelineEmptyState? = nil
     ) -> HomeTimelineSection? {
         let items = games
             .sorted(by: sortTimelineGames)
             .map(homeItem(for:))
 
-        guard !items.isEmpty else { return nil }
+        guard !items.isEmpty || emptyState != nil else { return nil }
 
         return HomeTimelineSection(
             id: id,
@@ -313,11 +321,17 @@ final class HomeViewModel: ObservableObject {
             subtitle: subtitle,
             anchorRole: anchorRole,
             isToday: Calendar.sda.isDate(date, inSameDayAs: startOfDay(nowProvider())),
-            games: items
+            games: items,
+            emptyState: items.isEmpty ? emptyState : nil
         )
     }
 
     private func homeAnchorID(for sections: [HomeSection]) -> String? {
+        let renderedAnchorIDs = sections.renderedAnchorIDs
+        func renderedAnchor(_ anchorID: String) -> String? {
+            renderedAnchorIDs.contains(anchorID) ? anchorID : nil
+        }
+
         let pinnedSection: HomePinnedSection? = sections.compactMap { section in
             if case .pinned(let pinned) = section {
                 return pinned
@@ -326,7 +340,7 @@ final class HomeViewModel: ObservableObject {
         }.first
 
         if pinnedSection?.games.contains(where: { $0.newEventCount > 0 }) == true {
-            return "pinned"
+            return renderedAnchor("pinned")
         }
 
         let timelineSections = sections.compactMap { section in
@@ -337,7 +351,7 @@ final class HomeViewModel: ObservableObject {
         }.flatMap { $0 }
 
         if let yesterday = timelineSections.first(where: { $0.anchorRole == .yesterday }) {
-            return yesterday.id
+            return renderedAnchor(yesterday.id)
         }
 
         let finalSections = timelineSections.filter { section in
@@ -348,16 +362,17 @@ final class HomeViewModel: ObservableObject {
             let rightDate = right.games.filter { $0.game.status.isFinal }.map(\.game.scheduledStart).max() ?? right.date
             return leftDate < rightDate
         }) {
-            return recentFinal.id
+            return renderedAnchor(recentFinal.id)
         }
 
         if pinnedSection?.games.isEmpty == false {
-            return "pinned"
+            return renderedAnchor("pinned")
         }
 
         for role in [HomeTimelineAnchorRole.live, .today, .laterToday, .upcoming, .olderCatchUp] {
-            if let section = timelineSections.first(where: { $0.anchorRole == role }) {
-                return section.id
+            if let section = timelineSections.first(where: { $0.anchorRole == role }),
+               let anchor = renderedAnchor(section.id) {
+                return anchor
             }
         }
 
@@ -367,7 +382,7 @@ final class HomeViewModel: ObservableObject {
     private func isVisibleInDefaultHomeTimeline(_ game: Game) -> Bool {
         guard GameParticipantVisibility.hasConcreteParticipants(game) else { return false }
         if game.status.isPregame {
-            return game.scheduledStart >= nowProvider() && hasUsefulPregamePreview(game)
+            return game.scheduledStart >= nowProvider()
         }
         if game.status.isLive {
             return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
@@ -376,22 +391,6 @@ final class HomeViewModel: ObservableObject {
             return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
         }
         return game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore
-    }
-
-    private func hasUsefulPregamePreview(_ game: Game) -> Bool {
-        if game.availableFeatures.hasTimeline || game.availableFeatures.hasScoreboard || game.scoreState.hasAnyScore {
-            return true
-        }
-        if let presentation = game.presentation {
-            return [
-                presentation.headline,
-                presentation.shortHeadline,
-                presentation.subheadline,
-                presentation.primaryActionLabel,
-                presentation.secondaryContextLabel
-            ].contains { $0?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
-        }
-        return false
     }
 
     private func fetchMissingPinnedGames(currentGames: [Game], fetchedAt: Date) async -> [Game] {

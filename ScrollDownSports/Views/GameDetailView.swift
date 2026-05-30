@@ -81,7 +81,8 @@ struct GameDetailView: View {
                                 game: detail.game,
                                 renderer: renderer,
                                 isPinned: viewModel.isGamePinned,
-                                newPlayCount: pendingNewPlayCount
+                                newPlayCount: pendingNewPlayCount,
+                                progress: viewModel.localProgress
                             )
                             if let resumeState {
                                 ResumeBanner(
@@ -219,6 +220,7 @@ struct GameDetailView: View {
                         VStack(spacing: 0) {
                             DetailStickyNavigationBar(
                                 title: stickyNavigationTitle,
+                                progressLabel: stickyNavigationProgressLabel,
                                 endLabel: detailEndLabel,
                                 returnLabel: stickyReturnLabel,
                                 onTop: { stickyTopRequest += 1 },
@@ -404,16 +406,21 @@ struct GameDetailView: View {
     }
 
     private var stickyNavigationTitle: String? {
-        guard let detail = viewModel.detail else { return nil }
+        guard viewModel.detail != nil else { return nil }
         guard let currentVisibleEvent else {
             return AppEnvironment.isRunningUITests ? "Game controls" : nil
         }
+        return currentVisibleEvent.label
+    }
+
+    private var stickyNavigationProgressLabel: String? {
+        guard let detail = viewModel.detail, let currentVisibleEvent else { return nil }
         let total = max(DetailStreamMode.dedupedEvents(from: detail.events).count, 1)
         let readCount = min(total, max(1, currentVisibleEvent.readIndex + 1))
         if detail.game.status.isLive, pendingNewPlayCount > 0 {
-            return "\(currentVisibleEvent.label) · \(pendingNewPlayCount) new"
+            return "\(pendingNewPlayCount) new"
         }
-        return "\(currentVisibleEvent.label) · \(readCount)/\(total) read"
+        return "\(readCount)/\(total) read"
     }
 
     private var stickyReturnLabel: String? {

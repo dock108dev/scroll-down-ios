@@ -94,6 +94,40 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         XCTAssertNil(anchor(for: []))
     }
 
+    func testRenderableAnchorsExcludeTimelineFeedWithoutRows() {
+        let sections: [HomeSection] = [
+            .timeline(HomeTimelineFeedSection(title: "Timeline", dateSections: []))
+        ]
+
+        XCTAssertNil(sections.firstRenderedAnchorID)
+        XCTAssertFalse(sections.renderedAnchorIDs.contains("timeline"))
+    }
+
+    func testFilterAnchorsUseFirstVisibleRenderedSection() {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let older = olderUnknownGame(id: 2151)
+        let yesterday = TestFixtures.makeGame(
+            id: 2152,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T23:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let nba = scheduledGame(id: 2153, start: "2026-05-23T20:00:00Z", leagueCode: "nba")
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.games = [older, yesterday, nba]
+
+        viewModel.league = .nba
+
+        XCTAssertEqual(viewModel.firstVisibleHomeAnchorID, "timeline-later-today")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-later-today")
+
+        viewModel.clearFilters()
+
+        XCTAssertEqual(viewModel.firstVisibleHomeAnchorID, "timeline-older")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+    }
+
     private func anchor(for games: [Game]) -> String? {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
@@ -101,9 +135,10 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         return viewModel.initialHomeAnchorID
     }
 
-    private func scheduledGame(id: Int, start: String) -> Game {
+    private func scheduledGame(id: Int, start: String, leagueCode: String = "mlb") -> Game {
         TestFixtures.makeGame(
             id: id,
+            leagueCode: leagueCode,
             scheduledStart: TestFixtures.fixedDate(start),
             status: "scheduled",
             isLive: false,

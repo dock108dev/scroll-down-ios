@@ -1,4 +1,6 @@
 import Foundation
+
+// Size note: period normalization cases stay centralized across sports; see cleanup report.
 struct PeriodLabelInput: Equatable {
     let sport: Sport
     let leagueCode: String

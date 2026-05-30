@@ -89,4 +89,43 @@ extension SportsThemeTests {
 
         return 0.2126 * linearized(red) + 0.7152 * linearized(green) + 0.0722 * linearized(blue)
     }
+
+    func assertResolvedHex(
+        _ color: Color,
+        light: String,
+        dark: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            hexString(color, style: .light),
+            light,
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(
+            hexString(color, style: .dark),
+            dark,
+            file: file,
+            line: line
+        )
+    }
+
+    func hexString(_ color: Color, style: UIUserInterfaceStyle) -> String {
+        let resolved = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style))
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            XCTFail("Could not resolve color components for hex assertion")
+            return "000000"
+        }
+        return String(
+            format: "%02X%02X%02X",
+            Int(round(red * 255)),
+            Int(round(green * 255)),
+            Int(round(blue * 255))
+        )
+    }
 }

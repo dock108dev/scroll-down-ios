@@ -19,23 +19,86 @@ struct CatchUpSection<Content: View>: View {
 struct CollapsibleCatchUpSection<Content: View>: View {
     let title: String
     let systemImage: String
+    let collapsedSummary: String?
+    let expandedSummary: String?
+    let expandButtonTitle: String
+    let collapseButtonTitle: String
     @Binding var isExpanded: Bool
     @ViewBuilder let content: Content
 
+    init(
+        title: String,
+        systemImage: String,
+        collapsedSummary: String? = nil,
+        expandedSummary: String? = nil,
+        expandButtonTitle: String = "Show",
+        collapseButtonTitle: String = "Hide",
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.collapsedSummary = collapsedSummary
+        self.expandedSummary = expandedSummary
+        self.expandButtonTitle = expandButtonTitle
+        self.collapseButtonTitle = collapseButtonTitle
+        _isExpanded = isExpanded
+        self.content = content()
+    }
+
     var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            content
-                .padding(.top, 8)
-        } label: {
-            Label(title, systemImage: systemImage)
-                .font(SportsTheme.Typography.sectionTitle)
-                .foregroundStyle(SportsTheme.Colors.ink)
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                SportsFeedback.selection()
+                withAnimation(.snappy(duration: 0.18)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Label(title, systemImage: systemImage)
+                        .font(SportsTheme.Typography.sectionTitle)
+                        .foregroundStyle(SportsTheme.Colors.ink)
+                    Spacer(minLength: 8)
+                    Label(actionTitle, systemImage: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .labelStyle(.titleAndIcon)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel(actionAccessibilityLabel)
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+
+            if let summaryText {
+                Text(summaryText)
+                    .font(SportsTheme.Typography.momentDetail)
+                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if isExpanded {
+                content
+                    .padding(.top, 2)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .sportsSurface(.statSummary)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel(title)
-        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
         .accessibilityHint("Shows or hides \(title.lowercased()).")
+    }
+
+    private var actionTitle: String {
+        isExpanded ? collapseButtonTitle : expandButtonTitle
+    }
+
+    private var summaryText: String? {
+        isExpanded ? expandedSummary : collapsedSummary
+    }
+
+    private var actionAccessibilityLabel: String {
+        isExpanded ? "Hide \(title.lowercased())" : "Show \(title.lowercased())"
     }
 }
 

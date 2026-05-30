@@ -1,4 +1,5 @@
 import SwiftUI
+import XCTest
 @testable import ScrollDownSports
 
 @MainActor
@@ -275,6 +276,30 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testBoxScoreHiddenAndRevealedStates() {
+        let hiddenGame = ComponentSnapshotFixtures.game(
+            id: 5_110,
+            status: "final",
+            isFinal: true,
+            awayScore: 7,
+            homeScore: 6,
+            periodLabel: "Final"
+        )
+        let renderer = SportRendererRegistry.renderer(for: hiddenGame)
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 14) {
+                BoxScoreSection(game: hiddenGame, renderer: renderer, scoreInitiallyRevealed: false)
+                BoxScoreSection(game: hiddenGame, renderer: renderer, scoreInitiallyRevealed: true)
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "box-score-hidden-revealed",
+            width: .standard,
+            height: 540
+        )
+    }
+
     func testReadableDetailPlayStreamOnIPadLandscape() {
         let detail = VisualRegressionFixtures.detail()
 
@@ -295,6 +320,16 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             height: 720,
             device: .iPad11Landscape
         )
+    }
+
+    func testPlayRowPolicySuppressesPressureBoardMetricDuplicates() {
+        let presentation = Self.baseballSituationPresentation()
+        let suppressedText = PlayRowContentFilter.situationMetricSuppressionText(for: presentation)
+
+        XCTAssertTrue(suppressedText.contains("Julio Rodriguez singles to center. Two runs score."))
+        XCTAssertTrue(suppressedText.contains("B8 1 out"))
+        XCTAssertTrue(suppressedText.contains("Lead change"))
+        XCTAssertTrue(suppressedText.contains("Tied -> Up 1"))
     }
 
     private static func baseballSituationPresentation(

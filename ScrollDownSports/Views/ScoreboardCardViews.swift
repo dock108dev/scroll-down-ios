@@ -85,7 +85,7 @@ private struct SegmentScoreboard: View {
     let presentation: ScoreboardPresentation
 
     var body: some View {
-        ScoreboardWidthAwareContent(fallbackWidth: fallbackContentWidth) { availableWidth in
+        WidthAwareContent(fallbackWidth: fallbackContentWidth) { availableWidth in
             let metrics = segmentScoreboardMetrics(availableWidth: availableWidth)
 
             ScrollView(.horizontal, showsIndicators: metrics.requiresHorizontalScroll) {
@@ -199,7 +199,7 @@ private struct SimpleScoreboard: View {
     let emphasizesGoals: Bool
 
     var body: some View {
-        ScoreboardWidthAwareContent(fallbackWidth: Self.minimumContentWidth) { availableWidth in
+        WidthAwareContent(fallbackWidth: Self.minimumContentWidth) { availableWidth in
             let contentWidth = simpleScoreboardWidth(availableWidth: availableWidth)
 
             VStack(spacing: 0) {
@@ -234,7 +234,7 @@ private struct LeaderboardScoreboard: View {
     let presentation: ScoreboardPresentation
 
     var body: some View {
-        ScoreboardWidthAwareContent(fallbackWidth: Self.minimumContentWidth) { availableWidth in
+        WidthAwareContent(fallbackWidth: Self.minimumContentWidth) { availableWidth in
             let metrics = leaderboardScoreboardMetrics(availableWidth: availableWidth)
 
             ScrollView(.horizontal, showsIndicators: metrics.requiresHorizontalScroll) {
@@ -304,11 +304,11 @@ private struct ScoreboardTeamLabel: View {
         HStack(spacing: 8) {
             Text(row.abbreviation ?? row.title)
                 .font(SportsTheme.Typography.statusPill)
-                .foregroundStyle(SportsTheme.Team.accent(for: row.abbreviation, fallback: SportsTheme.Tone.scoreboard.accent))
+                .foregroundStyle(SportsTheme.Team.accent(for: row.abbreviation, fallback: SportsTheme.Tone.scoreboard.foreground))
                 .padding(.vertical, 3)
                 .padding(.horizontal, 6)
                 .background(
-                    SportsTheme.Team.accent(for: row.abbreviation, fallback: SportsTheme.Tone.scoreboard.accent).opacity(0.12),
+                    SportsTheme.Team.accent(for: row.abbreviation, fallback: SportsTheme.Tone.scoreboard.foreground).opacity(0.12),
                     in: RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous)
                 )
             VStack(alignment: .leading, spacing: 2) {
@@ -321,7 +321,7 @@ private struct ScoreboardTeamLabel: View {
                     if row.isWinner {
                         Image(systemName: "checkmark.seal.fill")
                             .font(.caption2.weight(.bold))
-                            .foregroundStyle(SportsTheme.Tone.scoreboard.accent)
+                            .foregroundStyle(SportsTheme.Tone.scoreboard.foreground)
                     }
                 }
                 if let recordText = row.recordText {
@@ -350,38 +350,6 @@ private struct LeaderboardScoreboardMetrics {
     let contentWidth: CGFloat
     let playerColumnWidth: CGFloat
     let requiresHorizontalScroll: Bool
-}
-
-private struct ScoreboardWidthAwareContent<Content: View>: View {
-    @State private var measuredWidth: CGFloat = 0
-
-    let fallbackWidth: CGFloat
-    private let content: (CGFloat) -> Content
-
-    init(fallbackWidth: CGFloat, @ViewBuilder content: @escaping (CGFloat) -> Content) {
-        self.fallbackWidth = fallbackWidth
-        self.content = content
-    }
-
-    var body: some View {
-        content(measuredWidth > 0 ? measuredWidth : fallbackWidth)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                GeometryReader { proxy in
-                    Color.clear
-                        .preference(key: ScoreboardAvailableWidthPreferenceKey.self, value: proxy.size.width)
-                }
-            }
-            .onPreferenceChange(ScoreboardAvailableWidthPreferenceKey.self) { measuredWidth = $0 }
-    }
-}
-
-private struct ScoreboardAvailableWidthPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
 }
 
 private extension GameParticipantRole {

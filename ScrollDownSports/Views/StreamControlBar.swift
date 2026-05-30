@@ -232,9 +232,9 @@ struct StreamControlBar: View {
 
     private func actionMenuColor(emphasizesJumpLatest: Bool) -> Color {
         if emphasizesJumpLatest {
-            return SportsTheme.Tone.newPlay.accent
+            return SportsTheme.Tone.newPlay.foreground
         }
-        return isGamePinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Colors.secondaryInk
+        return isGamePinned ? SportsTheme.Tone.pinned.foreground : SportsTheme.Colors.secondaryInk
     }
 
     private func actionMenuAccessibilityLabel(emphasizesJumpLatest: Bool) -> String {
@@ -268,6 +268,6 @@ struct StreamControlBar: View {
     }
 
     private var contextColor: Color {
-        newPlayCount > 0 ? SportsTheme.Tone.newPlay.accent : SportsTheme.Colors.secondaryInk
+        newPlayCount > 0 ? SportsTheme.Tone.newPlay.foreground : SportsTheme.Colors.secondaryInk
     }
 }

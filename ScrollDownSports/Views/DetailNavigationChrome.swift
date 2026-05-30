@@ -5,11 +5,30 @@ struct DetailStickyNavigationBar: View {
     @Environment(\.sportsLayoutMetrics) private var layout
 
     let title: String
+    let progressLabel: String?
     let endLabel: String
     let returnLabel: String?
     let onTop: () -> Void
     let onEnd: () -> Void
     let onReturn: () -> Void
+
+    init(
+        title: String,
+        progressLabel: String? = nil,
+        endLabel: String,
+        returnLabel: String?,
+        onTop: @escaping () -> Void,
+        onEnd: @escaping () -> Void,
+        onReturn: @escaping () -> Void
+    ) {
+        self.title = title
+        self.progressLabel = progressLabel
+        self.endLabel = endLabel
+        self.returnLabel = returnLabel
+        self.onTop = onTop
+        self.onEnd = onEnd
+        self.onReturn = onReturn
+    }
 
     var body: some View {
         let density = DetailChromeDensity.resolve(
@@ -30,12 +49,11 @@ struct DetailStickyNavigationBar: View {
                 accessibilityLayout
             }
         }
-        .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 2)
         .overlay(alignment: .topLeading) {
             Color.clear
                 .frame(width: 44, height: 44)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(title)
+                .accessibilityLabel(stickyAccessibilityLabel)
                 .accessibilityIdentifier("detail.stickyNav")
         }
     }
@@ -44,17 +62,18 @@ struct DetailStickyNavigationBar: View {
         HStack(spacing: 7) {
             if let returnLabel {
                 returnButton(label: returnLabel, compact: true)
+                contextProgressCluster(lineLimit: 1, progressLabel: progressLabel)
             } else {
-                titlePill(lineLimit: 2)
+                contextProgressCluster(lineLimit: 2, progressLabel: progressLabel)
 
                 Spacer(minLength: 0)
 
-                topButton(label: "Top", compact: true, includesIcon: false)
+                topButton(label: "Top", compact: true, includesIcon: true)
             }
 
             Spacer(minLength: 0)
 
-            endButton(label: endLabel, compact: true, includesIcon: false)
+            endButton(label: endLabel, compact: true, includesIcon: true)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
@@ -68,8 +87,15 @@ struct DetailStickyNavigationBar: View {
         HStack(spacing: 7) {
             if let returnLabel {
                 returnButton(label: DetailChromeLabelFormatter.shortReturnLabel(returnLabel), compact: true)
+                contextProgressCluster(
+                    lineLimit: 1,
+                    progressLabel: progressLabel.map(DetailChromeLabelFormatter.shortProgressLabel)
+                )
             } else {
-                titlePill(lineLimit: 1)
+                contextProgressCluster(
+                    lineLimit: 1,
+                    progressLabel: progressLabel.map(DetailChromeLabelFormatter.shortProgressLabel)
+                )
 
                 Spacer(minLength: 0)
 
@@ -90,13 +116,7 @@ struct DetailStickyNavigationBar: View {
 
     private var stackedLayout: some View {
         VStack(alignment: .leading, spacing: 7) {
-            if returnLabel == nil {
-                Text(title)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
-            }
+            contextProgressStack(lineLimit: 1, progressLabel: progressLabel.map(DetailChromeLabelFormatter.shortProgressLabel))
 
             HStack(spacing: 8) {
                 if let returnLabel {
@@ -122,17 +142,12 @@ struct DetailStickyNavigationBar: View {
 
     private var accessibilityLayout: some View {
         VStack(alignment: .leading, spacing: 8) {
+            contextProgressStack(lineLimit: 2, progressLabel: progressLabel)
+
             if let returnLabel {
                 returnButton(label: returnLabel, compact: false)
                     .frame(maxWidth: .infinity)
             } else {
-                Text(title)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.ink)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityHidden(true)
-
                 topButton(label: "Top", compact: false, includesIcon: true)
                     .frame(maxWidth: .infinity)
             }
@@ -150,21 +165,52 @@ struct DetailStickyNavigationBar: View {
     }
 
     @ViewBuilder
-    private func titlePill(lineLimit: Int) -> some View {
+    private func contextProgressCluster(lineLimit: Int, progressLabel: String?) -> some View {
         if AppEnvironment.isRunningUITests {
             Color.clear
                 .frame(width: 1, height: 1)
                 .accessibilityHidden(true)
         } else {
-            Text(title)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(SportsTheme.Colors.textOnFill)
-                .lineLimit(lineLimit)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(SportsTheme.Colors.ink, in: Capsule())
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .lineLimit(lineLimit)
+                    .multilineTextAlignment(.leading)
+
+                if let progressLabel {
+                    Text(progressLabel)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .lineLimit(1)
+                }
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
+    @ViewBuilder
+    private func contextProgressStack(lineLimit: Int, progressLabel: String?) -> some View {
+        if AppEnvironment.isRunningUITests {
+            Color.clear
+                .frame(width: 1, height: 1)
                 .accessibilityHidden(true)
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(SportsTheme.Colors.ink)
+                    .lineLimit(lineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let progressLabel {
+                    Text(progressLabel)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .lineLimit(1)
+                }
+            }
+            .accessibilityHidden(true)
         }
     }
 
@@ -174,7 +220,7 @@ struct DetailStickyNavigationBar: View {
             onReturn()
         } label: {
             if compact {
-                Text(label)
+                Label(label, systemImage: "arrow.uturn.backward")
                     .lineLimit(1)
             } else {
                 Label(label, systemImage: "arrow.uturn.backward")
@@ -182,8 +228,9 @@ struct DetailStickyNavigationBar: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: compact))
-        .frame(minHeight: 44)
+        .buttonStyle(.sportsControl(tone: .neutral, compact: compact))
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(returnLabel ?? label)
         .accessibilityIdentifier("detail.stickyNav.return")
     }
@@ -202,8 +249,9 @@ struct DetailStickyNavigationBar: View {
                     .lineLimit(1)
             }
         }
-        .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: compact))
-        .frame(minHeight: 44)
+        .buttonStyle(.sportsControl(tone: .neutral, compact: compact))
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityIdentifier("detail.stickyNav.top")
     }
 
@@ -221,10 +269,19 @@ struct DetailStickyNavigationBar: View {
                     .lineLimit(1)
             }
         }
-        .buttonStyle(.sportsControl(tone: .scoreboard, filled: true, compact: compact))
-        .frame(minHeight: 44)
+        .buttonStyle(.sportsControl(tone: .neutral, compact: compact))
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(endLabel)
         .accessibilityIdentifier("detail.stickyNav.end")
+    }
+
+    private var stickyAccessibilityLabel: String {
+        var parts = [title]
+        if let progressLabel = progressLabel?.nilIfBlank {
+            parts.append(progressLabel)
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var contentWeight: CGFloat {
@@ -235,8 +292,11 @@ struct DetailStickyNavigationBar: View {
         if endLabel.count > 6 {
             weight += 0.20
         }
+        if let progressLabel, progressLabel.count > 8 {
+            weight += 0.12
+        }
         if title.count > 22 {
-            weight += 0.30
+            weight += 0.20
         }
         return weight
     }

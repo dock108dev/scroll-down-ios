@@ -3,6 +3,7 @@ import UIKit
 import XCTest
 @testable import ScrollDownSports
 
+// Size note: renderer/theme invariants share dense fixtures to catch cross-sport presentation drift; see cleanup report.
 final class SportsThemeTests: XCTestCase {
     func testRendererRegistryRoutesSpecializedSportsAndFallbacks() {
         XCTAssertTrue(SportRendererRegistry.renderer(for: "mlb") is BaseballRenderer)
@@ -585,12 +586,24 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertEqual(SportsTheme.Surface.compactTableRow.radius, SportsTheme.Radius.row)
     }
 
+    func testProductionPaletteTokensResolveToNeutralValues() {
+        assertResolvedHex(SportsTheme.Colors.paper, light: "F6F8FB", dark: "0B1220")
+        assertResolvedHex(SportsTheme.Colors.paperInset, light: "F1F4F8", dark: "1F2937")
+        assertResolvedHex(SportsTheme.Colors.paperRaised, light: "FFFFFF", dark: "111827")
+        assertResolvedHex(SportsTheme.Colors.ink, light: "111827", dark: "F9FAFB")
+        assertResolvedHex(SportsTheme.Colors.secondaryInk, light: "667085", dark: "D0D5DD")
+        assertResolvedHex(SportsTheme.Colors.hairline, light: "D8DEE8", dark: "344054")
+        assertResolvedHex(SportsTheme.Tone.pinned.accent, light: "334155", dark: "334155")
+    }
+
     func testCoreTextAndFillTokensMeetContrastMinimums() {
         let textPairs: [(String, Color, Color)] = [
             ("ink on paper", SportsTheme.Colors.ink, SportsTheme.Colors.paper),
+            ("ink on inset paper", SportsTheme.Colors.ink, SportsTheme.Colors.paperInset),
             ("ink on raised paper", SportsTheme.Colors.ink, SportsTheme.Colors.paperRaised),
             ("secondary ink on paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paper),
-            ("secondary ink on inset paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paperInset)
+            ("secondary ink on inset paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paperInset),
+            ("secondary ink on raised paper", SportsTheme.Colors.secondaryInk, SportsTheme.Colors.paperRaised)
         ]
 
         for (name, foreground, background) in textPairs {
@@ -598,11 +611,12 @@ final class SportsThemeTests: XCTestCase {
         }
 
         for tone in SportsTheme.Tone.allCases {
-            assertContrast(SportsTheme.Colors.textOnFill, on: tone.accent, name: "text on \(tone.rawValue)")
+            assertContrast(tone.textOnAccent, on: tone.accent, name: "filled \(tone.rawValue)")
+            assertContrast(tone.foreground, on: SportsTheme.Colors.paperRaised, name: "selected \(tone.rawValue)")
         }
     }
 
-    func testPageBackgroundTokensUseDarkSpecificWashAndOverlayStrength() {
+    func testPageBackgroundTokensUseDarkSpecificWashAndNeutralVeilStrength() {
         let lightTraits = UITraitCollection(userInterfaceStyle: .light)
         let darkTraits = UITraitCollection(userInterfaceStyle: .dark)
 
@@ -613,8 +627,28 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertGreaterThan(relativeLuminance(lightPaper), 0.78)
         XCTAssertLessThan(relativeLuminance(darkPaper), 0.01)
         XCTAssertLessThan(relativeLuminance(darkWashAccent), 0.03)
-        XCTAssertGreaterThan(SportsTheme.Background.darkGridOpacity, SportsTheme.Background.lightGridOpacity)
         XCTAssertLessThan(SportsTheme.Background.darkPaperVeilOpacity, SportsTheme.Background.lightPaperVeilOpacity)
+    }
+
+    func testNeutralSurfaceBoundariesStayVisibleInBothSchemes() {
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            let hairline = UIColor(SportsTheme.Colors.hairline).resolvedColor(with: traits)
+            let raised = UIColor(SportsTheme.Colors.paperRaised).resolvedColor(with: traits)
+            let inset = UIColor(SportsTheme.Colors.paperInset).resolvedColor(with: traits)
+            let background = UIColor(SportsTheme.Colors.paper).resolvedColor(with: traits)
+
+            XCTAssertGreaterThanOrEqual(
+                contrastRatio(foreground: hairline, background: raised),
+                1.3,
+                "hairline should separate from raised surfaces in \(style == .dark ? "dark" : "light") mode"
+            )
+            XCTAssertGreaterThan(
+                contrastRatio(foreground: inset, background: background),
+                1.0,
+                "muted surfaces should not collapse into the app background"
+            )
+        }
     }
 
 }

@@ -5,7 +5,7 @@ import XCTest
 final class NavigationChromeInvariantTests: XCTestCase {
     func testHomeFiltersUseReservedOpaqueSafeAreaHeader() throws {
         let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
-        let headerSource = try repoFile("ScrollDownSports/Views/HomeSectionsView.swift")
+        let headerSource = try repoFile("ScrollDownSports/Views/HomeStickyHeaderView.swift")
         let scrollContentBeforeSafeAreaHeader = homeSource
             .components(separatedBy: ".safeAreaInset(edge: .top, spacing: 0)")
             .first ?? homeSource
@@ -20,7 +20,7 @@ final class NavigationChromeInvariantTests: XCTestCase {
 
     func testHomeFeedAndStickyHeaderShareReadableSingleColumnPolicy() throws {
         let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
-        let headerSource = try repoFile("ScrollDownSports/Views/HomeSectionsView.swift")
+        let headerSource = try repoFile("ScrollDownSports/Views/HomeStickyHeaderView.swift")
         let metricsSource = try repoFile("ScrollDownSports/DesignSystem/SportsLayoutMetrics.swift")
         let scrollContentBeforeSafeAreaHeader = homeSource
             .components(separatedBy: ".safeAreaInset(edge: .top, spacing: 0)")
@@ -34,14 +34,27 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertTrue(metricsSource.contains("self.cardGridColumns = 1"))
     }
 
+    func testHomeStickyHeaderUsesCompactShelfTreatment() throws {
+        let headerSource = try repoFile("ScrollDownSports/Views/HomeStickyHeaderView.swift")
+
+        XCTAssertTrue(headerSource.contains("HomeShelfControlChrome"))
+        XCTAssertTrue(headerSource.contains("static let shelfVerticalSpacing: CGFloat = 5"))
+        XCTAssertTrue(headerSource.contains("SportsTheme.Colors.paperInset.opacity"))
+        XCTAssertTrue(headerSource.contains("private var teamSearchStroke: Color"))
+        XCTAssertFalse(headerSource.contains("SportsTheme.Colors.paperRaised"))
+        XCTAssertFalse(headerSource.contains(".shadow("))
+    }
+
     func testHomePinChromeKeepsStableHitTargetAndCardReservation() throws {
         let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
         let cardSource = try repoFile("ScrollDownSports/Views/HomeGameCardView.swift")
+        let summaryCardSource = try repoFile("ScrollDownSports/Views/GameSummaryCard.swift")
 
         XCTAssertTrue(cardSource.contains("static let pinVisibleSize: CGFloat = 34"))
         XCTAssertTrue(cardSource.contains("static let pinHitTargetSize: CGFloat = 44"))
         XCTAssertTrue(cardSource.contains("static let pinTrailingReservation"))
-        XCTAssertTrue(cardSource.contains(".padding(.trailing, HomeGameCardLayout.pinTrailingReservation)"))
+        XCTAssertTrue(summaryCardSource.contains(".padding(.trailing, trailingReservation)"))
+        XCTAssertTrue(summaryCardSource.contains("HomeGameCardLayout.pinTrailingReservation"))
         XCTAssertTrue(
             cardSource.contains(
                 ".frame(width: HomeGameCardLayout.pinHitTargetSize, height: HomeGameCardLayout.pinHitTargetSize)"
@@ -61,11 +74,46 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertTrue(detailSource.contains(".toolbarBackground(SportsTheme.Colors.paper, for: .navigationBar)"))
     }
 
+    func testPrimaryScreensUseNeutralPageBackgroundWithoutScorebookGridTexture() throws {
+        let themeSource = try repoFile("ScrollDownSports/DesignSystem/SportsTheme.swift")
+        let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let diagramSource = try [
+            "ScrollDownSports/Views/BaseballScorebookViews.swift",
+            "ScrollDownSports/Views/BasketballHalfCourtPressureView.swift",
+            "ScrollDownSports/Views/FootballFieldStripView.swift",
+            "ScrollDownSports/Views/HockeyRinkStripView.swift",
+            "ScrollDownSports/Views/SituationDiagramViews.swift",
+            "ScrollDownSports/Views/SoccerPitchStripView.swift"
+        ]
+            .map(repoFile)
+            .joined(separator: "\n")
+
+        XCTAssertTrue(homeSource.contains(".background { SportsPageBackground() }"))
+        XCTAssertTrue(detailSource.contains(".background { SportsPageBackground() }"))
+        XCTAssertTrue(themeSource.contains("struct SportsPageBackground"))
+        XCTAssertFalse(themeSource.contains("ScorebookGrid"))
+        XCTAssertFalse(themeSource.contains("GridOpacity"))
+        XCTAssertTrue(diagramSource.contains("SportsTheme.Colors.scorebookLine"))
+    }
+
     func testDetailRefreshToolbarControlHasStableSizeAndLabel() throws {
         let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
 
+        XCTAssertTrue(source.contains("Image(systemName: \"arrow.clockwise\")"))
         XCTAssertTrue(source.contains(".frame(minWidth: 44, minHeight: 44)"))
+        XCTAssertTrue(source.contains(".contentShape(Rectangle())"))
         XCTAssertTrue(source.contains(".accessibilityLabel(\"Refresh game\")"))
+    }
+
+    func testHomeRefreshToolbarControlHasStableSizeAndLabel() throws {
+        let source = try repoFile("ScrollDownSports/Views/HomeView.swift")
+
+        XCTAssertTrue(source.contains("Image(systemName: \"arrow.clockwise\")"))
+        XCTAssertTrue(source.contains(".frame(minWidth: 44, minHeight: 44)"))
+        XCTAssertTrue(source.contains(".contentShape(Rectangle())"))
+        XCTAssertTrue(source.contains(".accessibilityLabel(\"Refresh games\")"))
+        XCTAssertTrue(source.contains(".accessibilityIdentifier(\"home.refresh\")"))
     }
 
     func testDetailFeedAndStickyChromeShareReadableColumnPolicy() throws {
@@ -90,6 +138,18 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
         XCTAssertTrue(detailSource.contains("Back to"))
         XCTAssertTrue(chromeSource.contains("Capsule()"))
+    }
+
+    func testDetailStickyChromeUsesNeutralSurfaceWithoutFloatingShadow() throws {
+        let chromeSource = try repoFile("ScrollDownSports/Views/DetailNavigationChrome.swift")
+
+        XCTAssertTrue(chromeSource.contains("let progressLabel: String?"))
+        XCTAssertTrue(chromeSource.contains(".background(SportsTheme.Colors.paperRaised, in: Capsule())"))
+        XCTAssertTrue(chromeSource.contains(".buttonStyle(.sportsControl(tone: .neutral, compact: compact))"))
+        XCTAssertTrue(chromeSource.contains(".frame(minWidth: 44, minHeight: 44)"))
+        XCTAssertFalse(chromeSource.contains(".shadow(color: .black.opacity(0.06)"))
+        XCTAssertFalse(chromeSource.contains(".background(SportsTheme.Colors.ink, in: Capsule())"))
+        XCTAssertFalse(chromeSource.contains(".sportsControl(tone: .scoreboard, filled: true"))
     }
 
     func testReturnAnchorRemainsViewLocalAndClearsAfterBackToSpot() throws {
@@ -140,6 +200,30 @@ final class NavigationChromeInvariantTests: XCTestCase {
             XCTAssertFalse(source.contains(".buttonStyle(.bordered"), path)
             XCTAssertFalse(source.contains(".buttonStyle(.borderedProminent"), path)
         }
+    }
+
+    func testSportsSurfacesUseNeutralDefaultStrokesWithAccentOptIn() throws {
+        let themeSource = try repoFile("ScrollDownSports/DesignSystem/SportsTheme.swift")
+        let homeCardSource = try repoFile("ScrollDownSports/Views/HomeGameCardView.swift")
+        let detailChromeSource = try repoFile("ScrollDownSports/Views/GameDetailChrome.swift")
+        let summaryCardSource = try repoFile("ScrollDownSports/Views/GameSummaryCard.swift")
+        let playRowSource = try repoFile("ScrollDownSports/Views/PlayRow.swift")
+
+        XCTAssertTrue(themeSource.contains("usesAccentStroke: Bool = false"))
+        XCTAssertTrue(themeSource.contains("if usesAccentStroke, let accent"))
+        XCTAssertTrue(themeSource.contains(".sportsSurface(.compactTableRow)"))
+        XCTAssertFalse(themeSource.contains(".sportsSurface(.compactTableRow, accent:"))
+        XCTAssertFalse(themeSource.contains("filled ? tone.accent.opacity(0.0) : SportsTheme.Stroke.accent"))
+
+        XCTAssertTrue(summaryCardSource.contains(".stroke(SportsTheme.Stroke.subdued(), lineWidth: 0.9)"))
+        XCTAssertFalse(homeCardSource.contains("SportsTheme.Stroke.accent(accent("))
+
+        XCTAssertTrue(summaryCardSource.contains(".gameHeaderCard,"))
+        XCTAssertTrue(summaryCardSource.contains("usesAccentStroke: state.usesStrongLiveTreatment"))
+        XCTAssertFalse(detailChromeSource.contains(".background(SportsTheme.Tone.scoreboard.accent"))
+
+        XCTAssertTrue(playRowSource.contains(".stroke(SportsTheme.Stroke.subdued(), lineWidth: 0.75)"))
+        XCTAssertFalse(playRowSource.contains("SportsTheme.Stroke.accent(accentColor)"))
     }
 
     func testDetailStreamUsesTapeMarkersAndBottomPayoffCue() throws {

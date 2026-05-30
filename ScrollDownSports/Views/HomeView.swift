@@ -11,7 +11,7 @@ struct HomeView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.sportsLayoutMetrics) private var inheritedLayout
-    @State private var lastAppliedInitialAnchorKey: String?
+    @State private var scrollCoordinator = HomeScrollCoordinator()
     @State private var viewportSize = CGSize.zero
     private let gameActivation: HomeGameActivationMode
 
@@ -38,11 +38,15 @@ struct HomeView: View {
                     if viewModel.loading && !viewModel.hasAnyHomeSourceGames {
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: layout.emptyStateMinHeight, alignment: .center)
+                            .accessibilityIdentifier("home.empty.loading")
                     } else if let error = viewModel.errorMessage, !viewModel.hasAnyHomeSourceGames {
                         ErrorState(message: error) {
                             Task { await viewModel.refresh() }
                         }
                         .frame(maxWidth: .infinity, minHeight: layout.emptyStateMinHeight)
+                    } else if viewModel.showsNoGamesEmptyState {
+                        NoGamesEmptyState()
+                            .frame(maxWidth: .infinity, minHeight: layout.emptyStateMinHeight)
                     } else if viewModel.showsFilteredEmptyState {
                         FilteredEmptyState {
                             viewModel.clearFilters()
@@ -80,13 +84,16 @@ struct HomeView: View {
             .accessibilityIdentifier("home.scroll")
             .scrollDismissesKeyboard(.interactively)
             .onAppear {
-                scrollToInitialHomeAnchor(proxy)
+                requestInitialHomeScroll(proxy)
             }
             .onChange(of: viewModel.initialHomeAnchorID) { _, _ in
-                scrollToInitialHomeAnchor(proxy)
+                requestInitialHomeScroll(proxy, invalidatingPendingScrolls: true)
             }
             .onChange(of: viewModel.filteredVisibleGameCount) { _, _ in
-                scrollToInitialHomeAnchor(proxy)
+                requestVisibleCountHomeScroll(proxy)
+            }
+            .onChange(of: viewModel.homeFilterSignature) { _, signature in
+                requestFilterHomeScroll(proxy, filterSignature: signature)
             }
         }
         .environment(\.sportsLayoutMetrics, layout)
@@ -140,21 +147,75 @@ struct HomeView: View {
         .toolbarBackground(SportsTheme.Colors.paper, for: .navigationBar)
     }
 
-    private func scrollToInitialHomeAnchor(_ proxy: ScrollViewProxy) {
-        guard let anchorID = viewModel.initialHomeAnchorID else { return }
-        let key = [
-            anchorID,
-            String(viewModel.filteredVisibleGameCount),
-            viewModel.league.rawValue,
-            viewModel.teamQuery
-        ].joined(separator: ":")
-        guard key != lastAppliedInitialAnchorKey else { return }
-        lastAppliedInitialAnchorKey = key
+    private func requestInitialHomeScroll(
+        _ proxy: ScrollViewProxy,
+        invalidatingPendingScrolls: Bool = false
+    ) {
+        if invalidatingPendingScrolls {
+            scrollCoordinator.invalidatePendingScrolls()
+        }
+        guard let request = scrollCoordinator.initialRequest(
+            anchorID: viewModel.initialHomeAnchorID,
+            visibleCount: viewModel.filteredVisibleGameCount,
+            filterSignature: viewModel.homeFilterSignature
+        ) else { return }
+
+        scheduleHomeScroll(request, proxy: proxy)
+    }
+
+    private func requestFilterHomeScroll(_ proxy: ScrollViewProxy, filterSignature: String) {
+        guard let request = scrollCoordinator.filterChanged(
+            to: filterSignature,
+            anchorID: viewModel.firstVisibleHomeAnchorID,
+            visibleCount: viewModel.filteredVisibleGameCount
+        ) else { return }
+
+        scheduleHomeScroll(request, proxy: proxy)
+    }
+
+    private func requestVisibleCountHomeScroll(_ proxy: ScrollViewProxy) {
+        guard let request = scrollCoordinator.visibleCountChanged(
+            anchorID: viewModel.firstVisibleHomeAnchorID,
+            visibleCount: viewModel.filteredVisibleGameCount,
+            filterSignature: viewModel.homeFilterSignature
+        ) else { return }
+
+        scheduleHomeScroll(request, proxy: proxy)
+    }
+
+    private func scheduleHomeScroll(_ request: HomeScrollRequest, proxy: ScrollViewProxy) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            proxy.scrollTo(anchorID, anchor: .center)
+            guard isCurrentHomeScrollRequest(request) else { return }
+            proxy.scrollTo(request.anchorID, anchor: unitPoint(for: request.position))
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                proxy.scrollTo(anchorID, anchor: .center)
+                guard isCurrentHomeScrollRequest(request) else { return }
+                proxy.scrollTo(request.anchorID, anchor: unitPoint(for: request.position))
+                scrollCoordinator.complete(request)
             }
+        }
+    }
+
+    private func isCurrentHomeScrollRequest(_ request: HomeScrollRequest) -> Bool {
+        guard viewModel.isRenderableHomeAnchorID(request.anchorID) else { return false }
+        return scrollCoordinator.isCurrent(request, currentValidationKey: currentValidationKey(for: request))
+    }
+
+    private func currentValidationKey(for request: HomeScrollRequest) -> String {
+        let reason = request.completedFilterSignature == nil ? "initial" : "filter"
+        return scrollCoordinator.validationKey(
+            reason: reason,
+            anchorID: request.anchorID,
+            visibleCount: viewModel.filteredVisibleGameCount,
+            filterSignature: viewModel.homeFilterSignature
+        )
+    }
+
+    private func unitPoint(for anchor: HomeProgrammaticScrollAnchor) -> UnitPoint {
+        switch anchor {
+        case .center:
+            return .center
+        case .top:
+            return .top
         }
     }
 

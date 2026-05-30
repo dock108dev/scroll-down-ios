@@ -77,6 +77,42 @@ final class HomeVisualRegressionTests: SnapshotTestCase {
         )
     }
 
+    func testHomeSportFilterActivePhoneCompactWidth() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(league: .mlb)
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-sport-filter-active-phone-compact",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact
+        )
+    }
+
+    func testHomeLeagueFilterNCAAFStandardPhoneUsesMenuWithoutTruncation() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(league: .ncaaf)
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-league-filter-ncaaf-standard-phone",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact
+        )
+    }
+
+    func testHomeLeagueFilterNCAABCompactPhoneUsesMenuWithoutTruncation() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(league: .ncaab)
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-league-filter-ncaab-compact-phone",
+            width: .compact,
+            height: SnapshotDevice.phoneSmall.size.height,
+            device: .phoneSmall
+        )
+    }
+
     func testHomeActiveFiltersSplitNarrowKeepsHeaderCompact() {
         let viewModel = VisualRegressionFixtures.homeViewModel(league: .mlb, teamQuery: "Bay")
 
@@ -86,6 +122,18 @@ final class HomeVisualRegressionTests: SnapshotTestCase {
             width: .splitNarrow,
             height: SnapshotDevice.iPadMiniPortrait.size.height,
             device: .iPadMiniPortrait
+        )
+    }
+
+    func testHomeActiveFiltersPhoneCompactKeepsHeaderCompact() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(league: .mlb, teamQuery: "Bay")
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-active-filters-phone-compact",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact
         )
     }
 
@@ -102,6 +150,19 @@ final class HomeVisualRegressionTests: SnapshotTestCase {
         )
     }
 
+    func testHomeActiveFiltersPhoneAccessibilityText() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(league: .nba, teamQuery: "Canyon")
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-active-filters-phone-accessibility",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact,
+            dynamicTypeSize: .accessibility5
+        )
+    }
+
     func testHomeActiveFiltersDarkModeIPad() {
         let viewModel = VisualRegressionFixtures.homeViewModel(pinned: true, league: .mlb, teamQuery: "Bay")
 
@@ -111,6 +172,19 @@ final class HomeVisualRegressionTests: SnapshotTestCase {
             width: .tabletReadable,
             height: SnapshotDevice.iPad11Portrait.size.height,
             device: .iPad11Portrait,
+            colorScheme: .dark
+        )
+    }
+
+    func testHomeActiveFiltersDarkModeCompactPhone() {
+        let viewModel = VisualRegressionFixtures.homeViewModel(pinned: true, league: .mlb, teamQuery: "Bay")
+
+        assertSwiftUISnapshot(
+            of: HomeView(viewModel: viewModel),
+            named: "home-active-filters-dark-phone-compact",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact,
             colorScheme: .dark
         )
     }

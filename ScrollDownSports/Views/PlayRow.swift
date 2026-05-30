@@ -11,16 +11,16 @@ struct PlayRow: View {
         HStack(alignment: .top, spacing: 7) {
             EventMarker(importance: importance, accent: teamColor)
             VStack(alignment: .leading, spacing: importance == .low ? 3 : 4) {
-                contextLine
-                if presentation.situation != nil {
-                    situationPanel
-                }
                 Text(presentation.headline)
                     .font(SportsTheme.Typography.momentHeadline)
                     .foregroundStyle(SportsTheme.Colors.ink)
                     .lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
+                contextLine
                 resultContextLine
+                if presentation.situation != nil {
+                    situationPanel
+                }
                 if importance != .low, let detail = visibleDetailText {
                     Text(detail)
                         .font(SportsTheme.Typography.momentDetail)
@@ -43,50 +43,56 @@ struct PlayRow: View {
         .background(cardBackground, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(SportsTheme.Stroke.accent(accentColor), lineWidth: 0.75)
+                .stroke(SportsTheme.Stroke.subdued(), lineWidth: 0.75)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel)
         .accessibilityValue(rowAccessibilityValue)
     }
 
+    @ViewBuilder
     private var contextLine: some View {
-        HStack(spacing: 5) {
-            if !presentation.clockText.isEmpty, shouldShowClockInContextLine {
-                if !AppEnvironment.isRunningUITests {
-                    Text(presentation.clockText)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.ink)
+        if hasContextLine {
+            HStack(spacing: 5) {
+                if !presentation.clockText.isEmpty, shouldShowClockInContextLine {
+                    if !AppEnvironment.isRunningUITests {
+                        Text(presentation.clockText)
+                            .font(SportsTheme.Typography.metadata)
+                            .foregroundStyle(SportsTheme.Colors.ink)
+                    }
                 }
+                if let team = presentation.teamAbbreviation?.nilIfBlank,
+                   PlayRowContentFilter.shouldShowContextTeamBadge(
+                    team,
+                    situation: presentation.situation
+                   ) {
+                    teamBadge(team)
+                }
+                if let eventLabel = PlayRowContentFilter.visibleEventLabel(for: presentation) {
+                    Text(eventLabel)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(accentColor)
+                }
+                Spacer(minLength: 0)
             }
-            if let team = presentation.teamAbbreviation?.nilIfBlank,
-               PlayRowContentFilter.shouldShowContextTeamBadge(
-                team,
-                situation: presentation.situation
-               ) {
-                teamBadge(team)
-            }
-            if let eventLabel = presentation.eventLabel?.nilIfBlank {
-                Text(eventLabel)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(accentColor)
-            }
-            Spacer(minLength: 0)
         }
+    }
+
+    private var hasContextLine: Bool {
+        !presentation.clockText.isEmpty && shouldShowClockInContextLine
+            || presentation.teamAbbreviation?.nilIfBlank != nil
+                && PlayRowContentFilter.shouldShowContextTeamBadge(
+                    presentation.teamAbbreviation ?? "",
+                    situation: presentation.situation
+                )
+            || PlayRowContentFilter.visibleEventLabel(for: presentation) != nil
     }
 
     private var shouldShowClockInContextLine: Bool {
         guard let situationPeriodText = presentation.situation?.periodText?.nilIfBlank else {
             return true
         }
-        let situationMeaning = PlayRowContentFilter.normalizedMeaning(situationPeriodText)
-        let clockMeaning = PlayRowContentFilter.normalizedMeaning(presentation.clockText)
-        guard !situationMeaning.isEmpty, !clockMeaning.isEmpty else {
-            return true
-        }
-        return situationMeaning != clockMeaning
-            && !situationMeaning.contains(clockMeaning)
-            && !clockMeaning.contains(situationMeaning)
+        return PlayRowContentFilter.duplicatesMeaning(presentation.clockText, comparedWith: situationPeriodText) == false
     }
 
     private func teamBadge(_ team: String) -> some View {
@@ -110,27 +116,28 @@ struct PlayRow: View {
     private var resultContextLine: some View {
         if let situation = presentation.situation,
            PlayRowContentFilter.hasResultContext(for: situation) {
+            let resultContext = PlayRowContentFilter.visibleResultContext(for: situation)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 6) {
-                    resultContextContent(for: situation)
+                    resultContextContent(resultContext)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    resultContextContent(for: situation)
+                    resultContextContent(resultContext)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private func resultContextContent(for situation: GameEventSituationPresentation) -> some View {
-        if let pressureLine = PlayRowContentFilter.resultContextText(situation.pressureLine) {
+    private func resultContextContent(_ resultContext: PlayRowContentFilter.ResultContext) -> some View {
+        if let pressureLine = resultContext.pressureLine {
             Text(pressureLine)
                 .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(situation.accent.tone.accent)
+                .foregroundStyle(presentation.situation?.accent.tone.foreground ?? accentColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
         }
-        if let contextLine = PlayRowContentFilter.resultContextText(situation.contextLine) {
+        if let contextLine = resultContext.contextLine {
             Text(contextLine)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
@@ -142,20 +149,22 @@ struct PlayRow: View {
     @ViewBuilder
     private var situationPanel: some View {
         if let situation = presentation.situation, !situation.isEmpty {
-            SituationSummaryPanel(situation: situation)
+            SituationSummaryPanel(
+                situation: situation,
+                suppressedMetricTexts: PlayRowContentFilter.situationMetricSuppressionText(for: presentation)
+            )
                 .padding(.top, 2)
         }
     }
 
     @ViewBuilder
     private var detailLine: some View {
-        if let teamLabel = presentation.teamLabel?.nilIfBlank,
-                  presentation.teamAbbreviation?.nilIfBlank == nil {
+        if let teamLabel = PlayRowContentFilter.visibleTeamLabel(for: presentation) {
             Text(teamLabel)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(teamColor)
         }
-        if let scoreLabel = presentation.scoreLabel?.nilIfBlank {
+        if let scoreLabel = PlayRowContentFilter.visibleScoreLabel(for: presentation) {
             Text(scoreLabel)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.ink)
@@ -235,167 +244,6 @@ struct PlayRow: View {
     private var rowAccessibilityValue: String {
         PlayRowContentFilter.situationAccessibilityValue(for: presentation)
     }
-}
-
-struct PlayRowContentFilter {
-    static func visibleDetailText(for presentation: GameEventPresentation) -> String? {
-        guard let detail = presentation.detail?.nilIfBlank,
-              let situation = presentation.situation else {
-            return presentation.detail?.nilIfBlank
-        }
-        let existingText = [
-            presentation.headline,
-            presentation.rawFeedText,
-            situation.setupText,
-            situation.contextLine,
-            situation.pressureLine
-        ].compactMap { $0?.nilIfBlank }
-
-        guard existingText.contains(where: { duplicatesMeaning(detail, comparedWith: $0) }) == false,
-              isPlayerOnlyRepeat(detail, headline: presentation.headline) == false else {
-            return nil
-        }
-        return detail
-    }
-
-    static func shouldShowContextTeamBadge(
-        _ team: String,
-        situation: GameEventSituationPresentation?
-    ) -> Bool {
-        guard let team = team.nilIfBlank,
-              let situation else {
-            return team.nilIfBlank != nil
-        }
-        let matchingSituationLabels = [
-            situation.ownership?.teamAbbreviation,
-            situation.ownership?.teamLabel,
-            situation.accent.teamAbbreviation,
-            situation.accent.teamLabel
-        ].compactMap { $0?.nilIfBlank }
-        return matchingSituationLabels.contains { duplicatesMeaning(team, comparedWith: $0) } == false
-    }
-
-    static func situationAccessibilityValue(for presentation: GameEventPresentation) -> String {
-        guard let supplement = presentation.situationAccessibilityText?.nilIfBlank else {
-            return ""
-        }
-        let existingText = [
-            presentation.accessibilityLabel,
-            presentation.headline,
-            presentation.detail,
-            presentation.clockText,
-            presentation.eventLabel,
-            presentation.teamAbbreviation,
-            presentation.teamLabel,
-            presentation.scoringLabel,
-            presentation.scoreLabel
-        ].compactMap { $0?.nilIfBlank }
-            .joined(separator: " ")
-        return duplicatesMeaning(supplement, comparedWith: existingText) ? "" : supplement
-    }
-
-    static func hasResultContext(for situation: GameEventSituationPresentation) -> Bool {
-        resultContextText(situation.pressureLine) != nil
-            || resultContextText(situation.contextLine) != nil
-    }
-
-    static func resultContextText(_ text: String?) -> String? {
-        guard let text = text?.nilIfBlank,
-              isResultSensitiveSituationText(text) else {
-            return nil
-        }
-        return text
-    }
-
-    static func prePlaySituationText(_ text: String?) -> String? {
-        guard let text = text?.nilIfBlank,
-              !isResultSensitiveSituationText(text) else {
-            return nil
-        }
-        return text
-    }
-
-    static func duplicatesMeaning(_ candidate: String, comparedWith existing: String) -> Bool {
-        let normalizedCandidate = normalizedMeaning(candidate)
-        let normalizedExisting = normalizedMeaning(existing)
-        guard !normalizedCandidate.isEmpty, !normalizedExisting.isEmpty else {
-            return false
-        }
-        if normalizedCandidate == normalizedExisting {
-            return true
-        }
-        let minimumContainedLength = 24
-        return normalizedCandidate.count >= minimumContainedLength && normalizedExisting.contains(normalizedCandidate)
-            || normalizedExisting.count >= minimumContainedLength && normalizedCandidate.contains(normalizedExisting)
-    }
-
-    static func normalizedMeaning(_ text: String) -> String {
-        text.lowercased()
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
-
-    private static func isPlayerOnlyRepeat(_ detail: String, headline: String) -> Bool {
-        let detailTokens = meaningfulTokens(in: detail)
-        guard detailTokens.count >= 2,
-              detailTokens.count <= 4 else {
-            return false
-        }
-        let headlineTokens = Set(meaningfulTokens(in: headline))
-        return detailTokens.allSatisfy { headlineTokens.contains($0) }
-    }
-
-    private static func isResultSensitiveSituationText(_ text: String) -> Bool {
-        let normalized = normalizedMeaning(text)
-        let metadataKey = normalizedSituationMetadataKey(text)
-        if text.contains("->") {
-            return true
-        }
-        if normalized.contains(" to up ")
-            || normalized.contains(" to tied")
-            || normalized.contains(" to down ")
-            || containsEmbeddedDirectionalMovement(normalized) {
-            return true
-        }
-        if normalized.hasPrefix("up ")
-            || normalized.hasPrefix("down ") {
-            return false
-        }
-        return metadataKey.contains("lead_change")
-            || metadataKey.contains("tying_play")
-            || metadataKey.contains("scoring_play")
-            || metadataKey.contains("scoring_swing")
-            || metadataKey.contains("power_play_finish")
-            || metadataKey.contains("finish")
-            || metadataKey.contains("go_ahead")
-            || metadataKey.contains("cuts_deficit")
-            || metadataKey.contains("extends_lead")
-    }
-
-    private static func containsEmbeddedDirectionalMovement(_ normalized: String) -> Bool {
-        let tokens = normalized.split(separator: " ").map(String.init)
-        guard tokens.count >= 3 else { return false }
-        for index in 1..<(tokens.count - 1) where (tokens[index] == "up" || tokens[index] == "down") {
-            if Int(tokens[index + 1]) != nil {
-                return true
-            }
-        }
-        return false
-    }
-
-    private static func meaningfulTokens(in text: String) -> [String] {
-        normalizedMeaning(text)
-            .split(separator: " ")
-            .map(String.init)
-            .filter { token in
-                token.count > 1 && stopWords.contains(token) == false
-            }
-    }
-
-    private static let stopWords: Set<String> = [
-        "a", "an", "and", "at", "by", "for", "from", "in", "into", "of", "on", "out", "the", "to", "with"
-    ]
 }
 
 private struct EventMarker: View {

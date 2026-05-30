@@ -117,7 +117,7 @@ final class ScoreSpoilerFilterTests: XCTestCase {
             scoringLabel: "3PT made",
             scoreLabel: "SEA 78, OAK 79",
             rawFeedText: "Down 4 before the shot",
-            rawFeedSource: nil,
+            rawFeedSource: "SEA 78, OAK 79 provider",
             accessibilityLabel: "Seattle makes it 79-78",
             situation: GameEventSituationPresentation(
                 title: "Clock pressure",
@@ -156,6 +156,7 @@ final class ScoreSpoilerFilterTests: XCTestCase {
         XCTAssertEqual(filteredBasketball.headline, "3PT made")
         XCTAssertNil(filteredBasketball.detail)
         XCTAssertNil(filteredBasketball.rawFeedText)
+        XCTAssertNil(filteredBasketball.rawFeedSource)
         XCTAssertNil(filteredBasketball.accessibilityLabel)
         XCTAssertNil(filteredBasketball.situationAccessibilityText)
         XCTAssertNil(filteredBasketball.situation?.contextLine)
@@ -192,6 +193,7 @@ final class ScoreSpoilerFilterTests: XCTestCase {
                         associations: [],
                         metrics: [
                             PressureBoardSituationMetric(label: "Score", value: "SEA 78, OAK 79", emphasis: .primary),
+                            PressureBoardSituationMetric(label: "Lead change", value: "Yes", emphasis: .secondary),
                             PressureBoardSituationMetric(label: "Pressure", value: "Down 1", emphasis: .pressure),
                             PressureBoardSituationMetric(label: "Clock", value: "00:42", emphasis: .secondary)
                         ]
@@ -212,6 +214,57 @@ final class ScoreSpoilerFilterTests: XCTestCase {
             return XCTFail("Expected pressure board fallback to remain after redaction")
         }
         XCTAssertEqual(pressureBoard.metrics.map(\.label), ["Clock"])
+    }
+
+    func testHiddenAbsoluteScoreFiltersRawFeedSourceAndMetricLabels() {
+        let presentation = GameEventPresentation(
+            clockText: "B8",
+            headline: "Rodriguez singles to right.",
+            detail: nil,
+            eventLabel: "Single",
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle",
+            scoringLabel: nil,
+            scoreLabel: "SEA 5, OAK 4",
+            rawFeedText: "Runner on second before the pitch.",
+            rawFeedSource: "SEA 5, OAK 4 provider feed",
+            accessibilityLabel: nil,
+            situation: GameEventSituationPresentation(
+                title: "Context",
+                periodText: nil,
+                setupText: nil,
+                contextLine: nil,
+                pressureLine: nil,
+                sport: .baseball,
+                layout: .pressureBoardFallback,
+                ownership: nil,
+                diagram: .pressureBoardFallback(
+                    PressureBoardSituationDiagram(
+                        associations: [],
+                        metrics: [
+                            PressureBoardSituationMetric(label: "SEA 5, OAK 4", value: "Current", emphasis: .primary),
+                            PressureBoardSituationMetric(label: "Base state", value: "Runner on second", emphasis: .secondary)
+                        ]
+                    )
+                ),
+                accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .neutral),
+                dataConfidence: .explicitGenericEventContext
+            ),
+            situationAccessibilityText: nil
+        )
+
+        let filtered = EventScoreSpoilerFilter.filtered(
+            presentation: presentation,
+            game: finalGame(),
+            policy: .hideAbsoluteScores
+        )
+
+        XCTAssertEqual(filtered.rawFeedText, "Runner on second before the pitch.")
+        XCTAssertNil(filtered.rawFeedSource)
+        guard case .pressureBoardFallback(let board) = filtered.situation?.diagram else {
+            return XCTFail("Expected pressure board fallback")
+        }
+        XCTAssertEqual(board.metrics.map(\.label), ["Base state"])
     }
 
     private func finalGame() -> Game {

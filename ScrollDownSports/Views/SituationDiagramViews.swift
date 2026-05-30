@@ -1,15 +1,22 @@
 import SwiftUI
 
+// Size note: shared situation diagram chrome stays together so sport-specific strips keep matching layout; see cleanup report.
 struct SituationSummaryPanel: View {
     let situation: GameEventSituationPresentation
+    let suppressedMetricTexts: [String]
+
+    init(situation: GameEventSituationPresentation, suppressedMetricTexts: [String] = []) {
+        self.situation = situation
+        self.suppressedMetricTexts = suppressedMetricTexts
+    }
 
     @Environment(\.sportsLayoutMetrics) private var layout
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if shouldShowSituationStrip {
-                situationStrip
+            if shouldShowSituationChips {
+                SituationContextChipRow(chips: situationChips, accent: accent)
             }
             if let diagram = situation.diagram {
                 diagramView(diagram)
@@ -93,7 +100,8 @@ struct SituationSummaryPanel: View {
             PressureBoardFallbackView(
                 situation: pressureBoard,
                 accent: accent,
-                metricLimit: diagramSizing.pressureMetricLimit
+                metricLimit: diagramSizing.pressureMetricLimit,
+                suppressedMetricTexts: suppressedMetricTexts
             )
                 .frame(
                     maxWidth: diagramSizing.pressureMaxWidth,
@@ -113,88 +121,13 @@ struct SituationSummaryPanel: View {
         SituationDiagramSizing(layout: layout, dynamicTypeSize: dynamicTypeSize)
     }
 
-    private var shouldShowSituationStrip: Bool {
+    private var shouldShowSituationChips: Bool {
         !(situation.sport == .baseball && situation.layout == .pressureBoardFallback)
+            && !situationChips.isEmpty
     }
 
-    private var situationStrip: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 6) {
-                stripContent(allowsWrapping: false)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                stripContent(allowsWrapping: true)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func stripContent(allowsWrapping: Bool) -> some View {
-        if let periodText = situation.periodText?.nilIfBlank {
-            Text(periodText)
-                .font(SportsTheme.Typography.statusPill)
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .lineLimit(allowsWrapping ? 2 : 1)
-                .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        if let ownership = situation.ownership {
-            OwnershipLabel(ownership: ownership, accent: accent, allowsWrapping: allowsWrapping)
-        }
-        if let setupText = situation.setupText?.nilIfBlank {
-            Text(setupText)
-                .font(SportsTheme.Typography.metadata)
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .lineLimit(allowsWrapping ? 2 : 1)
-                .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        if situation.sport != .baseball {
-            if let pressureLine = PlayRowContentFilter.prePlaySituationText(situation.pressureLine) {
-                Text(pressureLine)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(situation.accent.tone.accent)
-                    .lineLimit(allowsWrapping ? 2 : 1)
-                    .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let contextLine = PlayRowContentFilter.prePlaySituationText(situation.contextLine) {
-                Text(contextLine)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                    .lineLimit(allowsWrapping ? 2 : 1)
-                    .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
-
-private struct OwnershipLabel: View {
-    let ownership: GameEventSituationOwnership
-    let accent: Color
-    let allowsWrapping: Bool
-
-    var body: some View {
-        HStack(spacing: 5) {
-            ownershipMarker
-            Text(ownership.displayLabel)
-                .font(SportsTheme.Typography.statusPill)
-                .foregroundStyle(SportsTheme.Colors.ink)
-                .lineLimit(allowsWrapping ? 2 : 1)
-                .minimumScaleFactor(allowsWrapping ? 0.86 : 0.78)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var ownershipMarker: some View {
-        RoundedRectangle(cornerRadius: 2, style: .continuous)
-            .fill(accent.opacity(0.24))
-            .overlay(
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .stroke(accent.opacity(0.42), lineWidth: 1)
-            )
-            .frame(width: 9, height: 9)
+    private var situationChips: [SituationContextChip] {
+        SituationContextChipBuilder.chips(for: situation)
     }
 }
 
@@ -299,117 +232,6 @@ private struct BaseballBaseMarker: View {
             }
         }
         .frame(width: size + 6, height: size + 6)
-    }
-}
-
-private struct PressureBoardFallbackView: View {
-    let situation: PressureBoardSituationDiagram
-    let accent: Color
-    let metricLimit: Int
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(displayMetrics.enumerated()), id: \.offset) { index, metric in
-                if index > 0 {
-                    SportsTheme.Colors.hairline.opacity(0.56)
-                        .frame(height: 1)
-                }
-                PressureBoardMetricRow(metric: metric, accent: accent)
-            }
-        }
-        .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? 6 : 5)
-        .padding(.horizontal, 7)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SportsTheme.Colors.paperRaised)
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(accent.opacity(0.38))
-                .frame(width: 2)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous)
-                .stroke(SportsTheme.Stroke.subdued(SportsTheme.Colors.scorebookLine), lineWidth: SportsTheme.Stroke.standard)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: SportsTheme.Radius.row, style: .continuous))
-        .accessibilityElement(children: .ignore)
-        .accessibilityHidden(true)
-    }
-
-    private var displayMetrics: [PressureBoardSituationMetric] {
-        if !situation.metrics.isEmpty {
-            return Array(situation.metrics.prefix(metricLimit))
-        }
-        return situation.associations.prefix(2).map { ownership in
-            PressureBoardSituationMetric(
-                label: "Team",
-                value: ownership.teamAbbreviation ?? ownership.teamLabel ?? ownership.role.displayName,
-                emphasis: .team
-            )
-        }
-    }
-}
-
-private struct PressureBoardMetricRow: View {
-    let metric: PressureBoardSituationMetric
-    let accent: Color
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        HStack(spacing: 7) {
-            Text(metric.label.uppercased())
-                .font(SportsTheme.Typography.statusPill)
-                .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                .lineLimit(1)
-                .minimumScaleFactor(labelMinimumScaleFactor)
-                .allowsTightening(true)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(width: labelColumnWidth, alignment: .leading)
-            Text(metric.value)
-                .font(valueFont)
-                .foregroundStyle(valueColor)
-                .monospacedDigit()
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 0.86 : 0.72)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 22 : 18, alignment: .center)
-    }
-
-    private var labelColumnWidth: CGFloat {
-        if AppEnvironment.isRunningUITests {
-            return dynamicTypeSize.isAccessibilitySize ? 120 : 112
-        }
-        return dynamicTypeSize.isAccessibilitySize ? 72 : 64
-    }
-
-    private var labelMinimumScaleFactor: CGFloat {
-        AppEnvironment.isRunningUITests ? 0.58 : 0.72
-    }
-
-    private var valueFont: Font {
-        switch metric.emphasis {
-        case .primary, .pressure:
-            return SportsTheme.Typography.statTable
-        case .team:
-            return SportsTheme.Typography.teamAbbreviation
-        case .secondary:
-            return SportsTheme.Typography.statusPill
-        }
-    }
-
-    private var valueColor: Color {
-        switch metric.emphasis {
-        case .team, .pressure:
-            return accent
-        case .primary:
-            return SportsTheme.Colors.ink
-        case .secondary:
-            return SportsTheme.Colors.secondaryInk
-        }
     }
 }
 

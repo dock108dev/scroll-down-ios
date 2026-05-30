@@ -51,17 +51,44 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
             homeScore: 3,
             eventCount: 32
         )
+        var finalReadProgress = ComponentSnapshotFixtures.progressRecord(
+            gameId: final.id,
+            lastReadIndex: 31,
+            knownEventCount: 32
+        )
+        finalReadProgress.reachedScoreboard = true
+        let resume = ComponentSnapshotFixtures.game(
+            id: 4_110,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T19:10:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayScore: 5,
+            homeScore: 4,
+            eventCount: 29,
+            periodOrdinal: 6,
+            periodLabel: "T6",
+            clockLabel: "1 out"
+        )
+        let resumeProgress = ComponentSnapshotFixtures.progressRecord(
+            gameId: resume.id,
+            lastReadIndex: 12,
+            knownEventCount: 29,
+            newCount: 6
+        )
 
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
                 GameHeaderView(game: live, renderer: SportRendererRegistry.renderer(for: live), isPinned: true, newPlayCount: 7)
                 GameHeaderView(game: final, renderer: SportRendererRegistry.renderer(for: final), isPinned: false, newPlayCount: 0)
+                GameHeaderView(game: final, renderer: SportRendererRegistry.renderer(for: final), isPinned: false, newPlayCount: 0, progress: finalReadProgress)
+                GameHeaderView(game: resume, renderer: SportRendererRegistry.renderer(for: resume), isPinned: false, newPlayCount: 6, progress: resumeProgress)
             }
             .padding(12)
             .background(SportsTheme.Colors.paper),
             named: "header-live-new-final-catch-up",
             width: .standard,
-            height: 330
+            height: 620
         )
     }
 
@@ -125,28 +152,43 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
     func testStickyNavigationTopEndAndReturnModes() {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
-                DetailStickyNavigationBar(
-                    title: "North Arc at Bay Harbor",
-                    endLabel: "Latest",
-                    returnLabel: nil,
-                    onTop: {},
-                    onEnd: {},
-                    onReturn: {}
-                )
-                DetailStickyNavigationBar(
-                    title: "North Arc at Bay Harbor",
-                    endLabel: "End",
-                    returnLabel: "Back to 3 new",
-                    onTop: {},
-                    onEnd: {},
-                    onReturn: {}
-                )
+                DetailStickyNavigationBar(title: "North Arc at Bay Harbor", progressLabel: "18/31 read", endLabel: "Latest", returnLabel: nil, onTop: {}, onEnd: {}, onReturn: {})
+                DetailStickyNavigationBar(title: "North Arc at Bay Harbor", progressLabel: "3 new", endLabel: "End", returnLabel: "Back to 3 new", onTop: {}, onEnd: {}, onReturn: {})
             }
             .padding(12)
             .background(SportsTheme.Colors.paper),
             named: "sticky-top-end-return",
             width: .standard,
-            height: 120
+            height: 160
+        )
+    }
+
+    func testStickyNavigationProgressIsSecondary() {
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                DetailStickyNavigationBar(title: "B7 2 outs", progressLabel: "18/31 read", endLabel: "Latest", returnLabel: nil, onTop: {}, onEnd: {}, onReturn: {})
+                DetailStickyNavigationBar(title: "B7 2 outs", progressLabel: "18/31 read", endLabel: "End", returnLabel: "Back to 3 new", onTop: {}, onEnd: {}, onReturn: {})
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "sticky-progress-secondary",
+            width: .standard,
+            height: 160
+        )
+    }
+
+    func testStickyNavigationDarkMode() {
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                DetailStickyNavigationBar(title: "Final", progressLabel: "31/31 read", endLabel: "End", returnLabel: "Back to Q3", onTop: {}, onEnd: {}, onReturn: {})
+                DetailStickyNavigationBar(title: "Q4 01:18", progressLabel: "3 new", endLabel: "Latest", returnLabel: nil, onTop: {}, onEnd: {}, onReturn: {})
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "sticky-dark-mode",
+            width: .standard,
+            height: 160,
+            colorScheme: .dark
         )
     }
 
@@ -235,7 +277,15 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
                 GameRowView(item: ComponentSnapshotFixtures.liveHomeItem())
                 GameHeaderView(game: game, renderer: SportRendererRegistry.renderer(for: game), isPinned: false, newPlayCount: 2)
                 ResumeBanner(description: "Resume from Q3 · 08:42", onResume: {}, onJumpLatest: {}, onStartOver: {})
-                DetailStickyNavigationBar(title: "North Arc at Bay Harbor", endLabel: "Latest", returnLabel: nil, onTop: {}, onEnd: {}, onReturn: {})
+                DetailStickyNavigationBar(
+                    title: "North Arc at Bay Harbor",
+                    progressLabel: "18/31 read",
+                    endLabel: "Latest",
+                    returnLabel: nil,
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
                 StreamControlBar(
                     game: game,
                     renderer: SportRendererRegistry.renderer(for: game),
@@ -280,7 +330,8 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
                 DetailStickyNavigationBar(
-                    title: "B7 2 outs · 18/31 read",
+                    title: "B7 2 outs",
+                    progressLabel: "18/31 read",
                     endLabel: "Latest",
                     returnLabel: nil,
                     onTop: {},
@@ -340,7 +391,8 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
                     onStartOver: {}
                 )
                 DetailStickyNavigationBar(
-                    title: "B7 2 outs · 18/31 read",
+                    title: "B7 2 outs",
+                    progressLabel: "18/31 read",
                     endLabel: "Latest",
                     returnLabel: "Back to 31 new",
                     onTop: {},
@@ -394,7 +446,8 @@ final class GameDetailChromeSnapshotTests: SnapshotTestCase {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
                 DetailStickyNavigationBar(
-                    title: "B7 2 outs · 18/31 read",
+                    title: "B7 2 outs",
+                    progressLabel: "18/31 read",
                     endLabel: "Latest",
                     returnLabel: nil,
                     onTop: {},

@@ -34,6 +34,66 @@ final class PlayRowContentFilterTests: XCTestCase {
         )
     }
 
+    func testEventLabelSuppressesSemanticHeadlineDuplicateForBaseball() {
+        let presentation = baseballPresentation(
+            headline: "Gunnar Henderson homers. Three runs score.",
+            detail: nil
+        )
+        var duplicate = presentation
+        duplicate.eventLabel = "Three-run home run"
+
+        XCTAssertNil(PlayRowContentFilter.visibleEventLabel(for: duplicate))
+    }
+
+    func testEventLabelKeepsNonBaseballContextThatAddsMeaning() {
+        let presentation = GameEventPresentation(
+            clockText: "P2 04:17",
+            headline: "Mara Ellis scores on a wrist shot.",
+            detail: nil,
+            eventLabel: "Power play",
+            teamAbbreviation: "SEA",
+            teamLabel: "Seattle",
+            scoringLabel: "Scoring play",
+            scoreLabel: "SEA 2, POR 2",
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            situation: nil,
+            situationAccessibilityText: nil
+        )
+
+        XCTAssertEqual(PlayRowContentFilter.visibleEventLabel(for: presentation), "Power play")
+    }
+
+    func testDetailSuppressesDuplicatesAcrossVisibleRowFieldsWithoutSituation() {
+        let presentation = GameEventPresentation(
+            clockText: "P3 02:11",
+            headline: "Ira Frost saves the shot from the slot.",
+            detail: "Save",
+            eventLabel: "Save",
+            teamAbbreviation: "EV",
+            teamLabel: nil,
+            scoringLabel: nil,
+            scoreLabel: nil,
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            situation: nil,
+            situationAccessibilityText: nil
+        )
+
+        XCTAssertNil(PlayRowContentFilter.visibleDetailText(for: presentation))
+    }
+
+    func testResultContextSuppressesDuplicatePressureAlreadyInMovementLine() {
+        let resultContext = PlayRowContentFilter.visibleResultContext(
+            for: baseballSituation(contextLine: "Down 2 -> Up 1 · Lead change")
+        )
+
+        XCTAssertNil(resultContext.pressureLine)
+        XCTAssertEqual(resultContext.contextLine, "Down 2 -> Up 1 · Lead change")
+    }
+
     func testContextTeamBadgeIsSuppressedWhenSituationAlreadyNamesTeam() {
         XCTAssertFalse(
             PlayRowContentFilter.shouldShowContextTeamBadge("SEA", situation: baseballSituation())
@@ -91,12 +151,12 @@ final class PlayRowContentFilterTests: XCTestCase {
         )
     }
 
-    private func baseballSituation() -> GameEventSituationPresentation {
+    private func baseballSituation(contextLine: String? = "Tied -> Up 1") -> GameEventSituationPresentation {
         GameEventSituationPresentation(
             title: "Situation",
             periodText: "B8 1 out",
             setupText: "Runners on 2nd and 3rd · 1 out · 2-1 count",
-            contextLine: "Tied -> Up 1",
+            contextLine: contextLine,
             pressureLine: "Lead change",
             sport: .baseball,
             layout: .baseball,

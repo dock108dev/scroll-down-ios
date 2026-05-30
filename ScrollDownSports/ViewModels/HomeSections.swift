@@ -11,6 +11,9 @@ enum LeagueFilter: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var apiValue: String? { self == .all ? nil : rawValue.lowercased() }
+    var displayName: String { rawValue }
+    var menuTitle: String { rawValue }
+    var segmentedTitle: String { rawValue }
 }
 
 struct HomeTimelineSection: Identifiable, Equatable {
@@ -21,6 +24,7 @@ struct HomeTimelineSection: Identifiable, Equatable {
     let anchorRole: HomeTimelineAnchorRole
     let isToday: Bool
     let games: [HomeGameItem]
+    var emptyState: HomeTimelineEmptyState? = nil
 }
 
 enum HomeTimelineAnchorRole: Equatable {
@@ -28,6 +32,11 @@ enum HomeTimelineAnchorRole: Equatable {
     case yesterday
     case today
     case live
+    case laterToday
+    case upcoming
+}
+
+enum HomeTimelineEmptyState: Equatable {
     case laterToday
     case upcoming
 }

@@ -54,12 +54,13 @@ struct GameEventSituationPresentation: Hashable {
 
     var isEmpty: Bool {
         [
-            title,
             periodText,
             setupText,
             contextLine,
-            pressureLine
+            pressureLine,
+            ownership?.displayLabel
         ].compactMap { $0?.nilIfBlank }.isEmpty
+            && diagram == nil
     }
 }
 

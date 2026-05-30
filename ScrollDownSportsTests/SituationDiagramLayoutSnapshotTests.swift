@@ -63,6 +63,17 @@ final class SituationDiagramLayoutSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testRichReservedSportDiagramRowsCompactWidth() {
+        assertSwiftUISnapshot(
+            of: Self.richReservedSportDiagramRows()
+                .padding(12)
+                .background(SportsTheme.Colors.paper),
+            named: "rich-reserved-sport-diagrams-compact",
+            width: .compact,
+            height: 900
+        )
+    }
+
     func testRichReservedSportDiagramRowsAccessibilityWidth() {
         assertSwiftUISnapshot(
             of: Self.richReservedSportDiagramRows()

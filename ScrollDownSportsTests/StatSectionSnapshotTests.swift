@@ -51,21 +51,37 @@ final class StatSectionSnapshotTests: SnapshotTestCase {
         )
     }
 
-    func testPlayerAndTeamSectionsExpandedAndCollapsed() {
+    func testPlayerAndTeamSectionsCollapsedStates() {
         let detail = ComponentSnapshotFixtures.statDetail()
         let renderer = SportRendererRegistry.renderer(for: detail.game)
 
         assertSwiftUISnapshot(
             of: VStack(spacing: 14) {
                 PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(false))
+                TeamStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(false))
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "player-team-collapsed",
+            width: .standard,
+            height: 260
+        )
+    }
+
+    func testPlayerAndTeamSectionsExpandedStates() {
+        let detail = ComponentSnapshotFixtures.statDetail()
+        let renderer = SportRendererRegistry.renderer(for: detail.game)
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 14) {
                 PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
                 TeamStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
             }
             .padding(12)
             .background(SportsTheme.Colors.paper),
-            named: "player-team-expanded-collapsed",
+            named: "player-team-expanded",
             width: .standard,
-            height: 720
+            height: 760
         )
     }
 }

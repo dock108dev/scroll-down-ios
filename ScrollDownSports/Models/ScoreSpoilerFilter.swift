@@ -207,7 +207,7 @@ enum EventScoreSpoilerFilter {
             scoringLabel: filteredSupplement(presentation.scoringLabel, shouldHide: scoreTextPredicate),
             scoreLabel: nil,
             rawFeedText: filteredSupplement(presentation.rawFeedText, shouldHide: scoreTextPredicate),
-            rawFeedSource: presentation.rawFeedSource,
+            rawFeedSource: filteredSupplement(presentation.rawFeedSource, shouldHide: scoreTextPredicate),
             accessibilityLabel: filteredSupplement(presentation.accessibilityLabel, shouldHide: scoreTextPredicate),
             situation: filteredSituation,
             situationAccessibilityText: filteredAccessibilityText
@@ -304,11 +304,15 @@ enum EventScoreSpoilerFilter {
             )
         case .pressureBoardFallback(let board):
             let metrics = board.metrics.filter { metric in
+                if ScoreSpoilerFilter.containsAbsoluteScoreBearingText(metric.label, for: game) {
+                    return false
+                }
                 if ScoreSpoilerFilter.containsAbsoluteScoreBearingText(metric.value, for: game) {
                     return false
                 }
                 if hidesRelativePressure && (
                     metric.emphasis == .pressure
+                        || ScoreSpoilerFilter.containsRelativeScorePressureText(metric.label)
                         || ScoreSpoilerFilter.containsRelativeScorePressureText(metric.value)
                 ) {
                     return false

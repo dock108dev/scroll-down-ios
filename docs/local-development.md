@@ -35,8 +35,6 @@ SDS_DEVELOPMENT_TEAM = <apple-team-id>
 
 `Scripts/local_gate.sh` intentionally overrides simulator gate builds to use `SDA_API_BASE_URL=http://127.0.0.1.invalid` and an empty API key. That keeps automated simulator gates deterministic and does not change the checked-in Debug or Release defaults used by normal Xcode builds.
 
-For a local backend on a physical phone, do not use `127.0.0.1` or `localhost`; those point at the phone. Use a reachable HTTPS URL such as a tunnel or LAN HTTPS endpoint, then set it in `Config/Local.xcconfig`.
-
 If `SDABaseURL` is absent or invalid at runtime, `SDAApiClient` falls back to `https://sda.dock108.dev`. If `SDAApiKey` is empty or still an unresolved build-setting placeholder, requests are sent without `X-API-Key`.
 
 ## Local Gates
@@ -63,11 +61,7 @@ Generated artifacts live under `.build` and are ignored by git.
 
 ## Direct Device Install
 
-Direct iPhone builds use automatic signing. Set `SDS_DEVELOPMENT_TEAM` in ignored `Config/Local.xcconfig`, regenerate the project, open `ScrollDownSports.xcodeproj`, select the `ScrollDownSports` scheme, select the connected iPhone, and build/run.
-
-If the phone prompts for Developer Mode or trust, accept the prompt and rerun.
-
-Xcode is the best path for the first install because it can resolve account and provisioning prompts. Once signing is configured, a CLI build should also work:
+Direct iPhone builds use automatic signing. Set `SDS_DEVELOPMENT_TEAM` in ignored `Config/Local.xcconfig`, regenerate the project, open `ScrollDownSports.xcodeproj`, select the `ScrollDownSports` scheme, select the connected iPhone, and build/run. Once signing is configured, the same project settings can be used from the CLI:
 
 ```sh
 xcodebuild \

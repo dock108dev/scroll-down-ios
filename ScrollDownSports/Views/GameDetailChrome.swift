@@ -5,106 +5,19 @@ struct GameHeaderView: View {
     let renderer: any SportRenderer
     let isPinned: Bool
     let newPlayCount: Int
+    var progress: GameProgressRecord? = nil
 
     var body: some View {
         let presentation = renderer.gameHeaderPresentation(for: game)
-
-        HStack(alignment: .top, spacing: 8) {
-            SportsTeamRail(color: presentation.accentColor)
-
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 8) {
-                    Text(presentation.leagueLabel)
-                        .font(SportsTheme.Typography.leagueCode)
-                        .foregroundStyle(Color(red: 0.641, green: 0.867, blue: 0.388))
-                    Text(statusLine)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.textOnFill.opacity(0.72))
-                    Spacer()
-                }
-
-                if let away = game.awayParticipant {
-                    DetailTeamLine(abbreviation: away.abbreviation, name: away.name, isInverted: true)
-                }
-                if let home = game.homeParticipant {
-                    DetailTeamLine(abbreviation: home.abbreviation, name: home.name, isInverted: true)
-                }
-
-                Text(contextLine)
-                    .font(SportsTheme.Typography.metadata)
-                    .foregroundStyle(contextColor)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .background(SportsTheme.Tone.scoreboard.accent, in: RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: SportsTheme.Radius.card, style: .continuous)
-                .stroke(presentation.accentColor.opacity(0.20), lineWidth: 1)
+        GameSummaryCard(
+            state: GameSummaryCardState(
+                game: game,
+                presentation: presentation,
+                isPinned: isPinned,
+                newPlayCount: newPlayCount,
+                progress: progress
+            )
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(accessibleMatchupLabel), \(statusLine)")
-        .accessibilityIdentifier("detail.header")
-    }
-
-    private var accessibleMatchupLabel: String {
-        let presentation = renderer.gameHeaderPresentation(for: game)
-        return ScoreSpoilerFilter.topRegionText(presentation.accessibilityLabel, for: game)
-            ?? ScoreSpoilerFilter.topRegionText(presentation.headline, for: game)
-            ?? ScoreSpoilerFilter.matchupText(for: game)
-    }
-
-    private var statusLine: String {
-        let presentation = renderer.gameHeaderPresentation(for: game)
-        let status: String
-        if game.status.isLive {
-            status = presentation.statusText ?? "Live"
-        } else if game.status.isFinal {
-            status = "Final"
-        } else {
-            status = DateFormatters.timeOnly.string(from: game.scheduledStart)
-        }
-        return "\(status) · \(DateFormatters.daySubtitle.string(from: game.scheduledStart))"
-    }
-
-    private var contextLine: String {
-        if newPlayCount > 0 {
-            return "\(newPlayCount) new"
-        }
-        if game.status.isFinal || game.status.isLive {
-            return "Catch up"
-        }
-        return "Preview"
-    }
-
-    private var contextColor: Color {
-        newPlayCount > 0 ? Color(red: 0.980, green: 0.510, blue: 0.216) : SportsTheme.Colors.textOnFill.opacity(0.72)
-    }
-}
-
-private struct DetailTeamLine: View {
-    let abbreviation: String?
-    let name: String
-    var isInverted = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(abbreviation ?? shortName)
-                .font(SportsTheme.Typography.teamAbbreviation)
-                .monospaced()
-                .foregroundStyle(isInverted ? SportsTheme.Colors.textOnFill.opacity(0.72) : SportsTheme.Colors.ink)
-                .frame(width: 42, alignment: .leading)
-            Text(name)
-                .font(SportsTheme.Typography.detailTeamName)
-                .foregroundStyle(isInverted ? SportsTheme.Colors.textOnFill : SportsTheme.Colors.ink)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-        }
-    }
-
-    private var shortName: String {
-        String(name.split(separator: " ").last?.prefix(4) ?? "TEAM")
     }
 }
 
@@ -121,7 +34,10 @@ struct GameHeaderPlaceholder: View {
                     .font(SportsTheme.Typography.leagueCode)
                     .foregroundStyle(presentation.accentColor)
             }
-            Text(presentation.headline ?? summary.matchupText)
+            Text(
+                ScoreSpoilerFilter.topRegionText(presentation.headline, for: summary)
+                    ?? ScoreSpoilerFilter.matchupText(for: summary)
+            )
                 .font(SportsTheme.Typography.appTitle)
                 .foregroundStyle(SportsTheme.Colors.ink)
             Text(DateFormatters.shortTime.string(from: summary.scheduledStart))
@@ -139,7 +55,7 @@ struct DetailRefreshErrorBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "wifi.exclamationmark")
-                .foregroundStyle(SportsTheme.Tone.critical.accent)
+                .foregroundStyle(SportsTheme.Tone.critical.foreground)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Couldn’t update")
                     .font(.subheadline.weight(.semibold))
@@ -309,7 +225,7 @@ struct ResumeBanner: View {
     private var resumeIcon: some View {
         Image(systemName: "bookmark.fill")
             .font(.caption.weight(.bold))
-            .foregroundStyle(SportsTheme.Tone.newPlay.accent)
+            .foregroundStyle(SportsTheme.Tone.newPlay.foreground)
             .frame(width: 18, height: 18)
     }
 

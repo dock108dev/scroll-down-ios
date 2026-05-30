@@ -32,9 +32,9 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
     var emptyStateMessage: String {
         switch self {
         case .key:
-            return "No important plays are available in this view."
+            return "No important plays in this view yet."
         case .flow:
-            return "No standard stream is available for this game."
+            return "No standard stream plays in this view yet."
         case .full:
             return "No plays are available yet."
         }
@@ -245,8 +245,8 @@ extension GameEvent {
     var displayRawFeedText: String? {
         guard let raw = rawText?.nilIfBlank else { return nil }
         let visibleCopy = [headline, detail].compactMap(\.self).joined(separator: " ")
-        guard raw.normalizedForDisplayComparison != visibleCopy.normalizedForDisplayComparison,
-              raw.normalizedForDisplayComparison != headline.normalizedForDisplayComparison
+        guard raw.normalizedLabelKey != visibleCopy.normalizedLabelKey,
+              raw.normalizedLabelKey != headline.normalizedLabelKey
         else {
             return nil
         }
@@ -349,8 +349,7 @@ private extension EventImportanceData {
 
 extension String {
     var cleanDisplayLabel: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        let trimmed = collapsedDisplayWhitespace
         guard !trimmed.isEmpty, trimmed != "-" else { return nil }
 
         let parts = trimmed.split(separator: " ")
@@ -361,22 +360,18 @@ extension String {
     }
 
     var normalizedLabelKey: String {
-        trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .lowercased()
+        collapsedDisplayWhitespace.lowercased()
     }
 
+    private var collapsedDisplayWhitespace: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+    }
 }
 
 private extension String {
-    var normalizedForDisplayComparison: String {
-        trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .lowercased()
-    }
-
     var stableDisplayHash: String {
-        normalizedForDisplayComparison.unicodeScalars.reduce(UInt32(2_166_136_261)) { hash, scalar in
+        normalizedLabelKey.unicodeScalars.reduce(UInt32(2_166_136_261)) { hash, scalar in
             (hash ^ UInt32(scalar.value)) &* 16_777_619
         }
         .description

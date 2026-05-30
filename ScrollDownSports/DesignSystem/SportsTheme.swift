@@ -3,41 +3,14 @@ import UIKit
 
 enum SportsTheme {
     enum Colors {
-        static let paper = adaptive(
-            light: UIColor(red: 0.963, green: 0.964, blue: 0.952, alpha: 1),
-            dark: UIColor(red: 0.071, green: 0.075, blue: 0.086, alpha: 1)
-        )
-        static let paperInset = adaptive(
-            light: UIColor(red: 0.988, green: 0.986, blue: 0.973, alpha: 1),
-            dark: UIColor(red: 0.103, green: 0.108, blue: 0.122, alpha: 1)
-        )
-        static let paperRaised = adaptive(
-            light: UIColor(red: 1.000, green: 0.998, blue: 0.982, alpha: 1),
-            dark: UIColor(red: 0.133, green: 0.138, blue: 0.157, alpha: 1)
-        )
-        static let ink = adaptive(
-            light: UIColor(red: 0.051, green: 0.067, blue: 0.086, alpha: 1),
-            dark: UIColor(red: 0.929, green: 0.925, blue: 0.890, alpha: 1)
-        )
-        static let secondaryInk = adaptive(
-            light: UIColor(red: 0.329, green: 0.337, blue: 0.345, alpha: 1),
-            dark: UIColor(red: 0.710, green: 0.702, blue: 0.659, alpha: 1)
-        )
-        static let hairline = adaptive(
-            light: UIColor(red: 0.764, green: 0.777, blue: 0.748, alpha: 1),
-            dark: UIColor(red: 0.263, green: 0.271, blue: 0.302, alpha: 1)
-        )
-        static let scorebookLine = adaptive(
-            light: UIColor(red: 0.488, green: 0.539, blue: 0.486, alpha: 1),
-            dark: UIColor(red: 0.220, green: 0.286, blue: 0.255, alpha: 1)
-        )
-        static let textOnFill = Color.white
-
-        private static func adaptive(light: UIColor, dark: UIColor) -> Color {
-            Color(uiColor: UIColor { traits in
-                traits.userInterfaceStyle == .dark ? dark : light
-            })
-        }
+        static let paper = SportsTheme.adaptiveColor(light: 0xF6F8FB, dark: 0x0B1220)
+        static let paperInset = SportsTheme.adaptiveColor(light: 0xF1F4F8, dark: 0x1F2937)
+        static let paperRaised = SportsTheme.adaptiveColor(light: 0xFFFFFF, dark: 0x111827)
+        static let ink = SportsTheme.adaptiveColor(light: 0x111827, dark: 0xF9FAFB)
+        static let secondaryInk = SportsTheme.adaptiveColor(light: 0x667085, dark: 0xD0D5DD)
+        static let hairline = SportsTheme.adaptiveColor(light: 0xD8DEE8, dark: 0x344054)
+        static let scorebookLine = SportsTheme.adaptiveColor(light: 0xD8DEE8, dark: 0x344054)
+        static let textOnFill = SportsTheme.fixedColor(0xFFFFFF)
     }
 
     enum Typography {
@@ -87,9 +60,7 @@ enum SportsTheme {
     }
 
     enum Background {
-        static let darkWashAccent = Color(red: 0.080, green: 0.112, blue: 0.116).opacity(0.62)
-        static let lightGridOpacity = 0.04
-        static let darkGridOpacity = 0.10
+        static let darkWashAccent = SportsTheme.fixedColor(0x1F2937).opacity(0.62)
         static let lightPaperVeilOpacity = 0.34
         static let darkPaperVeilOpacity = 0.16
 
@@ -97,7 +68,7 @@ enum SportsTheme {
             colors: [
                 Colors.paper,
                 Colors.paperInset,
-                Color(red: 0.918, green: 0.940, blue: 0.934).opacity(0.42)
+                SportsTheme.fixedColor(0xE9EEF5).opacity(0.42)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -128,39 +99,66 @@ enum SportsTheme {
         var accent: Color {
             switch self {
             case .live:
-                return Color(red: 0.760, green: 0.106, blue: 0.125)
+                return SportsTheme.fixedColor(0xD92D20)
             case .final:
-                return Color(red: 0.176, green: 0.263, blue: 0.384)
+                return SportsTheme.fixedColor(0x475467)
             case .pinned:
-                return Color(red: 0.365, green: 0.243, blue: 0.529)
+                return SportsTheme.fixedColor(0x334155)
             case .scoring:
-                return Color(red: 0.635, green: 0.273, blue: 0.102)
+                return SportsTheme.fixedColor(0xB54708)
             case .critical:
-                return Color(red: 0.596, green: 0.251, blue: 0.082)
+                return SportsTheme.fixedColor(0xD92D20)
             case .defensivePitching:
-                return Color(red: 0.168, green: 0.383, blue: 0.494)
+                return SportsTheme.fixedColor(0x16835F)
             case .neutral:
-                return Color(red: 0.408, green: 0.412, blue: 0.400)
+                return SportsTheme.fixedColor(0x475467)
             case .newPlay:
-                return Color(red: 0.188, green: 0.314, blue: 0.612)
+                return SportsTheme.fixedColor(0x1D4ED8)
             case .scoreboard:
-                return Color(red: 0.125, green: 0.157, blue: 0.220)
+                return SportsTheme.fixedColor(0x0B1F3A)
+            }
+        }
+
+        var foreground: Color {
+            switch self {
+            case .live:
+                return SportsTheme.adaptiveColor(light: 0xD92D20, dark: 0xFDA29B)
+            case .final:
+                return SportsTheme.adaptiveColor(light: 0x475467, dark: 0xD0D5DD)
+            case .pinned:
+                return SportsTheme.adaptiveColor(light: 0x334155, dark: 0xCBD5E1)
+            case .scoring:
+                return SportsTheme.adaptiveColor(light: 0xB54708, dark: 0xFDB022)
+            case .critical:
+                return SportsTheme.adaptiveColor(light: 0xD92D20, dark: 0xFDA29B)
+            case .defensivePitching:
+                return SportsTheme.adaptiveColor(light: 0x16835F, dark: 0x75E0A7)
+            case .neutral:
+                return SportsTheme.adaptiveColor(light: 0x475467, dark: 0xD0D5DD)
+            case .newPlay:
+                return SportsTheme.adaptiveColor(light: 0x1D4ED8, dark: 0x84CAFF)
+            case .scoreboard:
+                return SportsTheme.adaptiveColor(light: 0x0B1F3A, dark: 0xE4E7EC)
             }
         }
 
         var subtleFill: Color {
-            accent.opacity(0.13)
+            foreground.opacity(0.13)
+        }
+
+        var textOnAccent: Color {
+            Colors.textOnFill
         }
     }
 
     enum Team {
         private static let restrainedPalette: [Color] = [
-            Color(red: 0.376, green: 0.463, blue: 0.224),
-            Color(red: 0.741, green: 0.318, blue: 0.125),
-            Color(red: 0.148, green: 0.390, blue: 0.511),
-            Color(red: 0.178, green: 0.246, blue: 0.514),
-            Color(red: 0.475, green: 0.251, blue: 0.541),
-            Color(red: 0.560, green: 0.310, blue: 0.153)
+            SportsTheme.adaptiveColor(light: 0x334155, dark: 0xCBD5E1),
+            SportsTheme.adaptiveColor(light: 0x475467, dark: 0xD0D5DD),
+            SportsTheme.adaptiveColor(light: 0x667085, dark: 0xE4E7EC),
+            SportsTheme.adaptiveColor(light: 0x1F2937, dark: 0xF9FAFB),
+            SportsTheme.adaptiveColor(light: 0x344054, dark: 0xD8DEE8),
+            SportsTheme.adaptiveColor(light: 0x64748B, dark: 0xB8C2CC)
         ]
 
         static func accent(for abbreviation: String?, fallback: Color = Tone.neutral.accent) -> Color {
@@ -214,6 +212,25 @@ enum SportsTheme {
             }
         }
     }
+
+    private static func adaptiveColor(light: UInt32, dark: UInt32) -> Color {
+        Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? uiColor(hex: dark) : uiColor(hex: light)
+        })
+    }
+
+    private static func fixedColor(_ hex: UInt32) -> Color {
+        Color(uiColor: uiColor(hex: hex))
+    }
+
+    private static func uiColor(hex: UInt32) -> UIColor {
+        UIColor(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
+    }
 }
 
 struct SportsPageBackground: View {
@@ -223,26 +240,12 @@ struct SportsPageBackground: View {
     var body: some View {
         backgroundWash
             .overlay {
-                ScorebookGrid()
-                    .stroke(gridLineColor, lineWidth: 0.75)
-            }
-            .overlay {
                 paperVeilColor
             }
     }
 
     private var backgroundWash: LinearGradient {
         usesRegularWidthDarkTreatment ? SportsTheme.Background.darkWash : SportsTheme.Background.wash
-    }
-
-    private var gridLineColor: Color {
-        let opacity = usesRegularWidthDarkTreatment
-            ? SportsTheme.Background.darkGridOpacity
-            : SportsTheme.Background.lightGridOpacity
-
-        return SportsTheme.Colors.scorebookLine.opacity(
-            opacity
-        )
     }
 
     private var paperVeilColor: Color {
@@ -258,26 +261,6 @@ struct SportsPageBackground: View {
     }
 }
 
-private struct ScorebookGrid: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let step: CGFloat = 26
-        var x = rect.minX
-        while x <= rect.maxX {
-            path.move(to: CGPoint(x: x, y: rect.minY))
-            path.addLine(to: CGPoint(x: x, y: rect.maxY))
-            x += step
-        }
-        var y = rect.minY
-        while y <= rect.maxY {
-            path.move(to: CGPoint(x: rect.minX, y: y))
-            path.addLine(to: CGPoint(x: rect.maxX, y: y))
-            y += step
-        }
-        return path
-    }
-}
-
 struct SportsBadge: View {
     let text: String
     let tone: SportsTheme.Tone
@@ -286,7 +269,7 @@ struct SportsBadge: View {
     var body: some View {
         Text(text)
             .font(SportsTheme.Typography.statusPill)
-            .foregroundStyle(filled ? SportsTheme.Colors.textOnFill : tone.accent)
+            .foregroundStyle(filled ? tone.textOnAccent : tone.foreground)
             .padding(.vertical, SportsTheme.Spacing.badgeVertical)
             .padding(.horizontal, SportsTheme.Spacing.badgeHorizontal)
             .background(
@@ -310,7 +293,6 @@ struct SportsTeamRail: View {
 struct SportsCompactTableRow: View {
     let label: String
     let value: String
-    var tone: SportsTheme.Tone = .neutral
 
     var body: some View {
         VStack(spacing: 2) {
@@ -321,13 +303,14 @@ struct SportsCompactTableRow: View {
                 .font(SportsTheme.Typography.statTable)
                 .foregroundStyle(SportsTheme.Colors.secondaryInk)
         }
-        .sportsSurface(.compactTableRow, accent: tone.accent)
+        .sportsSurface(.compactTableRow)
     }
 }
 
 private struct SportsSurfaceModifier: ViewModifier {
     let surface: SportsTheme.Surface
     let accent: Color?
+    let usesAccentStroke: Bool
 
     func body(content: Content) -> some View {
         content
@@ -343,7 +326,7 @@ private struct SportsSurfaceModifier: ViewModifier {
     }
 
     private var strokeColor: Color {
-        if let accent {
+        if usesAccentStroke, let accent {
             return SportsTheme.Stroke.accent(accent)
         }
         return SportsTheme.Stroke.subdued()
@@ -351,8 +334,12 @@ private struct SportsSurfaceModifier: ViewModifier {
 }
 
 extension View {
-    func sportsSurface(_ surface: SportsTheme.Surface, accent: Color? = nil) -> some View {
-        modifier(SportsSurfaceModifier(surface: surface, accent: accent))
+    func sportsSurface(
+        _ surface: SportsTheme.Surface,
+        accent: Color? = nil,
+        usesAccentStroke: Bool = false
+    ) -> some View {
+        modifier(SportsSurfaceModifier(surface: surface, accent: accent, usesAccentStroke: usesAccentStroke))
     }
 }
 
@@ -392,7 +379,7 @@ struct SportsControlButtonStyle: ButtonStyle {
     }
 
     private var foregroundColor: Color {
-        filled ? SportsTheme.Colors.textOnFill : tone.accent
+        filled ? tone.textOnAccent : tone.foreground
     }
 
     private func backgroundColor(configuration: Configuration) -> Color {
@@ -401,8 +388,10 @@ struct SportsControlButtonStyle: ButtonStyle {
     }
 
     private func borderColor(configuration: Configuration) -> Color {
-        let base = filled ? tone.accent.opacity(0.0) : SportsTheme.Stroke.accent(tone.accent)
-        return configuration.isPressed ? tone.accent.opacity(0.34) : base
+        if filled {
+            return configuration.isPressed ? tone.accent.opacity(0.34) : tone.accent.opacity(0.0)
+        }
+        return configuration.isPressed ? tone.accent.opacity(0.34) : SportsTheme.Stroke.subdued()
     }
 }
 

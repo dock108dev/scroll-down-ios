@@ -84,6 +84,25 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
         )
     }
 
+    func testDetailFinalScoreAndExpandedStatsCompactPhone() {
+        let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
+        let renderer = SportRendererRegistry.renderer(for: detail.game)
+
+        assertSwiftUISnapshot(
+            of: VStack(alignment: .leading, spacing: 18) {
+                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                TeamStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                BoxScoreSection(game: detail.game, renderer: renderer)
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "detail-final-score-expanded-stats-phone-compact",
+            width: .standard,
+            height: 1_180,
+            device: .phoneCompact
+        )
+    }
+
     func testDetailFinalScoreAndExpandedStatsIPadLandscape() {
         let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
         let renderer = SportRendererRegistry.renderer(for: detail.game)
@@ -137,6 +156,20 @@ final class GameDetailVisualRegressionTests: SnapshotTestCase {
             width: .iPad11Full,
             height: SnapshotDevice.iPad11Portrait.size.height,
             device: .iPad11Portrait,
+            colorScheme: .dark
+        )
+    }
+
+    func testDetailDarkModePhoneShowsChromeControlsAndStats() {
+        let detail = VisualRegressionFixtures.detail(leagueCode: "nba")
+        let renderer = SportRendererRegistry.renderer(for: detail.game)
+
+        assertSwiftUISnapshot(
+            of: DetailDarkModePhoneSnapshotView(detail: detail, renderer: renderer),
+            named: "detail-dark-mode-phone",
+            width: .standard,
+            height: SnapshotDevice.phoneCompact.size.height,
+            device: .phoneCompact,
             colorScheme: .dark
         )
     }
@@ -256,6 +289,46 @@ private struct DetailDarkModeIPadSnapshotView: View {
             }
             .sportsReadableContent(maxWidth: \.detailContentMaxWidth, horizontalInset: \.detailHorizontalInset)
             .padding(.vertical, 18)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+private struct DetailDarkModePhoneSnapshotView: View {
+    let detail: GameDetail
+    let renderer: any SportRenderer
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            SportsPageBackground()
+            VStack(alignment: .leading, spacing: 12) {
+                GameHeaderView(game: detail.game, renderer: renderer, isPinned: true, newPlayCount: 3)
+                DetailStickyNavigationBar(
+                    title: "Final · 4/4 read",
+                    endLabel: "End",
+                    returnLabel: "Back to Q3",
+                    onTop: {},
+                    onEnd: {},
+                    onReturn: {}
+                )
+                StreamControlBar(
+                    game: detail.game,
+                    renderer: renderer,
+                    events: detail.events,
+                    isGamePinned: true,
+                    isFollowingLiveEdge: false,
+                    newPlayCount: 3,
+                    canResume: true,
+                    selectedMode: .constant(.full),
+                    onToggleGamePin: {},
+                    onToggleFollowLive: {},
+                    onResume: {},
+                    onJumpLatest: {}
+                )
+                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: .constant(true))
+                BoxScoreSection(game: detail.game, renderer: renderer)
+            }
+            .padding(12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

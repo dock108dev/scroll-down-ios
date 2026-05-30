@@ -93,6 +93,7 @@ final class SituationAccessibilitySummaryTests: XCTestCase {
         let summary = "Seattle Mariners batting. Runner on second. 1 out"
         let duplicate = rowPresentation(
             detail: "Seattle Mariners batting. Runner on second. 1 out",
+            accessibilityLabel: "Julio Rodriguez doubles. Seattle Mariners batting. Runner on second. 1 out",
             situationAccessibilityText: summary
         )
         let unique = rowPresentation(
@@ -102,6 +103,56 @@ final class SituationAccessibilitySummaryTests: XCTestCase {
 
         XCTAssertEqual(PlayRowContentFilter.situationAccessibilityValue(for: duplicate), "")
         XCTAssertEqual(PlayRowContentFilter.situationAccessibilityValue(for: unique), summary)
+    }
+
+    func testHiddenVisualDetailDoesNotSuppressUniqueRowSupplement() {
+        let summary = "Seattle Mariners batting. Runner on second. 1 out"
+        let presentation = rowPresentation(
+            detail: "Seattle Mariners batting. Runner on second. 1 out",
+            accessibilityLabel: nil,
+            situationAccessibilityText: summary
+        )
+
+        XCTAssertEqual(PlayRowContentFilter.situationAccessibilityValue(for: presentation), summary)
+    }
+
+    func testSituationEmptyStateTracksVisiblePanelContent() {
+        let titleOnly = GameEventSituationPresentation(
+            title: "Situation",
+            periodText: nil,
+            setupText: nil,
+            contextLine: nil,
+            pressureLine: nil,
+            sport: .baseball,
+            layout: .baseball,
+            ownership: nil,
+            diagram: nil,
+            accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .neutral),
+            dataConfidence: .fallback
+        )
+        let diagramOnly = GameEventSituationPresentation(
+            title: "Situation",
+            periodText: nil,
+            setupText: nil,
+            contextLine: nil,
+            pressureLine: nil,
+            sport: .baseball,
+            layout: .baseball,
+            ownership: nil,
+            diagram: .baseballDiamond(
+                BaseballSituationDiagram(
+                    occupiedBases: [.second],
+                    batting: nil,
+                    outs: nil,
+                    count: nil
+                )
+            ),
+            accent: GameEventSituationAccent(ownership: .home, teamAbbreviation: "SEA", teamLabel: "Seattle", tone: .neutral),
+            dataConfidence: .fallback
+        )
+
+        XCTAssertTrue(titleOnly.isEmpty)
+        XCTAssertFalse(diagramOnly.isEmpty)
     }
 
     func testRenderedSituationDiagramsStayDecorativeToAccessibility() throws {
@@ -159,6 +210,7 @@ final class SituationAccessibilitySummaryTests: XCTestCase {
 
     private func rowPresentation(
         detail: String?,
+        accessibilityLabel: String? = nil,
         situationAccessibilityText: String
     ) -> GameEventPresentation {
         GameEventPresentation(
@@ -172,7 +224,7 @@ final class SituationAccessibilitySummaryTests: XCTestCase {
             scoreLabel: nil,
             rawFeedText: nil,
             rawFeedSource: nil,
-            accessibilityLabel: nil,
+            accessibilityLabel: accessibilityLabel,
             situation: nil,
             situationAccessibilityText: situationAccessibilityText
         )

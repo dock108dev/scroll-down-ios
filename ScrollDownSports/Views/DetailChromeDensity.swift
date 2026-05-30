@@ -53,4 +53,8 @@ enum DetailChromeLabelFormatter {
     static func shortEndLabel(_ label: String) -> String {
         label.count > 8 ? "End" : label
     }
+
+    static func shortProgressLabel(_ label: String) -> String {
+        label.hasSuffix(" read") ? label.replacingOccurrences(of: " read", with: "") : label
+    }
 }
