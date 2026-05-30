@@ -1,5 +1,6 @@
 import BackgroundTasks
 import Foundation
+import OSLog
 
 @MainActor
 protocol BackgroundRefreshTaskRunning {
@@ -47,6 +48,10 @@ final class SystemBGTaskSchedulingClient: BGTaskSchedulingClient {
 @MainActor
 final class BackgroundDataScheduler: BackgroundRefreshScheduling {
     static let shared = BackgroundDataScheduler(client: SystemBGTaskSchedulingClient())
+    private static let logger = Logger(
+        subsystem: "com.dock108.scrolldownsports",
+        category: "BackgroundDataScheduler"
+    )
 
     private let client: any BGTaskSchedulingClient
     private let identifier: String
@@ -78,7 +83,9 @@ final class BackgroundDataScheduler: BackgroundRefreshScheduling {
         do {
             try client.submitAppRefresh(identifier: identifier, earliestBeginDate: now().addingTimeInterval(5 * 60))
         } catch {
-            // iOS may reject scheduling on simulator, low power, or missing entitlement contexts.
+            Self.logger.warning(
+                "Background refresh schedule rejected: \(error.localizedDescription, privacy: .private)"
+            )
         }
     }
 
@@ -100,13 +107,18 @@ final class BackgroundDataScheduler: BackgroundRefreshScheduling {
                 try await service.refreshForBackground()
                 task.setTaskCompleted(success: true)
             } catch is CancellationError {
+                Self.logger.info("Background refresh task cancelled")
                 task.setTaskCompleted(success: false)
             } catch {
+                Self.logger.error(
+                    "Background refresh task failed: \(error.localizedDescription, privacy: .private)"
+                )
                 task.setTaskCompleted(success: false)
             }
         }
 
         task.expirationHandler = {
+            Self.logger.warning("Background refresh task expired")
             operation.cancel()
         }
         return operation
