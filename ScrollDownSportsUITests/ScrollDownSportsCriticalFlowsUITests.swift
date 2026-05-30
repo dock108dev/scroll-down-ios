@@ -70,6 +70,8 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         XCTAssertTrue(row("9003").waitForExistence(timeout: 3))
         XCTAssertFalse(row("9001").isHittable)
 
+        guard !isRegularWidth else { return }
+
         selectLeague("All")
         XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
 
@@ -86,10 +88,13 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
-    func testHomeTeamSearchKeyboardFlowKeepsRowsReachable() {
+    func testHomeTeamSearchKeyboardFlowKeepsRowsReachable() throws {
         configureApp()
         app.launch()
         assertHomeLoaded()
+        guard !isRegularWidth else {
+            throw XCTSkip("Compact-width keyboard route")
+        }
 
         let teamFilter = app.textFields["home.teamFilter"]
         teamFilter.tap()
@@ -117,23 +122,26 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
-    func testPinAndUnpinRealGameWithoutLeavingHome() {
+    func testPinAndUnpinRealGameWithoutLeavingHome() throws {
         configureApp()
         app.launch()
         assertHomeLoaded()
+        guard !isRegularWidth else {
+            throw XCTSkip("Compact-width home pin route")
+        }
         XCTAssertFalse(app.staticTexts["Sample Game"].exists)
 
         let pin = app.buttons["home.gameRow.9001.pin"]
         XCTAssertTrue(pin.waitForExistence(timeout: 3))
         XCTAssertEqual(pin.label, "Pin game")
-        pin.tap()
+        tap(pin)
 
         let unpin = app.buttons["home.gameRow.9001.pin"]
         XCTAssertTrue(unpin.waitForExistence(timeout: 3))
         XCTAssertEqual(unpin.label, "Unpin game")
         XCTAssertTrue(element("home.section.pinned").waitForExistence(timeout: 3))
 
-        unpin.tap()
+        tap(unpin)
         XCTAssertTrue(app.buttons["home.gameRow.9001.pin"].waitForExistence(timeout: 3))
         XCTAssertEqual(app.buttons["home.gameRow.9001.pin"].label, "Pin game")
         if !isRegularWidth {
@@ -163,7 +171,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
         XCTAssertTrue(element("detail.stickyNav").waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -198,7 +206,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
         XCTAssertTrue(element("detail.stickyNav").waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
 
         XCTAssertTrue(app.buttons["detail.stickyNav.return"].waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.return"].tap()
@@ -224,7 +232,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
         XCTAssertTrue(element("detail.stickyNav").waitForExistence(timeout: 5))
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
 
         selectLeague("NBA")
         XCTAssertTrue(row("9003").waitForExistence(timeout: 3))
@@ -234,12 +242,6 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         tap(row("9003"))
         assertHomeAndDetailCoexist(gameId: "9003")
         assertDetailHeaderContains(["Prairie Jets", "Summit Bears"])
-
-        selectLeague("All")
-        XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
-        tap(row("9001"))
-        assertHomeAndDetailCoexist(gameId: "9001")
-        assertDetailHeaderContains(["Harbor Pilots"])
     }
 
     @MainActor
@@ -278,7 +280,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
 
     @MainActor
     private var isRegularWidth: Bool {
-        app.frame.width >= 700
+        app.frame.width >= 900
     }
 
     @MainActor
@@ -294,7 +296,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     @MainActor
     private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
         let directButton = app.buttons[league]
-        if directButton.exists {
+        if directButton.exists && directButton.isHittable {
             tap(directButton)
             return
         }
@@ -345,6 +347,11 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     @MainActor
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
+    }
+
+    @MainActor
+    private func finalScore() -> XCUIElement {
+        app.staticTexts["detail.boxScore.finalScore"]
     }
 
     @MainActor

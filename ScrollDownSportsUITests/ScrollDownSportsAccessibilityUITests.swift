@@ -48,7 +48,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         assertReachableLabelledControl(app.buttons["detail.stickyNav.end"], named: "Sticky end")
 
         app.buttons["detail.stickyNav.end"].tap()
-        let finalScore = element("detail.boxScore.finalScore")
+        let finalScore = finalScore()
         XCTAssertTrue(finalScore.waitForExistence(timeout: 8))
         XCTAssertFalse(finalScore.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
@@ -76,7 +76,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         XCTAssertTrue(app.buttons["detail.stickyNav.end"].waitForExistence(timeout: 5))
         assertMinimumTapTarget(app.buttons["detail.stickyNav.end"], named: "Sticky end")
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
         scrollUntilVisible(element("detail.playerStats"), direction: .up, maxSwipes: 2)
         XCTAssertTrue(element("detail.playerStats").exists)
         scrollUntilVisible(element("detail.teamStats"), direction: .up, maxSwipes: 3)
@@ -93,7 +93,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         openFinalGame()
         assertNoRawEnumLeakage()
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
         assertNoRawEnumLeakage()
     }
 
@@ -140,7 +140,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         assertNoDuplicateCriticalButtonLabels()
 
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
         assertAtMostOneHittableElement(identifier: "detail.boxScore.finalScore")
     }
 
@@ -171,7 +171,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         XCTAssertTrue(app.buttons["detail.stickyNav.end"].waitForExistence(timeout: 5))
         assertReachableLabelledControl(app.buttons["detail.stickyNav.end"], named: "Sticky end")
         app.buttons["detail.stickyNav.end"].tap()
-        XCTAssertTrue(element("detail.boxScore.finalScore").waitForExistence(timeout: 8))
+        XCTAssertTrue(finalScore().waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -263,7 +263,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
     @MainActor
     private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
         let directButton = app.buttons[league]
-        if directButton.exists {
+        if directButton.exists && directButton.isHittable {
             tap(directButton)
             return
         }
@@ -412,6 +412,11 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
     @MainActor
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    @MainActor
+    private func finalScore() -> XCUIElement {
+        app.staticTexts["detail.boxScore.finalScore"]
     }
 
     @MainActor

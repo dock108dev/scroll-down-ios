@@ -201,6 +201,69 @@ fallback_destination_id_for_family() {
   ' | sort -V | tail -n 1 | awk '{print $2}'
 }
 
+simctl_destination_id_for() {
+  local wanted_name="$1"
+  local wanted_os="$2"
+  xcrun simctl list devices available 2>/dev/null | awk \
+    -v wanted_name="$wanted_name" \
+    -v wanted_runtime="iOS $wanted_os" '
+      /^-- / {
+        runtime = $0;
+        gsub(/^-- | --$/, "", runtime);
+        next;
+      }
+      runtime == wanted_runtime && index($0, "    " wanted_name " (") == 1 {
+        print;
+        exit;
+      }
+    ' | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/'
+}
+
+runtime_identifier_for_os() {
+  local wanted_os="$1"
+  xcrun simctl list runtimes 2>/dev/null | awk -v wanted_os="$wanted_os" '
+    index($0, "iOS " wanted_os " ") == 1 && $0 !~ /unavailable/ {
+      print $NF;
+      exit;
+    }
+  '
+}
+
+device_type_identifier_for_name() {
+  local wanted_name="$1"
+  xcrun simctl list devicetypes 2>/dev/null | awk -v wanted_name="$wanted_name" '
+    index($0, wanted_name " (com.apple.CoreSimulator.SimDeviceType.") == 1 {
+      sub(/^.*\(/, "");
+      sub(/\).*$/, "");
+      print;
+      exit;
+    }
+  '
+}
+
+create_destination_id_for() {
+  local wanted_name="$1"
+  local wanted_os="$2"
+  local runtime_id device_type_id destination_id
+  if [ "$wanted_name" = "" ] || [ "$wanted_os" = "" ] || [ "$wanted_os" = "latest" ]; then
+    return 0
+  fi
+
+  destination_id="$(simctl_destination_id_for "$wanted_name" "$wanted_os")"
+  if [ "$destination_id" != "" ]; then
+    echo "$destination_id"
+    return 0
+  fi
+
+  runtime_id="$(runtime_identifier_for_os "$wanted_os")"
+  device_type_id="$(device_type_identifier_for_name "$wanted_name")"
+  if [ "$runtime_id" = "" ] || [ "$device_type_id" = "" ]; then
+    return 0
+  fi
+
+  xcrun simctl create "ScrollDownSports $wanted_name iOS $wanted_os" "$device_type_id" "$runtime_id" 2>/dev/null
+}
+
 destination_family_for_name() {
   local name="$1"
   case "$name" in
@@ -300,6 +363,13 @@ resolve_requested_destination() {
     return 0
   fi
 
+  destination_id="$(create_destination_id_for "$requested_name" "$requested_os")"
+  if [ "$destination_id" != "" ]; then
+    echo "platform=iOS Simulator,id=$destination_id"
+    echo "Created $requested_family simulator destination for '$requested'." >&2
+    return 0
+  fi
+
   if [ "$strict" -eq 1 ]; then
     echo "Required simulator destination was not found: '$requested'." >&2
     xcodebuild -showdestinations -project "$PROJECT" -scheme "$SCHEME" >&2 || true
@@ -345,6 +415,13 @@ resolve_destination() {
   destination_id="$(destination_id_for "$CANONICAL_PHONE_DESTINATION_NAME" "$CANONICAL_PHONE_DESTINATION_OS")"
   if [ "$destination_id" != "" ]; then
     echo "platform=iOS Simulator,id=$destination_id"
+    return 0
+  fi
+
+  destination_id="$(create_destination_id_for "$CANONICAL_PHONE_DESTINATION_NAME" "$CANONICAL_PHONE_DESTINATION_OS")"
+  if [ "$destination_id" != "" ]; then
+    echo "platform=iOS Simulator,id=$destination_id"
+    echo "Created iphone simulator destination for $CANONICAL_PHONE_DESTINATION_NAME iOS $CANONICAL_PHONE_DESTINATION_OS." >&2
     return 0
   fi
 

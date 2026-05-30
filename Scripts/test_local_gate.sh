@@ -47,6 +47,7 @@ assert_contains "$WORK_DIR/help.out" "clean-artifacts"
 assert_contains "$GATE" "resolve_requested_destination"
 assert_contains "$GATE" "latest_destination_id_for_name"
 assert_contains "$GATE" "fallback_destination_id_for_family"
+assert_contains "$GATE" "create_destination_id_for"
 assert_contains "$GATE" 'destination_id="$(fallback_destination_id_for_family "$requested_family")"'
 assert_contains "$GATE" "No usable \$requested_family simulator destination was found."
 
@@ -67,7 +68,40 @@ fi
 printf '%s\n' "$*" >> "${FAKE_XCODEBUILD_LOG:?}"
 exit 0
 FAKE_XCODEBUILD
-chmod +x "$FAKE_BIN/xcodegen" "$FAKE_BIN/xcodebuild"
+cat > "$FAKE_BIN/xcrun" <<'FAKE_XCRUN'
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-}" != "simctl" ]; then
+  exit 1
+fi
+shift
+case "${1:-}" in
+  list)
+    case "${2:-}" in
+      devices)
+        if [ -n "${FAKE_SIMCTL_DEVICES_FILE:-}" ]; then
+          cat "$FAKE_SIMCTL_DEVICES_FILE"
+        fi
+        ;;
+      runtimes)
+        if [ -n "${FAKE_SIMCTL_RUNTIMES_FILE:-}" ]; then
+          cat "$FAKE_SIMCTL_RUNTIMES_FILE"
+        fi
+        ;;
+      devicetypes)
+        if [ -n "${FAKE_SIMCTL_DEVICETYPES_FILE:-}" ]; then
+          cat "$FAKE_SIMCTL_DEVICETYPES_FILE"
+        fi
+        ;;
+    esac
+    ;;
+  create)
+    printf '%s %s %s\n' "$2" "$3" "$4" >> "${FAKE_SIMCTL_CREATE_LOG:?}"
+    printf '%s\n' "${FAKE_SIMCTL_CREATE_ID:-CREATED-SIM-ID}"
+    ;;
+esac
+FAKE_XCRUN
+chmod +x "$FAKE_BIN/xcodegen" "$FAKE_BIN/xcodebuild" "$FAKE_BIN/xcrun"
 
 cat > "$WORK_DIR/mixed-destinations.txt" <<'EOF_DESTINATIONS'
 Available destinations for the "ScrollDownSports" scheme:
@@ -89,9 +123,25 @@ Available destinations for the "ScrollDownSports" scheme:
   { platform:iOS Simulator, id:IPHONE-FALLBACK-ID, OS:26.2, name:iPhone 17 Pro }
 EOF_DESTINATIONS
 
+cat > "$WORK_DIR/no-simctl-devices.txt" <<'EOF_DEVICES'
+== Devices ==
+EOF_DEVICES
+
+cat > "$WORK_DIR/no-simctl-runtimes.txt" <<'EOF_RUNTIMES'
+== Runtimes ==
+EOF_RUNTIMES
+
+cat > "$WORK_DIR/no-simctl-devicetypes.txt" <<'EOF_DEVICETYPES'
+== Device Types ==
+EOF_DEVICETYPES
+
 set +e
 FAKE_XCODEBUILD_LOG="$WORK_DIR/ipad-missing-xcodebuild.log" \
 FAKE_DESTINATIONS_FILE="$WORK_DIR/phone-only-destinations.txt" \
+FAKE_SIMCTL_DEVICES_FILE="$WORK_DIR/no-simctl-devices.txt" \
+FAKE_SIMCTL_RUNTIMES_FILE="$WORK_DIR/no-simctl-runtimes.txt" \
+FAKE_SIMCTL_DEVICETYPES_FILE="$WORK_DIR/no-simctl-devicetypes.txt" \
+FAKE_SIMCTL_CREATE_LOG="$WORK_DIR/ipad-missing-simctl-create.log" \
 PATH="$FAKE_BIN:$PATH" \
 TEST_DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=26.2" \
   bash "$GATE" unit > "$WORK_DIR/ipad-missing.out" 2> "$WORK_DIR/ipad-missing.err"
@@ -103,6 +153,36 @@ if [ "$missing_status" -eq 0 ]; then
 fi
 assert_contains "$WORK_DIR/ipad-missing.err" "No usable ipad simulator destination was found."
 assert_not_contains "$WORK_DIR/ipad-missing-xcodebuild.log" "IPHONE-FALLBACK-ID"
+
+cat > "$WORK_DIR/placeholders-only-destinations.txt" <<'EOF_DESTINATIONS'
+Available destinations for the "ScrollDownSports" scheme:
+  { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+  { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+EOF_DESTINATIONS
+
+cat > "$WORK_DIR/simctl-runtimes.txt" <<'EOF_RUNTIMES'
+== Runtimes ==
+iOS 26.2 (26.2 - 23C54) - com.apple.CoreSimulator.SimRuntime.iOS-26-2
+EOF_RUNTIMES
+
+cat > "$WORK_DIR/simctl-devicetypes.txt" <<'EOF_DEVICETYPES'
+== Device Types ==
+iPhone 17 Pro Max (com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max)
+EOF_DEVICETYPES
+
+FAKE_XCODEBUILD_LOG="$WORK_DIR/created-phone-xcodebuild.log" \
+FAKE_DESTINATIONS_FILE="$WORK_DIR/placeholders-only-destinations.txt" \
+FAKE_SIMCTL_DEVICES_FILE="$WORK_DIR/no-simctl-devices.txt" \
+FAKE_SIMCTL_RUNTIMES_FILE="$WORK_DIR/simctl-runtimes.txt" \
+FAKE_SIMCTL_DEVICETYPES_FILE="$WORK_DIR/simctl-devicetypes.txt" \
+FAKE_SIMCTL_CREATE_LOG="$WORK_DIR/created-phone-simctl-create.log" \
+FAKE_SIMCTL_CREATE_ID="CREATED-PHONE-ID" \
+PATH="$FAKE_BIN:$PATH" \
+TEST_DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro Max,OS=26.2" \
+  bash "$GATE" unit > "$WORK_DIR/created-phone.out" 2> "$WORK_DIR/created-phone.err"
+assert_contains "$WORK_DIR/created-phone-xcodebuild.log" "-destination platform=iOS Simulator,id=CREATED-PHONE-ID"
+assert_contains "$WORK_DIR/created-phone-simctl-create.log" "ScrollDownSports iPhone 17 Pro Max iOS 26.2"
+assert_contains "$WORK_DIR/created-phone.err" "Created iphone simulator destination"
 
 bash "$GATE" --dry-run build > "$WORK_DIR/build.out"
 assert_contains "$WORK_DIR/build.out" "xcodegen generate --spec"
