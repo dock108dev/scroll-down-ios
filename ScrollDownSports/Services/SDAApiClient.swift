@@ -46,7 +46,7 @@ final class SDAApiClient: Sendable {
         limit: Int = 200
     ) async throws -> [Game] {
         var components = URLComponents(
-            url: baseURL.appending(path: "/api/admin/sports/games"),
+            url: baseURL.appending(path: "/api/v1/games"),
             resolvingAgainstBaseURL: false
         )
 
@@ -69,7 +69,7 @@ final class SDAApiClient: Sendable {
     }
 
     func fetchGame(id: Int) async throws -> GameDetail {
-        let url = baseURL.appending(path: "/api/admin/sports/games/\(id)")
+        let url = baseURL.appending(path: "/api/v1/games/\(id)")
         let response: SDAGameDetailResponseDTO
         do {
             response = try await get(url)
