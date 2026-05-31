@@ -128,6 +128,12 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
 
     @MainActor
     private func jumpToPendingLatest() {
+        let stickyEnd = app.buttons["detail.stickyNav.end"]
+        if stickyEnd.waitForExistence(timeout: 1) {
+            stickyEnd.tap()
+            return
+        }
+
         let newPlays = app.buttons["detail.newPlaysAffordance"]
         if newPlays.waitForExistence(timeout: 1) {
             newPlays.tap()
@@ -140,8 +146,8 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
             return
         }
 
-        XCTAssertTrue(app.buttons["detail.stickyNav.end"].waitForExistence(timeout: 5))
-        app.buttons["detail.stickyNav.end"].tap()
+        XCTAssertTrue(stickyEnd.waitForExistence(timeout: 5))
+        stickyEnd.tap()
     }
 
     private enum ScrollDirection {
