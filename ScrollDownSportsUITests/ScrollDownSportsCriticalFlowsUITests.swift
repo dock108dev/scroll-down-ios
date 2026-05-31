@@ -296,7 +296,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     @MainActor
     private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
         let directButton = app.buttons[league]
-        if directButton.exists && directButton.isHittable {
+        if directButton.exists {
             tap(directButton)
             return
         }
