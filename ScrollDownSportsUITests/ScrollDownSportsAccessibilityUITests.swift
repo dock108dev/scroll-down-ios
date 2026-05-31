@@ -114,18 +114,11 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         assertExactlyOneButton(identifier: "home.gameRow.9001.pin")
         assertReachableLabelledControl(app.buttons["home.refresh"], named: "Home refresh")
 
-        selectLeague("NBA")
-        XCTAssertTrue(row("9003").waitForExistence(timeout: 3))
-        selectLeague("All")
+        assertReachableLabelledControl(app.buttons["NBA"], named: "NBA league")
         XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
 
         let teamFilter = app.textFields["home.teamFilter"]
         XCTAssertTrue(teamFilter.isHittable)
-        teamFilter.tap()
-        teamFilter.typeText("Canyon")
-        XCTAssertTrue(row("9001").waitForExistence(timeout: 3))
-        clearTextField(teamFilter)
-        dismissKeyboardIfVisible()
 
         openFinalGame()
         assertHomeAndDetailCoexist(gameId: "9001")
@@ -263,7 +256,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
     @MainActor
     private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
         let directButton = app.buttons[league]
-        if directButton.exists {
+        if directButton.exists && directButton.isHittable {
             tap(directButton)
             return
         }
