@@ -128,6 +128,57 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(allTimelineIDs(in: sections).isEmpty)
     }
 
+    func testPinnedResultAccessorsExposeCurrentAndMissingPinnedRecords() {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let currentPinned = TestFixtures.makeGame(
+            id: 301,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T18:00:00Z")
+        )
+        let missingPinned = TestFixtures.makeGame(
+            id: 302,
+            scheduledStart: TestFixtures.fixedDate("2026-05-21T18:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let store = InMemoryGameStateStore(now: { now })
+        store.pin(currentPinned)
+        store.pin(missingPinned)
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
+        viewModel.games = [currentPinned]
+
+        XCTAssertEqual(viewModel.pinnedGamesInCurrentResults.map(\.id), [currentPinned.id])
+        XCTAssertEqual(viewModel.pinnedRecordsMissingFromCurrentResults.map(\.gameId), [missingPinned.id])
+    }
+
+    func testInitialAnchorUsesMostRecentFinalWhenYesterdayIsAbsent() {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let olderFinal = TestFixtures.makeGame(
+            id: 311,
+            scheduledStart: TestFixtures.fixedDate("2026-05-21T20:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let todayFinal = TestFixtures.makeGame(
+            id: 312,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T12:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true
+        )
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.games = [olderFinal, todayFinal]
+
+        XCTAssertEqual(timelineSectionIDs(in: viewModel.filteredHomeSections), [
+            "timeline-older",
+            "timeline-today",
+            "timeline-later-today",
+            "timeline-upcoming"
+        ])
+        XCTAssertEqual(viewModel.initialHomeAnchorID, viewModel.todaySectionID)
+    }
+
     func testInitialAnchorPrefersYesterdayCatchupOverOlderAndUpcomingGames() throws {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let older = TestFixtures.makeGame(
@@ -168,6 +219,69 @@ final class HomeViewModelTests: XCTestCase {
             "timeline-upcoming"
         ])
         XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+    }
+
+    func testVisibleTimelineIncludesScoreOnlyLiveFinalAndOtherStatuses() {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let liveScoreOnly = TestFixtures.makeGame(
+            id: 321,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T14:00:00Z"),
+            status: "in_progress",
+            isLive: true,
+            awayScore: 2,
+            homeScore: 1,
+            eventCount: nil,
+            hasTimeline: false,
+            hasScoreboard: false
+        )
+        let finalScoreOnly = TestFixtures.makeGame(
+            id: 322,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T02:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayScore: 3,
+            homeScore: 4,
+            eventCount: nil,
+            hasTimeline: false,
+            hasScoreboard: false
+        )
+        let delayedScoreOnly = TestFixtures.makeGame(
+            id: 323,
+            scheduledStart: TestFixtures.fixedDate("2026-05-23T03:00:00Z"),
+            status: "delayed",
+            isLive: false,
+            isFinal: false,
+            awayScore: 5,
+            homeScore: 6,
+            eventCount: nil,
+            hasTimeline: false,
+            hasScoreboard: false
+        )
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.games = [liveScoreOnly, finalScoreOnly, delayedScoreOnly]
+
+        XCTAssertEqual(
+            allTimelineIDs(in: viewModel.filteredHomeSections),
+            [finalScoreOnly.id, delayedScoreOnly.id, liveScoreOnly.id]
+        )
+    }
+
+    func testAutoRefreshCanStartAndStopWithoutAffectingFilters() async {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        viewModel.league = .mlb
+        viewModel.teamQuery = "Mets"
+
+        viewModel.startAutoRefresh()
+        viewModel.startAutoRefresh()
+        await Task.yield()
+        viewModel.stopAutoRefresh()
+        await Task.yield()
+
+        XCTAssertEqual(viewModel.league, .mlb)
+        XCTAssertEqual(viewModel.teamQuery, "Mets")
+        XCTAssertFalse(viewModel.loading)
     }
 
     func testDefaultTimelineFiltersPlaceholderGames() throws {
