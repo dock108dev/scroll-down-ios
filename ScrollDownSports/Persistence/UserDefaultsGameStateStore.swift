@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 
 @MainActor
 final class UserDefaultsGameStateStore: GameStateStore {
@@ -12,6 +13,10 @@ final class UserDefaultsGameStateStore: GameStateStore {
     private let key: String
     private let now: () -> Date
     private let subject: CurrentValueSubject<LocalGameStateSnapshot, Never>
+    private static let logger = Logger(
+        subsystem: "com.dock108.scrolldownsports",
+        category: "UserDefaultsGameStateStore"
+    )
 
     var snapshot: LocalGameStateSnapshot {
         subject.value
@@ -181,6 +186,9 @@ final class UserDefaultsGameStateStore: GameStateStore {
         do {
             defaults.set(try Self.encoder.encode(snapshot), forKey: key)
         } catch {
+            Self.logger.error(
+                "Failed to persist local game state: \(error.localizedDescription, privacy: .private)"
+            )
             return
         }
     }
@@ -206,6 +214,9 @@ final class UserDefaultsGameStateStore: GameStateStore {
         } catch {
             defaults.set(data, forKey: Constants.corruptBackupKey)
             defaults.removeObject(forKey: key)
+            Self.logger.error(
+                "Local game state decode failed; corrupt snapshot backed up: \(error.localizedDescription, privacy: .private)"
+            )
             return .empty(now: now())
         }
     }

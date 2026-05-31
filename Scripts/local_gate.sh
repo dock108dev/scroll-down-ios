@@ -620,6 +620,7 @@ run_script_checks() {
   run_cmd bash "$ROOT_DIR/Scripts/test_xccov_thresholds.sh"
   run_cmd bash "$ROOT_DIR/Scripts/test_ci_workflow_shape.sh"
   run_cmd bash "$ROOT_DIR/Scripts/test_local_gate.sh"
+  run_cmd bash "$ROOT_DIR/Scripts/check_no_admin_api_paths.sh"
   run_cmd ruby "$ROOT_DIR/Scripts/check_multitasking_project_invariants.rb"
 }
 

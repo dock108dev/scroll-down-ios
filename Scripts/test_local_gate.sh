@@ -272,6 +272,7 @@ assert_contains "$WORK_DIR/performance.out" "-only-testing:ScrollDownSportsTests
 assert_contains "$WORK_DIR/performance.out" "-only-testing:ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests"
 
 bash "$GATE" --dry-run script-checks > "$WORK_DIR/script-checks.out"
+assert_contains "$WORK_DIR/script-checks.out" "Scripts/check_no_admin_api_paths.sh"
 assert_contains "$WORK_DIR/script-checks.out" "Scripts/check_multitasking_project_invariants.rb"
 
 bash "$GATE" --dry-run clean-artifacts > "$WORK_DIR/clean.out"

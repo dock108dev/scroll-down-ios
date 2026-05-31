@@ -6,12 +6,12 @@ enum SDAUIPerformanceFixturePayload {
 
     static func data(for url: URL) -> Data? {
         let path = url.path
-        if path == "/api/admin/sports/games" {
+        if path == "/api/v1/games" {
             let games = gameSummaries()
             return SDAUIFixturePayload.jsonData(["games": games, "total": games.count])
         }
 
-        guard path.hasPrefix("/api/admin/sports/games/"),
+        guard path.hasPrefix("/api/v1/games/"),
               let id = path.split(separator: "/").last.flatMap({ Int($0) }) else {
             return nil
         }

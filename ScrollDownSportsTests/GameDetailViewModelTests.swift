@@ -171,6 +171,61 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.loading)
     }
 
+    func testProgressMutatorsPersistScrollExpansionRawFeedAndViewedState() {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let store = InMemoryGameStateStore(now: { now })
+        let viewModel = GameDetailViewModel(gameId: 506, gameStateStore: store)
+
+        viewModel.recordScrollFallback(eventSequence: 12, approximateOffset: 480)
+        XCTAssertEqual(store.progress(for: 506)?.lastScrollFallback?.eventSequence, 12)
+        XCTAssertEqual(store.progress(for: 506)?.lastScrollFallback?.approximateOffset, 480)
+
+        viewModel.setExpandedSection("team-stats", isExpanded: true)
+        XCTAssertEqual(store.progress(for: 506)?.expandedSectionIDs, ["team-stats"])
+        viewModel.setExpandedSection("team-stats", isExpanded: false)
+        XCTAssertEqual(store.progress(for: 506)?.expandedSectionIDs, [])
+
+        viewModel.setRawFeedExpanded(key: "inning-7", isExpanded: true)
+        XCTAssertEqual(store.progress(for: 506)?.expandedRawFeedKeys, ["inning-7"])
+        viewModel.setRawFeedExpanded(key: "inning-7", isExpanded: false)
+        XCTAssertEqual(store.progress(for: 506)?.expandedRawFeedKeys, [])
+
+        viewModel.recordReadEvent(eventIndex: 2, eventID: "event-3", knownEventCount: 5)
+        viewModel.markViewed()
+        XCTAssertEqual(store.progress(for: 506)?.lastViewedAt, now)
+
+        viewModel.clearReadPosition()
+        XCTAssertNil(store.progress(for: 506)?.lastReadEventID)
+        XCTAssertNil(store.progress(for: 506)?.lastReadEventIndex)
+        XCTAssertNil(store.progress(for: 506)?.lastScrollFallback)
+        XCTAssertEqual(store.progress(for: 506)?.newEventCount, 5)
+    }
+
+    func testRecordLatestEventReadIgnoresEmptyEvents() {
+        let store = InMemoryGameStateStore()
+        let viewModel = GameDetailViewModel(gameId: 507, gameStateStore: store)
+        viewModel.recordReadEvent(eventIndex: 1, eventID: "event-2", knownEventCount: 4)
+        let progressBefore = store.progress(for: 507)
+
+        viewModel.recordLatestEventRead(events: [])
+
+        XCTAssertEqual(store.progress(for: 507), progressBefore)
+    }
+
+    func testAutoRefreshCanStartAndStopWithoutAffectingState() async {
+        let store = InMemoryGameStateStore()
+        let viewModel = GameDetailViewModel(gameId: 508, gameStateStore: store)
+
+        viewModel.startAutoRefresh()
+        viewModel.startAutoRefresh()
+        await Task.yield()
+        viewModel.stopAutoRefresh()
+        await Task.yield()
+
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.loading)
+    }
+
     func testStreamModesCountExpectedEventBands() {
         let key = makeEvent(sequence: 1, importance: .primary)
         let flow = makeEvent(sequence: 2, importance: .secondary)

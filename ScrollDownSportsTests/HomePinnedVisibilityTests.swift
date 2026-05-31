@@ -33,7 +33,7 @@ final class HomePinnedVisibilityTests: XCTestCase {
         XCTAssertTrue(HomeSectionTestHelpers.allTimelineIDs(in: sections).isEmpty)
         XCTAssertEqual(viewModel.separatelyFetchedPinnedGames.map(\.id), [pinned.id])
         XCTAssertTrue(MockHTTPURLProtocol.requestURLs(for: MockPinnedSuccessURLProtocol.self).contains {
-            $0.path == "/api/admin/sports/games/\(pinned.id)"
+            $0.path == "/api/v1/games/\(pinned.id)"
         })
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @MainActor
 protocol BackgroundRefreshAPIClient {
@@ -28,6 +29,10 @@ final class BackgroundRefreshService {
     static let shared = BackgroundRefreshService(
         apiClient: .shared,
         gameStateStore: UserDefaultsGameStateStore()
+    )
+    private static let logger = Logger(
+        subsystem: "com.dock108.scrolldownsports",
+        category: "BackgroundRefreshService"
     )
 
     private let apiClient: any BackgroundRefreshAPIClient
@@ -94,6 +99,9 @@ final class BackgroundRefreshService {
                     throw CancellationError()
                 } catch {
                     record.failedGameIds.append(pinnedRecord.gameId)
+                    Self.logger.warning(
+                        "Pinned game background refresh failed id=\(pinnedRecord.gameId, privacy: .public): \(error.localizedDescription, privacy: .private)"
+                    )
                     gameStateStore.recordPinnedGameRefreshFailure(
                         gameId: pinnedRecord.gameId,
                         message: error.localizedDescription,
@@ -104,15 +112,28 @@ final class BackgroundRefreshService {
 
             record.completedAt = now()
             record.success = record.failedGameIds.isEmpty
+            if record.success {
+                Self.logger.info(
+                    "Background refresh completed games=\(games.count, privacy: .public) pinned=\(record.refreshedGameIds.count, privacy: .public)"
+                )
+            } else {
+                Self.logger.warning(
+                    "Background refresh completed with pinned failures count=\(record.failedGameIds.count, privacy: .public)"
+                )
+            }
             gameStateStore.recordBackgroundRefresh(record)
         } catch is CancellationError {
             record.completedAt = now()
             record.errorMessage = CancellationError().localizedDescription
+            Self.logger.info("Background refresh cancelled")
             gameStateStore.recordBackgroundRefresh(record)
             throw CancellationError()
         } catch {
             record.completedAt = now()
             record.errorMessage = error.localizedDescription
+            Self.logger.error(
+                "Background refresh failed: \(error.localizedDescription, privacy: .private)"
+            )
             gameStateStore.recordBackgroundRefresh(record)
             throw error
         }

@@ -1,9 +1,14 @@
 import Combine
 import Foundation
+import OSLog
 import SwiftUI
 
 @MainActor
 final class HomeViewModel: ObservableObject {
+    private static let logger = Logger(
+        subsystem: "com.dock108.scrolldownsports",
+        category: "HomeViewModel"
+    )
     @Published var games: [Game] = []
     @Published var league: LeagueFilter = .all
     @Published var teamQuery = ""
@@ -131,6 +136,9 @@ final class HomeViewModel: ObservableObject {
             lastUpdated = fetchedAt
         } catch {
             errorMessage = error.localizedDescription
+            Self.logger.warning(
+                "Home refresh failed silent=\(silent, privacy: .public): \(error.localizedDescription, privacy: .private)"
+            )
         }
         loading = false
     }
@@ -139,7 +147,12 @@ final class HomeViewModel: ObservableObject {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5 * 60))
+                do {
+                    try await Task.sleep(for: .seconds(5 * 60))
+                } catch {
+                    Self.logger.info("Home auto-refresh loop cancelled")
+                    break
+                }
                 await self?.refresh(silent: true)
             }
         }

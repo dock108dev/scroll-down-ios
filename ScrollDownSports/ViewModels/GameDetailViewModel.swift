@@ -1,8 +1,13 @@
 import Combine
 import Foundation
+import OSLog
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
+    private static let logger = Logger(
+        subsystem: "com.dock108.scrolldownsports",
+        category: "GameDetailViewModel"
+    )
     @Published var detail: GameDetail?
     @Published var loading = false
     @Published var errorMessage: String?
@@ -61,6 +66,9 @@ final class GameDetailViewModel: ObservableObject {
             updateToken = UUID()
         } catch {
             errorMessage = error.localizedDescription
+            Self.logger.warning(
+                "Game detail refresh failed id=\(self.gameId, privacy: .public) silent=\(silent, privacy: .public): \(error.localizedDescription, privacy: .private)"
+            )
         }
         loading = false
     }
@@ -69,7 +77,12 @@ final class GameDetailViewModel: ObservableObject {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5 * 60))
+                do {
+                    try await Task.sleep(for: .seconds(5 * 60))
+                } catch {
+                    Self.logger.info("Game detail auto-refresh loop cancelled")
+                    break
+                }
                 await self?.refresh(silent: true)
             }
         }
