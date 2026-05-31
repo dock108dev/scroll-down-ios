@@ -3,7 +3,9 @@ import SwiftUI
 extension StatPresentationBuilder {
     static func genericPlayerTable(
         from scoredPlayers: [ScoredPlayerStat],
-        statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns
+        statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns,
+        tableID: String = "generic-full-stats",
+        title: String = "Full Stats"
     ) -> StatTablePresentation {
         let sortedPlayers = scoredPlayers.sorted(by: sortScoredPlayers).prefix(80)
         let statColumns = Array(availableColumns.filter { column in
@@ -20,7 +22,7 @@ extension StatPresentationBuilder {
             }
             return StatTableRowPresentation(id: "\(scored.player.id)-\(index)", values: values)
         }
-        return StatTablePresentation(id: "generic-full-stats", title: "Full Stats", columns: columns, rows: rows)
+        return StatTablePresentation(id: tableID, title: title, columns: columns, rows: rows)
     }
 
     static func baseballBatterTable(from batters: [ScoredBatter], teamAbbreviations: [String: String]) -> StatTablePresentation {
@@ -130,7 +132,8 @@ extension StatPresentationBuilder {
             tableColumn("g", "G"), tableColumn("a", "A"), tableColumn("sog", "SOG", width: 48),
             tableColumn("sv", "SV"), tableColumn("h", "H"), tableColumn("r", "R"),
             tableColumn("rbi", "RBI", width: 46), tableColumn("hr", "HR"), tableColumn("bb", "BB"),
-            tableColumn("k", "K"), tableColumn("rank", "Rank", width: 52), tableColumn("score", "Score", width: 58),
+            tableColumn("k", "K"), tableColumn("ip", "IP", width: 46), tableColumn("er", "ER"), tableColumn("ga", "GA"),
+            tableColumn("rank", "Rank", width: 52), tableColumn("score", "Score", width: 58),
             tableColumn("thru", "Thru", width: 52)
         ]
     }
@@ -145,7 +148,7 @@ extension StatPresentationBuilder {
         case .nba:
             ids = ["min", "pts", "reb", "ast"]
         case .nhl:
-            ids = ["g", "a", "pts", "sog", "sv"]
+            ids = ["g", "a", "pts", "sog", "sv", "ga"]
         case .soccer:
             ids = ["g", "a", "sog"]
         case .golf:
@@ -170,12 +173,15 @@ extension StatPresentationBuilder {
         case "a": return rawString(["assists", "ast"], in: player.rawStats)
         case "sog": return rawString(["shots", "shotsOnGoal", "sog"], in: player.rawStats)
         case "sv": return rawString(["saves", "sv"], in: player.rawStats)
+        case "ga": return rawString(["goalsAgainst", "goals_against", "ga"], in: player.rawStats)
         case "h": return rawString(["hits", "h"], in: player.rawStats)
         case "r": return rawString(["runs", "r"], in: player.rawStats)
         case "rbi": return rawString(["rbi", "runsBattedIn"], in: player.rawStats)
         case "hr": return rawString(["homeRuns", "hr"], in: player.rawStats)
         case "bb": return rawString(["walks", "baseOnBalls", "bb"], in: player.rawStats)
         case "k": return rawString(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats)
+        case "ip": return rawString(["inningsPitched", "ip"], in: player.rawStats)
+        case "er": return rawString(["earnedRuns", "er"], in: player.rawStats)
         case "rank": return rawString(["rank", "position"], in: player.rawStats)
         case "score": return rawString(["score", "total", "strokes"], in: player.rawStats)
         case "thru": return rawString(["thru", "holesThru", "through"], in: player.rawStats)

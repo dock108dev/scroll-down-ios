@@ -163,7 +163,7 @@ final class ProductFlowIntegrationTests: XCTestCase {
         XCTAssertEqual(timelineIDs(in: viewModel.filteredHomeSections, sectionID: "timeline-yesterday"), [3012])
         XCTAssertEqual(timelineIDs(in: viewModel.filteredHomeSections, sectionID: "timeline-live"), [3013])
         XCTAssertEqual(timelineIDs(in: viewModel.filteredHomeSections, sectionID: "timeline-later-today"), [3014])
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
         XCTAssertFalse(allHomeIDs(in: viewModel.filteredHomeSections).contains(3015))
 
         viewModel.league = .nba

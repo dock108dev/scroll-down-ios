@@ -11,6 +11,12 @@ struct SDAGameListResponseDTO: Decodable, Sendable {
     let lastUpdatedAt: String?
 }
 
+struct SDAGameListPage: Sendable {
+    let games: [Game]
+    let total: Int?
+    let returnedCount: Int
+}
+
 struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable, Sendable {
     let id: Int
     let leagueCode: String

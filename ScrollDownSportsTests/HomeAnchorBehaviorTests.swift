@@ -22,7 +22,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         XCTAssertEqual(viewModel.initialHomeAnchorID, "pinned")
     }
 
-    func testInitialAnchorPrefersYesterdayOverLiveAndUpcoming() {
+    func testInitialAnchorPrefersLiveOverYesterdayAndUpcoming() {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let yesterday = TestFixtures.makeGame(
             id: 2111,
@@ -36,7 +36,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
         viewModel.games = [live, upcoming, yesterday]
 
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
     }
 
     func testInitialAnchorPrefersRecentFinalOverReadPinned() {
@@ -57,7 +57,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-today")
     }
 
-    func testInitialAnchorPrefersReadPinnedOverTimelineFallbacks() {
+    func testInitialAnchorPrefersCurrentSlateOverReadPinned() {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let pinned = scheduledGame(id: 2131, start: "2026-05-23T20:00:00Z")
         let live = TestFixtures.makeGame(id: 2132, scheduledStart: TestFixtures.fixedDate("2026-05-23T16:00:00Z"))
@@ -82,7 +82,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
         viewModel.games = [live, today, later, upcoming, older, pinned]
 
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "pinned")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
     }
 
     func testInitialAnchorFallbackOrder() {
@@ -125,7 +125,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         viewModel.clearFilters()
 
         XCTAssertEqual(viewModel.firstVisibleHomeAnchorID, "timeline-older")
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-later-today")
     }
 
     private func anchor(for games: [Game]) -> String? {

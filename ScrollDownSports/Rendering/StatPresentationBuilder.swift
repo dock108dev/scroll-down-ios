@@ -13,6 +13,13 @@ enum StatPresentationBuilder {
             ]
         }
 
+        if sport == .mlb, let sections = genericBaseballPlayerSections(for: detail.playerStats) {
+            return sections
+        }
+        if sport == .nhl, let sections = genericHockeyPlayerSections(for: detail.playerStats) {
+            return sections
+        }
+
         let statColumns = genericStatColumns(for: sport)
         let scoredPlayers = detail.playerStats.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: statColumns)) }
         return [
@@ -64,6 +71,127 @@ enum StatPresentationBuilder {
         }
 
         return sections
+    }
+
+    private static func genericBaseballPlayerSections(for players: [PlayerStat]) -> [StatSectionPresentation]? {
+        let pitcherColumns = columns(["ip", "h", "r", "er", "bb", "k", "hr"])
+        let hitterColumns = columns(["h", "r", "rbi", "hr", "bb", "k"])
+        let pitchers = players.filter { genericPlayer($0, hasAnyValueIn: columns(["ip", "er"])) }
+        let pitcherIDs = Set(pitchers.map(\.id))
+        let hitters = players.filter { !pitcherIDs.contains($0.id) && genericPlayer($0, hasAnyValueIn: hitterColumns) }
+
+        guard !pitchers.isEmpty || !hitters.isEmpty else { return nil }
+
+        var sections: [StatSectionPresentation] = []
+        if !hitters.isEmpty {
+            let scoredHitters = hitters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: hitterColumns)) }
+            sections.append(
+                genericSplitSection(
+                    id: "baseball-hitter-stats",
+                    title: "Hitters",
+                    tableID: "baseball-generic-hitters",
+                    tableTitle: "Hitters",
+                    players: scoredHitters,
+                    columns: hitterColumns,
+                    accentTone: .scoring
+                )
+            )
+        }
+        if !pitchers.isEmpty {
+            let scoredPitchers = pitchers.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: pitcherColumns)) }
+            sections.append(
+                genericSplitSection(
+                    id: "baseball-pitcher-stats",
+                    title: "Pitchers",
+                    tableID: "baseball-generic-pitchers",
+                    tableTitle: "Pitchers",
+                    players: scoredPitchers,
+                    columns: pitcherColumns,
+                    accentTone: .defensivePitching
+                )
+            )
+        }
+        return sections
+    }
+
+    private static func genericHockeyPlayerSections(for players: [PlayerStat]) -> [StatSectionPresentation]? {
+        let goalieColumns = columns(["sv", "ga"])
+        let skaterColumns = columns(["g", "a", "pts", "sog"])
+        let goalies = players.filter { genericPlayer($0, hasAnyValueIn: goalieColumns) }
+        let goalieIDs = Set(goalies.map(\.id))
+        let skaters = players.filter { !goalieIDs.contains($0.id) && genericPlayer($0, hasAnyValueIn: skaterColumns) }
+
+        guard !goalies.isEmpty || !skaters.isEmpty else { return nil }
+
+        var sections: [StatSectionPresentation] = []
+        if !skaters.isEmpty {
+            let scoredSkaters = skaters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: skaterColumns)) }
+            sections.append(
+                genericSplitSection(
+                    id: "hockey-skater-stats",
+                    title: "Skaters",
+                    tableID: "hockey-generic-skaters",
+                    tableTitle: "Skaters",
+                    players: scoredSkaters,
+                    columns: skaterColumns,
+                    accentTone: .scoring
+                )
+            )
+        }
+        if !goalies.isEmpty {
+            let scoredGoalies = goalies.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: goalieColumns)) }
+            sections.append(
+                genericSplitSection(
+                    id: "hockey-goalie-stats",
+                    title: "Goalies",
+                    tableID: "hockey-generic-goalies",
+                    tableTitle: "Goalies",
+                    players: scoredGoalies,
+                    columns: goalieColumns,
+                    accentTone: .defensivePitching
+                )
+            )
+        }
+        return sections
+    }
+
+    private static func genericSplitSection(
+        id: String,
+        title: String,
+        tableID: String,
+        tableTitle: String,
+        players: [ScoredPlayerStat],
+        columns: [StatTableColumnPresentation],
+        accentTone: SportsTheme.Tone
+    ) -> StatSectionPresentation {
+        StatSectionPresentation(
+            id: id,
+            title: title,
+            highlights: genericImpactPlayers(from: players, columns: columns, accentTone: accentTone),
+            cards: [],
+            tables: [
+                genericPlayerTable(
+                    from: players,
+                    statColumns: columns,
+                    tableID: tableID,
+                    title: tableTitle
+                )
+            ],
+            emptyMessage: nil
+        )
+    }
+
+    private static func genericPlayer(
+        _ player: PlayerStat,
+        hasAnyValueIn columns: [StatTableColumnPresentation]
+    ) -> Bool {
+        columns.contains { genericValue($0.id, for: player) != nil }
+    }
+
+    private static func columns(_ ids: [String]) -> [StatTableColumnPresentation] {
+        ids.compactMap { id in
+            genericStatColumns.first { $0.id == id }
+        }
     }
 
     static func hockeyPlayerSections(for detail: GameDetail) -> [StatSectionPresentation] {
@@ -248,12 +376,15 @@ extension StatPresentationBuilder {
         case "a": return rawDouble(["assists", "ast"], in: player.rawStats) * 1.5
         case "sog": return rawDouble(["shots", "shotsOnGoal", "sog"], in: player.rawStats) * 0.25
         case "sv": return rawDouble(["saves", "sv"], in: player.rawStats) * 0.2
+        case "ga": return max(0, 3 - rawDouble(["goalsAgainst", "goals_against", "ga"], in: player.rawStats))
         case "h": return rawDouble(["hits", "h"], in: player.rawStats) * 1.5
         case "r": return rawDouble(["runs", "r"], in: player.rawStats) * 1.25
         case "rbi": return rawDouble(["rbi", "runsBattedIn"], in: player.rawStats) * 1.2
         case "hr": return rawDouble(["homeRuns", "hr"], in: player.rawStats) * 5
         case "bb": return rawDouble(["walks", "baseOnBalls", "bb"], in: player.rawStats) * 0.75
         case "k": return rawDouble(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats) * 0.7
+        case "ip": return rawDouble(["inningsPitched", "ip"], in: player.rawStats) * 0.8
+        case "er": return max(0, 3 - rawDouble(["earnedRuns", "er"], in: player.rawStats))
         default: return 0
         }
     }
@@ -299,7 +430,8 @@ extension StatPresentationBuilder {
 extension StatPresentationBuilder {
     static func genericImpactPlayers(
         from players: [ScoredPlayerStat],
-        columns: [StatTableColumnPresentation] = genericStatColumns
+        columns: [StatTableColumnPresentation] = genericStatColumns,
+        accentTone: SportsTheme.Tone = .scoring
     ) -> [StatHighlightPresentation] {
         let eligible = players.filter { $0.score > 0 }.sorted(by: sortScoredPlayers)
         guard let top = eligible.first, top.score >= 8 || eligible.count >= 2 else { return [] }
@@ -312,7 +444,7 @@ extension StatPresentationBuilder {
                 subtitle: scored.player.team,
                 headline: genericHeadline(for: scored.player, columns: columns),
                 stats: cells.prefix(3).map { $0 },
-                accentTone: .scoring
+                accentTone: accentTone
             )
         }
     }

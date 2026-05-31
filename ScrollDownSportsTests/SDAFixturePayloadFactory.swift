@@ -1,7 +1,7 @@
 import Foundation
 
 enum SDAFixturePayloadFactory {
-    static func gameList(ids: [Int]) throws -> Data {
+    static func gameList(ids: [Int], total: Int? = nil) throws -> Data {
         let template = try gameSummaryDictionary()
         let games = ids.map { id in
             var game = template
@@ -12,7 +12,7 @@ enum SDAFixturePayloadFactory {
         }
         return try serialize([
             "games": games,
-            "total": ids.count,
+            "total": total ?? ids.count,
             "lastUpdatedAt": NSNull()
         ])
     }

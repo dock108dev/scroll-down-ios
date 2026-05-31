@@ -24,6 +24,7 @@ final class HomeViewModel: ObservableObject {
     private let apiClient: SDAApiClient
     private let nowProvider: () -> Date
     private let maxMissingPinnedFetches = 8
+    private let homePageLimit = 200
     private var refreshTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
@@ -121,11 +122,7 @@ final class HomeViewModel: ObservableObject {
         errorMessage = nil
         do {
             let window = GameWindow.home(now: nowProvider())
-            games = try await apiClient.fetchGames(
-                window: window,
-                league: league.apiValue,
-                limit: 200
-            )
+            games = try await fetchHomeGames(window: window)
             let fetchedAt = Date()
             separatelyFetchedPinnedGames = []
             if league == .all {
@@ -141,6 +138,35 @@ final class HomeViewModel: ObservableObject {
             )
         }
         loading = false
+    }
+
+    private func fetchHomeGames(window: GameWindow) async throws -> [Game] {
+        var allGames: [Game] = []
+        var offset = 0
+        var expectedTotal: Int?
+
+        repeat {
+            let page = try await apiClient.fetchGamePage(
+                window: window,
+                league: league.apiValue,
+                limit: homePageLimit,
+                offset: offset
+            )
+            allGames.append(contentsOf: page.games)
+            expectedTotal = page.total
+            offset += page.returnedCount
+
+            guard page.returnedCount == homePageLimit else { break }
+        } while offset < (expectedTotal ?? Int.max)
+
+        return Dictionary(grouping: allGames, by: \.id)
+            .compactMap { $0.value.first }
+            .sorted { left, right in
+                if left.scheduledStart != right.scheduledStart {
+                    return left.scheduledStart < right.scheduledStart
+                }
+                return left.id < right.id
+            }
     }
 
     func startAutoRefresh() {
@@ -363,26 +389,18 @@ final class HomeViewModel: ObservableObject {
             return nil
         }.flatMap { $0 }
 
-        if let yesterday = timelineSections.first(where: { $0.anchorRole == .yesterday }) {
-            return renderedAnchor(yesterday.id)
-        }
-
-        let finalSections = timelineSections.filter { section in
-            section.games.contains { $0.game.status.isFinal }
-        }
-        if let recentFinal = finalSections.max(by: { left, right in
-            let leftDate = left.games.filter { $0.game.status.isFinal }.map(\.game.scheduledStart).max() ?? left.date
-            let rightDate = right.games.filter { $0.game.status.isFinal }.map(\.game.scheduledStart).max() ?? right.date
-            return leftDate < rightDate
-        }) {
-            return renderedAnchor(recentFinal.id)
+        for role in [HomeTimelineAnchorRole.live, .today, .laterToday, .upcoming] {
+            if let section = timelineSections.first(where: { $0.anchorRole == role }),
+               let anchor = renderedAnchor(section.id) {
+                return anchor
+            }
         }
 
         if pinnedSection?.games.isEmpty == false {
             return renderedAnchor("pinned")
         }
 
-        for role in [HomeTimelineAnchorRole.live, .today, .laterToday, .upcoming, .olderCatchUp] {
+        for role in [HomeTimelineAnchorRole.yesterday, .olderCatchUp] {
             if let section = timelineSections.first(where: { $0.anchorRole == role }),
                let anchor = renderedAnchor(section.id) {
                 return anchor

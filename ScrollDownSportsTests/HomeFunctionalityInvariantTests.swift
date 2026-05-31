@@ -27,6 +27,35 @@ final class HomeFunctionalityInvariantTests: XCTestCase {
         XCTAssertEqual(viewModel.filteredHomeSections.map(\.id), ["timeline"])
     }
 
+    func testRefreshPaginatesHomeWindowSoLaterPagesAreNotStarvedByOlderGames() async throws {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let store = InMemoryGameStateStore(now: { now })
+        let firstPageIDs = Array(10_000..<10_200)
+        let futureID = 10_201
+        let viewModel = HomeViewModel(
+            apiClient: TestFixtures.makeAPIClient(
+                responses: [
+                    .ok(try SDAFixturePayloadFactory.gameList(ids: firstPageIDs, total: firstPageIDs.count + 1)),
+                    .ok(try SDAFixturePayloadFactory.gameList(ids: [futureID], total: firstPageIDs.count + 1))
+                ],
+                protocolClass: MockHomePaginationURLProtocol.self
+            ),
+            now: { now },
+            gameStateStore: store
+        )
+
+        await viewModel.refresh()
+
+        XCTAssertEqual(viewModel.games.count, firstPageIDs.count + 1)
+        XCTAssertTrue(viewModel.games.contains { $0.id == futureID })
+        let offsets = MockHTTPURLProtocol.requestURLs(for: MockHomePaginationURLProtocol.self)
+            .compactMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+            .flatMap { $0.queryItems ?? [] }
+            .filter { $0.name == "offset" }
+            .map(\.value)
+        XCTAssertEqual(offsets, ["0", "200"])
+    }
+
     func testFinalGameWithoutPlayByPlayOpensBoxScoreWithoutNewPlayBadge() {
         let game = TestFixtures.makeGame(
             id: 1402,
@@ -179,3 +208,4 @@ final class HomeFunctionalityInvariantTests: XCTestCase {
 }
 
 private final class MockHomeURLProtocol: MockHTTPURLProtocol {}
+private final class MockHomePaginationURLProtocol: MockHTTPURLProtocol {}

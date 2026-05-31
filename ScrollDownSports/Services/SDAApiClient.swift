@@ -43,8 +43,18 @@ final class SDAApiClient: Sendable {
     func fetchGames(
         window: GameWindow,
         league: String? = nil,
-        limit: Int = 200
+        limit: Int = 200,
+        offset: Int = 0
     ) async throws -> [Game] {
+        try await fetchGamePage(window: window, league: league, limit: limit, offset: offset).games
+    }
+
+    func fetchGamePage(
+        window: GameWindow,
+        league: String? = nil,
+        limit: Int = 200,
+        offset: Int = 0
+    ) async throws -> SDAGameListPage {
         var components = URLComponents(
             url: baseURL.appending(path: "/api/v1/games"),
             resolvingAgainstBaseURL: false
@@ -53,7 +63,8 @@ final class SDAApiClient: Sendable {
         var queryItems = [
             URLQueryItem(name: "startDate", value: window.startDateQuery),
             URLQueryItem(name: "endDate", value: window.endDateQuery),
-            URLQueryItem(name: "limit", value: String(limit))
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "offset", value: String(offset))
         ]
 
         if let league, !league.isEmpty {
@@ -64,8 +75,12 @@ final class SDAApiClient: Sendable {
         guard let url = components?.url else { throw SDAApiError.invalidURL }
 
         let response: SDAGameListResponseDTO = try await get(url)
-        return SDADomainMapper.games(from: response)
-            .filter { window.contains($0.scheduledStart) }
+        return SDAGameListPage(
+            games: SDADomainMapper.games(from: response)
+                .filter { window.contains($0.scheduledStart) },
+            total: response.total,
+            returnedCount: response.games.count
+        )
     }
 
     func fetchGame(id: Int) async throws -> GameDetail {

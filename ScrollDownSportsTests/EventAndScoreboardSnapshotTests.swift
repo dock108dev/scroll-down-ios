@@ -279,11 +279,11 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
     func testBoxScoreHiddenAndRevealedStates() {
         let hiddenGame = ComponentSnapshotFixtures.game(
             id: 5_110,
-            status: "final",
-            isFinal: true,
+            status: "in_progress",
+            isFinal: false,
             awayScore: 7,
             homeScore: 6,
-            periodLabel: "Final"
+            periodLabel: "T8"
         )
         let renderer = SportRendererRegistry.renderer(for: hiddenGame)
 

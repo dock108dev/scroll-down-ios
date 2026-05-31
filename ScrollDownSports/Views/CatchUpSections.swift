@@ -350,7 +350,7 @@ struct BoxScoreSection: View {
     }
 
     private var isScoreRevealed: Bool {
-        usesExternalScoreRevealed ? externalScoreRevealed : localScoreRevealed
+        game.status.isFinal || (usesExternalScoreRevealed ? externalScoreRevealed : localScoreRevealed)
     }
 
     private func revealScore() {

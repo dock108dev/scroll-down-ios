@@ -179,7 +179,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.initialHomeAnchorID, viewModel.todaySectionID)
     }
 
-    func testInitialAnchorPrefersYesterdayCatchupOverOlderAndUpcomingGames() throws {
+    func testInitialAnchorPrefersCurrentAndFutureSlateOverOlderCatchup() throws {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let older = TestFixtures.makeGame(
             id: 31,
@@ -218,7 +218,7 @@ final class HomeViewModelTests: XCTestCase {
             "timeline-live",
             "timeline-upcoming"
         ])
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-yesterday")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
     }
 
     func testVisibleTimelineIncludesScoreOnlyLiveFinalAndOtherStatuses() {
