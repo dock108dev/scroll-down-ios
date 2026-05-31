@@ -129,6 +129,7 @@ private struct FilterHeader: View {
                 .submitLabel(.search)
                 .focused($isTeamSearchFocused)
                 .font(HomeFilterLayout.controlFont)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .lineLimit(1)
                 .accessibilityLabel("Filter by team")
                 .accessibilityIdentifier("home.teamFilter")
@@ -237,11 +238,12 @@ private struct HomeShelfControlChrome: ViewModifier {
     var stroke = SportsTheme.Stroke.subdued()
     var lineWidth = SportsTheme.Stroke.standard
     var backgroundOpacity = 0.82
+    @ScaledMetric(relativeTo: .subheadline) private var controlMinHeight = HomeFilterLayout.controlMinHeight
 
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, 10)
-            .frame(minHeight: HomeFilterLayout.controlMinHeight, alignment: .leading)
+            .frame(minHeight: controlMinHeight, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 SportsTheme.Colors.paperInset.opacity(backgroundOpacity),

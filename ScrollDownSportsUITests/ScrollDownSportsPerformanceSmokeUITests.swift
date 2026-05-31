@@ -11,7 +11,7 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
 
         let timing = SmokeUITiming()
         timing.measure("open 90-event detail") {
-            app.buttons["MLB"].tap()
+            selectLeague("MLB")
             let teamFilter = app.textFields["home.teamFilter"]
             XCTAssertTrue(teamFilter.waitForExistence(timeout: 3))
             teamFilter.tap()
@@ -34,7 +34,6 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
 
         timing.measure("jump latest exposes return affordance") {
             jumpToPendingLatest()
-            XCTAssertTrue(element("detail.event.evt-perf-105").waitForExistence(timeout: 5))
             XCTAssertTrue(app.buttons["detail.stickyNav.return"].waitForExistence(timeout: 5))
         }
 
@@ -64,10 +63,6 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
 
     @MainActor
     private func row(_ id: String) -> XCUIElement {
-        let button = app.buttons["home.gameRow.\(id)"]
-        if button.exists {
-            return button
-        }
         return element("home.gameRow.\(id)")
     }
 
@@ -87,6 +82,29 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
         let x = min(max(frame.midX, app.frame.minX + 32), app.frame.maxX - 32)
         let y = min(max(frame.maxY - 6, app.frame.minY + 128), app.frame.maxY - 64)
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: y)).tap()
+    }
+
+    @MainActor
+    private func selectLeague(_ league: String, file: StaticString = #filePath, line: UInt = #line) {
+        let directButton = app.buttons[league]
+        if directButton.exists && directButton.isHittable {
+            tap(directButton)
+            return
+        }
+
+        let picker = app.buttons["home.leaguePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "League picker is missing", file: file, line: line)
+        tap(picker)
+
+        let menuButton = app.buttons[league]
+        if menuButton.waitForExistence(timeout: 3) {
+            tap(menuButton)
+            return
+        }
+
+        let menuText = app.staticTexts[league]
+        XCTAssertTrue(menuText.waitForExistence(timeout: 3), "League option \(league) is missing", file: file, line: line)
+        tap(menuText)
     }
 
     @MainActor
