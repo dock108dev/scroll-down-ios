@@ -22,16 +22,31 @@ enum StatPresentationBuilder {
 
         let statColumns = genericStatColumns(for: sport)
         let scoredPlayers = detail.playerStats.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: statColumns)) }
-        return [
+        let impactHighlights = genericImpactPlayers(from: scoredPlayers, columns: statColumns)
+        var sections: [StatSectionPresentation] = []
+        if !impactHighlights.isEmpty {
+            sections.append(
+                StatSectionPresentation(
+                    id: "player-impact",
+                    title: nil,
+                    highlights: impactHighlights,
+                    cards: [],
+                    tables: [],
+                    emptyMessage: nil
+                )
+            )
+        }
+        sections.append(
             StatSectionPresentation(
-                id: "player-stats",
-                title: nil,
-                highlights: genericImpactPlayers(from: scoredPlayers, columns: statColumns),
+                id: "player-stats-by-team",
+                title: "By Team",
+                highlights: [],
                 cards: [],
-                tables: [genericPlayerTable(from: scoredPlayers, statColumns: statColumns)],
+                tables: genericPlayerTablesByTeam(from: scoredPlayers, statColumns: statColumns),
                 emptyMessage: nil
             )
-        ]
+        )
+        return sections
     }
 
     static func baseballPlayerSections(for detail: GameDetail) -> [StatSectionPresentation] {
@@ -45,14 +60,27 @@ enum StatPresentationBuilder {
         let scoredPitchers = pitchers.map { ScoredPitcher(player: $0, score: pitcherImpactScore($0)) }
         let teamAbbreviations = teamAbbreviations(for: detail)
         var sections: [StatSectionPresentation] = []
+        let impactHighlights = baseballImpactHighlights(from: scoredBatters, pitchers: scoredPitchers)
+        if !impactHighlights.isEmpty {
+            sections.append(
+                StatSectionPresentation(
+                    id: "baseball-impact",
+                    title: nil,
+                    highlights: impactHighlights,
+                    cards: [],
+                    tables: [],
+                    emptyMessage: nil
+                )
+            )
+        }
         if !scoredBatters.isEmpty {
             sections.append(
                 StatSectionPresentation(
                     id: "baseball-batter-stats",
                     title: "Batters",
-                    highlights: baseballBatterHighlights(from: scoredBatters),
+                    highlights: [],
                     cards: [],
-                    tables: [baseballBatterTable(from: scoredBatters, teamAbbreviations: teamAbbreviations)],
+                    tables: baseballBatterTablesByTeam(from: scoredBatters, teamAbbreviations: teamAbbreviations),
                     emptyMessage: nil
                 )
             )
@@ -62,9 +90,9 @@ enum StatPresentationBuilder {
                 StatSectionPresentation(
                     id: "baseball-pitcher-stats",
                     title: "Pitchers",
-                    highlights: baseballPitcherHighlights(from: scoredPitchers),
+                    highlights: [],
                     cards: [],
-                    tables: [baseballPitcherTable(from: scoredPitchers, teamAbbreviations: teamAbbreviations)],
+                    tables: baseballPitcherTablesByTeam(from: scoredPitchers, teamAbbreviations: teamAbbreviations),
                     emptyMessage: nil
                 )
             )
@@ -82,9 +110,26 @@ enum StatPresentationBuilder {
 
         guard !pitchers.isEmpty || !hitters.isEmpty else { return nil }
 
+        let scoredHitters = hitters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: hitterColumns)) }
+        let scoredPitchers = pitchers.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: pitcherColumns)) }
         var sections: [StatSectionPresentation] = []
+        let impactHighlights = genericImpactPlayers(
+            from: scoredHitters + scoredPitchers,
+            columns: uniqueColumns(hitterColumns + pitcherColumns)
+        )
+        if !impactHighlights.isEmpty {
+            sections.append(
+                StatSectionPresentation(
+                    id: "baseball-generic-impact",
+                    title: nil,
+                    highlights: impactHighlights,
+                    cards: [],
+                    tables: [],
+                    emptyMessage: nil
+                )
+            )
+        }
         if !hitters.isEmpty {
-            let scoredHitters = hitters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: hitterColumns)) }
             sections.append(
                 genericSplitSection(
                     id: "baseball-hitter-stats",
@@ -98,7 +143,6 @@ enum StatPresentationBuilder {
             )
         }
         if !pitchers.isEmpty {
-            let scoredPitchers = pitchers.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: pitcherColumns)) }
             sections.append(
                 genericSplitSection(
                     id: "baseball-pitcher-stats",
@@ -123,9 +167,26 @@ enum StatPresentationBuilder {
 
         guard !goalies.isEmpty || !skaters.isEmpty else { return nil }
 
+        let scoredSkaters = skaters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: skaterColumns)) }
+        let scoredGoalies = goalies.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: goalieColumns)) }
         var sections: [StatSectionPresentation] = []
+        let impactHighlights = genericImpactPlayers(
+            from: scoredSkaters + scoredGoalies,
+            columns: uniqueColumns(skaterColumns + goalieColumns)
+        )
+        if !impactHighlights.isEmpty {
+            sections.append(
+                StatSectionPresentation(
+                    id: "hockey-generic-impact",
+                    title: nil,
+                    highlights: impactHighlights,
+                    cards: [],
+                    tables: [],
+                    emptyMessage: nil
+                )
+            )
+        }
         if !skaters.isEmpty {
-            let scoredSkaters = skaters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: skaterColumns)) }
             sections.append(
                 genericSplitSection(
                     id: "hockey-skater-stats",
@@ -139,7 +200,6 @@ enum StatPresentationBuilder {
             )
         }
         if !goalies.isEmpty {
-            let scoredGoalies = goalies.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: goalieColumns)) }
             sections.append(
                 genericSplitSection(
                     id: "hockey-goalie-stats",
@@ -167,16 +227,14 @@ enum StatPresentationBuilder {
         StatSectionPresentation(
             id: id,
             title: title,
-            highlights: genericImpactPlayers(from: players, columns: columns, accentTone: accentTone),
+            highlights: [],
             cards: [],
-            tables: [
-                genericPlayerTable(
-                    from: players,
-                    statColumns: columns,
-                    tableID: tableID,
-                    title: tableTitle
-                )
-            ],
+            tables: genericPlayerTablesByTeam(
+                from: players,
+                statColumns: columns,
+                tableIDPrefix: tableID,
+                titleSuffix: tableTitle
+            ),
             emptyMessage: nil
         )
     }
@@ -194,6 +252,15 @@ enum StatPresentationBuilder {
         }
     }
 
+    private static func uniqueColumns(_ columns: [StatTableColumnPresentation]) -> [StatTableColumnPresentation] {
+        var seen: Set<String> = []
+        return columns.filter { column in
+            guard !seen.contains(column.id) else { return false }
+            seen.insert(column.id)
+            return true
+        }
+    }
+
     static func hockeyPlayerSections(for detail: GameDetail) -> [StatSectionPresentation] {
         let skaters = detail.nhlSkaters ?? []
         let goalies = detail.nhlGoalies ?? []
@@ -205,14 +272,27 @@ enum StatPresentationBuilder {
         let scoredGoalies = goalies.map { ScoredNHLPlayer(player: $0, role: "Goalie", score: goalieImpactScore($0)) }
         let teamAbbreviations = teamAbbreviations(for: detail)
         var sections: [StatSectionPresentation] = []
+        let impactHighlights = hockeyImpactHighlights(from: scoredSkaters, goalies: scoredGoalies)
+        if !impactHighlights.isEmpty {
+            sections.append(
+                StatSectionPresentation(
+                    id: "hockey-impact",
+                    title: nil,
+                    highlights: impactHighlights,
+                    cards: [],
+                    tables: [],
+                    emptyMessage: nil
+                )
+            )
+        }
         if !scoredSkaters.isEmpty {
             sections.append(
                 StatSectionPresentation(
                     id: "hockey-skater-stats",
                     title: "Skaters",
-                    highlights: hockeySkaterHighlights(from: scoredSkaters),
+                    highlights: [],
                     cards: [],
-                    tables: [hockeySkaterTable(from: scoredSkaters, teamAbbreviations: teamAbbreviations)],
+                    tables: hockeySkaterTablesByTeam(from: scoredSkaters, teamAbbreviations: teamAbbreviations),
                     emptyMessage: nil
                 )
             )
@@ -222,9 +302,9 @@ enum StatPresentationBuilder {
                 StatSectionPresentation(
                     id: "hockey-goalie-stats",
                     title: "Goalies",
-                    highlights: hockeyGoalieHighlights(from: scoredGoalies),
+                    highlights: [],
                     cards: [],
-                    tables: [hockeyGoalieTable(from: scoredGoalies, teamAbbreviations: teamAbbreviations)],
+                    tables: hockeyGoalieTablesByTeam(from: scoredGoalies, teamAbbreviations: teamAbbreviations),
                     emptyMessage: nil
                 )
             )
@@ -435,7 +515,7 @@ extension StatPresentationBuilder {
     ) -> [StatHighlightPresentation] {
         let eligible = players.filter { $0.score > 0 }.sorted(by: sortScoredPlayers)
         guard let top = eligible.first, top.score >= 8 || eligible.count >= 2 else { return [] }
-        return eligible.prefix(4).enumerated().map { index, scored in
+        return eligible.prefix(3).enumerated().map { index, scored in
             let cells = genericStatCells(for: scored.player, columns: columns)
             return StatHighlightPresentation(
                 id: scored.player.id,
@@ -470,6 +550,44 @@ extension StatPresentationBuilder {
                     )
                 }
         )
+    }
+
+    static func baseballImpactHighlights(from batters: [ScoredBatter], pitchers: [ScoredPitcher]) -> [StatHighlightPresentation] {
+        let batterCandidates = batters
+            .filter { $0.score > 0 }
+            .sorted(by: sortScoredBatters)
+            .map { scored in
+                (
+                    StatHighlightPresentation(
+                        id: scored.player.id,
+                        rank: nil,
+                        title: scored.player.playerName,
+                        subtitle: [scored.player.team, scored.player.position].compactMap(\.self).joined(separator: " "),
+                        headline: batterHeadline(for: scored.player),
+                        stats: batterCells(for: scored.player).prefix(3).map { $0 },
+                        accentTone: .scoring
+                    ),
+                    scored.score
+                )
+            }
+        let pitcherCandidates = pitchers
+            .filter { $0.score > 0 }
+            .sorted(by: sortScoredPitchers)
+            .map { scored in
+                (
+                    StatHighlightPresentation(
+                        id: scored.player.id,
+                        rank: nil,
+                        title: scored.player.playerName,
+                        subtitle: "\(scored.player.team) Pitcher",
+                        headline: pitcherHeadline(for: scored.player),
+                        stats: pitcherCells(for: scored.player).prefix(3).map { $0 },
+                        accentTone: .defensivePitching
+                    ),
+                    scored.score
+                )
+            }
+        return ranked(mergeHighlights(batterCandidates, pitcherCandidates))
     }
 
     static func baseballPitcherHighlights(from pitchers: [ScoredPitcher]) -> [StatHighlightPresentation] {
@@ -539,5 +657,43 @@ extension StatPresentationBuilder {
                     )
                 }
         )
+    }
+
+    static func hockeyImpactHighlights(from skaters: [ScoredNHLPlayer], goalies: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {
+        let skaterCandidates = skaters
+            .filter { $0.score > 0 }
+            .sorted(by: sortScoredNHLPlayers)
+            .map { scored in
+                (
+                    StatHighlightPresentation(
+                        id: "\(scored.player.id)-skater",
+                        rank: nil,
+                        title: scored.player.playerName,
+                        subtitle: "\(scored.player.team) Skater",
+                        headline: skaterHeadline(for: scored.player),
+                        stats: skaterCells(for: scored.player).prefix(3).map { $0 },
+                        accentTone: .scoring
+                    ),
+                    scored.score
+                )
+            }
+        let goalieCandidates = goalies
+            .filter { $0.score > 0 }
+            .sorted(by: sortScoredNHLPlayers)
+            .map { scored in
+                (
+                    StatHighlightPresentation(
+                        id: "\(scored.player.id)-goalie",
+                        rank: nil,
+                        title: scored.player.playerName,
+                        subtitle: "\(scored.player.team) Goalie",
+                        headline: goalieHeadline(for: scored.player),
+                        stats: goalieCells(for: scored.player).prefix(3).map { $0 },
+                        accentTone: .defensivePitching
+                    ),
+                    scored.score
+                )
+            }
+        return ranked(mergeHighlights(skaterCandidates, goalieCandidates))
     }
 }

@@ -684,8 +684,13 @@ struct GameDetailView: View {
             return
         }
 
-        currentVisibleEvent = DetailVisibleEventState(frame: readFrame)
-        lastAcceptedVisibleFrame = orientationFrame
+        let nextVisibleEvent = DetailVisibleEventState(frame: readFrame)
+        if currentVisibleEvent != nextVisibleEvent {
+            currentVisibleEvent = nextVisibleEvent
+        }
+        if shouldAcceptVisibleFrameUpdate(orientationFrame) {
+            lastAcceptedVisibleFrame = orientationFrame
+        }
 
         guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge && !programmaticScrollInFlight) else {
             return
@@ -708,6 +713,14 @@ struct GameDetailView: View {
             eventSequence: readFrame.sequence,
             approximateOffset: Double(readFrame.frame.minY)
         )
+    }
+
+    private func shouldAcceptVisibleFrameUpdate(_ frame: DetailEventVisibilityFrame) -> Bool {
+        guard let previous = lastAcceptedVisibleFrame else { return true }
+        if previous.anchorID != frame.anchorID || previous.sequence != frame.sequence {
+            return true
+        }
+        return abs(previous.frame.minY - frame.frame.minY) >= 24
     }
 
     private func updateScoreboardReach(from frame: CGRect?, viewportHeight: CGFloat, obscuredBottomHeight: CGFloat) {

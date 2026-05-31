@@ -30,8 +30,8 @@ final class SportRendererInvariantTests: XCTestCase {
 
         let stats = SportRendererRegistry.renderer(for: game).statsPresentation(for: detail)
 
-        XCTAssertEqual(stats.playerSections.map(\.id), ["player-stats"])
-        XCTAssertEqual(stats.playerSections.first?.tables.map(\.id), ["generic-full-stats"])
+        XCTAssertEqual(stats.playerSections.map(\.id), ["player-impact", "player-stats-by-team"])
+        XCTAssertEqual(stats.playerSections[1].tables.map(\.id), ["generic-full-stats-away"])
         XCTAssertEqual(SportRendererRegistry.renderer(for: game).gameCardPresentation(for: game).sportLabel, "Pickleball")
     }
 
@@ -75,9 +75,9 @@ final class SportRendererInvariantTests: XCTestCase {
 
         let stats = SportRendererRegistry.renderer(for: game).statsPresentation(for: detail)
 
-        XCTAssertEqual(stats.playerSections.map(\.id), ["baseball-batter-stats", "baseball-pitcher-stats"])
-        XCTAssertEqual(stats.playerSections.map(\.title), ["Batters", "Pitchers"])
-        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["baseball-batters", "baseball-pitchers"])
+        XCTAssertEqual(stats.playerSections.map(\.id), ["baseball-impact", "baseball-batter-stats", "baseball-pitcher-stats"])
+        XCTAssertEqual(stats.playerSections.map(\.title), [nil, "Batters", "Pitchers"])
+        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["baseball-batters-sea", "baseball-pitchers-sea"])
     }
 
     func testHockeyRendererRoutesToSkaterAndGoalieTables() {
@@ -119,9 +119,9 @@ final class SportRendererInvariantTests: XCTestCase {
 
         let stats = SportRendererRegistry.renderer(for: game).statsPresentation(for: detail)
 
-        XCTAssertEqual(stats.playerSections.map(\.id), ["hockey-skater-stats", "hockey-goalie-stats"])
-        XCTAssertEqual(stats.playerSections.map(\.title), ["Skaters", "Goalies"])
-        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["hockey-skaters", "hockey-goalies"])
+        XCTAssertEqual(stats.playerSections.map(\.id), ["hockey-impact", "hockey-skater-stats", "hockey-goalie-stats"])
+        XCTAssertEqual(stats.playerSections.map(\.title), [nil, "Skaters", "Goalies"])
+        XCTAssertEqual(stats.playerSections.flatMap { $0.tables.map(\.id) }, ["hockey-skaters-ev", "hockey-goalies-nh"])
     }
 
     func testStatFormattingCoversImpactLimitsMissingValuesPercentagesAndSportLabels() {
@@ -149,10 +149,12 @@ final class SportRendererInvariantTests: XCTestCase {
             nhlGoalies: nil
         )
 
-        let section = StatPresentationBuilder.genericPlayerSections(for: detail)[0]
+        let sections = StatPresentationBuilder.genericPlayerSections(for: detail)
+        let section = sections[0]
+        let tableSection = sections[1]
 
-        XCTAssertEqual(section.highlights.count, 4)
-        XCTAssertTrue((3...5).contains(section.highlights.count))
+        XCTAssertEqual(section.highlights.count, 3)
+        XCTAssertTrue((1...3).contains(section.highlights.count))
         XCTAssertEqual(StatPresentationBuilder.statString(nil as Int?), "-")
         XCTAssertNil(StatPresentationBuilder.statString(nil as Double?))
         XCTAssertEqual(StatPresentationBuilder.statString(12.0), "12")
@@ -160,7 +162,7 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(StatPresentationBuilder.outs(from: "5.2"), 17)
         XCTAssertEqual(StatPresentationBuilder.outs(from: "5.3"), 15)
         XCTAssertEqual(StatPresentationBuilder.savePercentage(for: goalie(saves: 31, goalsAgainst: 2)), ".939")
-        XCTAssertEqual(section.tables[0].columns.map(\.label), ["Player", "Team", "MIN", "PTS", "REB"])
+        XCTAssertEqual(tableSection.tables[0].columns.map(\.label), ["Player", "Team", "MIN", "PTS", "REB"])
 
         let baseball = StatPresentationBuilder.baseballBatterTable(
             from: [ScoredBatter(player: batter(team: "Baltimore Orioles", atBats: nil), score: 1)],
@@ -204,8 +206,8 @@ final class SportRendererInvariantTests: XCTestCase {
         let stats = BaseballRenderer().statsPresentation(for: detail)
         let scoreboard = BaseballRenderer().scoreboardPresentation(for: game)
 
-        XCTAssertEqual(stats.playerSections[0].tables[0].rows[0].values["team"], "BAL")
-        XCTAssertEqual(stats.playerSections[1].tables[0].rows[0].values["team"], "SEA")
+        XCTAssertEqual(stats.playerSections[1].tables[0].rows[0].values["team"], "BAL")
+        XCTAssertEqual(stats.playerSections[2].tables[0].rows[0].values["team"], "SEA")
         XCTAssertEqual(scoreboard.rows[0].title, "Baltimore Orioles")
         XCTAssertEqual(scoreboard.rows[0].abbreviation, "BAL")
         XCTAssertFalse(scoreboard.rows.map(\.title).joined(separator: " ").contains("Baltimo..."))

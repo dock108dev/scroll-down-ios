@@ -239,7 +239,7 @@ final class FormattingUtilityCoverageTests: XCTestCase {
         StatPresentationBuilder.includeDiverseHighlight(&selected, candidate: highlight(id: "a", title: "Alpha"), score: 10.0)
         StatPresentationBuilder.includeDiverseHighlight(&selected, candidate: nil, score: 10.0)
         StatPresentationBuilder.includeDiverseHighlight(&selected, candidate: highlight(id: "f", title: "Foxtrot"), score: 5.0)
-        XCTAssertEqual(StatPresentationBuilder.ranked(selected).map(\.rank), [1, 2, 3, 4])
+        XCTAssertEqual(StatPresentationBuilder.ranked(selected).map(\.rank), [1, 2, 3])
         XCTAssertEqual(StatPresentationBuilder.ranked(selected).map(\.title).first, "Delta")
 
         var shortSelection: [(StatHighlightPresentation, Double)] = []
@@ -281,7 +281,7 @@ final class FormattingUtilityCoverageTests: XCTestCase {
             nhlSkaters: nil,
             nhlGoalies: nil
         )
-        XCTAssertEqual(StatPresentationBuilder.baseballPlayerSections(for: splitDetail).map(\.title), ["Batters", "Pitchers"])
+        XCTAssertEqual(StatPresentationBuilder.baseballPlayerSections(for: splitDetail).map(\.title), [nil, "Batters", "Pitchers"])
 
         let hockeyDetail = GameDetail(
             game: TestFixtures.makeGame(leagueCode: "nhl"),
@@ -293,7 +293,7 @@ final class FormattingUtilityCoverageTests: XCTestCase {
             nhlSkaters: [skater(goals: 1, assists: 0, points: 1, shots: 3)],
             nhlGoalies: [goalie(saves: 28, goalsAgainst: 2)]
         )
-        XCTAssertEqual(StatPresentationBuilder.hockeyPlayerSections(for: hockeyDetail).map(\.title), ["Skaters", "Goalies"])
+        XCTAssertEqual(StatPresentationBuilder.hockeyPlayerSections(for: hockeyDetail).map(\.title), [nil, "Skaters", "Goalies"])
     }
 
     private func withEnvironment(_ values: [String: String], body: () throws -> Void) rethrows {

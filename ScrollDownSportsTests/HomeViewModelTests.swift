@@ -284,6 +284,43 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.loading)
     }
 
+    func testAutoRefreshIntervalAcceleratesForLiveAndStartingGames() {
+        let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
+        XCTAssertEqual(viewModel.autoRefreshInterval, HomeViewModel.defaultAutoRefreshInterval)
+
+        viewModel.games = [
+            TestFixtures.makeGame(
+                id: 331,
+                scheduledStart: TestFixtures.fixedDate("2026-05-23T13:10:00Z"),
+                status: "scheduled",
+                isLive: false
+            )
+        ]
+        XCTAssertEqual(viewModel.autoRefreshInterval, HomeViewModel.activeAutoRefreshInterval)
+
+        viewModel.games = [
+            TestFixtures.makeGame(
+                id: 332,
+                scheduledStart: TestFixtures.fixedDate("2026-05-23T12:30:00Z"),
+                status: "in_progress",
+                isLive: true
+            )
+        ]
+        XCTAssertEqual(viewModel.autoRefreshInterval, HomeViewModel.activeAutoRefreshInterval)
+
+        viewModel.games = [
+            TestFixtures.makeGame(
+                id: 333,
+                scheduledStart: TestFixtures.fixedDate("2026-05-23T12:30:00Z"),
+                status: "final",
+                isLive: false,
+                isFinal: true
+            )
+        ]
+        XCTAssertEqual(viewModel.autoRefreshInterval, HomeViewModel.defaultAutoRefreshInterval)
+    }
+
     func testDefaultTimelineFiltersPlaceholderGames() throws {
         let now = TestFixtures.fixedDate("2026-05-23T13:00:00Z")
         let real = TestFixtures.makeGame(

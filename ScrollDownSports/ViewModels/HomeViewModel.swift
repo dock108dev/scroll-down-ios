@@ -9,6 +9,11 @@ final class HomeViewModel: ObservableObject {
         subsystem: "com.dock108.scrolldownsports",
         category: "HomeViewModel"
     )
+    static let activeAutoRefreshInterval: Duration = .seconds(30)
+    static let defaultAutoRefreshInterval: Duration = .seconds(5 * 60)
+    private static let activeRefreshLeadTime: TimeInterval = 15 * 60
+    private static let activeRefreshGraceTime: TimeInterval = 4 * 60 * 60
+
     @Published var games: [Game] = []
     @Published var league: LeagueFilter = .all
     @Published var teamQuery = ""
@@ -173,8 +178,9 @@ final class HomeViewModel: ObservableObject {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
+                let interval = self?.autoRefreshInterval ?? Self.activeAutoRefreshInterval
                 do {
-                    try await Task.sleep(for: .seconds(5 * 60))
+                    try await Task.sleep(for: interval)
                 } catch {
                     Self.logger.info("Home auto-refresh loop cancelled")
                     break
@@ -187,6 +193,20 @@ final class HomeViewModel: ObservableObject {
     func stopAutoRefresh() {
         refreshTask?.cancel()
         refreshTask = nil
+    }
+
+    var autoRefreshInterval: Duration {
+        let now = nowProvider()
+        if mergedGames.contains(where: { game in
+            guard !game.status.isFinal else { return false }
+            if game.status.isLive { return true }
+            let timeUntilStart = game.scheduledStart.timeIntervalSince(now)
+            return timeUntilStart <= Self.activeRefreshLeadTime
+                && timeUntilStart >= -Self.activeRefreshGraceTime
+        }) {
+            return Self.activeAutoRefreshInterval
+        }
+        return Self.defaultAutoRefreshInterval
     }
 
     func isPinned(_ game: Game) -> Bool {

@@ -25,6 +25,22 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: tableID, title: title, columns: columns, rows: rows)
     }
 
+    static func genericPlayerTablesByTeam(
+        from scoredPlayers: [ScoredPlayerStat],
+        statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns,
+        tableIDPrefix: String = "generic-full-stats",
+        titleSuffix: String = "Stats"
+    ) -> [StatTablePresentation] {
+        orderedTeamGroups(scoredPlayers, team: { $0.player.team }).map { team, players in
+            genericPlayerTable(
+                from: players,
+                statColumns: availableColumns,
+                tableID: "\(tableIDPrefix)-\(team.stableStatID)",
+                title: "\(shortTeamCode(team)) \(titleSuffix)"
+            )
+        }
+    }
+
     static func baseballBatterTable(from batters: [ScoredBatter], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
             tableColumn("player", "Player", width: 154, alignment: .leading),
@@ -51,6 +67,18 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "baseball-batters", title: "Batters", columns: columns, rows: rows)
     }
 
+    static func baseballBatterTablesByTeam(from batters: [ScoredBatter], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
+        orderedTeamGroups(batters, team: { $0.player.team }).map { team, teamBatters in
+            let table = baseballBatterTable(from: teamBatters, teamAbbreviations: teamAbbreviations)
+            return StatTablePresentation(
+                id: "\(table.id)-\(team.stableStatID)",
+                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Batters",
+                columns: table.columns,
+                rows: table.rows
+            )
+        }
+    }
+
     static func baseballPitcherTable(from pitchers: [ScoredPitcher], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
             tableColumn("player", "Player", width: 154, alignment: .leading),
@@ -74,6 +102,18 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "baseball-pitchers", title: "Pitchers", columns: columns, rows: rows)
     }
 
+    static func baseballPitcherTablesByTeam(from pitchers: [ScoredPitcher], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
+        orderedTeamGroups(pitchers, team: { $0.player.team }).map { team, teamPitchers in
+            let table = baseballPitcherTable(from: teamPitchers, teamAbbreviations: teamAbbreviations)
+            return StatTablePresentation(
+                id: "\(table.id)-\(team.stableStatID)",
+                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Pitchers",
+                columns: table.columns,
+                rows: table.rows
+            )
+        }
+    }
+
     static func hockeySkaterTable(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> StatTablePresentation {
         let columns = [
             tableColumn("player", "Player", width: 154, alignment: .leading),
@@ -93,6 +133,18 @@ extension StatPresentationBuilder {
             )
         }
         return StatTablePresentation(id: "hockey-skaters", title: "Skaters", columns: columns, rows: rows)
+    }
+
+    static func hockeySkaterTablesByTeam(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
+        orderedTeamGroups(players, team: { $0.player.team }).map { team, teamPlayers in
+            let table = hockeySkaterTable(from: teamPlayers, teamAbbreviations: teamAbbreviations)
+            return StatTablePresentation(
+                id: "\(table.id)-\(team.stableStatID)",
+                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Skaters",
+                columns: table.columns,
+                rows: table.rows
+            )
+        }
     }
 
     static func hockeyGoalieTable(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> StatTablePresentation {
@@ -119,8 +171,53 @@ extension StatPresentationBuilder {
         return StatTablePresentation(id: "hockey-goalies", title: "Goalies", columns: columns, rows: rows)
     }
 
+    static func hockeyGoalieTablesByTeam(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
+        orderedTeamGroups(players, team: { $0.player.team }).map { team, teamPlayers in
+            let table = hockeyGoalieTable(from: teamPlayers, teamAbbreviations: teamAbbreviations)
+            return StatTablePresentation(
+                id: "\(table.id)-\(team.stableStatID)",
+                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Goalies",
+                columns: table.columns,
+                rows: table.rows
+            )
+        }
+    }
+
     static func shortTeamCode(_ name: String) -> String {
         String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
+    }
+
+    static func orderedTeamGroups<T>(_ values: [T], team: (T) -> String) -> [(String, [T])] {
+        var orderedTeams: [String] = []
+        var grouped: [String: [T]] = [:]
+        for value in values {
+            let teamName = team(value)
+            if grouped[teamName] == nil {
+                orderedTeams.append(teamName)
+                grouped[teamName] = []
+            }
+            grouped[teamName]?.append(value)
+        }
+        return orderedTeams.compactMap { teamName in
+            guard let values = grouped[teamName], !values.isEmpty else { return nil }
+            return (teamName, values)
+        }
+    }
+}
+
+private extension String {
+    var stableStatID: String {
+        lowercased()
+            .map { character in
+                character.isLetter || character.isNumber ? character : "-"
+            }
+            .reduce(into: "") { result, character in
+                if character == "-", result.last == "-" {
+                    return
+                }
+                result.append(character)
+            }
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
     }
 }
 

@@ -136,7 +136,7 @@ extension StatPresentationBuilder {
                 if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
                 return lhs.0.title < rhs.0.title
             }
-            .prefix(4)
+            .prefix(3)
             .map { $0 }
     }
 
@@ -153,7 +153,7 @@ extension StatPresentationBuilder {
         _ selected: inout [(StatHighlightPresentation, Double)],
         with candidate: (StatHighlightPresentation, Double)
     ) {
-        if selected.count < 4 {
+        if selected.count < 3 {
             selected.append(candidate)
         } else if !selected.isEmpty {
             selected[selected.count - 1] = candidate
@@ -165,7 +165,7 @@ extension StatPresentationBuilder {
     }
 
     static func ranked(_ selected: [(StatHighlightPresentation, Double)]) -> [StatHighlightPresentation] {
-        selected.prefix(4).enumerated().map { index, pair in
+        selected.prefix(3).enumerated().map { index, pair in
             StatHighlightPresentation(
                 id: pair.0.id,
                 rank: index + 1,

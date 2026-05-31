@@ -4,6 +4,9 @@ import OSLog
 
 @MainActor
 final class GameDetailViewModel: ObservableObject {
+    static let liveAutoRefreshInterval: Duration = .seconds(30)
+    static let finalAutoRefreshInterval: Duration = .seconds(5 * 60)
+
     private static let logger = Logger(
         subsystem: "com.dock108.scrolldownsports",
         category: "GameDetailViewModel"
@@ -77,8 +80,9 @@ final class GameDetailViewModel: ObservableObject {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
+                let interval = self?.autoRefreshInterval ?? Self.liveAutoRefreshInterval
                 do {
-                    try await Task.sleep(for: .seconds(5 * 60))
+                    try await Task.sleep(for: interval)
                 } catch {
                     Self.logger.info("Game detail auto-refresh loop cancelled")
                     break
@@ -188,6 +192,10 @@ final class GameDetailViewModel: ObservableObject {
         }
         detail = latestDetail
         lastUpdated = record.lastBackgroundRefreshAt ?? record.lastSummaryRefreshAt
+    }
+
+    private var autoRefreshInterval: Duration {
+        detail?.game.status.isLive == true ? Self.liveAutoRefreshInterval : Self.finalAutoRefreshInterval
     }
 }
 
