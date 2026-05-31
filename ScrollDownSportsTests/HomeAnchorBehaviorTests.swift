@@ -36,7 +36,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         let viewModel = HomeViewModel(now: { now }, gameStateStore: InMemoryGameStateStore(now: { now }))
         viewModel.games = [live, upcoming, yesterday]
 
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-game-2112")
     }
 
     func testInitialAnchorPrefersRecentFinalOverReadPinned() {
@@ -54,7 +54,7 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
         viewModel.games = [pinned, recentFinal]
 
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-today")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-game-2122")
     }
 
     func testInitialAnchorPrefersCurrentSlateOverReadPinned() {
@@ -82,15 +82,15 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
         viewModel.games = [live, today, later, upcoming, older, pinned]
 
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-live")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-game-2132")
     }
 
     func testInitialAnchorFallbackOrder() {
-        XCTAssertEqual(anchor(for: [liveGame(id: 2141)]), "timeline-live")
-        XCTAssertEqual(anchor(for: [todayUnknownGame(id: 2142)]), "timeline-today")
-        XCTAssertEqual(anchor(for: [scheduledGame(id: 2143, start: "2026-05-23T20:00:00Z")]), "timeline-later-today")
-        XCTAssertEqual(anchor(for: [scheduledGame(id: 2144, start: "2026-05-24T18:00:00Z")]), "timeline-upcoming")
-        XCTAssertEqual(anchor(for: [olderUnknownGame(id: 2145)]), "timeline-older")
+        XCTAssertEqual(anchor(for: [liveGame(id: 2141)]), "timeline-game-2141")
+        XCTAssertEqual(anchor(for: [todayUnknownGame(id: 2142)]), "timeline-game-2142")
+        XCTAssertEqual(anchor(for: [scheduledGame(id: 2143, start: "2026-05-23T20:00:00Z")]), "timeline-game-2143")
+        XCTAssertEqual(anchor(for: [scheduledGame(id: 2144, start: "2026-05-24T18:00:00Z")]), "timeline-game-2144")
+        XCTAssertEqual(anchor(for: [olderUnknownGame(id: 2145)]), "timeline-game-2145")
         XCTAssertNil(anchor(for: []))
     }
 
@@ -120,12 +120,12 @@ final class HomeAnchorBehaviorTests: XCTestCase {
         viewModel.league = .nba
 
         XCTAssertEqual(viewModel.firstVisibleHomeAnchorID, "timeline-later-today")
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-later-today")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-game-2153")
 
         viewModel.clearFilters()
 
         XCTAssertEqual(viewModel.firstVisibleHomeAnchorID, "timeline-older")
-        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-later-today")
+        XCTAssertEqual(viewModel.initialHomeAnchorID, "timeline-game-2153")
     }
 
     private func anchor(for games: [Game]) -> String? {

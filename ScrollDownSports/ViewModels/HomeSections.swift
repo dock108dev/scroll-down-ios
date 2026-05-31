@@ -49,6 +49,10 @@ struct HomeGameItem: Identifiable, Equatable {
 
     var id: Int { game.id }
 
+    var homeAnchorID: String {
+        "timeline-game-\(id)"
+    }
+
     var newEventCount: Int {
         progress?.newEventCount ?? pinnedRecord?.newEventCount ?? 0
     }

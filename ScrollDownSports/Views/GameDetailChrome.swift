@@ -106,6 +106,22 @@ struct DetailLoadErrorState: View {
     }
 }
 
+struct DetailLoadingState: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .accessibilityHidden(true)
+            Text("Loading game")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(SportsTheme.Colors.ink)
+            Spacer(minLength: 0)
+        }
+        .sportsSurface(.streamControlBar, accent: SportsTheme.Tone.newPlay.accent)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("detail.loading")
+    }
+}
+
 struct ResumeBanner: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.sportsLayoutMetrics) private var layout

@@ -216,6 +216,8 @@ struct HomeView: View {
             return .center
         case .top:
             return .top
+        case .bottom:
+            return .bottom
         }
     }
 

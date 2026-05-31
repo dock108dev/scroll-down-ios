@@ -11,6 +11,7 @@ final class HomeScrollCoordinatorTests: XCTestCase {
         )
 
         XCTAssertNotNil(initial)
+        XCTAssertEqual(initial?.position, .bottom)
         XCTAssertNil(
             coordinator.visibleCountChanged(
                 anchorID: "timeline-yesterday",
@@ -88,5 +89,27 @@ final class HomeScrollCoordinatorTests: XCTestCase {
             filterSignature: "All|"
         )
         XCTAssertFalse(coordinator.isCurrent(initial, currentValidationKey: initialKey))
+    }
+
+    func testInitialAnchorCanMoveFromStalePastSnapshotToCurrentSlate() throws {
+        var coordinator = HomeScrollCoordinator()
+        _ = try XCTUnwrap(
+            coordinator.initialRequest(
+                anchorID: "timeline-game-4101",
+                visibleCount: 6,
+                filterSignature: "All|"
+            )
+        )
+
+        let refreshed = try XCTUnwrap(
+            coordinator.initialRequest(
+                anchorID: "timeline-game-4109",
+                visibleCount: 18,
+                filterSignature: "All|"
+            )
+        )
+
+        XCTAssertEqual(refreshed.anchorID, "timeline-game-4109")
+        XCTAssertEqual(refreshed.position, .bottom)
     }
 }

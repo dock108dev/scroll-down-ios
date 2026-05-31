@@ -142,6 +142,11 @@ final class NavigationShellInvariantTests: XCTestCase {
             startingAt: "struct DetailLoadErrorState",
             endingBefore: "struct ResumeBanner"
         )
+        let loadingState = try sourceBlock(
+            in: chromeSource,
+            startingAt: "struct DetailLoadingState",
+            endingBefore: "struct ResumeBanner"
+        )
 
         XCTAssertTrue(initializer.contains("gameId: Int"))
         XCTAssertTrue(initializer.contains("summary: Game? = nil"))
@@ -151,7 +156,8 @@ final class NavigationShellInvariantTests: XCTestCase {
         XCTAssertTrue(initializer.contains("gameId: gameId"))
         XCTAssertTrue(unavailableState.contains("GameHeaderPlaceholder(summary: summary"))
         XCTAssertTrue(unavailableState.contains("viewModel.loading"))
-        XCTAssertTrue(unavailableState.contains(".accessibilityIdentifier(\"detail.loading\")"))
+        XCTAssertTrue(unavailableState.contains("DetailLoadingState()"))
+        XCTAssertTrue(loadingState.contains(".accessibilityIdentifier(\"detail.loading\")"))
         XCTAssertTrue(unavailableState.contains("DetailLoadErrorState(message: error)"))
         XCTAssertTrue(unavailableState.contains("Task { await viewModel.refresh() }"))
         XCTAssertTrue(loadErrorState.contains("retry()"))

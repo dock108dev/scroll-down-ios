@@ -376,9 +376,7 @@ struct GameDetailView: View {
             }
 
             if viewModel.loading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: layout.loadingStateMinHeight)
-                    .accessibilityIdentifier("detail.loading")
+                DetailLoadingState()
             } else if let error = viewModel.errorMessage {
                 DetailLoadErrorState(message: error) {
                     Task { await viewModel.refresh() }

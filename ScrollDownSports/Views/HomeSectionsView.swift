@@ -77,6 +77,7 @@ struct TimelineSectionView<Row: View>: View {
                     } else {
                         ForEach(dateSection.games) { item in
                             row(item)
+                                .id(item.homeAnchorID)
                         }
                     }
                 }

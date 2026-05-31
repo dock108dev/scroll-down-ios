@@ -48,6 +48,9 @@ extension Array where Element == HomeSection {
                 timeline.dateSections
                     .filter { !$0.games.isEmpty }
                     .forEach { result.insert($0.id) }
+                timeline.dateSections
+                    .flatMap(\.games)
+                    .forEach { result.insert($0.homeAnchorID) }
             }
         }
     }

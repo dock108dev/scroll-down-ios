@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -396,7 +396,7 @@
 		4D489C406AA9FAFF511001D6 /* SituationCardPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationCardPolicy.swift; sourceTree = "<group>"; };
 		4D84F1571D8E154A79F470F8 /* GameEventSituationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEventSituationModels.swift; sourceTree = "<group>"; };
 		4EB5C780DF72560B3E58F3FD /* testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png"; sourceTree = "<group>"; };
-		50926C52F9EA648450945557 /* ScrollDownSports.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScrollDownSports.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		50926C52F9EA648450945557 /* ScrollDownSports.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ScrollDownSports.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50A5F12CD02E20CB03EA906E /* nhl_event_presentation_importance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = nhl_event_presentation_importance.json; sourceTree = "<group>"; };
 		510AE85901C4B320C4EDF475 /* UserDefaultsGameStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsGameStateStore.swift; sourceTree = "<group>"; };
 		516EF834AE9B828A3436EFEE /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -474,7 +474,7 @@
 		98CB857CB22C3E718BE9133B /* testRichReservedSportDiagramRowsCompactWidth.rich-reserved-sport-diagrams-compact-compact-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testRichReservedSportDiagramRowsCompactWidth.rich-reserved-sport-diagrams-compact-compact-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		9969F67C5C5322DCE3114C2A /* HomeAnchorBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAnchorBehaviorTests.swift; sourceTree = "<group>"; };
 		9978C9D78C6028D109B68271 /* testDetailEmptyPlayByPlaySplitNarrowIPad.detail-empty-play-by-play-split-narrow-splitNarrow-iPadMiniPortrait-light-accessibility2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testDetailEmptyPlayByPlaySplitNarrowIPad.detail-empty-play-by-play-split-narrow-splitNarrow-iPadMiniPortrait-light-accessibility2.png"; sourceTree = "<group>"; };
-		99A04F981F34C650D120E280 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		99A04F981F34C650D120E280 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9A920F9AFF079FBB102399E3 /* SituationContextChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationContextChips.swift; sourceTree = "<group>"; };
 		9B1FF90E3978919E9FE62B93 /* ScorePressurePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScorePressurePresentationTests.swift; sourceTree = "<group>"; };
 		9B6FDBEB6058E957098612AC /* SituationPresentationInvariantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationPresentationInvariantTests.swift; sourceTree = "<group>"; };
@@ -1226,6 +1226,7 @@
 						TestTargetID = 1B0437D600A19D87F8DB7254;
 					};
 					1B0437D600A19D87F8DB7254 = {
+						DevelopmentTeam = "$(SDS_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -1614,7 +1615,7 @@
 				CODE_SIGN_ENTITLEMENTS = ScrollDownSports/Resources/ScrollDownSports.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = E3G5D247ZN;
+				DEVELOPMENT_TEAM = "$(SDS_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = ScrollDownSports/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1812,7 +1813,7 @@
 				CODE_SIGN_ENTITLEMENTS = ScrollDownSports/Resources/ScrollDownSports.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = E3G5D247ZN;
+				DEVELOPMENT_TEAM = "$(SDS_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = ScrollDownSports/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

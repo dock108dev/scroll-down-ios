@@ -1,8 +1,9 @@
 import Foundation
 
-enum HomeProgrammaticScrollAnchor {
+enum HomeProgrammaticScrollAnchor: Equatable {
     case center
     case top
+    case bottom
 }
 
 struct HomeScrollRequest: Equatable {
@@ -16,7 +17,7 @@ struct HomeScrollRequest: Equatable {
 struct HomeScrollCoordinator {
     private(set) var generation = 0
     private(set) var pendingFilterSignature: String?
-    private var hasAppliedInitialAnchor = false
+    private var lastAppliedInitialAnchorID: String?
     private var lastAppliedInitialKey: String?
     private var lastAppliedFilterKey: String?
 
@@ -25,17 +26,17 @@ struct HomeScrollCoordinator {
         visibleCount: Int,
         filterSignature: String
     ) -> HomeScrollRequest? {
-        guard !hasAppliedInitialAnchor,
-              let anchorID,
+        guard let anchorID,
               visibleCount > 0 else {
             return nil
         }
+        guard anchorID != lastAppliedInitialAnchorID else { return nil }
 
         let key = validationKey(reason: "initial", anchorID: anchorID, visibleCount: visibleCount, filterSignature: filterSignature)
         guard key != lastAppliedInitialKey else { return nil }
         lastAppliedInitialKey = key
-        hasAppliedInitialAnchor = true
-        return nextRequest(anchorID: anchorID, position: .center, validationKey: key, completedFilterSignature: nil)
+        lastAppliedInitialAnchorID = anchorID
+        return nextRequest(anchorID: anchorID, position: .bottom, validationKey: key, completedFilterSignature: nil)
     }
 
     mutating func filterChanged(

@@ -389,11 +389,18 @@ final class HomeViewModel: ObservableObject {
             return nil
         }.flatMap { $0 }
 
-        for role in [HomeTimelineAnchorRole.live, .today, .laterToday, .upcoming] {
+        for role in [HomeTimelineAnchorRole.live, .laterToday, .upcoming] {
             if let section = timelineSections.first(where: { $0.anchorRole == role }),
-               let anchor = renderedAnchor(section.id) {
+               let firstGame = section.games.first,
+               let anchor = renderedAnchor(firstGame.homeAnchorID) {
                 return anchor
             }
+        }
+
+        if let section = timelineSections.first(where: { $0.anchorRole == .today }),
+           let latestTodayGame = section.games.last,
+           let anchor = renderedAnchor(latestTodayGame.homeAnchorID) {
+            return anchor
         }
 
         if pinnedSection?.games.isEmpty == false {
@@ -402,7 +409,8 @@ final class HomeViewModel: ObservableObject {
 
         for role in [HomeTimelineAnchorRole.yesterday, .olderCatchUp] {
             if let section = timelineSections.first(where: { $0.anchorRole == role }),
-               let anchor = renderedAnchor(section.id) {
+               let latestPastGame = section.games.last,
+               let anchor = renderedAnchor(latestPastGame.homeAnchorID) {
                 return anchor
             }
         }
