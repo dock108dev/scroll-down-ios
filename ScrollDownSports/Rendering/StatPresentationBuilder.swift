@@ -424,20 +424,6 @@ struct ScoredNHLPlayer {
 }
 
 extension StatPresentationBuilder {
-    static func genericImpactScore(_ player: PlayerStat) -> Double {
-        player.points.orZero
-            + player.rebounds.orZero * 0.7
-            + player.assists.orZero * 0.8
-            + player.yards.orZero * 0.04
-            + player.touchdowns.orZero * 6
-            + rawDouble(["goals", "goal"], in: player.rawStats) * 3
-            + rawDouble(["assists", "ast"], in: player.rawStats) * 1.5
-            + rawDouble(["shots", "shotsOnGoal", "sog"], in: player.rawStats) * 0.25
-            + rawDouble(["saves", "sv"], in: player.rawStats) * 0.2
-            + rawDouble(["strikeOuts", "strikeouts", "so", "k"], in: player.rawStats) * 0.7
-            + rawDouble(["rbi", "runsBattedIn"], in: player.rawStats) * 1.2
-    }
-
     static func genericImpactScore(_ player: PlayerStat, columns: [StatTableColumnPresentation]) -> Double {
         columns.reduce(0) { score, column in
             score + genericImpactValue(column.id, for: player)
@@ -529,29 +515,6 @@ extension StatPresentationBuilder {
         }
     }
 
-    static func baseballBatterHighlights(from batters: [ScoredBatter]) -> [StatHighlightPresentation] {
-        ranked(
-            batters
-                .filter { $0.score > 0 }
-                .sorted(by: sortScoredBatters)
-                .prefix(3)
-                .map { scored in
-                    (
-                        StatHighlightPresentation(
-                            id: scored.player.id,
-                            rank: nil,
-                            title: scored.player.playerName,
-                            subtitle: [scored.player.team, scored.player.position].compactMap(\.self).joined(separator: " "),
-                            headline: batterHeadline(for: scored.player),
-                            stats: batterCells(for: scored.player).prefix(3).map { $0 },
-                            accentTone: .scoring
-                        ),
-                        scored.score
-                    )
-                }
-        )
-    }
-
     static func baseballImpactHighlights(from batters: [ScoredBatter], pitchers: [ScoredPitcher]) -> [StatHighlightPresentation] {
         let batterCandidates = batters
             .filter { $0.score > 0 }
@@ -588,75 +551,6 @@ extension StatPresentationBuilder {
                 )
             }
         return ranked(mergeHighlights(batterCandidates, pitcherCandidates))
-    }
-
-    static func baseballPitcherHighlights(from pitchers: [ScoredPitcher]) -> [StatHighlightPresentation] {
-        ranked(
-            pitchers
-                .filter { $0.score > 0 }
-                .sorted(by: sortScoredPitchers)
-                .prefix(3)
-                .map { scored in
-                    (
-                        StatHighlightPresentation(
-                            id: scored.player.id,
-                            rank: nil,
-                            title: scored.player.playerName,
-                            subtitle: "\(scored.player.team) Pitcher",
-                            headline: pitcherHeadline(for: scored.player),
-                            stats: pitcherCells(for: scored.player).prefix(3).map { $0 },
-                            accentTone: .defensivePitching
-                        ),
-                        scored.score
-                    )
-                }
-        )
-    }
-
-    static func hockeySkaterHighlights(from skaters: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {
-        ranked(
-            skaters
-                .filter { $0.score > 0 }
-                .sorted(by: sortScoredNHLPlayers)
-                .prefix(3)
-                .map { scored in
-                    (
-                        StatHighlightPresentation(
-                            id: "\(scored.player.id)-skater",
-                            rank: nil,
-                            title: scored.player.playerName,
-                            subtitle: "\(scored.player.team) Skater",
-                            headline: skaterHeadline(for: scored.player),
-                            stats: skaterCells(for: scored.player).prefix(3).map { $0 },
-                            accentTone: .scoring
-                        ),
-                        scored.score
-                    )
-                }
-        )
-    }
-
-    static func hockeyGoalieHighlights(from goalies: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {
-        ranked(
-            goalies
-                .filter { $0.score > 0 }
-                .sorted(by: sortScoredNHLPlayers)
-                .prefix(3)
-                .map { scored in
-                    (
-                        StatHighlightPresentation(
-                            id: "\(scored.player.id)-goalie",
-                            rank: nil,
-                            title: scored.player.playerName,
-                            subtitle: "\(scored.player.team) Goalie",
-                            headline: goalieHeadline(for: scored.player),
-                            stats: goalieCells(for: scored.player).prefix(3).map { $0 },
-                            accentTone: .defensivePitching
-                        ),
-                        scored.score
-                    )
-                }
-        )
     }
 
     static func hockeyImpactHighlights(from skaters: [ScoredNHLPlayer], goalies: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {
