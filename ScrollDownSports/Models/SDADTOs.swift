@@ -102,19 +102,32 @@ struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
     let contentDepth: String
     let modeEligibility: SDAEventModeEligibilityDTO
     let importance: SDAEventImportanceDTO
+    let renderType: String
     let visualImportance: String
+    let periodLabel: String?
     let period: SDACardPeriodDTO
     let displayTime: String?
     let clock: String?
     let team: SDACardTeamDTO
+    let teamDisplay: String?
+    let teamContext: String?
     let scoreBefore: SDAScoreSnapshotDTO?
     let scoreChange: SDACardScoreChangeDTO?
     let scoreAfter: SDAScoreSnapshotDTO?
+    let scoreBeforeDisplay: String?
+    let scoreAfterDisplay: String?
+    let situationBeforeDisplay: String?
+    let situationAfterDisplay: String?
     let situation: SDACardSituationDTO
     let leadIn: String
     let stageSetting: String
     let headline: String
     let description: String
+    let setupLine: String?
+    let playLine: String?
+    let updateLine: String?
+    let rawPlayText: String?
+    let eventType: String?
     let impact: String?
     let tags: [String]
     let spoilerLevel: String

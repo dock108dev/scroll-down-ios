@@ -97,6 +97,7 @@ enum TestFixtures {
         clockLabel: String? = "10:00",
         scoreDelta: ScoreDelta? = nil,
         eventType: String = "play",
+        contentDepth: EventContentDepth? = nil,
         eligibleModes: Set<GameMode>? = nil,
         usesBackendModeEligibility: Bool = true,
         presentation: EventPresentationData? = nil,
@@ -117,6 +118,7 @@ enum TestFixtures {
             teamOwnership: .home,
             teamAbbreviation: "SEA",
             eventType: eventType,
+            contentDepth: contentDepth,
             importance: importance,
             eligibleModes: eligibleModes ?? Self.eligibleModes(for: importance),
             usesBackendModeEligibility: usesBackendModeEligibility,
@@ -247,11 +249,12 @@ enum TestFixtures {
         gameId: Int = 504,
         status: String = "ready",
         cardIDs: [String],
-        cardCount: Int? = nil
+        cardCount: Int? = nil,
+        cardOverrides: [[String: Any]] = []
     ) -> Data {
         let cards: [[String: Any]] = cardIDs.enumerated().map { pair in
             let (index, cardID) = pair
-            return [
+            var card: [String: Any] = [
                 "id": cardID,
                 "gameId": gameId,
                 "sourcePlayId": cardID,
@@ -275,6 +278,7 @@ enum TestFixtures {
                     "isFinalPlay": false,
                     "isRunEnding": false
                 ],
+                "renderType": index == 0 ? "important_narrative" : "standard_pbp",
                 "visualImportance": index == 0 ? "high" : "medium",
                 "period": ["ordinal": 1, "label": "T1", "type": "inning"],
                 "displayTime": "T1",
@@ -288,13 +292,20 @@ enum TestFixtures {
                 "stageSetting": "Early rhythm",
                 "headline": "Feed update \(index + 1)",
                 "description": "A normalized card keeps the reader oriented.",
+                "setupLine": index == 0 ? "Early rhythm" : NSNull(),
+                "playLine": index == 0 ? "Feed update \(index + 1)" : NSNull(),
+                "updateLine": index == 0 ? "Sets the table." : NSNull(),
                 "impact": index == 0 ? "Sets the table." : NSNull(),
                 "tags": ["context"],
                 "spoilerLevel": "none"
             ]
+            if index < cardOverrides.count {
+                cardOverrides[index].forEach { card[$0.key] = $0.value }
+            }
+            return card
         }
         let payload: [String: Any] = [
-            "contractVersion": 1,
+            "contractVersion": 2,
             "game": [
                 "gameId": gameId,
                 "sport": "baseball",
@@ -365,15 +376,21 @@ enum MockHTTPResponse {
 class MockHTTPURLProtocol: URLProtocol {
     nonisolated(unsafe) private static var responseQueues: [ObjectIdentifier: [MockHTTPResponse]] = [:]
     nonisolated(unsafe) private static var requestedURLs: [ObjectIdentifier: [URL]] = [:]
+    nonisolated(unsafe) private static var requestedTimeouts: [ObjectIdentifier: [TimeInterval]] = [:]
 
     static func setResponses(_ responses: [MockHTTPResponse], for protocolClass: MockHTTPURLProtocol.Type) {
         let key = ObjectIdentifier(protocolClass)
         responseQueues[key] = responses
         requestedURLs[key] = []
+        requestedTimeouts[key] = []
     }
 
     static func requestURLs(for protocolClass: MockHTTPURLProtocol.Type) -> [URL] {
         requestedURLs[ObjectIdentifier(protocolClass)] ?? []
+    }
+
+    static func requestTimeouts(for protocolClass: MockHTTPURLProtocol.Type) -> [TimeInterval] {
+        requestedTimeouts[ObjectIdentifier(protocolClass)] ?? []
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -389,7 +406,7 @@ class MockHTTPURLProtocol: URLProtocol {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
-        Self.recordRequest(url, for: type(of: self))
+        Self.recordRequest(request, url: url, for: type(of: self))
 
         switch next {
         case .ok(let data):
@@ -411,9 +428,10 @@ class MockHTTPURLProtocol: URLProtocol {
         return response
     }
 
-    private static func recordRequest(_ url: URL, for protocolClass: MockHTTPURLProtocol.Type) {
+    private static func recordRequest(_ request: URLRequest, url: URL, for protocolClass: MockHTTPURLProtocol.Type) {
         let key = ObjectIdentifier(protocolClass)
         requestedURLs[key, default: []].append(url)
+        requestedTimeouts[key, default: []].append(request.timeoutInterval)
     }
 
     private func respond(url: URL, statusCode: Int, data: Data) {

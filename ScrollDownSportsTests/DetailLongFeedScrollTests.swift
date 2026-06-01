@@ -221,14 +221,14 @@ final class DetailLongFeedScrollTests: XCTestCase {
         XCTAssertTrue(source.contains("performProgrammaticScroll(targetAnchorID: anchorID"))
     }
 
-    func testExpansionAndScoreRevealMutationsPreserveReaderAnchorWithoutInitialJump() throws {
+    func testExpansionMutationsPreserveReaderAnchorWithoutInitialJump() throws {
         let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
 
         XCTAssertTrue(source.contains("onRawFeedExpansionChange: { key, isExpanded in"))
         XCTAssertTrue(source.contains("viewModel.setRawFeedExpanded(key: key, isExpanded: isExpanded)"))
         XCTAssertTrue(source.contains("isExpanded: sectionExpansionBinding(playerStatsSectionID, proxy: proxy)"))
         XCTAssertTrue(source.contains("isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)"))
-        XCTAssertTrue(source.contains("scoreRevealed: scoreRevealBinding(proxy: proxy)"))
+        XCTAssertFalse(source.contains("scoreRevealBinding(proxy: proxy)"))
         XCTAssertTrue(source.contains("private func preserveReaderAnchor(proxy: ScrollViewProxy, mutate: () -> Void)"))
         XCTAssertTrue(source.contains("private func restoreAfterContentChange(_ proxy: ScrollViewProxy)"))
         XCTAssertTrue(source.contains("GameDetailScrollLogic.restoredContentChangeAnchorID"))

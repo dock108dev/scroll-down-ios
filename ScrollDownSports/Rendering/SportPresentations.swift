@@ -376,10 +376,6 @@ struct ScoreboardPresentation {
     var layout: ScoreboardLayout
     var title: String
     var systemImage: String
-    var revealTitle: String
-    var revealDescription: String
-    var revealButtonTitle: String
-    var hideButtonTitle: String
     let rows: [ScoreboardRowPresentation]
     let segments: [ScoreboardSegmentPresentation]
     var totalHeader: String

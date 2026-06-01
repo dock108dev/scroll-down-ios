@@ -102,7 +102,6 @@ final class ProductPresentationInvariantTests: XCTestCase {
         XCTAssertEqual(scoreboardPresentation.layout, .segmentTable)
         XCTAssertEqual(scoreboardPresentation.stateText, "Yankees 7, Mariners 6")
         XCTAssertEqual(scoreboardPresentation.rows.map(\.totalText), ["7", "6"])
-        XCTAssertEqual(scoreboardPresentation.revealTitle, "Score hidden")
     }
 
     func testScoreboardReachPersistsOnlyAfterMeaningfulViewportEntry() {

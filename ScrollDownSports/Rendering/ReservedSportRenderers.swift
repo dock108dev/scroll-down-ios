@@ -315,10 +315,6 @@ struct GolfRenderer: GenericSportRendererBacked {
         var presentation = generic.scoreboardPresentation(for: game)
         presentation.title = "Leaderboard"
         presentation.systemImage = "list.number"
-        presentation.revealTitle = "Leaderboard hidden"
-        presentation.revealDescription = "Reveal only when you are ready to see the tournament standings."
-        presentation.revealButtonTitle = "Reveal leaderboard"
-        presentation.hideButtonTitle = "Hide leaderboard"
         return presentation
     }
 
@@ -351,10 +347,6 @@ struct TennisRenderer: GenericSportRendererBacked {
         var presentation = generic.scoreboardPresentation(for: game)
         presentation.title = "Match Score"
         presentation.systemImage = "tennisball"
-        presentation.revealTitle = "Match score hidden"
-        presentation.revealDescription = "Reveal only when you are ready to see the current or final match score."
-        presentation.revealButtonTitle = "Reveal match score"
-        presentation.hideButtonTitle = "Hide match score"
         return presentation
     }
 

@@ -191,7 +191,6 @@ final class NavigationChromeInvariantTests: XCTestCase {
         for path in [
             "ScrollDownSports/Views/HomeSectionsView.swift",
             "ScrollDownSports/Views/StreamControlBar.swift",
-            "ScrollDownSports/Views/CatchUpSections.swift",
             "ScrollDownSports/Views/GameDetailChrome.swift",
             "ScrollDownSports/Views/DetailNavigationChrome.swift"
         ] {

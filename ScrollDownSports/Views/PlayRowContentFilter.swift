@@ -34,6 +34,20 @@ struct PlayRowContentFilter {
         return detail
     }
 
+    static func visibleNormalizedDetailText(
+        for presentation: GameEventPresentation,
+        importance: EventVisualImportance,
+        displayDensity: GameEventDisplayDensity
+    ) -> String? {
+        guard let detail = presentation.detail?.nilIfBlank else {
+            return nil
+        }
+        if displayDensity == .compact && importance == .low {
+            return nil
+        }
+        return detail
+    }
+
     static func visibleEventLabel(for presentation: GameEventPresentation) -> String? {
         guard let eventLabel = presentation.eventLabel?.nilIfBlank else {
             return nil

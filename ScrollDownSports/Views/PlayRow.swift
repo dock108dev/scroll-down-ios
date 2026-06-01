@@ -3,9 +3,26 @@ import SwiftUI
 struct PlayRow: View {
     let presentation: GameEventPresentation
     let importance: EventVisualImportance
+    let displayDensity: GameEventDisplayDensity
     let rawFeedKey: String?
     let isRawFeedExpanded: Bool
     let onRawFeedExpansionChange: (String, Bool) -> Void
+
+    init(
+        presentation: GameEventPresentation,
+        importance: EventVisualImportance,
+        displayDensity: GameEventDisplayDensity = .rich,
+        rawFeedKey: String?,
+        isRawFeedExpanded: Bool,
+        onRawFeedExpansionChange: @escaping (String, Bool) -> Void
+    ) {
+        self.presentation = presentation
+        self.importance = importance
+        self.displayDensity = displayDensity
+        self.rawFeedKey = rawFeedKey
+        self.isRawFeedExpanded = isRawFeedExpanded
+        self.onRawFeedExpansionChange = onRawFeedExpansionChange
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 7) {
@@ -23,23 +40,23 @@ struct PlayRow: View {
                     .lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
                 contextLine
-                resultContextLine
                 if presentation.situation != nil {
                     situationPanel
                 }
                 if importance != .low, let detail = visibleDetailText {
                     Text(detail)
                         .font(SportsTheme.Typography.momentDetail)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .foregroundStyle(SportsTheme.Colors.ink.opacity(0.82))
                         .lineSpacing(1)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let detail = visibleDetailText {
                     Text(detail)
                         .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .foregroundStyle(SportsTheme.Colors.ink.opacity(0.82))
                         .lineLimit(2)
                 }
                 detailLine
+                resultContextLine
                 rawFeedDisclosure
             }
         }
@@ -102,8 +119,9 @@ struct PlayRow: View {
             Text(item.text)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(color(for: item.tone, teamAbbreviation: item.teamAbbreviation))
-                .lineLimit(1)
+                .lineLimit(item.kind == .status ? 2 : 1)
                 .minimumScaleFactor(0.78)
+                .fixedSize(horizontal: false, vertical: item.kind == .status)
         }
     }
 
@@ -140,7 +158,11 @@ struct PlayRow: View {
 
     private var visibleDetailText: String? {
         if presentation.isNormalizedCard {
-            return presentation.detail?.nilIfBlank
+            return PlayRowContentFilter.visibleNormalizedDetailText(
+                for: presentation,
+                importance: importance,
+                displayDensity: displayDensity
+            )
         }
         return PlayRowContentFilter.visibleDetailText(for: presentation)
     }
@@ -290,9 +312,6 @@ struct PlayRow: View {
     }
 
     private var visibleTeamLabel: String? {
-        if presentation.isNormalizedCard {
-            return presentation.teamLabel?.nilIfBlank
-        }
         return PlayRowContentFilter.visibleTeamLabel(for: presentation)
     }
 
@@ -338,7 +357,7 @@ struct PlayRow: View {
     }
 }
 
-private struct EventMarker: View {
+struct EventMarker: View {
     let importance: EventVisualImportance
     let accent: Color
 

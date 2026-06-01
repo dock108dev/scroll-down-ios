@@ -308,8 +308,8 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
     }
 
-    func testBoxScoreHiddenAndRevealedStates() {
-        let hiddenGame = ComponentSnapshotFixtures.game(
+    func testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate() {
+        let game = ComponentSnapshotFixtures.game(
             id: 5_110,
             status: "in_progress",
             isFinal: false,
@@ -317,18 +317,15 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             homeScore: 6,
             periodLabel: "T8"
         )
-        let renderer = SportRendererRegistry.renderer(for: hiddenGame)
+        let renderer = SportRendererRegistry.renderer(for: game)
 
         assertSwiftUISnapshot(
-            of: VStack(spacing: 14) {
-                BoxScoreSection(game: hiddenGame, renderer: renderer, scoreInitiallyRevealed: false)
-                BoxScoreSection(game: hiddenGame, renderer: renderer, scoreInitiallyRevealed: true)
-            }
+            of: BoxScoreSection(game: game, renderer: renderer)
             .padding(12)
             .background(SportsTheme.Colors.paper),
-            named: "box-score-hidden-revealed",
+            named: "box-score-downstream-payoff",
             width: .standard,
-            height: 540
+            height: 300
         )
     }
 

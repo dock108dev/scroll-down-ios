@@ -75,15 +75,9 @@ extension GameEventPresentation {
         game: Game,
         scoreSpoilerPolicy: ScoreSpoilerPolicy
     ) -> String? {
-        guard let score else { return nil }
-        switch score.spoilerPolicy {
-        case .alwaysShow:
-            return score.value?.nilIfBlank
-        case .hideUntilReveal:
-            return scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
-        case .finalOnly:
-            return game.status.isFinal && scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
-        }
+        _ = game
+        _ = scoreSpoilerPolicy
+        return score?.value?.nilIfBlank
     }
 }
 

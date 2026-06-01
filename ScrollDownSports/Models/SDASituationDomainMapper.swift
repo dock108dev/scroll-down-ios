@@ -68,6 +68,8 @@ extension SDADomainMapper {
         return NormalizedPlayCard(
             schemaVersion: dto.schemaVersion ?? 1,
             cardID: dto.cardId?.nilIfBlank,
+            renderType: .standardPBP,
+            narrative: nil,
             visualImportance: normalizedImportance(dto.visualImportance),
             accent: normalizedAccent(from: dto.accent),
             clock: normalizedText(from: dto.clock),
@@ -90,12 +92,37 @@ extension SDADomainMapper {
     ) -> NormalizedPlayCard {
         let teamRole = participantRole(from: dto.team.side)
         let teamAbbreviation = dto.team.abbreviation?.nilIfBlank
+        let renderType = NormalizedPlayCardRenderType(cardFeedValue: dto.renderType)
+        let narrative = normalizedNarrative(from: dto)
+        let metaLeadIn = [dto.leadIn.nilIfBlank, dto.teamContext?.nilIfBlank]
+            .compactMap(\.self)
+            .joined(separator: " · ")
+        let stageSetting = setupContextText(
+            stageSetting: dto.stageSetting,
+            leadIn: dto.leadIn,
+            scoreBefore: dto.scoreBefore,
+            teamRole: teamRole,
+            teamAbbreviation: teamAbbreviation,
+            participants: participants
+        )
+        let payoffText = scorePayoffText(
+            scoreBefore: dto.scoreBefore,
+            scoreAfter: dto.scoreAfter,
+            scoreChange: dto.scoreChange,
+            teamRole: teamRole,
+            teamAbbreviation: teamAbbreviation,
+            participants: participants
+        )
+        let impactText = distinctNarrativeContextText(
+            dto.impact,
+            comparedWith: [payoffText, dto.description, dto.headline].compactMap(\.self).joined(separator: " ")
+        )
         let contextItems = [
             normalizedContextItem(
                 id: "stage-\(dto.id)",
                 kind: .status,
-                text: dto.stageSetting,
-                tone: .secondary,
+                text: stageSetting,
+                tone: .neutral,
                 participantRole: nil,
                 teamAbbreviation: nil
             ),
@@ -109,28 +136,19 @@ extension SDADomainMapper {
             )
         ].compactMap(\.self)
         let resultItems = [
-            dto.impact?.nilIfBlank.map {
+            impactText.map {
                 NormalizedPlayCardResultItem(id: "impact-\(dto.id)", text: $0, tone: .context, priority: 10)
+            },
+            payoffText.map {
+                NormalizedPlayCardResultItem(id: "score-change-\(dto.id)", text: $0, tone: .scoring, priority: 20)
             }
         ].compactMap(\.self)
-        let situation = dto.situation.summary?.nilIfBlank.map {
-            NormalizedPlayCardSituation(
-                title: $0,
-                periodText: dto.period.label?.nilIfBlank,
-                setupText: nil,
-                contextLine: nil,
-                pressureLine: nil,
-                sport: dto.sport,
-                layout: "pressureBoardFallback",
-                ownership: nil,
-                accent: nil,
-                dataConfidence: dto.situation.raw == nil ? "fallback" : "contract"
-            )
-        }
 
         return NormalizedPlayCard(
             schemaVersion: 1,
             cardID: dto.id,
+            renderType: renderType,
+            narrative: narrative,
             visualImportance: normalizedImportance(dto.visualImportance),
             accent: NormalizedPlayCardAccent(
                 tone: nil,
@@ -140,11 +158,15 @@ extension SDADomainMapper {
             clock: (dto.displayTime ?? dto.clock)?.nilIfBlank.map {
                 NormalizedPlayCardText(text: $0, tone: .secondary, maxLines: 1)
             },
-            leadIn: dto.leadIn.nilIfBlank.map {
+            leadIn: metaLeadIn.nilIfBlank.map {
                 NormalizedPlayCardText(text: $0, tone: .context, maxLines: nil)
             },
-            headline: NormalizedPlayCardText(text: dto.headline, tone: nil, maxLines: nil),
-            body: dto.description.nilIfBlank.map {
+            headline: NormalizedPlayCardText(
+                text: dto.headline.nilIfBlank ?? narrative?.playLine ?? "Play details unavailable",
+                tone: nil,
+                maxLines: nil
+            ),
+            body: (dto.rawPlayText ?? dto.description).nilIfBlank.map {
                 NormalizedPlayCardText(text: $0, tone: .secondary, maxLines: nil)
             },
             contextItems: contextItems,
@@ -156,7 +178,7 @@ extension SDADomainMapper {
                 displayName: dto.team.name,
                 participants: participants
             ),
-            situation: situation,
+            situation: nil,
             rawFeed: nil,
             accessibility: NormalizedPlayCardAccessibility(
                 label: EventLabelResolver.customerAccessibilityText(
@@ -168,6 +190,164 @@ extension SDADomainMapper {
                 situationSummary: dto.situation.summary?.nilIfBlank
             )
         )
+    }
+
+    private static func distinctNarrativeContextText(_ text: String?, comparedWith other: String?) -> String? {
+        guard let text = text?.nilIfBlank else { return nil }
+        guard let other = other?.nilIfBlank else { return text }
+        return normalizedNarrativeMeaning(other).contains(normalizedNarrativeMeaning(text)) ? nil : text
+    }
+
+    private static func normalizedNarrativeMeaning(_ text: String) -> String {
+        text.lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
+    private static func normalizedNarrative(from dto: SDANarrativeCardDTO) -> NormalizedPlayCardNarrative? {
+        guard let setup = dto.setupLine?.nilIfBlank,
+              let play = dto.playLine?.nilIfBlank,
+              let update = dto.updateLine?.nilIfBlank else {
+            return nil
+        }
+        return NormalizedPlayCardNarrative(
+            setupLine: setup,
+            playLine: play,
+            updateLine: update
+        )
+    }
+
+    private static func setupContextText(
+        stageSetting: String?,
+        leadIn: String?,
+        scoreBefore: SDAScoreSnapshotDTO?,
+        teamRole: GameParticipantRole?,
+        teamAbbreviation: String?,
+        participants: [GameParticipant]
+    ) -> String? {
+        guard let stage = distinctNarrativeContextText(stageSetting, comparedWith: leadIn) else {
+            return prePlayScoreText(scoreBefore: scoreBefore, teamRole: teamRole, teamAbbreviation: teamAbbreviation, participants: participants)
+        }
+        guard let scoreText = prePlayScoreText(
+            scoreBefore: scoreBefore,
+            teamRole: teamRole,
+            teamAbbreviation: teamAbbreviation,
+            participants: participants
+        ) else {
+            return stage
+        }
+        if let comma = stage.firstIndex(of: ",") {
+            let prefix = stage[..<comma]
+            let suffixStart = stage.index(after: comma)
+            let suffix = stage[suffixStart...].trimmingCharacters(in: .whitespacesAndNewlines)
+            return [String(prefix), scoreText, suffix].filter { !$0.isEmpty }.joined(separator: ", ")
+        }
+        return "\(stage) · \(scoreText)"
+    }
+
+    private static func prePlayScoreText(
+        scoreBefore: SDAScoreSnapshotDTO?,
+        teamRole: GameParticipantRole?,
+        teamAbbreviation: String?,
+        participants: [GameParticipant]
+    ) -> String? {
+        guard let scoreBefore,
+              let away = scoreBefore.away,
+              let home = scoreBefore.home else {
+            return nil
+        }
+        guard let teamRole,
+              let owner = score(for: teamRole, away: away, home: home),
+              let opponentRole = opponentRole(for: teamRole),
+              let opponent = score(for: opponentRole, away: away, home: home) else {
+            return "Score \(away)-\(home)"
+        }
+        let team = teamAbbreviation ?? participantAbbreviation(for: teamRole, participants: participants) ?? "Team"
+        if owner == opponent {
+            return "\(team) tied \(owner)-\(opponent)"
+        }
+        if owner > opponent {
+            return "\(team) up \(owner)-\(opponent)"
+        }
+        return "\(team) down \(opponent)-\(owner)"
+    }
+
+    private static func scorePayoffText(
+        scoreBefore: SDAScoreSnapshotDTO?,
+        scoreAfter: SDAScoreSnapshotDTO?,
+        scoreChange: SDACardScoreChangeDTO?,
+        teamRole: GameParticipantRole?,
+        teamAbbreviation: String?,
+        participants: [GameParticipant]
+    ) -> String? {
+        guard let scoreBefore,
+              let scoreAfter,
+              let scoringRole = scoreChangeRole(scoreChange) ?? teamRole,
+              let opponentRole = opponentRole(for: scoringRole),
+              let beforeOwner = score(for: scoringRole, snapshot: scoreBefore),
+              let beforeOpponent = score(for: opponentRole, snapshot: scoreBefore),
+              let afterOwner = score(for: scoringRole, snapshot: scoreAfter),
+              let afterOpponent = score(for: opponentRole, snapshot: scoreAfter),
+              afterOwner > beforeOwner else {
+            return nil
+        }
+        let team = teamAbbreviation ?? participantAbbreviation(for: scoringRole, participants: participants) ?? "Team"
+        let beforeMargin = beforeOwner - beforeOpponent
+        let afterMargin = afterOwner - afterOpponent
+        if afterMargin == 0 {
+            return "\(team) ties it \(afterOwner)-\(afterOpponent)"
+        }
+        if beforeMargin <= 0, afterMargin > 0 {
+            return "\(team) takes a \(afterOwner)-\(afterOpponent) lead"
+        }
+        if beforeMargin < 0, afterMargin < 0 {
+            return "\(team) cuts it to \(afterOpponent)-\(afterOwner)"
+        }
+        if beforeMargin > 0, afterMargin > beforeMargin {
+            return "\(team) extends lead to \(afterOwner)-\(afterOpponent)"
+        }
+        return "\(team) makes it \(afterOwner)-\(afterOpponent)"
+    }
+
+    private static func scoreChangeRole(_ scoreChange: SDACardScoreChangeDTO?) -> GameParticipantRole? {
+        guard let scoreChange else { return nil }
+        if scoreChange.home > 0 { return .home }
+        if scoreChange.away > 0 { return .away }
+        return nil
+    }
+
+    private static func score(for role: GameParticipantRole, snapshot: SDAScoreSnapshotDTO) -> Int? {
+        score(for: role, away: snapshot.away, home: snapshot.home)
+    }
+
+    private static func score(for role: GameParticipantRole, away: Int?, home: Int?) -> Int? {
+        switch role {
+        case .away:
+            return away
+        case .home:
+            return home
+        case .other:
+            return nil
+        }
+    }
+
+    private static func opponentRole(for role: GameParticipantRole) -> GameParticipantRole? {
+        switch role {
+        case .away:
+            return .home
+        case .home:
+            return .away
+        case .other:
+            return nil
+        }
+    }
+
+    private static func participantAbbreviation(
+        for role: GameParticipantRole,
+        participants: [GameParticipant]
+    ) -> String? {
+        participants.first { $0.role == role }?.abbreviation?.nilIfBlank
     }
 
     private static func normalizedContextItem(

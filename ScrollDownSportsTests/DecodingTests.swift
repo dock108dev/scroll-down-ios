@@ -202,13 +202,177 @@ final class DecodingTests: XCTestCase {
         let requests = MockHTTPURLProtocol.requestURLs(for: MockNormalizedFeedSuccessURLProtocol.self)
 
         XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
+        XCTAssertFalse(requests.map(\.path).contains("/api/v1/games/504"))
         XCTAssertEqual(requests.first?.query, "spoilerPolicy=pre_reveal")
+        XCTAssertEqual(MockHTTPURLProtocol.requestTimeouts(for: MockNormalizedFeedSuccessURLProtocol.self), [60])
         XCTAssertEqual(detail.feedMetadata.source, .normalizedFeed)
         XCTAssertEqual(detail.feedMetadata.generationStatus, .ready)
         XCTAssertEqual(detail.feedMetadata.fallbackState, .none)
         XCTAssertEqual(detail.events.map(\.normalizedSourceEventID), ["event-1", "event-2"])
         XCTAssertEqual(detail.game.participants.map(\.id), ["147", "136"])
         XCTAssertNotNil(detail.events.first?.normalizedCard)
+    }
+
+    func testGameListKeepsDefaultTimeout() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(try SDAFixturePayloadFactory.gameList(ids: [504]))],
+            protocolClass: MockGameListTimeoutURLProtocol.self
+        )
+
+        _ = try await client.fetchGamePage(
+            window: .centeredOnToday(now: TestFixtures.fixedDate("2026-05-22T12:00:00Z")),
+            limit: 1
+        )
+
+        XCTAssertEqual(MockHTTPURLProtocol.requestURLs(for: MockGameListTimeoutURLProtocol.self).map(\.path), ["/api/v1/games"])
+        XCTAssertEqual(MockHTTPURLProtocol.requestTimeouts(for: MockGameListTimeoutURLProtocol.self), [12])
+    }
+
+    func testMLBImportantCardMapsStageSettingAsSingleContextLine() async throws {
+        let leadIn = "Bottom 2 · SEA"
+        let stageSetting = "Bottom 2, runners on 1st, 2 outs"
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(
+                    gameId: 190584,
+                    cardIDs: ["mlb-important-1"],
+                    cardOverrides: [[
+                        "leadIn": leadIn,
+                        "stageSetting": stageSetting,
+                        "headline": "Ketel Marte lifts a sacrifice fly.",
+                        "description": "Gabriel Moreno scores from third.",
+                        "renderType": "important_narrative",
+                        "teamContext": "SEA batting",
+                        "setupLine": "SEA down 2-0, runners on 1st, 2 outs.",
+                        "playLine": "Ketel Marte lifts a sacrifice fly. Gabriel Moreno scores.",
+                        "updateLine": "SEA scores 1 run. SEA down 2-1.",
+                        "scoreBefore": ["away": 2, "home": 0, "scoreText": "NYY 2-0", "isTied": false, "leaderSide": "away"],
+                        "scoreChange": ["home": 1, "away": 0],
+                        "scoreAfter": ["away": 2, "home": 1, "scoreText": "NYY 2-1", "isTied": false, "leaderSide": "away"],
+                        "tags": ["Sac fly"],
+                        "visualImportance": "high",
+                        "contentDepth": "extended"
+                    ]]
+                ))
+            ],
+            protocolClass: MockMLBStageSettingURLProtocol.self
+        )
+
+        let event = try await client.fetchGame(id: 190584).events[0]
+
+        XCTAssertEqual(event.presentation?.primaryLabel, "Bottom 2 · SEA · SEA batting")
+        XCTAssertEqual(event.presentation?.secondaryLabel, "Bottom 2, SEA down 2-0, runners on 1st, 2 outs")
+        XCTAssertEqual(event.eventType, "Sac fly")
+        XCTAssertEqual(event.contentDepth, .extended)
+        XCTAssertEqual(event.normalizedCard?.renderType, .importantNarrative)
+        XCTAssertEqual(event.normalizedCard?.narrative?.setupLine, "SEA down 2-0, runners on 1st, 2 outs.")
+        XCTAssertEqual(event.normalizedCard?.narrative?.playLine, "Ketel Marte lifts a sacrifice fly. Gabriel Moreno scores.")
+        XCTAssertEqual(event.normalizedCard?.narrative?.updateLine, "SEA scores 1 run. SEA down 2-1.")
+        XCTAssertEqual(event.normalizedCard?.leadIn?.text, "Bottom 2 · SEA · SEA batting")
+        XCTAssertEqual(event.normalizedCard?.headline.text, "Ketel Marte lifts a sacrifice fly.")
+        XCTAssertEqual(event.normalizedCard?.contextItems.first?.text, "Bottom 2, SEA down 2-0, runners on 1st, 2 outs")
+        XCTAssertEqual(event.normalizedCard?.resultItems.last?.text, "SEA cuts it to 2-1")
+        XCTAssertNil(event.normalizedCard?.situation)
+    }
+
+    func testNHLLateGoalCardMapsBackendImportanceFields() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(
+                    gameId: 190552,
+                    cardIDs: ["nhl-goal-1"],
+                    cardOverrides: [[
+                        "sport": "hockey",
+                        "league": "NHL",
+                        "period": ["ordinal": 3, "label": "P3", "type": "period"],
+                        "displayTime": "P3 03:41",
+                        "team": ["abbreviation": "CAR", "name": "Carolina Hurricanes", "side": "home"],
+                        "leadIn": "P3 03:41 · CAR",
+                        "stageSetting": "Carolina presses at even strength with the game tied late.",
+                        "headline": "Carolina scores from the slot.",
+                        "description": "The late goal swings the finish.",
+                        "tags": ["Goal"],
+                        "visualImportance": "critical",
+                        "contentDepth": "extended",
+                        "impact": "Go-ahead goal."
+                    ]]
+                ))
+            ],
+            protocolClass: MockNHLCardFeedURLProtocol.self
+        )
+
+        let event = try await client.fetchGame(id: 190552).events[0]
+
+        XCTAssertEqual(event.periodLabel, "P3")
+        XCTAssertEqual(event.clockLabel, "P3 03:41")
+        XCTAssertEqual(event.teamAbbreviation, "CAR")
+        XCTAssertEqual(event.eventType, "Goal")
+        XCTAssertEqual(event.contentDepth, .extended)
+        XCTAssertEqual(event.cardVisualImportance, .critical)
+        XCTAssertEqual(event.normalizedCard?.resultItems.first?.text, "Go-ahead goal.")
+    }
+
+    func testNormalizedCardContentDepthDoesNotOverwriteEventType() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(
+                    cardIDs: ["routine-shot"],
+                    cardOverrides: [[
+                        "contentDepth": "brief",
+                        "tags": ["Shot"],
+                        "visualImportance": "low"
+                    ]]
+                ))
+            ],
+            protocolClass: MockContentDepthURLProtocol.self
+        )
+
+        let event = try await client.fetchGame(id: 504).events[0]
+
+        XCTAssertEqual(event.contentDepth, .brief)
+        XCTAssertEqual(event.eventType, "Shot")
+    }
+
+    func testAllModeExcludesBackendIneligibleCards() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(
+                    cardIDs: ["hidden-from-all", "visible-in-all"],
+                    cardOverrides: [
+                        ["modeEligibility": ["important": true, "standard": true, "all": false]],
+                        ["modeEligibility": ["important": false, "standard": true, "all": true]]
+                    ]
+                ))
+            ],
+            protocolClass: MockAllEligibilityURLProtocol.self
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+
+        XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: detail.events).map(\.id), ["visible-in-all"])
+    }
+
+    func testDuplicateLeadInStageSettingDoesNotCreateTwoVisibleSurfaces() async throws {
+        let duplicate = "6th · SEA"
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(
+                    cardIDs: ["duplicate-stage"],
+                    cardOverrides: [[
+                        "leadIn": duplicate,
+                        "stageSetting": duplicate,
+                        "situation": ["summary": duplicate, "raw": ["inning": 6]]
+                    ]]
+                ))
+            ],
+            protocolClass: MockDuplicateStageURLProtocol.self
+        )
+
+        let card = try await client.fetchGame(id: 504).events[0].normalizedCard
+
+        XCTAssertEqual(card?.leadIn?.text, duplicate)
+        XCTAssertFalse(card?.contextItems.contains { $0.text == duplicate } ?? true)
+        XCTAssertNil(card?.situation)
     }
 
     func testNormalizedValidationBlockedReturnsSafeEmptyWithoutLegacyRequest() async throws {
@@ -248,6 +412,82 @@ final class DecodingTests: XCTestCase {
         let requests = MockHTTPURLProtocol.requestURLs(for: MockMalformedNormalizedFeedURLProtocol.self)
 
         XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
+    }
+
+    func testOldNormalizedFeedContractFailsWithoutLegacyRequest() async throws {
+        let oldContractFeed = try mutatedCardFeedJSON { payload in
+            payload["contractVersion"] = 1
+        }
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(oldContractFeed)],
+            protocolClass: MockOldNormalizedFeedContractURLProtocol.self
+        )
+
+        do {
+            _ = try await client.fetchGame(id: 504)
+            XCTFail("Expected old normalized feed contract to fail")
+        } catch SDAApiError.incompleteNormalizedFeed {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(
+            MockHTTPURLProtocol.requestURLs(for: MockOldNormalizedFeedContractURLProtocol.self).map(\.path),
+            ["/api/v1/feed/games/504/cards"]
+        )
+    }
+
+    func testNormalizedFeedMissingRenderTypeFailsWithoutLegacyRequest() async throws {
+        let missingRenderTypeFeed = try mutatedCardFeedJSON { payload in
+            var cards = payload["cards"] as? [[String: Any]] ?? []
+            cards[0].removeValue(forKey: "renderType")
+            payload["cards"] = cards
+        }
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(missingRenderTypeFeed)],
+            protocolClass: MockMissingRenderTypeFeedURLProtocol.self
+        )
+
+        do {
+            _ = try await client.fetchGame(id: 504)
+            XCTFail("Expected missing card renderType to fail")
+        } catch SDAApiError.incompleteNormalizedFeed {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(
+            MockHTTPURLProtocol.requestURLs(for: MockMissingRenderTypeFeedURLProtocol.self).map(\.path),
+            ["/api/v1/feed/games/504/cards"]
+        )
+    }
+
+    func testImportantEligibleStandardPBPCardFailsWithoutLegacyRequest() async throws {
+        let importantAsStandardFeed = try mutatedCardFeedJSON { payload in
+            var cards = payload["cards"] as? [[String: Any]] ?? []
+            cards[0]["renderType"] = "standard_pbp"
+            cards[0].removeValue(forKey: "setupLine")
+            cards[0].removeValue(forKey: "playLine")
+            cards[0].removeValue(forKey: "updateLine")
+            payload["cards"] = cards
+        }
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(importantAsStandardFeed)],
+            protocolClass: MockImportantStandardPBPFeedURLProtocol.self
+        )
+
+        do {
+            _ = try await client.fetchGame(id: 504)
+            XCTFail("Expected important standard-PBP card to fail")
+        } catch SDAApiError.incompleteNormalizedFeed {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(
+            MockHTTPURLProtocol.requestURLs(for: MockImportantStandardPBPFeedURLProtocol.self).map(\.path),
+            ["/api/v1/feed/games/504/cards"]
+        )
     }
 
     func testSportMetadataOnlySurvivesEventMapping() throws {
@@ -437,6 +677,18 @@ final class DecodingTests: XCTestCase {
         }
     }
 
+    private func mutatedCardFeedJSON(
+        _ mutate: (inout [String: Any]) -> Void
+    ) throws -> Data {
+        var payload = try XCTUnwrap(
+            JSONSerialization.jsonObject(
+                with: TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"])
+            ) as? [String: Any]
+        )
+        mutate(&payload)
+        return try JSONSerialization.data(withJSONObject: payload)
+    }
+
     private func mappedSportMetadata(
         sportMetadata: [String: Any]? = nil,
         metadata: [String: Any]? = nil,
@@ -504,5 +756,14 @@ private final class MockMissingTextURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingPeriodURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingEligibilityURLProtocol: MockHTTPURLProtocol {}
 private final class MockNormalizedFeedSuccessURLProtocol: MockHTTPURLProtocol {}
+private final class MockGameListTimeoutURLProtocol: MockHTTPURLProtocol {}
+private final class MockMLBStageSettingURLProtocol: MockHTTPURLProtocol {}
+private final class MockNHLCardFeedURLProtocol: MockHTTPURLProtocol {}
+private final class MockContentDepthURLProtocol: MockHTTPURLProtocol {}
+private final class MockAllEligibilityURLProtocol: MockHTTPURLProtocol {}
+private final class MockDuplicateStageURLProtocol: MockHTTPURLProtocol {}
 private final class MockNormalizedFallbackURLProtocol: MockHTTPURLProtocol {}
 private final class MockMalformedNormalizedFeedURLProtocol: MockHTTPURLProtocol {}
+private final class MockOldNormalizedFeedContractURLProtocol: MockHTTPURLProtocol {}
+private final class MockMissingRenderTypeFeedURLProtocol: MockHTTPURLProtocol {}
+private final class MockImportantStandardPBPFeedURLProtocol: MockHTTPURLProtocol {}

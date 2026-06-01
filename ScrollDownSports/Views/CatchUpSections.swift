@@ -114,9 +114,10 @@ struct PlayByPlaySection: View {
                                     visibleEventIndexByAnchorID: visibleEventIndexByAnchorID
                                 )
                                 let rawFeedKey = event.rawFeedExpansionKey(game: game)
-                                PlayRow(
+                                CatchUpPlayCard(
+                                    event: event,
                                     presentation: presentation,
-                                    importance: event.cardVisualImportance,
+                                    selectedMode: selectedMode,
                                     rawFeedKey: rawFeedKey,
                                     isRawFeedExpanded: rawFeedKey.map { expandedRawFeedKeys.contains($0) } ?? false,
                                     onRawFeedExpansionChange: onRawFeedExpansionChange
@@ -207,20 +208,11 @@ struct PlayByPlaySection: View {
         visibleEventIndexByAnchorID: [String: Int]
     ) -> GameEventPresentation {
         if let card = event.normalizedCard {
-            let presentation = GameEventPresentation(
+            return GameEventPresentation(
                 card: card,
                 game: game,
-                scoreSpoilerPolicy: scoreSpoilerPolicy
+                scoreSpoilerPolicy: .revealed
             )
-            var filtered = EventScoreSpoilerFilter.filtered(
-                presentation: presentation,
-                game: game,
-                policy: scoreSpoilerPolicy
-            )
-            if card.score?.spoilerPolicy == .alwaysShow {
-                filtered.scoreLabel = presentation.scoreLabel
-            }
-            return filtered
         }
         guard let visibleEventIndex = visibleEventIndexByAnchorID[event.detailAnchorID] else {
             return renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
@@ -294,100 +286,40 @@ struct TeamStatsSection: View {
 struct BoxScoreSection: View {
     let game: Game
     let renderer: any SportRenderer
-    @Binding private var externalScoreRevealed: Bool
-    @State private var localScoreRevealed: Bool
-    private let usesExternalScoreRevealed: Bool
 
-    init(game: Game, renderer: any SportRenderer, scoreInitiallyRevealed: Bool = true) {
+    init(game: Game, renderer: any SportRenderer) {
         self.game = game
         self.renderer = renderer
-        _externalScoreRevealed = .constant(scoreInitiallyRevealed)
-        _localScoreRevealed = State(initialValue: scoreInitiallyRevealed)
-        usesExternalScoreRevealed = false
-    }
-
-    init(game: Game, renderer: any SportRenderer, scoreRevealed: Binding<Bool>) {
-        self.game = game
-        self.renderer = renderer
-        _externalScoreRevealed = scoreRevealed
-        _localScoreRevealed = State(initialValue: scoreRevealed.wrappedValue)
-        usesExternalScoreRevealed = true
     }
 
     var body: some View {
         let presentation = renderer.scoreboardPresentation(for: game)
 
         CatchUpSection(title: presentation.title, systemImage: presentation.systemImage) {
-            if isScoreRevealed {
-                VStack(spacing: 9) {
-                    BoxScorePayoffHeader(
-                        title: "Box score payoff",
-                        subtitle: "Final scoring context for the feed you just read.",
-                        accent: presentation.accentColor
-                    )
-                    ScoreboardCardHeader(presentation: presentation)
-                    if let finalScoreText {
-                        Text(finalScoreText)
-                            .font(SportsTheme.Typography.metadata.weight(.semibold))
-                            .foregroundStyle(SportsTheme.Colors.ink)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityIdentifier("detail.boxScore.finalScore")
-                    }
-                    ScoreboardContent(presentation: presentation)
-
-                    if let gameStateText = presentation.stateText {
-                        Text(gameStateText)
-                            .font(SportsTheme.Typography.metadata)
-                            .foregroundStyle(presentation.stateColor)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+            VStack(spacing: 9) {
+                BoxScorePayoffHeader(
+                    title: "Box score payoff",
+                    subtitle: "Final scoring context for the feed you just read.",
+                    accent: presentation.accentColor
+                )
+                ScoreboardCardHeader(presentation: presentation)
+                if let finalScoreText {
+                    Text(finalScoreText)
+                        .font(SportsTheme.Typography.metadata.weight(.semibold))
+                        .foregroundStyle(SportsTheme.Colors.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("detail.boxScore.finalScore")
                 }
-                .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "eye.slash")
-                            .foregroundStyle(presentation.accentColor)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(presentation.revealTitle)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(SportsTheme.Colors.ink)
-                            Text(presentation.revealDescription)
-                                .font(SportsTheme.Typography.momentDetail)
-                                .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                            Text("Scores stay hidden until you choose to reveal them. Revealing shows the box score payoff and score-aware feed context for this visit.")
-                                .font(SportsTheme.Typography.metadata)
-                                .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+                ScoreboardContent(presentation: presentation)
 
-                    Button {
-                        SportsFeedback.impact()
-                        revealScore()
-                    } label: {
-                        Label(presentation.revealButtonTitle, systemImage: "eye")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.sportsControl(tone: .scoreboard))
-                    .accessibilityLabel("Reveal box score")
-                    .accessibilityHint("Shows the score and scoreboard payoff section.")
+                if let gameStateText = presentation.stateText {
+                    Text(gameStateText)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(presentation.stateColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
             }
-        }
-    }
-
-    private var isScoreRevealed: Bool {
-        game.status.isFinal || (usesExternalScoreRevealed ? externalScoreRevealed : localScoreRevealed)
-    }
-
-    private func revealScore() {
-        if usesExternalScoreRevealed {
-            externalScoreRevealed = true
-        } else {
-            localScoreRevealed = true
+            .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
         }
     }
 

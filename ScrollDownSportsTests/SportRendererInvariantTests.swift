@@ -393,7 +393,6 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(stats.teamSection.id, "team-stats-empty")
         XCTAssertEqual(stats.teamSection.emptyMessage, "No team stats available yet.")
         XCTAssertEqual(scoreboard.title, "Box Score")
-        XCTAssertEqual(scoreboard.revealTitle, "Score hidden")
         XCTAssertEqual(scoreboard.rows.map(\.id), ["away", "home"])
         XCTAssertEqual(scoreboard.rows.map(\.abbreviation), ["BAL", "SEA"])
         XCTAssertEqual(scoreboard.stateText, "Baltimore 7, Seattle 6")

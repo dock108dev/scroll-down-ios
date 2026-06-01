@@ -236,7 +236,7 @@ enum SDAUIFixturePayload {
         let awayAbbr = game["awayTeamAbbr"] as? String
         let cards = plays.map { card(gameID: gameID, league: league, homeAbbr: homeAbbr, awayAbbr: awayAbbr, play: $0) }
         return [
-            "contractVersion": 1,
+            "contractVersion": 2,
             "game": [
                 "gameId": gameID,
                 "sport": sportName(for: league),

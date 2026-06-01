@@ -33,7 +33,6 @@ struct GameDetailView: View {
     @State private var stickyEndRequest = 0
     @State private var stickyReturnRequest = 0
     @State private var uiTestScoreboardRevealed = false
-    @State private var scoreRevealed = false
     @State private var bottomAffordanceHeight: CGFloat = 0
 
     private let playerStatsSectionID = "player-stats"
@@ -80,7 +79,7 @@ struct GameDetailView: View {
                                 .id(GameDetailScrollAnchor.top)
                                 .accessibilityIdentifier("detail.anchor.top")
                             let renderer = SportRendererRegistry.renderer(for: detail.game)
-                            let scoreSpoilerPolicy: ScoreSpoilerPolicy = scoreRevealed ? .revealed : .hideAbsoluteScores
+                            let scoreSpoilerPolicy: ScoreSpoilerPolicy = .revealed
                             GameHeaderView(
                                 game: detail.game,
                                 renderer: renderer,
@@ -139,11 +138,7 @@ struct GameDetailView: View {
                                 }
                             )
                             if AppEnvironment.isRunningUITests, uiTestScoreboardRevealed {
-                                BoxScoreSection(
-                                    game: detail.game,
-                                    renderer: renderer,
-                                    scoreRevealed: scoreRevealBinding(proxy: proxy)
-                                )
+                                BoxScoreSection(game: detail.game, renderer: renderer)
                                     .accessibilityIdentifier("detail.boxScore")
                                 PlayerStatsSection(
                                     detail: detail,
@@ -210,11 +205,7 @@ struct GameDetailView: View {
                                 isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)
                             )
                                 .accessibilityIdentifier("detail.teamStats")
-                            BoxScoreSection(
-                                game: detail.game,
-                                renderer: renderer,
-                                scoreRevealed: scoreRevealBinding(proxy: proxy)
-                            )
+                            BoxScoreSection(game: detail.game, renderer: renderer)
                                 .id(GameDetailScrollAnchor.scoreboard)
                                 .accessibilityIdentifier("detail.boxScore")
                                 .background {
@@ -252,7 +243,6 @@ struct GameDetailView: View {
                                     if AppEnvironment.isRunningUITests {
                                         rememberReturnAnchor()
                                         uiTestScoreboardRevealed = true
-                                        scoreRevealed = true
                                         return
                                     }
                                     stickyEndRequest += 1
@@ -821,7 +811,6 @@ struct GameDetailView: View {
             if let events = viewModel.detail?.events {
                 viewModel.recordLatestEventRead(events: events)
             }
-            scoreRevealed = true
             viewModel.setReachedScoreboard(true)
         }
     }
@@ -858,20 +847,6 @@ struct GameDetailView: View {
             set: { isExpanded in
                 preserveReaderAnchor(proxy: proxy) {
                     viewModel.setExpandedSection(sectionID, isExpanded: isExpanded)
-                }
-            }
-        )
-    }
-
-    private func scoreRevealBinding(proxy: ScrollViewProxy) -> Binding<Bool> {
-        Binding(
-            get: { scoreRevealed },
-            set: { isRevealed in
-                preserveReaderAnchor(proxy: proxy) {
-                    scoreRevealed = isRevealed
-                    if isRevealed {
-                        viewModel.setReachedScoreboard(true)
-                    }
                 }
             }
         )

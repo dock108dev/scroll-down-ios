@@ -105,6 +105,8 @@ struct ScoreDelta: Codable, Hashable, Sendable {
 struct NormalizedPlayCard: Codable, Hashable, Sendable {
     let schemaVersion: Int
     let cardID: String?
+    let renderType: NormalizedPlayCardRenderType
+    let narrative: NormalizedPlayCardNarrative?
     let visualImportance: NormalizedPlayCardImportance
     let accent: NormalizedPlayCardAccent?
     let clock: NormalizedPlayCardText?
@@ -122,6 +124,8 @@ struct NormalizedPlayCard: Codable, Hashable, Sendable {
     init(
         schemaVersion: Int,
         cardID: String?,
+        renderType: NormalizedPlayCardRenderType = .standardPBP,
+        narrative: NormalizedPlayCardNarrative? = nil,
         visualImportance: NormalizedPlayCardImportance,
         accent: NormalizedPlayCardAccent?,
         clock: NormalizedPlayCardText?,
@@ -138,6 +142,8 @@ struct NormalizedPlayCard: Codable, Hashable, Sendable {
     ) {
         self.schemaVersion = schemaVersion
         self.cardID = cardID
+        self.renderType = renderType
+        self.narrative = narrative
         self.visualImportance = visualImportance
         self.accent = accent
         self.clock = clock
@@ -152,6 +158,35 @@ struct NormalizedPlayCard: Codable, Hashable, Sendable {
         self.rawFeed = rawFeed
         self.accessibility = accessibility
     }
+}
+
+enum NormalizedPlayCardRenderType: String, Codable, Hashable, Sendable {
+    case importantNarrative
+    case standardPBP
+    case fullPBP
+    case playUnavailable
+    case unknown
+
+    init(cardFeedValue: String?) {
+        switch cardFeedValue?.nilIfBlank?.lowercased() {
+        case "important_narrative", "importantNarrative":
+            self = .importantNarrative
+        case "standard_pbp", "standardPBP":
+            self = .standardPBP
+        case "full_pbp", "fullPBP":
+            self = .fullPBP
+        case "play_unavailable", "playUnavailable":
+            self = .playUnavailable
+        default:
+            self = .unknown
+        }
+    }
+}
+
+struct NormalizedPlayCardNarrative: Codable, Hashable, Sendable {
+    let setupLine: String
+    let playLine: String
+    let updateLine: String
 }
 
 enum NormalizedPlayCardImportance: String, Codable, Hashable, Sendable {
@@ -368,6 +403,29 @@ struct GameProgressPersistence: Codable, Hashable, Sendable {
     let storageKey: String
 }
 
+enum EventContentDepth: String, Codable, Hashable, Sendable {
+    case brief
+    case standard
+    case extended
+
+    init(cardFeedValue: String?) {
+        switch cardFeedValue?.nilIfBlank?.lowercased() {
+        case "brief", "low", "routine", "compact":
+            self = .brief
+        case "extended", "rich", "deep":
+            self = .extended
+        default:
+            self = .standard
+        }
+    }
+}
+
+enum GameEventDisplayDensity: Hashable, Sendable {
+    case rich
+    case standard
+    case compact
+}
+
 struct GameEvent: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let sourceEventID: String?
@@ -378,6 +436,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
     let teamOwnership: GameParticipantRole?
     let teamAbbreviation: String?
     let eventType: String?
+    let contentDepth: EventContentDepth?
     let importance: GameEventImportance
     let eligibleModes: Set<GameMode>
     let usesBackendModeEligibility: Bool
@@ -406,6 +465,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
         teamOwnership: GameParticipantRole?,
         teamAbbreviation: String?,
         eventType: String?,
+        contentDepth: EventContentDepth? = nil,
         importance: GameEventImportance,
         eligibleModes: Set<GameMode>,
         usesBackendModeEligibility: Bool,
@@ -433,6 +493,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
         self.teamOwnership = teamOwnership
         self.teamAbbreviation = teamAbbreviation
         self.eventType = eventType
+        self.contentDepth = contentDepth
         self.importance = importance
         self.eligibleModes = eligibleModes
         self.usesBackendModeEligibility = usesBackendModeEligibility

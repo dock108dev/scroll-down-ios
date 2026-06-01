@@ -29,6 +29,8 @@ final class SDAApiClient: Sendable {
     private let session: URLSession
     private let baseURL: URL
     private let apiKey: String
+    private let defaultRequestTimeout: TimeInterval = 12
+    private let normalizedFeedRequestTimeout: TimeInterval = 60
 
     init(
         baseURL: URL = SDAApiClient.configuredBaseURL(),
@@ -98,15 +100,15 @@ final class SDAApiClient: Sendable {
         components?.queryItems = [URLQueryItem(name: "spoilerPolicy", value: "pre_reveal")]
         guard let url = components?.url else { throw SDAApiError.invalidURL }
         do {
-            return try await get(url)
+            return try await get(url, timeout: normalizedFeedRequestTimeout)
         } catch is DecodingError {
             throw SDAApiError.incompleteNormalizedFeed("Feed response could not decode required fields")
         }
     }
 
-    private func get<T: Decodable>(_ url: URL) async throws -> T {
+    private func get<T: Decodable>(_ url: URL, timeout: TimeInterval? = nil) async throws -> T {
         var request = URLRequest(url: url)
-        request.timeoutInterval = 12
+        request.timeoutInterval = timeout ?? defaultRequestTimeout
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
@@ -123,7 +125,7 @@ final class SDAApiClient: Sendable {
     }
 
     private func validateNormalizedFeedContract(_ response: SDACardFeedResponseDTO) throws {
-        guard response.contractVersion >= 1 else {
+        guard response.contractVersion >= 2 else {
             throw SDAApiError.incompleteNormalizedFeed("Unsupported feed contract")
         }
         guard response.game.gameId > 0 else {
@@ -131,6 +133,28 @@ final class SDAApiClient: Sendable {
         }
         if response.generation.cardCount > 0 && response.cards.isEmpty {
             throw SDAApiError.incompleteNormalizedFeed("Feed card count did not match cards")
+        }
+        let supportedRenderTypes: Set<String> = [
+            "important_narrative",
+            "standard_pbp",
+            "full_pbp",
+            "play_unavailable"
+        ]
+        for card in response.cards {
+            let renderType = card.renderType.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard supportedRenderTypes.contains(renderType) else {
+                throw SDAApiError.incompleteNormalizedFeed("Unsupported feed card render type")
+            }
+            if card.modeEligibility.important {
+                guard renderType == "important_narrative" else {
+                    throw SDAApiError.incompleteNormalizedFeed("Important feed card is missing narrative render type")
+                }
+                guard card.setupLine?.nilIfBlank != nil,
+                      card.playLine?.nilIfBlank != nil,
+                      card.updateLine?.nilIfBlank != nil else {
+                    throw SDAApiError.incompleteNormalizedFeed("Important feed card is missing narrative lines")
+                }
+            }
         }
     }
 

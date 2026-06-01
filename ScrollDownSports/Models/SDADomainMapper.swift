@@ -195,6 +195,7 @@ enum SDADomainMapper {
             teamOwnership: owningRole,
             teamAbbreviation: dto.teamAbbreviation,
             eventType: dto.displayType,
+            contentDepth: nil,
             importance: importance(dto.importance),
             eligibleModes: eligibleModes(from: modeEligibility),
             usesBackendModeEligibility: true,
@@ -226,6 +227,7 @@ enum SDADomainMapper {
             scoreAfter: scoreAfter,
             participants: participants
         )
+        let normalizedCard = normalizedPlayCard(from: dto, participants: participants)
 
         return GameEvent(
             id: dto.id,
@@ -236,17 +238,18 @@ enum SDADomainMapper {
             clockLabel: dto.displayTime ?? dto.clock,
             teamOwnership: owningRole,
             teamAbbreviation: dto.team.abbreviation,
-            eventType: dto.contentDepth,
+            eventType: dto.eventType?.nilIfBlank ?? dto.tags.first?.nilIfBlank,
+            contentDepth: EventContentDepth(cardFeedValue: dto.contentDepth),
             importance: importance(dto.importance),
             eligibleModes: eligibleModes(from: dto.modeEligibility),
             usesBackendModeEligibility: true,
             presentation: EventPresentationData(
-                headline: dto.headline.nilIfBlank,
+                headline: normalizedCard.headline.text.nilIfBlank,
                 shortHeadline: nil,
                 body: dto.description.nilIfBlank,
-                primaryLabel: dto.leadIn.nilIfBlank,
-                secondaryLabel: dto.stageSetting.nilIfBlank,
-                tertiaryLabel: dto.impact?.nilIfBlank,
+                primaryLabel: normalizedCard.leadIn?.text.nilIfBlank,
+                secondaryLabel: normalizedCard.contextItems.first { $0.kind == .status }?.text.nilIfBlank,
+                tertiaryLabel: normalizedCard.resultItems.last?.text.nilIfBlank,
                 timeLabel: (dto.displayTime ?? dto.clock)?.nilIfBlank,
                 accessibilityLabel: EventLabelResolver.customerAccessibilityText(
                     preferred: nil,
@@ -257,7 +260,7 @@ enum SDADomainMapper {
                 playerLabel: nil,
                 scoreLabel: nil
             ),
-            normalizedCard: normalizedPlayCard(from: dto, participants: participants),
+            normalizedCard: normalizedCard,
             importanceMetadata: eventImportance(from: dto.importance),
             headline: dto.headline,
             detail: dto.description.nilIfBlank,
@@ -270,6 +273,7 @@ enum SDADomainMapper {
             sportMetadata: [
                 "playIndex": .number(Double(dto.playIndex)),
                 "contentDepth": .string(dto.contentDepth),
+                "renderType": .string(dto.renderType),
                 "spoilerLevel": .string(dto.spoilerLevel)
             ]
         )

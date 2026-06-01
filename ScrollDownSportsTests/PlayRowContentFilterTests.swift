@@ -34,6 +34,69 @@ final class PlayRowContentFilterTests: XCTestCase {
         )
     }
 
+    func testCompactNormalizedRoutineRowsHideLongBodyCopy() {
+        let presentation = GameEventPresentation(
+            clockText: "17:32",
+            headline: "Faceoff",
+            detail: "A normalized backend card includes body copy that should not expand routine All Plays rows.",
+            eventLabel: "Faceoff",
+            teamAbbreviation: "CAR",
+            teamLabel: "Carolina",
+            scoringLabel: nil,
+            scoreLabel: nil,
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            situation: nil,
+            situationAccessibilityText: nil,
+            isNormalizedCard: true
+        )
+
+        XCTAssertNil(
+            PlayRowContentFilter.visibleNormalizedDetailText(
+                for: presentation,
+                importance: .low,
+                displayDensity: .compact
+            )
+        )
+        XCTAssertEqual(
+            PlayRowContentFilter.visibleNormalizedDetailText(
+                for: presentation,
+                importance: .medium,
+                displayDensity: .compact
+            ),
+            presentation.detail
+        )
+    }
+
+    func testDisplayDensityUsesContentDepthForAllPlays() {
+        let routine = TestFixtures.makeEvent(
+            sequence: 1,
+            contentDepth: .brief,
+            normalizedCard: NormalizedPlayCard(
+                schemaVersion: 1,
+                cardID: "routine-card",
+                visualImportance: .low,
+                accent: nil,
+                clock: nil,
+                leadIn: nil,
+                headline: NormalizedPlayCardText(text: "Routine update", tone: nil, maxLines: nil),
+                body: nil,
+                contextItems: [],
+                resultItems: [],
+                score: nil,
+                team: nil,
+                situation: nil,
+                rawFeed: nil,
+                accessibility: NormalizedPlayCardAccessibility(label: "Routine update", value: nil, hint: nil, situationSummary: nil)
+            )
+        )
+        let important = TestFixtures.makeEvent(sequence: 2, importance: .primary, contentDepth: .extended)
+
+        XCTAssertEqual(routine.displayDensity(for: .full), .compact)
+        XCTAssertEqual(important.displayDensity(for: .key), .rich)
+    }
+
     func testEventLabelSuppressesSemanticHeadlineDuplicateForBaseball() {
         let presentation = baseballPresentation(
             headline: "Gunnar Henderson homers. Three runs score.",
@@ -204,7 +267,7 @@ final class PlayRowContentFilterTests: XCTestCase {
         XCTAssertEqual(event.sportMetadata["runLabel"], .string("client should not use this"))
     }
 
-    func testNormalizedCardScoreTextHidesUntilReveal() {
+    func testNormalizedCardScoreTextIgnoresLocalSpoilerGate() {
         let game = TestFixtures.makeGame(
             id: 9,
             leagueCode: "nba",
@@ -233,7 +296,7 @@ final class PlayRowContentFilterTests: XCTestCase {
             accessibility: NormalizedPlayCardAccessibility(label: "Bay Harbor answers", value: nil, hint: nil, situationSummary: nil)
         )
 
-        XCTAssertNil(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .hideAbsoluteScores).scoreLabel)
+        XCTAssertEqual(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .hideAbsoluteScores).scoreLabel, "BAY 100, NAR 99")
         XCTAssertEqual(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed).scoreLabel, "BAY 100, NAR 99")
     }
 
