@@ -23,6 +23,29 @@ enum SDADomainMapper {
         )
     }
 
+    static func detail(from response: SDACardFeedResponseDTO, fallbackState: GameFeedFallbackState = .none) -> GameDetail {
+        let game = game(from: response)
+        let events = response.cards.map { event(from: $0, participants: game.participants) }
+        let metadata = GameDetailFeedMetadata(
+            source: .normalizedFeed,
+            generationStatus: feedGenerationStatus(from: response.generation.status),
+            fallbackState: fallbackState,
+            revealAvailable: response.reveal.available,
+            revealRequiredForScores: response.reveal.revealRequiredForScores
+        )
+        return GameDetail(
+            game: game,
+            teamStats: [],
+            playerStats: [],
+            events: events,
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil,
+            feedMetadata: metadata
+        )
+    }
+
     static func game(from dto: SDAGameSummaryDTO) -> Game {
         game(
             id: dto.id,
@@ -32,6 +55,8 @@ enum SDADomainMapper {
             status: dto.status,
             homeTeam: dto.homeTeam,
             awayTeam: dto.awayTeam,
+            homeTeamID: dto.homeTeamId,
+            awayTeamID: dto.awayTeamId,
             homeTeamAbbr: dto.homeTeamAbbr,
             awayTeamAbbr: dto.awayTeamAbbr,
             currentPeriod: dto.currentPeriod,
@@ -43,6 +68,58 @@ enum SDADomainMapper {
             presentation: dto.presentation,
             eligibility: dto.eligibility,
             scoreboard: dto.scoreboard
+        )
+    }
+
+    private static func game(from response: SDACardFeedResponseDTO) -> Game {
+        let dto = response.game
+        let participants = [
+            GameParticipant(
+                id: participantID(dto.awayTeamId, fallback: "away"),
+                role: .away,
+                name: dto.awayTeam?.nilIfBlank ?? "Away",
+                abbreviation: dto.awayTeamAbbr?.nilIfBlank
+            ),
+            GameParticipant(
+                id: participantID(dto.homeTeamId, fallback: "home"),
+                role: .home,
+                name: dto.homeTeam?.nilIfBlank ?? "Home",
+                abbreviation: dto.homeTeamAbbr?.nilIfBlank
+            )
+        ]
+        let status = dto.status?.nilIfBlank ?? "scheduled"
+        let eventCount = response.generation.cardCount > 0 ? response.generation.cardCount : response.cards.count
+        return Game(
+            id: dto.gameId,
+            sport: Sport(leagueCode: dto.league),
+            leagueCode: dto.league,
+            scheduledStart: Date(timeIntervalSince1970: 0),
+            localDateLabel: nil,
+            status: GameStatus(rawValue: status),
+            participants: participants,
+            scoreState: ScoreState(participantScores: participants.map {
+                ParticipantScore(participantID: $0.id, participantRole: $0.role, score: nil)
+            }),
+            presentation: nil,
+            scoreboard: nil,
+            progress: GameProgress(
+                selectedMode: .timeline,
+                periodOrdinal: response.cards.last?.period.ordinal,
+                periodLabel: response.cards.last?.period.label,
+                clockLabel: response.cards.last?.displayTime ?? response.cards.last?.clock,
+                eventCount: eventCount,
+                lastReadEventID: nil,
+                scrollFallback: nil,
+                reachedScoreboard: false,
+                updatedAt: nil,
+                restoredAt: nil,
+                persistence: GameProgressPersistence(storageKey: "game-\(dto.gameId)-progress")
+            ),
+            availableFeatures: GameAvailableFeatures(
+                hasTimeline: !response.cards.isEmpty,
+                hasStats: false,
+                hasScoreboard: response.reveal.available
+            )
         )
     }
 
@@ -59,6 +136,8 @@ enum SDADomainMapper {
             status: dto.status,
             homeTeam: dto.homeTeam,
             awayTeam: dto.awayTeam,
+            homeTeamID: dto.homeTeamId,
+            awayTeamID: dto.awayTeamId,
             homeTeamAbbr: dto.homeTeamAbbr,
             awayTeamAbbr: dto.awayTeamAbbr,
             currentPeriod: dto.currentPeriod,
@@ -120,6 +199,7 @@ enum SDADomainMapper {
             eligibleModes: eligibleModes(from: modeEligibility),
             usesBackendModeEligibility: true,
             presentation: mappedPresentation,
+            normalizedCard: normalizedPlayCard(from: dto.card ?? dto.presentation?.playCard, participants: participants),
             importanceMetadata: importanceMetadata,
             headline: headline,
             detail: detail,
@@ -135,6 +215,66 @@ enum SDADomainMapper {
         )
     }
 
+    private static func event(from dto: SDANarrativeCardDTO, participants: [GameParticipant]) -> GameEvent {
+        let owningRole = participantRole(forSide: dto.team.side)
+        let scoreBefore = dto.scoreBefore.map { scoreState(scoreSnapshot: $0, score: nil, participants: participants) }
+        let scoreAfter = scoreState(scoreSnapshot: dto.scoreAfter, score: nil, participants: participants)
+        let delta = scoreDelta(
+            dto.scoreChange,
+            owningRole: owningRole,
+            scoreBefore: scoreBefore,
+            scoreAfter: scoreAfter,
+            participants: participants
+        )
+
+        return GameEvent(
+            id: dto.id,
+            sourceEventID: dto.sourcePlayId,
+            sequence: dto.playIndex,
+            periodOrdinal: dto.period.ordinal,
+            periodLabel: dto.period.label,
+            clockLabel: dto.displayTime ?? dto.clock,
+            teamOwnership: owningRole,
+            teamAbbreviation: dto.team.abbreviation,
+            eventType: dto.contentDepth,
+            importance: importance(dto.importance),
+            eligibleModes: eligibleModes(from: dto.modeEligibility),
+            usesBackendModeEligibility: true,
+            presentation: EventPresentationData(
+                headline: dto.headline.nilIfBlank,
+                shortHeadline: nil,
+                body: dto.description.nilIfBlank,
+                primaryLabel: dto.leadIn.nilIfBlank,
+                secondaryLabel: dto.stageSetting.nilIfBlank,
+                tertiaryLabel: dto.impact?.nilIfBlank,
+                timeLabel: (dto.displayTime ?? dto.clock)?.nilIfBlank,
+                accessibilityLabel: EventLabelResolver.customerAccessibilityText(
+                    preferred: nil,
+                    fallbackPieces: [dto.displayTime, dto.headline, dto.description]
+                ),
+                eventTypeLabel: dto.tags.first?.nilIfBlank,
+                teamLabel: dto.team.abbreviation?.nilIfBlank ?? dto.team.name?.nilIfBlank,
+                playerLabel: nil,
+                scoreLabel: nil
+            ),
+            normalizedCard: normalizedPlayCard(from: dto, participants: participants),
+            importanceMetadata: eventImportance(from: dto.importance),
+            headline: dto.headline,
+            detail: dto.description.nilIfBlank,
+            rawText: nil,
+            rawFeedSource: nil,
+            rawFeedUpdatedAt: nil,
+            scoreBefore: scoreBefore,
+            scoreAfter: scoreAfter,
+            scoreDelta: delta,
+            sportMetadata: [
+                "playIndex": .number(Double(dto.playIndex)),
+                "contentDepth": .string(dto.contentDepth),
+                "spoilerLevel": .string(dto.spoilerLevel)
+            ]
+        )
+    }
+
     private static func game(
         id: Int,
         leagueCode: String,
@@ -143,6 +283,8 @@ enum SDADomainMapper {
         status: String,
         homeTeam: String,
         awayTeam: String,
+        homeTeamID: Int?,
+        awayTeamID: Int?,
         homeTeamAbbr: String?,
         awayTeamAbbr: String?,
         currentPeriod: Int?,
@@ -156,8 +298,8 @@ enum SDADomainMapper {
         scoreboard: SDAScoreboardDTO?
     ) -> Game {
         let participants = [
-            GameParticipant(id: "away", role: .away, name: awayTeam, abbreviation: awayTeamAbbr),
-            GameParticipant(id: "home", role: .home, name: homeTeam, abbreviation: homeTeamAbbr)
+            GameParticipant(id: participantID(awayTeamID, fallback: "away"), role: .away, name: awayTeam, abbreviation: awayTeamAbbr),
+            GameParticipant(id: participantID(homeTeamID, fallback: "home"), role: .home, name: homeTeam, abbreviation: homeTeamAbbr)
         ]
         let mappedScoreboard = gameScoreboard(from: scoreboard)
         let scoreState = scoreState(scoreboard: scoreboard, score: score, participants: participants)
@@ -242,6 +384,10 @@ enum SDADomainMapper {
     private static func participantRole(for abbreviation: String?, participants: [GameParticipant]) -> GameParticipantRole? {
         guard let abbreviation = abbreviation?.lowercased(), !abbreviation.isEmpty else { return nil }
         return participants.first { $0.abbreviation?.lowercased() == abbreviation }?.role
+    }
+
+    private static func participantID(_ teamID: Int?, fallback: String) -> String {
+        teamID.map(String.init) ?? fallback
     }
 
     private static func participantRole(forSide side: String?) -> GameParticipantRole? {
@@ -442,11 +588,66 @@ enum SDADomainMapper {
         )
     }
 
+    private static func scoreDelta(
+        _ dto: SDACardScoreChangeDTO?,
+        owningRole: GameParticipantRole?,
+        scoreBefore: ScoreState?,
+        scoreAfter: ScoreState,
+        participants: [GameParticipant]
+    ) -> ScoreDelta? {
+        guard let dto else { return nil }
+        let role: GameParticipantRole?
+        if dto.home != 0 {
+            role = .home
+        } else if dto.away != 0 {
+            role = .away
+        } else {
+            role = owningRole
+        }
+        let participant = participants.first { $0.role == role }
+        let change: Int?
+        switch role {
+        case .home:
+            change = dto.home
+        case .away:
+            change = dto.away
+        case .other, .none:
+            change = nil
+        }
+        guard role != nil || change != nil else { return nil }
+        return ScoreDelta(
+            participantID: participant?.id,
+            participantRole: role,
+            before: role.flatMap { scoreBefore?.score(for: $0) },
+            after: role.flatMap { scoreAfter.score(for: $0) },
+            change: change
+        )
+    }
+
     private static func sportMetadata(from dto: SDAPlayDTO) -> [String: JSONValue] {
         var metadata = dto.sportMetadata ?? [:]
         metadata.merge(dto.metadata ?? [:]) { _, new in new }
         metadata["playIndex"] = .number(Double(dto.playIndex))
         return metadata
+    }
+
+    private static func feedGenerationStatus(from value: String) -> GameFeedGenerationStatus {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "no_pbp_yet", "nopbpyet":
+            return .noPbpYet
+        case "unsupported_sport", "unsupportedsport":
+            return .unsupportedSport
+        case "generation_pending", "generationpending":
+            return .generationPending
+        case "validation_blocked", "validationblocked":
+            return .validationBlocked
+        case "stale_regenerating", "staleregenerating":
+            return .staleRegenerating
+        case "ready":
+            return .ready
+        default:
+            return .unknown
+        }
     }
 }
 

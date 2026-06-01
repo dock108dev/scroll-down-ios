@@ -96,22 +96,27 @@ struct PlayByPlaySection: View {
                 UnavailableText("No play-by-play data yet.")
             case .modeEmpty(let mode):
                 UnavailableText(mode.emptyStateMessage)
-            case .populated(let rowVisibleEvents, let groups):
+            case .populated(let rowVisibleEvents, let groups, let readIndexByAnchorID, let visibleEventIndexByAnchorID, let duplicateSourceEventIDs):
                 VStack(alignment: .leading, spacing: streamGroupSpacing) {
                     ForEach(groups) { group in
                         VStack(alignment: .leading, spacing: eventRowSpacing) {
                             PeriodGroupHeader(label: group.label, accent: renderer.theme.accentColor)
                             ForEach(group.events) { event in
-                                let readIndex = readIndex(for: event)
+                                let readIndex = readIndexByAnchorID[event.detailAnchorID] ?? 0
+                                let readCursorID = GameEventIdentityResolver.readCursorID(
+                                    for: event,
+                                    duplicateSourceEventIDs: duplicateSourceEventIDs
+                                )
                                 let presentation = eventPresentation(
                                     for: event,
                                     periodGroupLabel: group.label,
-                                    visibleEvents: rowVisibleEvents
+                                    visibleEvents: rowVisibleEvents,
+                                    visibleEventIndexByAnchorID: visibleEventIndexByAnchorID
                                 )
                                 let rawFeedKey = event.rawFeedExpansionKey(game: game)
                                 PlayRow(
                                     presentation: presentation,
-                                    importance: event.visualImportance,
+                                    importance: event.cardVisualImportance,
                                     rawFeedKey: rawFeedKey,
                                     isRawFeedExpanded: rawFeedKey.map { expandedRawFeedKeys.contains($0) } ?? false,
                                     onRawFeedExpansionChange: onRawFeedExpansionChange
@@ -127,7 +132,7 @@ struct PlayByPlaySection: View {
                                                         anchorID: event.detailAnchorID,
                                                         readIndex: readIndex,
                                                         sequence: event.sequence,
-                                                        eventID: event.normalizedSourceEventID ?? event.id,
+                                                        eventID: readCursorID,
                                                         label: presentation.clockText,
                                                         frame: geometry.frame(in: .named("game-detail-scroll"))
                                                     )
@@ -150,11 +155,18 @@ struct PlayByPlaySection: View {
         if events.isEmpty {
             return .rawEmpty
         }
-        let rowVisibleEvents = visibleEvents
+        let allDedupedEvents = dedupedEvents
+        let rowVisibleEvents = selectedMode.visibleDedupedEvents(allDedupedEvents)
         if rowVisibleEvents.isEmpty {
             return .modeEmpty(selectedMode)
         }
-        return .populated(rowVisibleEvents, periodGroups(for: rowVisibleEvents))
+        return .populated(
+            rowVisibleEvents,
+            periodGroups(for: rowVisibleEvents),
+            eventIndexByAnchorID(for: allDedupedEvents),
+            eventIndexByAnchorID(for: rowVisibleEvents),
+            GameEventIdentityBaseline.duplicateSourceEventIDs(in: allDedupedEvents)
+        )
     }
 
     private var streamGroupSpacing: CGFloat {
@@ -168,11 +180,7 @@ struct PlayByPlaySection: View {
     private enum PlayByPlayContentState {
         case rawEmpty
         case modeEmpty(DetailStreamMode)
-        case populated([GameEvent], [GameEventPeriodGroup])
-    }
-
-    private var visibleEvents: [GameEvent] {
-        selectedMode.visibleDedupedEvents(dedupedEvents)
+        case populated([GameEvent], [GameEventPeriodGroup], [String: Int], [String: Int], Set<String>)
     }
 
     private var dedupedEvents: [GameEvent] {
@@ -183,16 +191,38 @@ struct PlayByPlaySection: View {
         renderer.periodGroups(for: visibleEvents)
     }
 
-    private func readIndex(for event: GameEvent) -> Int {
-        dedupedEvents.firstIndex(of: event) ?? 0
+    private func eventIndexByAnchorID(for events: [GameEvent]) -> [String: Int] {
+        events.enumerated().reduce(into: [:]) { result, pair in
+            let (index, event) = pair
+            if result[event.detailAnchorID] == nil {
+                result[event.detailAnchorID] = index
+            }
+        }
     }
 
     private func eventPresentation(
         for event: GameEvent,
         periodGroupLabel: String,
-        visibleEvents: [GameEvent]
+        visibleEvents: [GameEvent],
+        visibleEventIndexByAnchorID: [String: Int]
     ) -> GameEventPresentation {
-        guard let visibleEventIndex = visibleEvents.firstIndex(of: event) else {
+        if let card = event.normalizedCard {
+            let presentation = GameEventPresentation(
+                card: card,
+                game: game,
+                scoreSpoilerPolicy: scoreSpoilerPolicy
+            )
+            var filtered = EventScoreSpoilerFilter.filtered(
+                presentation: presentation,
+                game: game,
+                policy: scoreSpoilerPolicy
+            )
+            if card.score?.spoilerPolicy == .alwaysShow {
+                filtered.scoreLabel = presentation.scoreLabel
+            }
+            return filtered
+        }
+        guard let visibleEventIndex = visibleEventIndexByAnchorID[event.detailAnchorID] else {
             return renderer.eventPresentation(for: event, periodGroupLabel: periodGroupLabel)
         }
         return renderer.eventPresentation(

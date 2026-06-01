@@ -17,6 +17,7 @@ struct GameDetailView: View {
     @State private var isNearLiveEdge = true
     @State private var isTopChromeVisible = true
     @State private var programmaticScrollInFlight = false
+    @State private var programmaticScrollTargetAnchorID: String?
     @State private var lastUserScrollAt = Date.distantPast
     @State private var currentVisibleEvent: DetailVisibleEventState?
     @State private var returnAnchor: DetailVisibleEventState?
@@ -25,6 +26,9 @@ struct GameDetailView: View {
     @State private var resizeRestoreSnapshot: DetailResizeRestoreSnapshot?
     @State private var resizeGeneration = 0
     @State private var resizeStabilizationWorkItem: DispatchWorkItem?
+    @State private var contentChangeRestoreSnapshot: DetailContentChangeRestoreSnapshot?
+    @State private var contentChangeGeneration = 0
+    @State private var contentChangeStabilizationWorkItem: DispatchWorkItem?
     @State private var stickyTopRequest = 0
     @State private var stickyEndRequest = 0
     @State private var stickyReturnRequest = 0
@@ -138,12 +142,20 @@ struct GameDetailView: View {
                                 BoxScoreSection(
                                     game: detail.game,
                                     renderer: renderer,
-                                    scoreRevealed: $scoreRevealed
+                                    scoreRevealed: scoreRevealBinding(proxy: proxy)
                                 )
                                     .accessibilityIdentifier("detail.boxScore")
-                                PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(playerStatsSectionID))
+                                PlayerStatsSection(
+                                    detail: detail,
+                                    renderer: renderer,
+                                    isExpanded: sectionExpansionBinding(playerStatsSectionID, proxy: proxy)
+                                )
                                     .accessibilityIdentifier("detail.playerStats")
-                                TeamStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(teamStatsSectionID))
+                                TeamStatsSection(
+                                    detail: detail,
+                                    renderer: renderer,
+                                    isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)
+                                )
                                     .accessibilityIdentifier("detail.teamStats")
                             }
                             Color.clear
@@ -168,7 +180,11 @@ struct GameDetailView: View {
                                 selectedMode: viewModel.selectedStreamMode,
                                 scoreSpoilerPolicy: scoreSpoilerPolicy,
                                 expandedRawFeedKeys: viewModel.localProgress?.expandedRawFeedKeys ?? [],
-                                onRawFeedExpansionChange: viewModel.setRawFeedExpanded
+                                onRawFeedExpansionChange: { key, isExpanded in
+                                    preserveReaderAnchor(proxy: proxy) {
+                                        viewModel.setRawFeedExpanded(key: key, isExpanded: isExpanded)
+                                    }
+                                }
                             )
                             Color.clear
                                 .frame(height: 1)
@@ -182,14 +198,22 @@ struct GameDetailView: View {
                                         )
                                     }
                                 }
-                            PlayerStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(playerStatsSectionID))
+                            PlayerStatsSection(
+                                detail: detail,
+                                renderer: renderer,
+                                isExpanded: sectionExpansionBinding(playerStatsSectionID, proxy: proxy)
+                            )
                                 .accessibilityIdentifier("detail.playerStats")
-                            TeamStatsSection(detail: detail, renderer: renderer, isExpanded: sectionExpansionBinding(teamStatsSectionID))
+                            TeamStatsSection(
+                                detail: detail,
+                                renderer: renderer,
+                                isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)
+                            )
                                 .accessibilityIdentifier("detail.teamStats")
                             BoxScoreSection(
                                 game: detail.game,
                                 renderer: renderer,
-                                scoreRevealed: $scoreRevealed
+                                scoreRevealed: scoreRevealBinding(proxy: proxy)
                             )
                                 .id(GameDetailScrollAnchor.scoreboard)
                                 .accessibilityIdentifier("detail.boxScore")
@@ -347,6 +371,7 @@ struct GameDetailView: View {
         }
         .onDisappear {
             resizeStabilizationWorkItem?.cancel()
+            contentChangeStabilizationWorkItem?.cancel()
             viewModel.stopAutoRefresh()
             viewModel.markViewed()
         }
@@ -496,7 +521,7 @@ struct GameDetailView: View {
         }
         viewModel.setFollowingLiveEdge(true)
         viewModel.recordLatestEventRead(events: detail.events)
-        performProgrammaticScroll(after: target == nil ? 0 : 0.1) {
+        performProgrammaticScroll(targetAnchorID: target?.detailAnchorID, after: target == nil ? 0 : 0.1) {
             if let target {
                 proxy.scrollTo(GameDetailScrollAnchor.event(target.detailAnchorID), anchor: .bottom)
             } else {
@@ -531,7 +556,7 @@ struct GameDetailView: View {
         guard let anchor = returnAnchor else { return }
         viewModel.setFollowingLiveEdge(false)
         streamOrientationAnchorID = anchor.anchorID
-        performProgrammaticScroll {
+        performProgrammaticScroll(targetAnchorID: anchor.anchorID) {
             proxy.scrollTo(GameDetailScrollAnchor.event(anchor.anchorID), anchor: .center)
         }
         returnAnchor = nil
@@ -575,7 +600,8 @@ struct GameDetailView: View {
             mode: viewModel.selectedStreamMode
         )?.detailAnchorID
         guard let anchorID else { return }
-        DispatchQueue.main.async {
+        streamOrientationAnchorID = anchorID
+        performProgrammaticScroll(targetAnchorID: anchorID) {
             proxy.scrollTo(GameDetailScrollAnchor.event(anchorID), anchor: .top)
         }
     }
@@ -583,19 +609,30 @@ struct GameDetailView: View {
     private func handleDetailRefresh(_ proxy: ScrollViewProxy) {
         visibilityTrackingSuppressed = resumeState != nil
         guard viewModel.detail != nil else { return }
-        let shouldFollowLatest = viewModel.isFollowingLiveEdge && isNearLiveEdge
-        if shouldFollowLatest, viewModel.detail?.game.status.isLive == true {
+        let shouldFollowLatest = GameDetailScrollLogic.shouldFollowLiveRefresh(
+            isLive: viewModel.detail?.game.status.isLive == true,
+            isFollowingLiveEdge: viewModel.isFollowingLiveEdge,
+            isNearLiveEdge: isNearLiveEdge
+        )
+        if shouldFollowLatest {
             visibilityTrackingSuppressed = false
             scrollToLatest(proxy, preservesReturnAnchor: false)
             return
         }
 
-        switch viewModel.eventDiff.kind {
-        case .inserted, .prepended, .reset:
-            restoreReaderAnchor(proxy)
-        case .appended, .modified, .unchanged:
-            break
+        if GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(viewModel.eventDiff.kind) {
+            restoreReaderAfterRefresh(proxy)
         }
+    }
+
+    private func restoreReaderAfterRefresh(_ proxy: ScrollViewProxy) {
+        guard let snapshot = makeContentChangeRestoreSnapshot() else {
+            restoreReaderAnchor(proxy)
+            return
+        }
+
+        prepareContentChangeRestore(snapshot: snapshot)
+        scheduleContentChangeRestore(proxy: proxy, generation: contentChangeGeneration)
     }
 
     private func scrollToResume(
@@ -612,7 +649,7 @@ struct GameDetailView: View {
             viewModel.setSelectedStreamMode(mode)
         }
         streamOrientationAnchorID = resumeState.target.detailAnchorID
-        performProgrammaticScroll(after: 0.1) {
+        performProgrammaticScroll(targetAnchorID: resumeState.target.detailAnchorID, after: 0.1) {
             proxy.scrollTo(GameDetailScrollAnchor.event(resumeState.target.detailAnchorID), anchor: .center)
         }
     }
@@ -625,7 +662,7 @@ struct GameDetailView: View {
         else { return }
 
         streamOrientationAnchorID = firstEvent.detailAnchorID
-        performProgrammaticScroll {
+        performProgrammaticScroll(targetAnchorID: firstEvent.detailAnchorID) {
             proxy.scrollTo(GameDetailScrollAnchor.event(firstEvent.detailAnchorID), anchor: .top)
         }
     }
@@ -633,7 +670,7 @@ struct GameDetailView: View {
     private func switchStreamMode(_ mode: DetailStreamMode, events: [GameEvent], proxy: ScrollViewProxy) {
         guard mode != viewModel.selectedStreamMode else { return }
         let anchorID = GameDetailScrollLogic.restoredStreamAnchorID(
-            currentAnchorID: streamOrientationAnchorID,
+            currentAnchorID: currentStreamAnchorID(for: events),
             from: viewModel.selectedStreamMode,
             to: mode,
             events: events
@@ -641,22 +678,49 @@ struct GameDetailView: View {
         viewModel.setSelectedStreamMode(mode)
         guard let anchorID else { return }
         streamOrientationAnchorID = anchorID
-        performProgrammaticScroll {
+        performProgrammaticScroll(targetAnchorID: anchorID) {
             proxy.scrollTo(GameDetailScrollAnchor.event(anchorID), anchor: .center)
         }
     }
 
-    private func performProgrammaticScroll(after delay: Double = 0, scroll: @escaping () -> Void) {
+    private func currentStreamAnchorID(for events: [GameEvent]) -> String? {
+        let dedupedEvents = DetailStreamMode.dedupedEvents(from: events)
+        let visibleEvents = viewModel.selectedStreamMode.visibleDedupedEvents(dedupedEvents)
+        if let streamOrientationAnchorID,
+           visibleEvents.contains(where: { $0.detailAnchorID == streamOrientationAnchorID }) {
+            return streamOrientationAnchorID
+        }
+        if let lastAcceptedVisibleFrame,
+           visibleEvents.contains(where: { $0.detailAnchorID == lastAcceptedVisibleFrame.anchorID }) {
+            return lastAcceptedVisibleFrame.anchorID
+        }
+        if let currentVisibleEvent,
+           visibleEvents.contains(where: { $0.detailAnchorID == currentVisibleEvent.anchorID }) {
+            return currentVisibleEvent.anchorID
+        }
+        return nil
+    }
+
+    private func performProgrammaticScroll(
+        targetAnchorID: String? = nil,
+        after delay: Double = 0,
+        scroll: @escaping () -> Void
+    ) {
         programmaticScrollInFlight = true
+        programmaticScrollTargetAnchorID = targetAnchorID
         if AppEnvironment.isRunningUITests {
             scroll()
-            programmaticScrollInFlight = false
+            if targetAnchorID == nil {
+                programmaticScrollInFlight = false
+                programmaticScrollTargetAnchorID = nil
+            }
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             withAnimation(.snappy(duration: 0.35), scroll)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                 programmaticScrollInFlight = false
+                programmaticScrollTargetAnchorID = nil
             }
         }
     }
@@ -680,8 +744,23 @@ struct GameDetailView: View {
             )
         else { return }
 
-        guard resizeRestoreSnapshot == nil else {
+        guard !isReaderRestoreActive else {
             return
+        }
+
+        let reachedProgrammaticTarget = programmaticScrollTargetAnchorID.flatMap { targetAnchorID in
+            orientationFrame.anchorID == targetAnchorID || readFrame.anchorID == targetAnchorID ? targetAnchorID : nil
+        }
+        if programmaticScrollInFlight,
+           programmaticScrollTargetAnchorID != nil,
+           reachedProgrammaticTarget == nil {
+            return
+        }
+        if reachedProgrammaticTarget != nil {
+            programmaticScrollTargetAnchorID = nil
+            if AppEnvironment.isRunningUITests {
+                programmaticScrollInFlight = false
+            }
         }
 
         let nextVisibleEvent = DetailVisibleEventState(frame: readFrame)
@@ -691,8 +770,17 @@ struct GameDetailView: View {
         if shouldAcceptVisibleFrameUpdate(orientationFrame) {
             lastAcceptedVisibleFrame = orientationFrame
         }
+        streamOrientationAnchorID = reachedProgrammaticTarget ?? orientationFrame.anchorID
 
-        guard AppEnvironment.isRunningUITests || (!visibilityTrackingSuppressed && !viewModel.isFollowingLiveEdge && !programmaticScrollInFlight) else {
+        let canRecordRead: Bool
+        if AppEnvironment.isRunningUITests {
+            canRecordRead = !programmaticScrollInFlight || reachedProgrammaticTarget != nil
+        } else {
+            canRecordRead = !visibilityTrackingSuppressed
+                && !viewModel.isFollowingLiveEdge
+                && (!programmaticScrollInFlight || reachedProgrammaticTarget != nil)
+        }
+        guard canRecordRead else {
             return
         }
 
@@ -703,11 +791,10 @@ struct GameDetailView: View {
 
         lastVisibleEventAnchorID = readFrame.anchorID
         lastVisibleEventSaveAt = now
-        streamOrientationAnchorID = orientationFrame.anchorID
         viewModel.recordReadEvent(
             eventIndex: readFrame.readIndex,
             eventID: readFrame.eventID,
-            knownEventCount: detail.events.count
+            knownEventCount: DetailStreamMode.dedupedEvents(from: detail.events).count
         )
         viewModel.recordScrollFallback(
             eventSequence: readFrame.sequence,
@@ -724,7 +811,7 @@ struct GameDetailView: View {
     }
 
     private func updateScoreboardReach(from frame: CGRect?, viewportHeight: CGFloat, obscuredBottomHeight: CGFloat) {
-        guard resizeRestoreSnapshot == nil, viewModel.localProgress?.reachedScoreboard != true, let frame else { return }
+        guard !isReaderRestoreActive, viewModel.localProgress?.reachedScoreboard != true, let frame else { return }
         let viewportFrame = scoreboardReachViewportFrame(
             width: frame.width,
             height: viewportHeight,
@@ -734,12 +821,13 @@ struct GameDetailView: View {
             if let events = viewModel.detail?.events {
                 viewModel.recordLatestEventRead(events: events)
             }
+            scoreRevealed = true
             viewModel.setReachedScoreboard(true)
         }
     }
 
     private func updateLiveEdgeDistance(anchorY: CGFloat, viewportHeight: CGFloat) {
-        guard resizeRestoreSnapshot == nil else { return }
+        guard !isReaderRestoreActive else { return }
         let threshold = max(72, min(180, viewportHeight * 0.14))
         let near = anchorY >= -threshold && anchorY <= viewportHeight + threshold
         if isNearLiveEdge != near {
@@ -760,10 +848,32 @@ struct GameDetailView: View {
         }
     }
 
-    private func sectionExpansionBinding(_ sectionID: String) -> Binding<Bool> {
+    private var isReaderRestoreActive: Bool {
+        resizeRestoreSnapshot != nil || contentChangeRestoreSnapshot != nil
+    }
+
+    private func sectionExpansionBinding(_ sectionID: String, proxy: ScrollViewProxy) -> Binding<Bool> {
         Binding(
             get: { viewModel.localProgress?.expandedSectionIDs.contains(sectionID) == true },
-            set: { viewModel.setExpandedSection(sectionID, isExpanded: $0) }
+            set: { isExpanded in
+                preserveReaderAnchor(proxy: proxy) {
+                    viewModel.setExpandedSection(sectionID, isExpanded: isExpanded)
+                }
+            }
+        )
+    }
+
+    private func scoreRevealBinding(proxy: ScrollViewProxy) -> Binding<Bool> {
+        Binding(
+            get: { scoreRevealed },
+            set: { isRevealed in
+                preserveReaderAnchor(proxy: proxy) {
+                    scoreRevealed = isRevealed
+                    if isRevealed {
+                        viewModel.setReachedScoreboard(true)
+                    }
+                }
+            }
         )
     }
 
@@ -777,7 +887,90 @@ struct GameDetailView: View {
         resizeRestoreSnapshot = snapshot
         visibilityTrackingSuppressed = true
         programmaticScrollInFlight = true
+        programmaticScrollTargetAnchorID = snapshot.visibleEvent.anchorID
         scheduleResizeRestore(proxy: proxy, generation: resizeGeneration)
+    }
+
+    private func preserveReaderAnchor(proxy: ScrollViewProxy, mutate: () -> Void) {
+        guard let snapshot = makeContentChangeRestoreSnapshot() else {
+            mutate()
+            return
+        }
+
+        prepareContentChangeRestore(snapshot: snapshot)
+        mutate()
+        scheduleContentChangeRestore(proxy: proxy, generation: contentChangeGeneration)
+    }
+
+    private func prepareContentChangeRestore(snapshot: DetailContentChangeRestoreSnapshot) {
+        contentChangeGeneration += 1
+        contentChangeRestoreSnapshot = snapshot
+        visibilityTrackingSuppressed = true
+        programmaticScrollInFlight = true
+        programmaticScrollTargetAnchorID = snapshot.visibleEvent.anchorID
+    }
+
+    private func makeContentChangeRestoreSnapshot() -> DetailContentChangeRestoreSnapshot? {
+        if let frame = lastAcceptedVisibleFrame {
+            return DetailContentChangeRestoreSnapshot(
+                frame: frame,
+                readingTopY: 0,
+                wasVisibilityTrackingSuppressed: visibilityTrackingSuppressed
+            )
+        }
+        if let currentVisibleEvent {
+            return DetailContentChangeRestoreSnapshot(
+                visibleEvent: currentVisibleEvent,
+                wasVisibilityTrackingSuppressed: visibilityTrackingSuppressed
+            )
+        }
+        return nil
+    }
+
+    private func scheduleContentChangeRestore(proxy: ScrollViewProxy, generation: Int) {
+        contentChangeStabilizationWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            guard generation == contentChangeGeneration else { return }
+            restoreAfterContentChange(proxy)
+        }
+        contentChangeStabilizationWorkItem = workItem
+        let delay: DispatchTimeInterval = AppEnvironment.isRunningUITests ? .milliseconds(1) : .milliseconds(90)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func restoreAfterContentChange(_ proxy: ScrollViewProxy) {
+        guard let snapshot = contentChangeRestoreSnapshot else {
+            programmaticScrollInFlight = false
+            return
+        }
+
+        if
+            let detail = viewModel.detail,
+            let anchorID = GameDetailScrollLogic.restoredContentChangeAnchorID(
+                snapshot: snapshot,
+                mode: viewModel.selectedStreamMode,
+                events: detail.events
+            ) {
+            streamOrientationAnchorID = anchorID
+            let anchor = anchorID == snapshot.visibleEvent.anchorID
+                ? UnitPoint(x: 0.5, y: snapshot.offsetFraction)
+                : UnitPoint.center
+            performProgrammaticScroll(targetAnchorID: anchorID) {
+                proxy.scrollTo(GameDetailScrollAnchor.event(anchorID), anchor: anchor)
+            }
+        }
+
+        finishContentChangeRestore(snapshot: snapshot)
+    }
+
+    private func finishContentChangeRestore(snapshot: DetailContentChangeRestoreSnapshot) {
+        let delay = AppEnvironment.isRunningUITests ? 0 : 0.35
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            contentChangeRestoreSnapshot = nil
+            visibilityTrackingSuppressed = snapshot.wasVisibilityTrackingSuppressed
+            programmaticScrollInFlight = false
+            programmaticScrollTargetAnchorID = nil
+        }
     }
 
     private func makeResizeRestoreSnapshot() -> DetailResizeRestoreSnapshot? {
@@ -829,7 +1022,7 @@ struct GameDetailView: View {
             let anchor = anchorID == snapshot.visibleEvent.anchorID
                 ? UnitPoint(x: 0.5, y: snapshot.offsetFraction)
                 : UnitPoint.center
-            performProgrammaticScroll {
+            performProgrammaticScroll(targetAnchorID: anchorID) {
                 proxy.scrollTo(GameDetailScrollAnchor.event(anchorID), anchor: anchor)
             }
         }
@@ -838,11 +1031,11 @@ struct GameDetailView: View {
     }
 
     private func restoreLiveEdgeAfterResize(_ proxy: ScrollViewProxy) {
-        if let detail = viewModel.detail,
-           let target = DetailStreamMode.dedupedEvents(from: detail.events).last {
+        let target = viewModel.detail.flatMap { DetailStreamMode.dedupedEvents(from: $0.events).last }
+        if let target {
             streamOrientationAnchorID = target.detailAnchorID
         }
-        performProgrammaticScroll {
+        performProgrammaticScroll(targetAnchorID: target?.detailAnchorID) {
             proxy.scrollTo(GameDetailScrollAnchor.latest, anchor: .bottom)
         }
     }
@@ -853,6 +1046,7 @@ struct GameDetailView: View {
             resizeRestoreSnapshot = nil
             visibilityTrackingSuppressed = snapshot.wasVisibilityTrackingSuppressed
             programmaticScrollInFlight = false
+            programmaticScrollTargetAnchorID = nil
         }
     }
 

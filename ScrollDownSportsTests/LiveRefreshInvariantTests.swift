@@ -146,7 +146,7 @@ final class LiveRefreshInvariantTests: XCTestCase {
         )
     }
 
-    func testFollowingLiveRefreshAdvancesReadCursorToLatestWithoutPendingUnread() throws {
+    func testRefreshAloneDoesNotAdvanceFollowerUntilViewConfirmsLiveEdge() throws {
         let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate() })
         let gameId = 1321
         let initial = [event(1), event(2)]
@@ -165,9 +165,65 @@ final class LiveRefreshInvariantTests: XCTestCase {
 
         let progress = try XCTUnwrap(store.progress(for: gameId))
         XCTAssertEqual(diff.kind, .appended)
+        XCTAssertEqual(progress.lastReadEventID, "event-2")
+        XCTAssertEqual(progress.lastReadEventIndex, 1)
+        XCTAssertEqual(progress.newEventCount, 1)
+    }
+
+    func testFollowingLiveRefreshAdvancesAfterViewConfirmsLiveEdge() throws {
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate() })
+        let gameId = 1322
+        let initial = [event(1), event(2)]
+        let current = [event(1), event(2), event(3)]
+        let viewModel = GameDetailViewModel(gameId: gameId, gameStateStore: store)
+        store.recordEventRefresh(gameId: gameId, events: initial, diff: .unchanged)
+        store.recordReadEvent(gameId: gameId, eventID: "event-2", eventIndex: 1, knownEventCount: initial.count)
+        store.setFollowLivePreference(gameId: gameId, preference: .followingLiveEdge)
+
+        let diff = GameEventListDiffer.diff(
+            previous: initial,
+            current: current,
+            baseline: store.progress(for: gameId)?.eventIdentityBaseline
+        )
+        store.recordEventRefresh(gameId: gameId, events: current, diff: diff)
+        viewModel.recordLatestEventRead(events: current)
+
+        let progress = try XCTUnwrap(store.progress(for: gameId))
         XCTAssertEqual(progress.lastReadEventID, "event-3")
         XCTAssertEqual(progress.lastReadEventIndex, 2)
         XCTAssertEqual(progress.newEventCount, 0)
+    }
+
+    func testLiveRefreshFollowDecisionRequiresNearLiveEdgeAndPreference() {
+        XCTAssertTrue(GameDetailScrollLogic.shouldFollowLiveRefresh(
+            isLive: true,
+            isFollowingLiveEdge: true,
+            isNearLiveEdge: true
+        ))
+        XCTAssertFalse(GameDetailScrollLogic.shouldFollowLiveRefresh(
+            isLive: true,
+            isFollowingLiveEdge: true,
+            isNearLiveEdge: false
+        ))
+        XCTAssertFalse(GameDetailScrollLogic.shouldFollowLiveRefresh(
+            isLive: true,
+            isFollowingLiveEdge: false,
+            isNearLiveEdge: true
+        ))
+        XCTAssertFalse(GameDetailScrollLogic.shouldFollowLiveRefresh(
+            isLive: false,
+            isFollowingLiveEdge: true,
+            isNearLiveEdge: true
+        ))
+    }
+
+    func testRefreshRestoreDecisionIncludesModifiedAndStructuralDiffs() {
+        XCTAssertTrue(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.inserted))
+        XCTAssertTrue(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.prepended))
+        XCTAssertTrue(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.modified))
+        XCTAssertTrue(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.reset))
+        XCTAssertFalse(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.appended))
+        XCTAssertFalse(GameDetailScrollLogic.shouldRestoreReaderAfterRefresh(.unchanged))
     }
 
     private func assertReadingAwayRefresh(

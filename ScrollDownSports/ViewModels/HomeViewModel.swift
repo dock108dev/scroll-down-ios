@@ -24,6 +24,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var pinnedGameRecords: [PinnedGameRecord] = []
     @Published private(set) var progressByGameId: [Int: GameProgressRecord] = [:]
     @Published private(set) var separatelyFetchedPinnedGames: [Game] = []
+    @Published private(set) var favoriteTeamIds: Set<String> = []
 
     let gameStateStore: any GameStateStore
     private let apiClient: SDAApiClient
@@ -217,6 +218,16 @@ final class HomeViewModel: ObservableObject {
         gameStateStore.togglePin(game)
     }
 
+    func isFavoriteTeam(_ participant: GameParticipant) -> Bool {
+        guard let teamID = participant.favoriteTeamID else { return false }
+        return favoriteTeamIds.contains(teamID)
+    }
+
+    func toggleFavoriteTeam(_ participant: GameParticipant) {
+        guard let teamID = participant.favoriteTeamID else { return }
+        gameStateStore.toggleFavoriteTeam(teamId: teamID)
+    }
+
     func clearFilters() {
         league = .all
         teamQuery = ""
@@ -226,6 +237,7 @@ final class HomeViewModel: ObservableObject {
         gameStateStore.snapshots
             .map { snapshot in
                 (
+                    snapshot.favoriteTeamIds,
                     Set(snapshot.pinnedGamesById.values.filter(\.isPinned).map(\.gameId)),
                     snapshot.pinnedGamesById.values.sorted { left, right in
                         if left.gameDate != right.gameDate {
@@ -236,7 +248,8 @@ final class HomeViewModel: ObservableObject {
                     snapshot.progressByGameId
                 )
             }
-            .sink { [weak self] pinnedIds, pinnedRecords, progressByGameId in
+            .sink { [weak self] favoriteTeamIds, pinnedIds, pinnedRecords, progressByGameId in
+                self?.favoriteTeamIds = favoriteTeamIds
                 self?.pinnedGameIds = pinnedIds
                 self?.pinnedGameRecords = pinnedRecords
                 self?.progressByGameId = progressByGameId
@@ -482,7 +495,8 @@ final class HomeViewModel: ObservableObject {
             game: game,
             isPinned: pinnedGameIds.contains(game.id),
             pinnedRecord: pinnedGameRecords.first { $0.gameId == game.id },
-            progress: progressByGameId[game.id]
+            progress: progressByGameId[game.id],
+            favoriteTeamIds: favoriteTeamIds
         )
     }
 
@@ -512,6 +526,11 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func sortTimelineGames(_ left: Game, _ right: Game) -> Bool {
+        let leftFavorite = left.isFavoriteMatch(favoriteTeamIds: favoriteTeamIds)
+        let rightFavorite = right.isFavoriteMatch(favoriteTeamIds: favoriteTeamIds)
+        if leftFavorite != rightFavorite {
+            return leftFavorite
+        }
         if left.scheduledStart != right.scheduledStart {
             return left.scheduledStart < right.scheduledStart
         }
@@ -548,5 +567,12 @@ private extension Game {
         participants
             .flatMap { [$0.name, $0.abbreviation ?? ""] }
         .contains { $0.lowercased().contains(query) }
+    }
+
+    func isFavoriteMatch(favoriteTeamIds: Set<String>) -> Bool {
+        participants.contains { participant in
+            guard let teamID = participant.favoriteTeamID else { return false }
+            return favoriteTeamIds.contains(teamID)
+        }
     }
 }

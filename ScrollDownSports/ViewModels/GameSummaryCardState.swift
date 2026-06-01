@@ -1,14 +1,9 @@
 import SwiftUI
 
-enum GameSummaryCardSurface {
-    case home
-    case detail
-}
+enum GameSummaryCardSurface { case home, detail }
 
 enum GameSummaryScoreVisibility: Equatable {
-    case none
-    case hiddenBehindCue(String)
-    case visibleRows
+    case none, hiddenBehindCue(String), visibleRows
 }
 
 struct GameSummaryTeamLine: Identifiable {
@@ -18,6 +13,7 @@ struct GameSummaryTeamLine: Identifiable {
     let name: String
     let scoreText: String?
     let isWinner: Bool
+    let isFavorite: Bool
 }
 
 struct GameSummaryCardState {
@@ -45,9 +41,7 @@ struct GameSummaryCardState {
     let accessibilityLabel: String
     let accessibilityHint: String?
 
-    var showsScoreRows: Bool {
-        scoreVisibility == .visibleRows
-    }
+    var showsScoreRows: Bool { scoreVisibility == .visibleRows }
 
     init(item: HomeGameItem, presentation: GameCardPresentation, surface: GameSummaryCardSurface = .home) {
         self.init(
@@ -63,6 +57,7 @@ struct GameSummaryCardState {
             progress: item.progress,
             reachedScoreboard: item.reachedScoreboard,
             newPlayCount: item.newEventCount,
+            favoriteTeamIds: item.favoriteTeamIds,
             surface: surface
         )
     }
@@ -89,6 +84,7 @@ struct GameSummaryCardState {
             progress: progress,
             reachedScoreboard: reachedScoreboard ?? progress?.reachedScoreboard ?? false,
             newPlayCount: newPlayCount,
+            favoriteTeamIds: [],
             surface: surface
         )
     }
@@ -106,6 +102,7 @@ struct GameSummaryCardState {
         progress: GameProgressRecord?,
         reachedScoreboard: Bool,
         newPlayCount: Int,
+        favoriteTeamIds: Set<String>,
         surface: GameSummaryCardSurface
     ) {
         let phase = HomeGameCardPhase.phase(for: game)
@@ -160,7 +157,12 @@ struct GameSummaryCardState {
             fallback: accentColor
         )
         self.surface = surface
-        self.teamLines = Self.teamLines(for: game, scoreRows: scoreRows, showsScores: scoreVisibility == .visibleRows)
+        self.teamLines = Self.teamLines(
+            for: game,
+            scoreRows: scoreRows,
+            showsScores: scoreVisibility == .visibleRows,
+            favoriteTeamIds: favoriteTeamIds
+        )
         self.metadataText = Self.metadataText(for: game, phase: phase, statusText: statusText, surface: surface)
         self.statusText = statusText
         self.statusBadgeText = Self.statusBadgeText(for: phase)
@@ -291,7 +293,11 @@ struct GameSummaryCardState {
         newPlayText: String?
     ) -> String {
         if capability.canResume {
-            return compactResumeText(progressText: progressText, newPlayText: newPlayText)
+            return compactResumeText(
+                progressText: progressText,
+                readingTimeText: readingTimeText(minutes: capability.remainingReadingMinutes, suffix: "left"),
+                newPlayText: newPlayText
+            )
         }
         if let newPlayText {
             return newPlayText
@@ -300,13 +306,17 @@ struct GameSummaryCardState {
             return "Live stream"
         }
         if phase == .final && capability.canCatchUp {
+            let readTime = readingTimeText(minutes: capability.estimatedReadingMinutes, suffix: "read")
             if capability.shouldHideScoreBehindCue {
-                return "Catch up · score at bottom"
+                return ["Catch up", readTime, "score at bottom"].compactMap(\.self).joined(separator: " · ")
             }
             if let readCount = capability.readEventCount, readCount > 0 {
-                return "\(readCount) plays read"
+                return [
+                    "\(readCount) plays read",
+                    readingTimeText(minutes: capability.remainingReadingMinutes, suffix: "left") ?? readTime
+                ].compactMap(\.self).joined(separator: " · ")
             }
-            return "Recap"
+            return readTime ?? "Recap"
         }
         if phase == .final && game.availableFeatures.hasScoreboard {
             return "Box score"
@@ -359,12 +369,25 @@ struct GameSummaryCardState {
         return "Resume"
     }
 
-    private static func compactResumeText(progressText: String?, newPlayText: String?) -> String {
+    private static func compactResumeText(
+        progressText: String?,
+        readingTimeText: String?,
+        newPlayText: String?
+    ) -> String {
         var parts = [progressText ?? "Resume"]
+        if let readingTimeText {
+            parts.append(readingTimeText)
+        }
         if let newPlayText {
             parts.append(newPlayText.replacingOccurrences(of: " plays", with: ""))
         }
         return parts.joined(separator: " · ")
+    }
+
+    private static func readingTimeText(minutes: Int?, suffix: String) -> String? {
+        guard let minutes, minutes > 0 else { return nil }
+        let unit = minutes == 1 ? "min" : "mins"
+        return "\(minutes) \(unit) \(suffix)"
     }
 
     private static func newPlayText(count: Int, capability: GameSummaryCapability) -> String? {
@@ -415,7 +438,8 @@ struct GameSummaryCardState {
     private static func teamLines(
         for game: Game,
         scoreRows: [HomeGameCardScoreRow],
-        showsScores: Bool
+        showsScores: Bool,
+        favoriteTeamIds: Set<String>
     ) -> [GameSummaryTeamLine] {
         let orderedParticipants = [
             game.awayParticipant,
@@ -429,7 +453,8 @@ struct GameSummaryCardState {
                 abbreviation: participant.abbreviation ?? shortName(for: participant.name),
                 name: participant.name,
                 scoreText: showsScores ? scoreRows.first { $0.id == participant.id }?.scoreText : nil,
-                isWinner: showsScores && isWinner(participant.role, game: game)
+                isWinner: showsScores && isWinner(participant.role, game: game),
+                isFavorite: participant.favoriteTeamID.map { favoriteTeamIds.contains($0) } ?? false
             )
         }
     }

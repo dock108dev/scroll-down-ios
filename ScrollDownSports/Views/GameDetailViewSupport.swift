@@ -59,11 +59,57 @@ struct DetailResizeRestoreSnapshot: Equatable {
     }
 }
 
+struct DetailContentChangeRestoreSnapshot: Equatable {
+    let visibleEvent: DetailVisibleEventState
+    let offsetFraction: CGFloat
+    let wasVisibilityTrackingSuppressed: Bool
+
+    init(
+        frame: DetailEventVisibilityFrame,
+        readingTopY: CGFloat,
+        wasVisibilityTrackingSuppressed: Bool
+    ) {
+        self.visibleEvent = DetailVisibleEventState(frame: frame)
+        self.offsetFraction = GameDetailScrollLogic.eventOffsetFraction(frame: frame, readingTopY: readingTopY)
+        self.wasVisibilityTrackingSuppressed = wasVisibilityTrackingSuppressed
+    }
+
+    init(
+        visibleEvent: DetailVisibleEventState,
+        offsetFraction: CGFloat = 0,
+        wasVisibilityTrackingSuppressed: Bool
+    ) {
+        self.visibleEvent = visibleEvent
+        self.offsetFraction = max(0, min(offsetFraction, 1))
+        self.wasVisibilityTrackingSuppressed = wasVisibilityTrackingSuppressed
+    }
+}
+
 enum GameDetailScrollLogic {
+    static func shouldFollowLiveRefresh(isLive: Bool, isFollowingLiveEdge: Bool, isNearLiveEdge: Bool) -> Bool {
+        isLive && isFollowingLiveEdge && isNearLiveEdge
+    }
+
+    static func shouldRestoreReaderAfterRefresh(_ kind: GameEventListChangeKind) -> Bool {
+        switch kind {
+        case .inserted, .prepended, .modified, .reset:
+            return true
+        case .appended, .unchanged:
+            return false
+        }
+    }
+
     static func readSequence(progress: GameProgressRecord, events: [GameEvent]) -> Int? {
         let sortedEvents = DetailStreamMode.dedupedEvents(from: events)
+        let duplicateSourceEventIDs = GameEventIdentityBaseline.duplicateSourceEventIDs(in: sortedEvents)
         if let eventID = progress.lastReadEventID,
-           let event = sortedEvents.first(where: { $0.normalizedSourceEventID == eventID || $0.id == eventID || $0.detailAnchorID == eventID }) {
+           let event = sortedEvents.first(where: {
+               GameEventIdentityResolver.matches(
+                   savedEventID: eventID,
+                   event: $0,
+                   duplicateSourceEventIDs: duplicateSourceEventIDs
+               )
+           }) {
             return event.sequence
         }
         if let eventIndex = progress.lastReadEventIndex,
@@ -173,6 +219,19 @@ enum GameDetailScrollLogic {
             }
             return lhs.sequence < rhs.sequence
         }?.detailAnchorID
+    }
+
+    static func restoredContentChangeAnchorID(
+        snapshot: DetailContentChangeRestoreSnapshot,
+        mode: DetailStreamMode,
+        events: [GameEvent]
+    ) -> String? {
+        restoredVisibleAnchorID(
+            currentAnchorID: snapshot.visibleEvent.anchorID,
+            currentSequence: snapshot.visibleEvent.sequence,
+            mode: mode,
+            events: events
+        )
     }
 
     static func restoredStreamAnchorID(

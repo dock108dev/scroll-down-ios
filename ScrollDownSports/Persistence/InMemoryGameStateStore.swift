@@ -34,6 +34,18 @@ final class InMemoryGameStateStore: GameStateStore {
         }
     }
 
+    func setFavoriteTeam(teamId: String, isFavorite: Bool) {
+        mutate { state in
+            state.setFavoriteTeam(teamId, isFavorite: isFavorite)
+        }
+    }
+
+    func recordFavoriteNotificationKeys(_ keys: Set<String>) {
+        mutate { state in
+            state.recordFavoriteNotificationKeys(keys)
+        }
+    }
+
     func updatePinnedGame(_ game: Game) {
         guard isPinned(gameId: game.id) else { return }
         mutate { state in

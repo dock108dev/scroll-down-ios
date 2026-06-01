@@ -269,7 +269,23 @@ final class ProductPresentationInvariantTests: XCTestCase {
     }
 
     private var scoreLeakTerms: [String] {
-        ["7-6", "6-7", "Yankees 7", "Mariners 6", "NYY 7", "SEA 6", "won", "lost", "winner"]
+        [
+            "7-6",
+            "6-7",
+            "Yankees 7",
+            "Mariners 6",
+            "NYY 7",
+            "SEA 6",
+            "won",
+            "lost",
+            "winner",
+            "Dax Moreno",
+            "44",
+            "comeback",
+            "blowout",
+            "lead change",
+            "scoring plays"
+        ]
     }
 
     private func scoreRichPresentation() -> GamePresentationData {
@@ -279,9 +295,9 @@ final class ProductPresentationInvariantTests: XCTestCase {
             subheadline: "NYY 7 at SEA 6",
             matchupLabel: "NYY 7 at SEA 6",
             primaryLabel: "Yankees won 7-6",
-            secondaryLabel: "Mariners lost 7-6",
+            secondaryLabel: "Dax Moreno had 44 points in a comeback with 7 lead changes",
             tertiaryLabel: nil,
-            accessibilityLabel: "Yankees won 7-6 over Mariners",
+            accessibilityLabel: "Yankees won 7-6 over Mariners. Dax Moreno led a blowout with 8 scoring plays.",
             displayState: nil,
             visualPriority: nil,
             sortBucket: nil,

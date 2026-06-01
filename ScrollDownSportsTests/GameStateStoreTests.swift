@@ -44,6 +44,52 @@ final class GameStateStoreTests: XCTestCase {
         XCTAssertEqual(record.followLivePreference, .pinnedToLiveEdge)
     }
 
+    func testFavoriteTeamsPersistIndependentlyFromPinnedGames() throws {
+        let defaults = try makeDefaults()
+        let now = TestFixtures.fixedDate("2026-05-22T12:00:00Z")
+        let store = UserDefaultsGameStateStore(
+            defaults: defaults,
+            key: "game-state-test",
+            now: { now }
+        )
+
+        store.setFavoriteTeam(teamId: "136", isFavorite: true)
+        store.setFavoriteTeam(teamId: "147", isFavorite: true)
+        store.setFavoriteTeam(teamId: "147", isFavorite: false)
+
+        let reloaded = UserDefaultsGameStateStore(
+            defaults: defaults,
+            key: "game-state-test",
+            now: { now }
+        )
+
+        XCTAssertEqual(reloaded.snapshot.favoriteTeamIds, ["136"])
+        XCTAssertTrue(reloaded.isFavoriteTeam(teamId: "136"))
+        XCTAssertFalse(reloaded.isFavoriteTeam(teamId: "147"))
+        XCTAssertTrue(reloaded.snapshot.pinnedGamesById.isEmpty)
+    }
+
+    func testPersistedStateWithoutFavoritesDefaultsToEmptySet() throws {
+        let now = TestFixtures.fixedDate("2026-05-22T12:00:00Z")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let data = Data(
+            """
+            {
+              "schemaVersion": 1,
+              "pinnedGamesById": {},
+              "progressByGameId": {},
+              "updatedAt": "2026-05-22T12:00:00Z"
+            }
+            """.utf8
+        )
+        let snapshot = try decoder.decode(LocalGameStateSnapshot.self, from: data)
+
+        XCTAssertEqual(snapshot.updatedAt, now)
+        XCTAssertTrue(snapshot.favoriteTeamIds.isEmpty)
+    }
+
     func testBackgroundDetailStatePersistsThroughUserDefaultsReload() throws {
         let defaults = try makeDefaults()
         let now = TestFixtures.fixedDate("2026-05-22T12:00:00Z")

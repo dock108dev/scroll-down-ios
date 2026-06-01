@@ -3,6 +3,7 @@ import Foundation
 enum SDAApiError: LocalizedError {
     case invalidURL
     case badStatus(Int)
+    case incompleteNormalizedFeed(String)
     case incompleteDetail(String)
 
     var errorDescription: String? {
@@ -17,10 +18,17 @@ enum SDAApiError: LocalizedError {
                 return "Game Data Incomplete"
             }
             return "The data service returned HTTP \(status)."
+        case .incompleteNormalizedFeed:
+            return "Feed unavailable."
         case .incompleteDetail:
             return "Game Data Incomplete"
         }
     }
+}
+
+enum SDAGameDetailFetchMode: Sendable {
+    case normalizedWithLegacyFallback
+    case legacyOnly
 }
 
 final class SDAApiClient: Sendable {
@@ -29,15 +37,18 @@ final class SDAApiClient: Sendable {
     private let session: URLSession
     private let baseURL: URL
     private let apiKey: String
+    private let gameDetailFetchMode: SDAGameDetailFetchMode
 
     init(
         baseURL: URL = SDAApiClient.configuredBaseURL(),
         apiKey: String = SDAApiClient.configuredAPIKey(),
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        gameDetailFetchMode: SDAGameDetailFetchMode = .normalizedWithLegacyFallback
     ) {
         self.baseURL = baseURL
         self.apiKey = apiKey
         self.session = session
+        self.gameDetailFetchMode = gameDetailFetchMode
     }
 
     func fetchGames(
@@ -84,6 +95,76 @@ final class SDAApiClient: Sendable {
     }
 
     func fetchGame(id: Int) async throws -> GameDetail {
+        switch gameDetailFetchMode {
+        case .legacyOnly:
+            return try await fetchLegacyGame(id: id)
+        case .normalizedWithLegacyFallback:
+            return try await fetchMigratingGame(id: id)
+        }
+    }
+
+    private func fetchMigratingGame(id: Int) async throws -> GameDetail {
+        do {
+            let response = try await fetchNormalizedFeedResponse(id: id)
+            try validateNormalizedFeedContract(response)
+            let status = feedGenerationStatus(from: response.generation.status)
+            if shouldUseLegacyFallback(for: response) {
+                return try await fetchLegacyGame(
+                    id: id,
+                    fallbackMetadata: GameDetailFeedMetadata(
+                        source: .legacyDetail,
+                        generationStatus: status,
+                        fallbackState: .legacyDetail,
+                        revealAvailable: response.reveal.available,
+                        revealRequiredForScores: response.reveal.revealRequiredForScores
+                    )
+                )
+            }
+            let fallbackState: GameFeedFallbackState = response.cards.isEmpty ? .safeEmpty : .none
+            return SDADomainMapper.detail(from: response, fallbackState: fallbackState)
+        } catch SDAApiError.incompleteNormalizedFeed {
+            return try await fetchLegacyGame(
+                id: id,
+                fallbackMetadata: GameDetailFeedMetadata(
+                    source: .legacyDetail,
+                    generationStatus: .unknown,
+                    fallbackState: .legacyDetail,
+                    revealAvailable: false,
+                    revealRequiredForScores: true
+                )
+            )
+        } catch {
+            return try await fetchLegacyGame(
+                id: id,
+                fallbackMetadata: GameDetailFeedMetadata(
+                    source: .legacyDetail,
+                    generationStatus: .unknown,
+                    fallbackState: .legacyDetail,
+                    revealAvailable: false,
+                    revealRequiredForScores: true
+                )
+            )
+        }
+    }
+
+    private func fetchNormalizedFeedResponse(id: Int) async throws -> SDACardFeedResponseDTO {
+        var components = URLComponents(
+            url: baseURL.appending(path: "/api/v1/feed/games/\(id)/cards"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [URLQueryItem(name: "spoilerPolicy", value: "pre_reveal")]
+        guard let url = components?.url else { throw SDAApiError.invalidURL }
+        do {
+            return try await get(url)
+        } catch is DecodingError {
+            throw SDAApiError.incompleteNormalizedFeed("Feed response could not decode required fields")
+        }
+    }
+
+    private func fetchLegacyGame(
+        id: Int,
+        fallbackMetadata: GameDetailFeedMetadata? = nil
+    ) async throws -> GameDetail {
         let url = baseURL.appending(path: "/api/v1/games/\(id)")
         let response: SDAGameDetailResponseDTO
         do {
@@ -92,7 +173,19 @@ final class SDAApiClient: Sendable {
             throw SDAApiError.incompleteDetail("Detail response could not decode required v2 fields")
         }
         try validateGameDetailContract(response)
-        return SDADomainMapper.detail(from: response)
+        let detail = SDADomainMapper.detail(from: response)
+        return fallbackMetadata.map { detail.withFeedMetadata($0) } ?? detail
+    }
+
+    private func shouldUseLegacyFallback(for response: SDACardFeedResponseDTO) -> Bool {
+        let status = feedGenerationStatus(from: response.generation.status)
+        if status == .unsupportedSport {
+            return true
+        }
+        if response.cards.isEmpty && (status == .validationBlocked || status == .staleRegenerating) {
+            return true
+        }
+        return false
     }
 
     private func get<T: Decodable>(_ url: URL) async throws -> T {
@@ -133,6 +226,18 @@ final class SDAApiClient: Sendable {
         }
     }
 
+    private func validateNormalizedFeedContract(_ response: SDACardFeedResponseDTO) throws {
+        guard response.contractVersion >= 1 else {
+            throw SDAApiError.incompleteNormalizedFeed("Unsupported feed contract")
+        }
+        guard response.game.gameId > 0 else {
+            throw SDAApiError.incompleteNormalizedFeed("Feed game identity missing")
+        }
+        if response.generation.cardCount > 0 && response.cards.isEmpty {
+            throw SDAApiError.incompleteNormalizedFeed("Feed card count did not match cards")
+        }
+    }
+
     private func hasUsableEventText(_ play: SDAPlayDTO) -> Bool {
         [
             play.presentation?.headline,
@@ -164,5 +269,24 @@ final class SDAApiClient: Sendable {
         }
         #endif
         return SDAApiClient()
+    }
+}
+
+private func feedGenerationStatus(from value: String) -> GameFeedGenerationStatus {
+    switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+    case "no_pbp_yet", "nopbpyet":
+        return .noPbpYet
+    case "unsupported_sport", "unsupportedsport":
+        return .unsupportedSport
+    case "generation_pending", "generationpending":
+        return .generationPending
+    case "validation_blocked", "validationblocked":
+        return .validationBlocked
+    case "stale_regenerating", "staleregenerating":
+        return .staleRegenerating
+    case "ready":
+        return .ready
+    default:
+        return .unknown
     }
 }

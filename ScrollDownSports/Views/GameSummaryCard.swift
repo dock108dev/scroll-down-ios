@@ -187,6 +187,12 @@ private struct GameSummaryTeamLineView: View {
                 .foregroundStyle(teamColor)
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
+            if line.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(SportsTheme.Tone.pinned.foreground)
+                    .accessibilityLabel("Favorite team")
+            }
             Spacer(minLength: 8)
             if let scoreText = line.scoreText {
                 Text(scoreText)

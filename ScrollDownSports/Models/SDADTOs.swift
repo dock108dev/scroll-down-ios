@@ -25,6 +25,8 @@ struct SDAGameSummaryDTO: Decodable, Identifiable, Hashable, Sendable {
     let status: String
     let homeTeam: String
     let awayTeam: String
+    let homeTeamId: Int?
+    let awayTeamId: Int?
     let homeTeamAbbr: String?
     let awayTeamAbbr: String?
     let currentPeriod: Int?
@@ -51,6 +53,95 @@ struct SDAGameDetailResponseDTO: Decodable, Sendable {
     let nhlGoalies: [NHLPlayerStat]?
 }
 
+struct SDACardFeedResponseDTO: Decodable, Sendable {
+    let contractVersion: Int
+    let game: SDACardFeedGameDTO
+    let spoilerPolicy: String
+    let generation: SDAFeedGenerationDTO
+    let reveal: SDARevealAvailabilityDTO
+    let cards: [SDANarrativeCardDTO]
+}
+
+struct SDACardFeedGameDTO: Decodable, Hashable, Sendable {
+    let gameId: Int
+    let sport: String
+    let league: String
+    let status: String?
+    let homeTeam: String?
+    let awayTeam: String?
+    let homeTeamId: Int?
+    let awayTeamId: Int?
+    let homeTeamAbbr: String?
+    let awayTeamAbbr: String?
+}
+
+struct SDAFeedGenerationDTO: Decodable, Hashable, Sendable {
+    let status: String
+    let cardCount: Int
+    let lastPlayIndex: Int?
+    let generatedAt: String?
+    let isStale: Bool
+    let validationIssues: [String]
+}
+
+struct SDARevealAvailabilityDTO: Decodable, Hashable, Sendable {
+    let available: Bool
+    let status: String
+    let scoresInCards: Bool
+    let revealRequiredForScores: Bool
+}
+
+struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
+    let id: String
+    let gameId: Int
+    let sourcePlayId: String
+    let playIndex: Int
+    let sport: String
+    let league: String
+    let tier: Int
+    let contentDepth: String
+    let modeEligibility: SDAEventModeEligibilityDTO
+    let importance: SDAEventImportanceDTO
+    let visualImportance: String
+    let period: SDACardPeriodDTO
+    let displayTime: String?
+    let clock: String?
+    let team: SDACardTeamDTO
+    let scoreBefore: SDAScoreSnapshotDTO?
+    let scoreChange: SDACardScoreChangeDTO?
+    let scoreAfter: SDAScoreSnapshotDTO?
+    let situation: SDACardSituationDTO
+    let leadIn: String
+    let stageSetting: String
+    let headline: String
+    let description: String
+    let impact: String?
+    let tags: [String]
+    let spoilerLevel: String
+}
+
+struct SDACardPeriodDTO: Decodable, Hashable, Sendable {
+    let ordinal: Int?
+    let label: String?
+    let type: String?
+}
+
+struct SDACardTeamDTO: Decodable, Hashable, Sendable {
+    let abbreviation: String?
+    let name: String?
+    let side: String
+}
+
+struct SDACardScoreChangeDTO: Decodable, Hashable, Sendable {
+    let home: Int
+    let away: Int
+}
+
+struct SDACardSituationDTO: Decodable, Hashable, Sendable {
+    let summary: String?
+    let raw: [String: JSONValue]?
+}
+
 struct SDAGameDTO: Decodable, Identifiable, Hashable, Sendable {
     let id: Int
     let leagueCode: String
@@ -59,6 +150,8 @@ struct SDAGameDTO: Decodable, Identifiable, Hashable, Sendable {
     let status: String
     let homeTeam: String
     let awayTeam: String
+    let homeTeamId: Int?
+    let awayTeamId: Int?
     let homeTeamAbbr: String?
     let awayTeamAbbr: String?
     let currentPeriod: Int?
@@ -88,6 +181,7 @@ struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
     let tier: Int?
     let scoreDisplay: String?
     let presentation: SDAMobilePresentationDTO?
+    let card: SDANormalizedPlayCardDTO?
     let importance: SDAEventImportanceDTO
     let rawFeedText: String?
     let rawFeedSource: String?

@@ -21,6 +21,9 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var isFollowingLiveEdge = false
     @Published private(set) var eventDiff = GameEventListDiff.unchanged
     @Published private(set) var updateToken = UUID()
+    @Published private(set) var feedGenerationStatus: GameFeedGenerationStatus = .unknown
+    @Published private(set) var feedFallbackState: GameFeedFallbackState = .none
+    @Published private(set) var isRevealAvailable = false
 
     let gameId: Int
     let openingNewEventCount: Int
@@ -62,6 +65,7 @@ final class GameDetailViewModel: ObservableObject {
                 )
             } ?? .unchanged
             detail = refreshedDetail
+            applyFeedMetadata(from: refreshedDetail)
             eventDiff = diff
             lastUpdated = Date()
             gameStateStore.updatePinnedGameDetail(refreshedDetail, fetchedAt: lastUpdated ?? Date())
@@ -107,12 +111,17 @@ final class GameDetailViewModel: ObservableObject {
     }
 
     func recordLatestEventRead(events: [GameEvent]) {
-        guard let latestEvent = DetailStreamMode.dedupedEvents(from: events).last else { return }
+        let canonicalEvents = DetailStreamMode.dedupedEvents(from: events)
+        let duplicateSourceEventIDs = GameEventIdentityBaseline.duplicateSourceEventIDs(in: canonicalEvents)
+        guard let latestEvent = canonicalEvents.last else { return }
         gameStateStore.recordReadEvent(
             gameId: gameId,
-            eventID: latestEvent.normalizedSourceEventID ?? latestEvent.id,
-            eventIndex: max(0, events.count - 1),
-            knownEventCount: events.count
+            eventID: GameEventIdentityResolver.readCursorID(
+                for: latestEvent,
+                duplicateSourceEventIDs: duplicateSourceEventIDs
+            ),
+            eventIndex: max(0, canonicalEvents.count - 1),
+            knownEventCount: canonicalEvents.count
         )
     }
 
@@ -191,7 +200,14 @@ final class GameDetailViewModel: ObservableObject {
             return
         }
         detail = latestDetail
+        applyFeedMetadata(from: latestDetail)
         lastUpdated = record.lastBackgroundRefreshAt ?? record.lastSummaryRefreshAt
+    }
+
+    private func applyFeedMetadata(from detail: GameDetail) {
+        feedGenerationStatus = detail.feedMetadata.generationStatus
+        feedFallbackState = detail.feedMetadata.fallbackState
+        isRevealAvailable = detail.feedMetadata.revealAvailable
     }
 
     private var autoRefreshInterval: Duration {

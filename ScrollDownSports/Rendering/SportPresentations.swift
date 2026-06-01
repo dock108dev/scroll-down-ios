@@ -25,8 +25,11 @@ struct GameHeaderPresentation {
 
 struct GameEventPresentation: Hashable {
     var clockText: String
+    var leadIn: String? = nil
     var headline: String
     let detail: String?
+    var contextItems: [PlayCardContextItemPresentation] = []
+    var resultItems: [PlayCardResultItemPresentation] = []
     var eventLabel: String?
     let teamAbbreviation: String?
     let teamLabel: String?
@@ -34,9 +37,13 @@ struct GameEventPresentation: Hashable {
     var scoreLabel: String?
     let rawFeedText: String?
     let rawFeedSource: String?
+    var rawFeedDisclosureTitle: String? = nil
     let accessibilityLabel: String?
+    var accessibilityValue: String? = nil
+    var accessibilityHint: String? = nil
     var situation: GameEventSituationPresentation? = nil
     var situationAccessibilityText: String? = nil
+    var isNormalizedCard: Bool = false
 }
 
 struct GameEventSituationPresentation: Hashable {
@@ -336,6 +343,7 @@ extension GameEventPresentation {
         }
         return "\(away)-\(home)"
     }
+
 }
 
 extension GameEventSituationPresentation {

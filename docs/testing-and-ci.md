@@ -13,6 +13,7 @@ fast
 build
 unit
 coverage
+detail-scroll
 ui-smoke
 visual
 accessibility
@@ -27,7 +28,7 @@ script-checks
 clean-artifacts
 ```
 
-`fast` and `build` generate the project and build the simulator app. `unit` runs `ScrollDownSportsTests` without coverage enforcement. `coverage` runs `ScrollDownSportsTests` with coverage, writes `.build/TestResults/Coverage.xcresult`, emits `.build/coverage/xccov-report.json` and `.build/coverage/xccov-files.json`, and runs `Scripts/check_xccov_thresholds.swift`.
+`fast` and `build` generate the project and build the simulator app. `unit` runs `ScrollDownSportsTests` without coverage enforcement. `coverage` runs `ScrollDownSportsTests` with coverage, writes `.build/TestResults/Coverage.xcresult`, emits `.build/coverage/xccov-report.json` and `.build/coverage/xccov-files.json`, and runs `Scripts/check_xccov_thresholds.swift`. `detail-scroll` is the focused long-feed detail scrolling gate; run it with `Scripts/local_gate.sh detail-scroll`.
 
 `ui-smoke` runs `ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests`. `visual` runs the committed snapshot regression test classes selected in the wrapper. `accessibility` runs `ScrollDownSportsUITests/ScrollDownSportsAccessibilityUITests`. `multitasking` runs project and app-shape checks that preserve iPad multitasking eligibility. The `ipad-ui-smoke`, `ipad-accessibility`, and `ipad-multitasking` gates run the matching iPad-family checks. `ipad-visual` writes `.build/TestResults/IPadVisual.xcresult` and runs the same committed snapshot selection on the canonical snapshot host; iPad coverage in those tests comes from explicit snapshot fixture sizes. `performance-smoke` runs `ScrollDownSportsTests/PerformanceSmokeTests` and `ScrollDownSportsUITests/ScrollDownSportsPerformanceSmokeUITests`.
 

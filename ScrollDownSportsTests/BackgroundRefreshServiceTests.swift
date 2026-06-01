@@ -215,6 +215,124 @@ final class BackgroundRefreshServiceTests: XCTestCase {
         XCTAssertNotNil(store.snapshot.pinnedGamesById[832]?.latestDetail)
     }
 
+    func testFavoriteNotificationPlannerUsesOnlySpoilerSafeMetadata() throws {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        var snapshot = LocalGameStateSnapshot.empty(now: now)
+        snapshot.setFavoriteTeam("team-favorite", isFavorite: true)
+        let final = TestFixtures.makeGame(
+            id: 850,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T14:00:00Z"),
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayTeamID: "team-favorite",
+            awayScore: 41,
+            homeScore: 38,
+            eventCount: 24
+        )
+        let live = TestFixtures.makeGame(
+            id: 851,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T16:00:00Z"),
+            status: "in_progress",
+            isLive: true,
+            awayTeamID: "team-favorite",
+            awayScore: 8,
+            homeScore: 5,
+            eventCount: 13
+        )
+        let upcoming = TestFixtures.makeGame(
+            id: 852,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T20:00:00Z"),
+            status: "scheduled",
+            isLive: false,
+            isFinal: false,
+            awayTeamID: "team-favorite",
+            awayScore: nil,
+            homeScore: nil,
+            eventCount: nil,
+            presentation: TestFixtures.previewPresentation()
+        )
+
+        let plans = FavoriteGameNotificationPlanner.plans(games: [final, live, upcoming], snapshot: snapshot, now: now)
+
+        XCTAssertEqual(plans.map(\.payload.unreadState), [.finalUnread, .live, .upcoming])
+        XCTAssertEqual(plans.map(\.payload.status), [.final, .live, .upcoming])
+        XCTAssertEqual(plans.first?.payload.playCount, 24)
+        XCTAssertEqual(plans.first?.payload.estimatedReadingMinutes, 2)
+        XCTAssertEqual(plans.first?.payload.userInfo[FavoriteGameNotificationPayloadKeys.gameId] as? Int, 850)
+
+        let visibleText = plans.flatMap { [$0.title, $0.body] }.joined(separator: " ")
+        ["41", "38", "8-5", "winner", "wins", "comeback", "blowout", "score"].forEach { leakingToken in
+            XCTAssertFalse(
+                visibleText.localizedCaseInsensitiveContains(leakingToken),
+                "Notification text leaked \(leakingToken): \(visibleText)"
+            )
+        }
+    }
+
+    func testFavoriteNotificationDeliveryFailureDoesNotFailBackgroundRefresh() async throws {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let store = InMemoryGameStateStore(now: { now })
+        store.setFavoriteTeam(teamId: "away-860", isFavorite: true)
+        let apiClient = FakeBackgroundRefreshAPIClient(
+            gamesResult: .success([
+                TestFixtures.makeGame(
+                    id: 860,
+                    scheduledStart: TestFixtures.fixedDate("2026-05-22T14:00:00Z"),
+                    status: "final",
+                    isLive: false,
+                    isFinal: true,
+                    eventCount: 18
+                )
+            ]),
+            detailResults: [:]
+        )
+        let service = BackgroundRefreshService(
+            apiClient: apiClient,
+            gameStateStore: store,
+            notificationDeliverer: FakeFavoriteGameNotificationDeliverer(result: .failure(URLError(.cannotWriteToFile))),
+            now: { now }
+        )
+
+        try await service.refreshForBackground()
+
+        XCTAssertEqual(store.snapshot.homeSnapshot?.games.map(\.id), [860])
+        XCTAssertEqual(store.snapshot.backgroundRefreshRecord?.success, true)
+        XCTAssertTrue(store.snapshot.favoriteNotificationKeys.isEmpty)
+    }
+
+    func testDeliveredFavoriteNotificationsAreRecordedAndNotRepeated() async throws {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let store = InMemoryGameStateStore(now: { now })
+        store.setFavoriteTeam(teamId: "away-861", isFavorite: true)
+        let apiClient = FakeBackgroundRefreshAPIClient(
+            gamesResult: .success([
+                TestFixtures.makeGame(
+                    id: 861,
+                    scheduledStart: TestFixtures.fixedDate("2026-05-22T14:00:00Z"),
+                    status: "final",
+                    isLive: false,
+                    isFinal: true,
+                    eventCount: 18
+                )
+            ]),
+            detailResults: [:]
+        )
+        let deliverer = FakeFavoriteGameNotificationDeliverer(result: .success)
+        let service = BackgroundRefreshService(
+            apiClient: apiClient,
+            gameStateStore: store,
+            notificationDeliverer: deliverer,
+            now: { now }
+        )
+
+        try await service.refreshForBackground()
+        try await service.refreshForBackground()
+
+        XCTAssertEqual(deliverer.deliveredPlans.map(\.payload.gameId), [861])
+        XCTAssertEqual(store.snapshot.favoriteNotificationKeys.count, 1)
+    }
+
     func testFatalHomeFetchFailureRecordsFailedRefreshAndSkipsPinnedDetails() async {
         let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
         let store = InMemoryGameStateStore(now: { now })
@@ -299,6 +417,31 @@ final class BackgroundRefreshServiceTests: XCTestCase {
 }
 
 private final class MockBackgroundURLProtocol: MockHTTPURLProtocol {}
+
+@MainActor
+private final class FakeFavoriteGameNotificationDeliverer: FavoriteGameNotificationDelivering {
+    enum ResultValue {
+        case success
+        case failure(Error)
+    }
+
+    private let result: ResultValue
+    private(set) var deliveredPlans: [FavoriteGameNotificationPlan] = []
+
+    init(result: ResultValue) {
+        self.result = result
+    }
+
+    func deliver(_ plans: [FavoriteGameNotificationPlan]) async throws -> Set<String> {
+        switch result {
+        case .success:
+            deliveredPlans.append(contentsOf: plans)
+            return Set(plans.map(\.key))
+        case .failure(let error):
+            throw error
+        }
+    }
+}
 
 @MainActor
 private final class FakeBackgroundRefreshAPIClient: BackgroundRefreshAPIClient {

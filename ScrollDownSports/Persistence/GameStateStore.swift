@@ -1,18 +1,19 @@
 import Foundation
-
 struct LocalGameStateSnapshot: Codable, Equatable {
     static let currentSchemaVersion = 1
-
     var schemaVersion: Int
+    var favoriteTeamIds: Set<String>
+    var favoriteNotificationKeys: Set<String>
     var pinnedGamesById: [Int: PinnedGameRecord]
     var progressByGameId: [Int: GameProgressRecord]
     var homeSnapshot: PersistedHomeSnapshot?
     var backgroundRefreshRecord: BackgroundRefreshRecord?
     var updatedAt: Date
-
     static func empty(now: Date) -> LocalGameStateSnapshot {
         LocalGameStateSnapshot(
             schemaVersion: currentSchemaVersion,
+            favoriteTeamIds: [],
+            favoriteNotificationKeys: [],
             pinnedGamesById: [:],
             progressByGameId: [:],
             homeSnapshot: nil,
@@ -20,14 +21,38 @@ struct LocalGameStateSnapshot: Codable, Equatable {
             updatedAt: now
         )
     }
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion, favoriteTeamIds, favoriteNotificationKeys, pinnedGamesById, progressByGameId, homeSnapshot, backgroundRefreshRecord, updatedAt
+    }
+    init(
+        schemaVersion: Int,
+        favoriteTeamIds: Set<String> = [],
+        favoriteNotificationKeys: Set<String> = [],
+        pinnedGamesById: [Int: PinnedGameRecord],
+        progressByGameId: [Int: GameProgressRecord],
+        homeSnapshot: PersistedHomeSnapshot?,
+        backgroundRefreshRecord: BackgroundRefreshRecord?,
+        updatedAt: Date
+    ) {
+        self.schemaVersion = schemaVersion; self.favoriteTeamIds = favoriteTeamIds; self.favoriteNotificationKeys = favoriteNotificationKeys
+        self.pinnedGamesById = pinnedGamesById; self.progressByGameId = progressByGameId
+        self.homeSnapshot = homeSnapshot; self.backgroundRefreshRecord = backgroundRefreshRecord; self.updatedAt = updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        self.favoriteTeamIds = try container.decodeIfPresent(Set<String>.self, forKey: .favoriteTeamIds) ?? []
+        self.favoriteNotificationKeys = try container.decodeIfPresent(Set<String>.self, forKey: .favoriteNotificationKeys) ?? []
+        self.pinnedGamesById = try container.decode([Int: PinnedGameRecord].self, forKey: .pinnedGamesById)
+        self.progressByGameId = try container.decode([Int: GameProgressRecord].self, forKey: .progressByGameId)
+        self.homeSnapshot = try container.decodeIfPresent(PersistedHomeSnapshot.self, forKey: .homeSnapshot)
+        self.backgroundRefreshRecord = try container.decodeIfPresent(BackgroundRefreshRecord.self, forKey: .backgroundRefreshRecord)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
 }
 
-enum FollowLivePreference: String, Codable, Equatable {
-    case automatic
-    case followingLiveEdge
-    case readingAwayFromLiveEdge
-    case pinnedToLiveEdge
-}
+enum FollowLivePreference: String, Codable, Equatable { case automatic, followingLiveEdge, readingAwayFromLiveEdge, pinnedToLiveEdge }
 
 struct PinnedGameRecord: Codable, Equatable, Identifiable {
     var id: Int { gameId }
@@ -139,6 +164,16 @@ extension PinnedGameRecord {
 }
 
 extension LocalGameStateSnapshot {
+    mutating func setFavoriteTeam(_ teamID: String, isFavorite: Bool) {
+        let normalized = teamID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return }
+        if isFavorite { favoriteTeamIds.insert(normalized) } else { favoriteTeamIds.remove(normalized) }
+    }
+
+    mutating func recordFavoriteNotificationKeys(_ keys: Set<String>) {
+        favoriteNotificationKeys.formUnion(keys.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+    }
+
     mutating func pin(
         _ game: Game,
         now: () -> Date,
@@ -169,9 +204,13 @@ extension LocalGameStateSnapshot {
     mutating func markViewed(gameId: Int, now: () -> Date) {
         let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
+            let resumeCardID = progress.lastReadEventID
             progress.firstViewedAt = progress.firstViewedAt ?? date
             progress.lastViewedAt = date
             progress.eventIdentityBaseline = nil
+            if progress.hasReadCursor {
+                progress.readingHistory.recordResumed(cardID: resumeCardID, at: date)
+            }
         }
         if var record = pinnedGamesById[gameId] {
             record.lastViewedAt = date
@@ -182,10 +221,12 @@ extension LocalGameStateSnapshot {
     }
 
     mutating func recordKnownEventCount(gameId: Int, count: Int, now: () -> Date) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
             let safeCount = max(0, count)
             progress.lastKnownEventCount = safeCount
             progress.newEventCount = max(0, safeCount - progress.readEventCount)
+            progress.readingHistory.markRead(cardID: nil, eventIndex: progress.lastReadEventIndex, knownCount: safeCount, at: date)
         }
     }
 
@@ -195,22 +236,29 @@ extension LocalGameStateSnapshot {
         diff: GameEventListDiff,
         now: () -> Date
     ) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
             let priorBaseline = progress.eventIdentityBaseline
             let canonicalEvents = DetailStreamMode.dedupedEvents(from: events)
+            progress.readingHistory.mergeEvents(canonicalEvents, at: date)
             progress.lastKnownEventCount = canonicalEvents.count
             if diff.kind == .reset || priorBaseline == nil {
-                progress.newEventCount = 0
-            } else if progress.followLivePreference.isFollowingLiveEdge,
-                      let latestEvent = canonicalEvents.last {
-                progress.lastReadEventID = latestEvent.normalizedSourceEventID ?? latestEvent.id
-                progress.lastReadEventIndex = canonicalEvents.count - 1
                 progress.newEventCount = 0
             } else if !progress.hasReadCursor {
                 progress.newEventCount += diff.insertedEvents.count
             } else {
                 progress.recomputeUnreadCount(from: canonicalEvents)
             }
+            let readCardID = progress.lastReadEventIndex.flatMap { index in
+                canonicalEvents.indices.contains(index) ? canonicalEvents[index].readingHistoryCardID : nil
+            } ?? progress.lastReadEventID
+            progress.lastReadEventID = readCardID
+            progress.readingHistory.markRead(
+                cardID: readCardID,
+                eventIndex: progress.lastReadEventIndex,
+                knownCount: progress.lastKnownEventCount,
+                at: date
+            )
             progress.eventIdentityBaseline = GameEventIdentityBaseline(events: events)
         }
     }
@@ -222,6 +270,7 @@ extension LocalGameStateSnapshot {
         knownEventCount: Int?,
         now: () -> Date
     ) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
             let existingIndex = progress.lastReadEventIndex ?? -1
             if let eventIndex {
@@ -237,15 +286,23 @@ extension LocalGameStateSnapshot {
                 progress.lastKnownEventCount = max(0, knownEventCount)
             }
             progress.newEventCount = max(0, progress.lastKnownEventCount - progress.readEventCount)
+            progress.readingHistory.markRead(
+                cardID: progress.lastReadEventID,
+                eventIndex: progress.lastReadEventIndex,
+                knownCount: progress.lastKnownEventCount,
+                at: date
+            )
         }
     }
 
     mutating func clearReadPosition(gameId: Int, now: () -> Date) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
             progress.lastReadEventID = nil
             progress.lastReadEventIndex = nil
             progress.lastScrollFallback = nil
             progress.newEventCount = max(0, progress.lastKnownEventCount)
+            progress.readingHistory.clearReadState(knownCount: progress.lastKnownEventCount, at: date)
         }
     }
 
@@ -272,8 +329,12 @@ extension LocalGameStateSnapshot {
     }
 
     mutating func setReachedScoreboard(gameId: Int, reached: Bool, now: () -> Date) {
+        let date = now()
         mutateProgress(gameId: gameId, now: now) { progress in
             progress.reachedScoreboard = progress.reachedScoreboard || reached
+            if reached {
+                progress.readingHistory.recordRevealed(at: date)
+            }
         }
     }
 
@@ -343,61 +404,6 @@ extension LocalGameStateSnapshot {
     }
 }
 
-private extension GameProgressRecord {
-    var hasReadCursor: Bool {
-        lastReadEventID != nil || lastReadEventIndex != nil || lastScrollFallback != nil
-    }
-
-    mutating func recomputeUnreadCount(from events: [GameEvent]) {
-        guard !events.isEmpty else {
-            newEventCount = 0
-            return
-        }
-
-        guard let readIndex = resolvedReadIndex(in: events) else {
-            newEventCount = 0
-            return
-        }
-
-        lastReadEventIndex = readIndex
-        newEventCount = max(0, events.count - max(0, readIndex + 1))
-    }
-
-    private func resolvedReadIndex(in events: [GameEvent]) -> Int? {
-        if let eventID = lastReadEventID,
-           let index = events.firstIndex(where: { $0.normalizedSourceEventID == eventID || $0.id == eventID || $0.detailAnchorID == eventID }) {
-            return index
-        }
-
-        if let lastReadEventIndex {
-            return min(max(0, lastReadEventIndex), events.count - 1)
-        }
-
-        guard let fallbackSequence = lastScrollFallback?.eventSequence else {
-            return nil
-        }
-
-        if let sameSequence = events.firstIndex(where: { $0.sequence == fallbackSequence }) {
-            return sameSequence
-        }
-        if let previous = events.lastIndex(where: { $0.sequence < fallbackSequence }) {
-            return previous
-        }
-        return events.firstIndex(where: { $0.sequence > fallbackSequence })
-    }
-}
-
-private extension FollowLivePreference {
-    var isFollowingLiveEdge: Bool {
-        switch self {
-        case .followingLiveEdge, .pinnedToLiveEdge:
-            return true
-        case .automatic, .readingAwayFromLiveEdge:
-            return false
-        }
-    }
-}
-
 private extension PinnedGameRecord {
     var containsFixtureData: Bool {
         if FixtureDataBoundary.containsSyntheticTeamName([homeTeam, awayTeam]) {
@@ -433,6 +439,10 @@ private extension GameProgressRecord {
             return true
         }
 
+        if readingHistory.containsFixtureData() {
+            return true
+        }
+
         return eventIdentityBaseline?.sourceEventIDs.contains(where: FixtureDataBoundary.isFixtureSourceEventID) == true
     }
 }
@@ -445,21 +455,11 @@ private enum FixtureDataBoundary {
         "bay city bridges"
     ]
 
-    static func containsSyntheticTeamName(_ names: [String]) -> Bool {
-        names
-            .map(normalizedToken)
-            .contains { syntheticTeamNames.contains($0) }
-    }
+    static func containsSyntheticTeamName(_ names: [String]) -> Bool { names.map(normalizedToken).contains { syntheticTeamNames.contains($0) } }
 
-    static func isFixtureRawFeedSource(_ value: String?) -> Bool {
-        normalizedToken(value) == "fixture"
-    }
+    static func isFixtureRawFeedSource(_ value: String?) -> Bool { normalizedToken(value) == "fixture" }
 
-    static func isFixtureSourceEventID(_ value: String?) -> Bool {
-        normalizedToken(value).hasPrefix("fixture-")
-    }
+    static func isFixtureSourceEventID(_ value: String?) -> Bool { normalizedToken(value).hasPrefix("fixture-") }
 
-    private static func normalizedToken(_ value: String?) -> String {
-        value?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
-    }
+    private static func normalizedToken(_ value: String?) -> String { value?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "" }
 }

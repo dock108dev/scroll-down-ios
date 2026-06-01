@@ -4,7 +4,8 @@ import Foundation
 enum TestFixtures {
     static func makeAPIClient(
         responses: [MockHTTPResponse],
-        protocolClass: MockHTTPURLProtocol.Type
+        protocolClass: MockHTTPURLProtocol.Type,
+        gameDetailFetchMode: SDAGameDetailFetchMode = .legacyOnly
     ) -> SDAApiClient {
         MockHTTPURLProtocol.setResponses(responses, for: protocolClass)
         let configuration = URLSessionConfiguration.ephemeral
@@ -12,7 +13,8 @@ enum TestFixtures {
         return SDAApiClient(
             baseURL: URL(string: "https://example.test")!,
             apiKey: "",
-            session: URLSession(configuration: configuration)
+            session: URLSession(configuration: configuration),
+            gameDetailFetchMode: gameDetailFetchMode
         )
     }
 
@@ -29,8 +31,10 @@ enum TestFixtures {
         isFinal: Bool? = nil,
         awayName: String = "New York Yankees",
         awayAbbreviation: String? = "NYY",
+        awayTeamID: String? = nil,
         homeName: String = "Seattle Mariners",
         homeAbbreviation: String? = "SEA",
+        homeTeamID: String? = nil,
         awayScore: Int? = 1,
         homeScore: Int? = 2,
         eventCount: Int? = 12,
@@ -44,8 +48,8 @@ enum TestFixtures {
         scoreboard: GameScoreboardData? = nil
     ) -> Game {
         let participants = [
-            GameParticipant(id: "away-\(id)", role: .away, name: awayName, abbreviation: awayAbbreviation),
-            GameParticipant(id: "home-\(id)", role: .home, name: homeName, abbreviation: homeAbbreviation)
+            GameParticipant(id: awayTeamID ?? "away-\(id)", role: .away, name: awayName, abbreviation: awayAbbreviation),
+            GameParticipant(id: homeTeamID ?? "home-\(id)", role: .home, name: homeName, abbreviation: homeAbbreviation)
         ]
         return Game(
             id: id,
@@ -98,6 +102,7 @@ enum TestFixtures {
         eligibleModes: Set<GameMode>? = nil,
         usesBackendModeEligibility: Bool = true,
         presentation: EventPresentationData? = nil,
+        normalizedCard: NormalizedPlayCard? = nil,
         importanceMetadata: EventImportanceData? = nil,
         rawFeedSource: String? = nil,
         homeScore: Int? = nil,
@@ -118,6 +123,7 @@ enum TestFixtures {
             eligibleModes: eligibleModes ?? Self.eligibleModes(for: importance),
             usesBackendModeEligibility: usesBackendModeEligibility,
             presentation: presentation,
+            normalizedCard: normalizedCard,
             importanceMetadata: importanceMetadata,
             headline: headline ?? "Game update \(sequence)",
             detail: detail,
@@ -236,6 +242,101 @@ enum TestFixtures {
             return try SDAFixturePayloadFactory.gameDetail(gameId: gameId, playIDs: playIDs)
         } catch {
             preconditionFailure("Unable to build SDA game-detail fixture payload: \(error)")
+        }
+    }
+
+    static func sdaCardFeedJSON(
+        gameId: Int = 504,
+        status: String = "ready",
+        cardIDs: [String],
+        cardCount: Int? = nil
+    ) -> Data {
+        let cards: [[String: Any]] = cardIDs.enumerated().map { pair in
+            let (index, cardID) = pair
+            return [
+                "id": cardID,
+                "gameId": gameId,
+                "sourcePlayId": cardID,
+                "playIndex": index + 1,
+                "sport": "baseball",
+                "league": "MLB",
+                "tier": index == 0 ? 1 : 2,
+                "contentDepth": index == 0 ? "extended" : "standard",
+                "modeEligibility": ["important": index == 0, "standard": true, "all": true],
+                "importance": [
+                    "schemaVersion": 1,
+                    "level": index == 0 ? "primary" : "secondary",
+                    "rank": index + 1,
+                    "bucket": "feed",
+                    "reasons": [],
+                    "isKeyMoment": index == 0,
+                    "isScoringPlay": false,
+                    "isLeadChange": false,
+                    "isTyingPlay": false,
+                    "isLateGame": false,
+                    "isFinalPlay": false,
+                    "isRunEnding": false
+                ],
+                "visualImportance": index == 0 ? "high" : "medium",
+                "period": ["ordinal": 1, "label": "T1", "type": "inning"],
+                "displayTime": "T1",
+                "clock": NSNull(),
+                "team": ["abbreviation": "SEA", "name": "Seattle Mariners", "side": "home"],
+                "scoreBefore": NSNull(),
+                "scoreChange": NSNull(),
+                "scoreAfter": NSNull(),
+                "situation": ["summary": "Top of the first", "raw": ["inning": 1]],
+                "leadIn": "The inning starts quietly.",
+                "stageSetting": "Early rhythm",
+                "headline": "Feed update \(index + 1)",
+                "description": "A normalized card keeps the reader oriented.",
+                "impact": index == 0 ? "Sets the table." : NSNull(),
+                "tags": ["context"],
+                "spoilerLevel": "none"
+            ]
+        }
+        let payload: [String: Any] = [
+            "contractVersion": 1,
+            "game": [
+                "gameId": gameId,
+                "sport": "baseball",
+                "league": "MLB",
+                "status": "in_progress",
+                "homeTeam": "Seattle Mariners",
+                "awayTeam": "New York Yankees",
+                "homeTeamId": 136,
+                "awayTeamId": 147,
+                "homeTeamAbbr": "SEA",
+                "awayTeamAbbr": "NYY"
+            ],
+            "spoilerPolicy": "pre_reveal",
+            "generation": [
+                "status": status,
+                "cardCount": cardCount ?? cards.count,
+                "lastPlayIndex": cards.count,
+                "generatedAt": cards.isEmpty ? NSNull() : "2026-05-22T23:45:00Z",
+                "isStale": status == "stale_regenerating",
+                "validationIssues": []
+            ],
+            "reveal": [
+                "available": false,
+                "status": "unavailable",
+                "scoresInCards": false,
+                "revealRequiredForScores": true,
+                "completedGameBoundary": [
+                    "finalScore": "unavailable",
+                    "winner": "unavailable",
+                    "stats": "unavailable",
+                    "payoffCopy": "unavailable"
+                ]
+            ],
+            "sections": [],
+            "cards": cards
+        ]
+        do {
+            return try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            preconditionFailure("Unable to build SDA card-feed fixture payload: \(error)")
         }
     }
 

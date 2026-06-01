@@ -11,6 +11,12 @@ struct PlayRow: View {
         HStack(alignment: .top, spacing: 7) {
             EventMarker(importance: importance, accent: teamColor)
             VStack(alignment: .leading, spacing: importance == .low ? 3 : 4) {
+                if let leadIn = presentation.leadIn?.nilIfBlank {
+                    Text(leadIn)
+                        .font(SportsTheme.Typography.metadata)
+                        .foregroundStyle(SportsTheme.Colors.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text(presentation.headline)
                     .font(SportsTheme.Typography.momentHeadline)
                     .foregroundStyle(SportsTheme.Colors.ink)
@@ -48,11 +54,19 @@ struct PlayRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel)
         .accessibilityValue(rowAccessibilityValue)
+        .accessibilityHint(presentation.accessibilityHint ?? "")
     }
 
     @ViewBuilder
     private var contextLine: some View {
-        if hasContextLine {
+        if !presentation.contextItems.isEmpty {
+            HStack(spacing: 5) {
+                ForEach(presentation.contextItems) { item in
+                    contextItemView(item)
+                }
+                Spacer(minLength: 0)
+            }
+        } else if hasContextLine {
             HStack(spacing: 5) {
                 if !presentation.clockText.isEmpty, shouldShowClockInContextLine {
                     if !AppEnvironment.isRunningUITests {
@@ -78,6 +92,21 @@ struct PlayRow: View {
         }
     }
 
+    @ViewBuilder
+    private func contextItemView(_ item: PlayCardContextItemPresentation) -> some View {
+        if item.kind == .clock, AppEnvironment.isRunningUITests {
+            EmptyView()
+        } else if item.kind == .teamBadge {
+            teamBadge(item.text, teamAbbreviation: item.teamAbbreviation)
+        } else {
+            Text(item.text)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(color(for: item.tone, teamAbbreviation: item.teamAbbreviation))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+    }
+
     private var hasContextLine: Bool {
         !presentation.clockText.isEmpty && shouldShowClockInContextLine
             || presentation.teamAbbreviation?.nilIfBlank != nil
@@ -95,26 +124,39 @@ struct PlayRow: View {
         return PlayRowContentFilter.duplicatesMeaning(presentation.clockText, comparedWith: situationPeriodText) == false
     }
 
-    private func teamBadge(_ team: String) -> some View {
-        Text(team)
+    private func teamBadge(_ team: String, teamAbbreviation: String? = nil) -> some View {
+        let color = SportsTheme.Team.accent(for: teamAbbreviation ?? team, fallback: teamColor)
+        return Text(team)
             .font(SportsTheme.Typography.statusPill)
-            .foregroundStyle(teamColor)
+            .foregroundStyle(color)
             .padding(.vertical, 2)
             .padding(.horizontal, 6)
-            .background(teamColor.opacity(0.12), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous))
+            .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: SportsTheme.Radius.badge, style: .continuous)
-                    .stroke(teamColor.opacity(0.22), lineWidth: SportsTheme.Stroke.standard)
+                    .stroke(color.opacity(0.22), lineWidth: SportsTheme.Stroke.standard)
             )
     }
 
     private var visibleDetailText: String? {
-        PlayRowContentFilter.visibleDetailText(for: presentation)
+        if presentation.isNormalizedCard {
+            return presentation.detail?.nilIfBlank
+        }
+        return PlayRowContentFilter.visibleDetailText(for: presentation)
     }
 
     @ViewBuilder
     private var resultContextLine: some View {
-        if let situation = presentation.situation,
+        if !presentation.resultItems.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    resultItemsContent
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    resultItemsContent
+                }
+            }
+        } else if let situation = presentation.situation,
            PlayRowContentFilter.hasResultContext(for: situation) {
             let resultContext = PlayRowContentFilter.visibleResultContext(for: situation)
             ViewThatFits(in: .horizontal) {
@@ -125,6 +167,16 @@ struct PlayRow: View {
                     resultContextContent(resultContext)
                 }
             }
+        }
+    }
+
+    private var resultItemsContent: some View {
+        ForEach(presentation.resultItems) { item in
+            Text(item.text)
+                .font(SportsTheme.Typography.metadata)
+                .foregroundStyle(color(for: item.tone, teamAbbreviation: presentation.teamAbbreviation))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
         }
     }
 
@@ -159,12 +211,12 @@ struct PlayRow: View {
 
     @ViewBuilder
     private var detailLine: some View {
-        if let teamLabel = PlayRowContentFilter.visibleTeamLabel(for: presentation) {
+        if let teamLabel = visibleTeamLabel {
             Text(teamLabel)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(teamColor)
         }
-        if let scoreLabel = PlayRowContentFilter.visibleScoreLabel(for: presentation) {
+        if let scoreLabel = visibleScoreLabel {
             Text(scoreLabel)
                 .font(SportsTheme.Typography.metadata)
                 .foregroundStyle(SportsTheme.Colors.ink)
@@ -179,7 +231,7 @@ struct PlayRow: View {
                 SportsFeedback.selection()
                 onRawFeedExpansionChange(rawFeedKey, !isRawFeedExpanded)
             } label: {
-                Label("Feed details", systemImage: isRawFeedExpanded ? "chevron.up" : "chevron.down")
+                Label(rawFeedTitle, systemImage: isRawFeedExpanded ? "chevron.up" : "chevron.down")
                     .font(SportsTheme.Typography.metadata)
             }
             .buttonStyle(.plain)
@@ -237,12 +289,52 @@ struct PlayRow: View {
         SportsTheme.Team.accent(for: presentation.teamAbbreviation, fallback: accentColor)
     }
 
+    private var visibleTeamLabel: String? {
+        if presentation.isNormalizedCard {
+            return presentation.teamLabel?.nilIfBlank
+        }
+        return PlayRowContentFilter.visibleTeamLabel(for: presentation)
+    }
+
+    private var visibleScoreLabel: String? {
+        if presentation.isNormalizedCard {
+            return presentation.scoreLabel?.nilIfBlank ?? presentation.scoringLabel?.nilIfBlank
+        }
+        return PlayRowContentFilter.visibleScoreLabel(for: presentation)
+    }
+
+    private var rawFeedTitle: String {
+        presentation.rawFeedDisclosureTitle?.nilIfBlank ?? "Feed details"
+    }
+
+    private func color(for tone: NormalizedPlayCardTone?, teamAbbreviation: String?) -> Color {
+        switch tone {
+        case .critical:
+            return SportsTheme.Tone.critical.foreground
+        case .scoring:
+            return SportsTheme.Tone.scoring.foreground
+        case .possession:
+            return SportsTheme.Team.accent(for: teamAbbreviation ?? presentation.teamAbbreviation, fallback: SportsTheme.Tone.newPlay.accent)
+        case .context:
+            return SportsTheme.Tone.newPlay.foreground
+        case .secondary:
+            return SportsTheme.Colors.secondaryInk
+        case .muted:
+            return SportsTheme.Colors.secondaryInk.opacity(0.75)
+        case .neutral, .none:
+            return SportsTheme.Colors.ink
+        }
+    }
+
     private var rowAccessibilityLabel: String {
         presentation.accessibilityLabel ?? presentation.headline
     }
 
     private var rowAccessibilityValue: String {
-        PlayRowContentFilter.situationAccessibilityValue(for: presentation)
+        if let value = presentation.accessibilityValue?.nilIfBlank {
+            return value
+        }
+        return PlayRowContentFilter.situationAccessibilityValue(for: presentation)
     }
 }
 

@@ -90,9 +90,10 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
     }
 
     static func dedupedEvents(from events: [GameEvent]) -> [GameEvent] {
+        let duplicateSourceEventIDs = GameEventIdentityBaseline.duplicateSourceEventIDs(in: events)
         var uniqueEventsByKey: [String: GameEvent] = [:]
         for event in events {
-            let key = dedupeKey(for: event)
+            let key = dedupeKey(for: event, duplicateSourceEventIDs: duplicateSourceEventIDs)
             guard let current = uniqueEventsByKey[key] else {
                 uniqueEventsByKey[key] = event
                 continue
@@ -110,8 +111,9 @@ enum DetailStreamMode: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    private static func dedupeKey(for event: GameEvent) -> String {
-        if let sourceEventID = event.normalizedSourceEventID {
+    private static func dedupeKey(for event: GameEvent, duplicateSourceEventIDs: Set<String>) -> String {
+        if let sourceEventID = event.normalizedSourceEventID,
+           !duplicateSourceEventIDs.contains(sourceEventID) {
             return "event:\(sourceEventID)"
         }
 
@@ -150,13 +152,16 @@ struct GameDetailRestoreTargetResolver {
         mode: DetailStreamMode
     ) -> GameEvent? {
         let sortedEvents = DetailStreamMode.dedupedEvents(from: events)
+        let duplicateSourceEventIDs = GameEventIdentityBaseline.duplicateSourceEventIDs(in: sortedEvents)
         guard !sortedEvents.isEmpty else { return nil }
 
         if let eventID = progress.lastReadEventID,
            let exact = sortedEvents.first(where: {
-               $0.normalizedSourceEventID == eventID
-                   || $0.id == eventID
-                   || $0.detailAnchorID == eventID
+               GameEventIdentityResolver.matches(
+                   savedEventID: eventID,
+                   event: $0,
+                   duplicateSourceEventIDs: duplicateSourceEventIDs
+               )
            }) {
             return exact
         }
@@ -243,6 +248,9 @@ extension GameEvent {
     }
 
     var displayRawFeedText: String? {
+        if let normalizedRaw = normalizedCard?.rawFeed?.text?.nilIfBlank {
+            return normalizedRaw
+        }
         guard let raw = rawText?.nilIfBlank else { return nil }
         let visibleCopy = [headline, detail].compactMap(\.self).joined(separator: " ")
         guard raw.normalizedLabelKey != visibleCopy.normalizedLabelKey,
@@ -295,6 +303,22 @@ extension GameEvent {
             return .medium
         }
         return .low
+    }
+
+    var cardVisualImportance: EventVisualImportance {
+        guard let normalizedImportance = normalizedCard?.visualImportance else {
+            return visualImportance
+        }
+        switch normalizedImportance {
+        case .critical:
+            return .critical
+        case .high:
+            return .high
+        case .medium:
+            return .medium
+        case .low:
+            return .low
+        }
     }
 
     var resumePositionText: String {

@@ -12,6 +12,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertTrue(games[0].status.isLive)
         XCTAssertEqual(games[0].sport, .mlb)
         XCTAssertEqual(games[0].participants.map(\.role), [.away, .home])
+        XCTAssertEqual(games[0].participants.map(\.id), ["147", "136"])
         XCTAssertEqual(games[0].matchupText, "New York Yankees at Seattle Mariners")
         XCTAssertEqual(games[0].progress.eventCount, 12)
         XCTAssertEqual(games[0].progress.persistence?.storageKey, "game-504-progress")
@@ -41,6 +42,7 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(scheduledSummary.id, scheduledDetail.game.id)
         XCTAssertEqual(liveSummary.participants.map(\.role), liveDetail.game.participants.map(\.role))
         XCTAssertEqual(liveSummary.participants.map(\.name), liveDetail.game.participants.map(\.name))
+        XCTAssertEqual(liveSummary.participants.map(\.id), liveDetail.game.participants.map(\.id))
         XCTAssertEqual(liveDetail.events.map(\.sourceEventID), ["sda-504-001", "sda-504-002", "sda-504-003"])
         XCTAssertTrue(liveDetail.game.availableFeatures.hasTimeline)
         XCTAssertFalse(scheduledDetail.game.availableFeatures.hasTimeline)
@@ -188,6 +190,66 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(DetailStreamMode.full.visibleEvents(in: [event]).map(\.id), ["goal-1"])
         XCTAssertEqual(event.presentation?.scoreLabel, "East Vale 3, North Harbor 3")
         XCTAssertEqual(event.sportMetadata["strength"], .string("even"))
+    }
+
+    func testFetchGameUsesNormalizedFeedWhenAvailable() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"]))],
+            protocolClass: MockNormalizedFeedSuccessURLProtocol.self,
+            gameDetailFetchMode: .normalizedWithLegacyFallback
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+        let requests = MockHTTPURLProtocol.requestURLs(for: MockNormalizedFeedSuccessURLProtocol.self)
+
+        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
+        XCTAssertEqual(requests.first?.query, "spoilerPolicy=pre_reveal")
+        XCTAssertEqual(detail.feedMetadata.source, .normalizedFeed)
+        XCTAssertEqual(detail.feedMetadata.generationStatus, .ready)
+        XCTAssertEqual(detail.feedMetadata.fallbackState, .none)
+        XCTAssertEqual(detail.events.map(\.normalizedSourceEventID), ["event-1", "event-2"])
+        XCTAssertEqual(detail.game.participants.map(\.id), ["147", "136"])
+        XCTAssertNotNil(detail.events.first?.normalizedCard)
+    }
+
+    func testNormalizedUnavailableFallsBackToLegacyDetail() async throws {
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(TestFixtures.sdaCardFeedJSON(status: "validation_blocked", cardIDs: [])),
+                .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"]))
+            ],
+            protocolClass: MockNormalizedFallbackURLProtocol.self,
+            gameDetailFetchMode: .normalizedWithLegacyFallback
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+        let requests = MockHTTPURLProtocol.requestURLs(for: MockNormalizedFallbackURLProtocol.self)
+
+        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards", "/api/v1/games/504"])
+        XCTAssertEqual(detail.feedMetadata.source, .legacyDetail)
+        XCTAssertEqual(detail.feedMetadata.generationStatus, .validationBlocked)
+        XCTAssertEqual(detail.feedMetadata.fallbackState, .legacyDetail)
+        XCTAssertEqual(detail.events.map(\.id), ["event-1", "event-2"])
+    }
+
+    func testMalformedNormalizedFeedFallsBackWithoutMaskingLegacyCompatibility() async throws {
+        let malformedFeed = #"{"contractVersion":1,"game":{"gameId":504},"cards":[]}"#.data(using: .utf8)!
+        let client = TestFixtures.makeAPIClient(
+            responses: [
+                .ok(malformedFeed),
+                .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1"]))
+            ],
+            protocolClass: MockMalformedNormalizedFeedURLProtocol.self,
+            gameDetailFetchMode: .normalizedWithLegacyFallback
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+        let requests = MockHTTPURLProtocol.requestURLs(for: MockMalformedNormalizedFeedURLProtocol.self)
+
+        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards", "/api/v1/games/504"])
+        XCTAssertEqual(detail.feedMetadata.source, .legacyDetail)
+        XCTAssertEqual(detail.feedMetadata.fallbackState, .legacyDetail)
+        XCTAssertEqual(detail.events.map(\.id), ["event-1"])
     }
 
     func testSportMetadataOnlySurvivesEventMapping() throws {
@@ -443,3 +505,6 @@ private final class MockWrongContractURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingTextURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingPeriodURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingEligibilityURLProtocol: MockHTTPURLProtocol {}
+private final class MockNormalizedFeedSuccessURLProtocol: MockHTTPURLProtocol {}
+private final class MockNormalizedFallbackURLProtocol: MockHTTPURLProtocol {}
+private final class MockMalformedNormalizedFeedURLProtocol: MockHTTPURLProtocol {}

@@ -128,6 +128,63 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(allTimelineIDs(in: sections).isEmpty)
     }
 
+    func testFavoriteTeamsPrioritizeTimelineRowsWithinSection() throws {
+        let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
+        let early = TestFixtures.makeGame(
+            id: 61,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T18:00:00Z"),
+            awayTeamID: "team-early-away",
+            homeTeamID: "team-early-home"
+        )
+        let laterFavorite = TestFixtures.makeGame(
+            id: 62,
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T19:00:00Z"),
+            awayTeamID: "team-favorite",
+            homeTeamID: "team-later-home"
+        )
+        let store = InMemoryGameStateStore(now: { now })
+        store.setFavoriteTeam(teamId: "team-favorite", isFavorite: true)
+        let viewModel = HomeViewModel(now: { now }, gameStateStore: store)
+        viewModel.games = [early, laterFavorite]
+
+        XCTAssertEqual(timelineIDs(in: viewModel.filteredHomeSections, sectionID: "timeline-live"), [62, 61])
+    }
+
+    func testFavoriteCompletedCardStaysSpoilerSafeBeforeReveal() throws {
+        let final = TestFixtures.makeGame(
+            id: 63,
+            status: "final",
+            isLive: false,
+            isFinal: true,
+            awayName: "New York Yankees",
+            awayAbbreviation: "NYY",
+            awayTeamID: "team-favorite",
+            homeName: "Seattle Mariners",
+            homeAbbreviation: "SEA",
+            homeTeamID: "team-sea",
+            awayScore: 7,
+            homeScore: 6,
+            eventCount: 24
+        )
+        let state = GameSummaryCardState(
+            item: HomeGameItem(
+                game: final,
+                isPinned: false,
+                pinnedRecord: nil,
+                progress: nil,
+                favoriteTeamIds: ["team-favorite"]
+            ),
+            presentation: SportRendererRegistry.renderer(for: final).gameCardPresentation(for: final)
+        )
+
+        XCTAssertEqual(state.teamLines.map(\.isFavorite), [true, false])
+        XCTAssertFalse(state.showsScoreRows)
+        XCTAssertEqual(state.contextText, "Catch up · 2 mins read · score at bottom")
+        XCTAssertFalse(state.teamLines.contains { $0.isWinner })
+        XCTAssertFalse(state.accessibilityLabel.contains("7"))
+        XCTAssertFalse(state.accessibilityLabel.contains("6"))
+    }
+
     func testPinnedResultAccessorsExposeCurrentAndMissingPinnedRecords() {
         let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
         let currentPinned = TestFixtures.makeGame(
@@ -381,18 +438,20 @@ final class HomeViewModelTests: XCTestCase {
         let unreadState = HomeGameCardState(item: makeItem(game: final))
         XCTAssertEqual(unreadState.phase, .final)
         XCTAssertEqual(unreadState.primaryActionLabel, "Catch up")
-        XCTAssertEqual(unreadState.contextText, "Catch up · score at bottom")
+        XCTAssertEqual(unreadState.contextText, "Catch up · 1 min read · score at bottom")
         XCTAssertFalse(unreadState.showsScoreRows)
 
         let resumeProgress = TestFixtures.makeProgress(gameId: final.id, lastReadEventIndex: 3, lastKnownEventCount: 12)
         let resumeState = HomeGameCardState(item: makeItem(game: final, progress: resumeProgress))
         XCTAssertEqual(resumeState.primaryActionLabel, "Resume")
         XCTAssertEqual(resumeState.progressText, "Resume from T4 · 1 out")
+        XCTAssertEqual(resumeState.contextText, "Resume from T4 · 1 out · 1 min left · 8 new")
 
         let readProgress = TestFixtures.makeProgress(gameId: final.id, lastReadEventIndex: 11, lastKnownEventCount: 12, reachedScoreboard: true)
         let readState = HomeGameCardState(item: makeItem(game: final, progress: readProgress))
         XCTAssertTrue(readState.showsScoreRows)
         XCTAssertNil(readState.scoreCueText)
+        XCTAssertEqual(readState.contextText, "12 plays read · 1 min read")
         XCTAssertEqual(readState.scoreRows.map(\.scoreText), ["7", "6"])
         XCTAssertEqual(Set(readState.scoreRows.map(\.name)).count, readState.scoreRows.count)
         XCTAssertEqual(Set(readState.scoreRows.map(\.id)).count, final.participants.count)
@@ -468,6 +527,7 @@ final class HomeViewModelTests: XCTestCase {
         let resumeState = HomeGameCardState(item: makeItem(game: finalWithTimeline, progress: partialProgress))
         XCTAssertEqual(resumeState.primaryActionLabel, "Resume")
         XCTAssertEqual(resumeState.progressText, "Resume from T4")
+        XCTAssertEqual(resumeState.contextText, "Resume from T4 · 1 min left · 7 new")
 
         var recapProgress = partialProgress
         recapProgress.reachedScoreboard = true

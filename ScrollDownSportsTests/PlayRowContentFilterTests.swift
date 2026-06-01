@@ -130,6 +130,113 @@ final class PlayRowContentFilterTests: XCTestCase {
         XCTAssertEqual(PlayRowContentFilter.resultContextText(movementContext), movementContext)
     }
 
+    func testNormalizedCardDecodingPreservesBackendAuthoredSlots() throws {
+        let json = """
+        {
+          "detailContractVersion": 2,
+          "game": {
+            "id": 7,
+            "leagueCode": "nba",
+            "gameDate": "2026-05-22T23:30:00Z",
+            "status": "in_progress",
+            "homeTeam": "Bay Harbor",
+            "awayTeam": "North Arc",
+            "homeTeamAbbr": "BAY",
+            "awayTeamAbbr": "NAR",
+            "score": { "home": 100, "away": 99 }
+          },
+          "teamStats": [],
+          "playerStats": [],
+          "plays": [{
+            "eventId": "play-card-1",
+            "playIndex": 24,
+            "displayType": "three_point_field_goal",
+            "periodLabel": "Q4",
+            "clockLabel": "00:38",
+            "description": "legacy raw description",
+            "score": { "home": 100, "away": 99 },
+            "importance": {
+              "schemaVersion": 1,
+              "level": "tertiary",
+              "rank": 5,
+              "bucket": "routine",
+              "reasons": [],
+              "isKeyMoment": false,
+              "isScoringPlay": false,
+              "isLeadChange": false,
+              "isTyingPlay": false,
+              "isLateGame": false
+            },
+            "modeEligibility": { "important": false, "standard": true, "all": true },
+            "sportMetadata": { "runLabel": "client should not use this" },
+            "card": {
+              "schemaVersion": 1,
+              "visualImportance": "critical",
+              "clock": { "text": "Q4 00:38" },
+              "leadIn": { "text": "Fourth quarter begins after 12 earlier plays.", "tone": "secondary" },
+              "headline": { "text": "Backend headline controls the card" },
+              "body": { "text": "Backend body controls the card." },
+              "contextItems": [
+                { "id": "clock", "kind": "clock", "text": "Q4 00:38" },
+                { "id": "team", "kind": "teamBadge", "text": "BAY", "teamAbbreviation": "BAY" }
+              ],
+              "resultItems": [{ "id": "impact", "text": "Backend impact", "tone": "critical", "priority": 10 }],
+              "score": { "label": "Scoring", "value": "BAY 100, NAR 99", "isScoringPlay": true, "spoilerPolicy": "hide_until_reveal" },
+              "rawFeed": { "text": "provider payload", "source": "SDA", "disclosureTitle": "Original feed" },
+              "accessibility": { "label": "Backend card accessibility", "value": "Backend card value" }
+            }
+          }]
+        }
+        """.data(using: .utf8)!
+
+        let detail = SDADomainMapper.detail(from: try JSONDecoder.sda.decode(SDAGameDetailResponseDTO.self, from: json))
+        let event = try XCTUnwrap(detail.events.first)
+        let card = try XCTUnwrap(event.normalizedCard)
+
+        XCTAssertEqual(card.headline.text, "Backend headline controls the card")
+        XCTAssertEqual(card.leadIn?.text, "Fourth quarter begins after 12 earlier plays.")
+        XCTAssertEqual(card.visualImportance, .critical)
+        XCTAssertEqual(event.cardVisualImportance, .critical)
+        XCTAssertEqual(card.contextItems.map(\.text), ["Q4 00:38", "BAY"])
+        XCTAssertEqual(card.resultItems.map(\.text), ["Backend impact"])
+        XCTAssertEqual(event.displayRawFeedText, "provider payload")
+        XCTAssertEqual(event.headline, "legacy raw description")
+        XCTAssertEqual(event.sportMetadata["runLabel"], .string("client should not use this"))
+    }
+
+    func testNormalizedCardScoreTextHidesUntilReveal() {
+        let game = TestFixtures.makeGame(
+            id: 9,
+            leagueCode: "nba",
+            status: "in_progress",
+            awayName: "North Arc",
+            awayAbbreviation: "NAR",
+            homeName: "Bay Harbor",
+            homeAbbreviation: "BAY",
+            awayScore: 99,
+            homeScore: 100
+        )
+        let card = NormalizedPlayCard(
+            schemaVersion: 1,
+            cardID: nil,
+            visualImportance: .high,
+            accent: nil,
+            clock: nil,
+            headline: NormalizedPlayCardText(text: "Bay Harbor answers", tone: nil, maxLines: nil),
+            body: NormalizedPlayCardText(text: "The run continues.", tone: nil, maxLines: nil),
+            contextItems: [],
+            resultItems: [],
+            score: NormalizedPlayCardScore(label: "Scoring", value: "BAY 100, NAR 99", isScoringPlay: true, spoilerPolicy: .hideUntilReveal),
+            team: nil,
+            situation: nil,
+            rawFeed: nil,
+            accessibility: NormalizedPlayCardAccessibility(label: "Bay Harbor answers", value: nil, hint: nil, situationSummary: nil)
+        )
+
+        XCTAssertNil(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .hideAbsoluteScores).scoreLabel)
+        XCTAssertEqual(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed).scoreLabel, "BAY 100, NAR 99")
+    }
+
     private func baseballPresentation(
         headline: String = "Julio Rodriguez singles to center. Two runs score.",
         detail: String? = "Seattle turns a bases-loaded chance into the first lead of the inning."

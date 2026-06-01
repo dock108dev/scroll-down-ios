@@ -20,6 +20,123 @@ struct SportRendererSituationContext {
     }
 }
 
+struct PlayCardContextItemPresentation: Identifiable, Hashable {
+    let id: String
+    let kind: NormalizedPlayCardContextKind
+    let text: String
+    let tone: NormalizedPlayCardTone?
+    let teamAbbreviation: String?
+}
+
+struct PlayCardResultItemPresentation: Identifiable, Hashable {
+    let id: String
+    let text: String
+    let tone: NormalizedPlayCardTone?
+}
+
+extension GameEventPresentation {
+    init(card: NormalizedPlayCard, game: Game, scoreSpoilerPolicy: ScoreSpoilerPolicy) {
+        self.init(
+            clockText: card.clock?.text ?? card.contextItems.first { $0.kind == .clock }?.text ?? "",
+            leadIn: card.leadIn?.text,
+            headline: card.headline.text,
+            detail: card.body?.text,
+            contextItems: card.contextItems.map {
+                PlayCardContextItemPresentation(
+                    id: $0.id,
+                    kind: $0.kind,
+                    text: $0.text,
+                    tone: $0.tone,
+                    teamAbbreviation: $0.teamAbbreviation
+                )
+            },
+            resultItems: card.resultItems.map {
+                PlayCardResultItemPresentation(id: $0.id, text: $0.text, tone: $0.tone)
+            },
+            eventLabel: card.contextItems.first { $0.kind == .eventLabel }?.text,
+            teamAbbreviation: card.team?.abbreviation ?? card.contextItems.first { $0.kind == .teamBadge }?.teamAbbreviation,
+            teamLabel: card.team?.label,
+            scoringLabel: card.score?.isScoringPlay == true ? card.score?.label?.nilIfBlank : nil,
+            scoreLabel: Self.visibleScoreValue(card.score, game: game, scoreSpoilerPolicy: scoreSpoilerPolicy),
+            rawFeedText: card.rawFeed?.text,
+            rawFeedSource: card.rawFeed?.source,
+            rawFeedDisclosureTitle: card.rawFeed?.disclosureTitle,
+            accessibilityLabel: card.accessibility.label,
+            accessibilityValue: card.accessibility.value,
+            accessibilityHint: card.accessibility.hint,
+            situation: card.situation.map(GameEventSituationPresentation.init(normalized:)),
+            situationAccessibilityText: card.accessibility.situationSummary,
+            isNormalizedCard: true
+        )
+    }
+
+    private static func visibleScoreValue(
+        _ score: NormalizedPlayCardScore?,
+        game: Game,
+        scoreSpoilerPolicy: ScoreSpoilerPolicy
+    ) -> String? {
+        guard let score else { return nil }
+        switch score.spoilerPolicy {
+        case .alwaysShow:
+            return score.value?.nilIfBlank
+        case .hideUntilReveal:
+            return scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
+        case .finalOnly:
+            return game.status.isFinal && scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
+        }
+    }
+}
+
+extension GameEventSituationPresentation {
+    init(normalized: NormalizedPlayCardSituation) {
+        self.init(
+            title: normalized.title,
+            periodText: normalized.periodText,
+            setupText: normalized.setupText,
+            contextLine: normalized.contextLine,
+            pressureLine: normalized.pressureLine,
+            sport: GameEventSituationSport(rawValue: normalized.sport) ?? .generic,
+            layout: GameEventSituationLayout(rawValue: normalized.layout) ?? .pressureBoardFallback,
+            ownership: normalized.ownership.map(GameEventSituationOwnership.init(normalized:)),
+            diagram: nil,
+            accent: GameEventSituationAccent(
+                ownership: normalized.accent?.participantRole,
+                teamAbbreviation: normalized.accent?.teamAbbreviation,
+                teamLabel: normalized.ownership?.teamLabel,
+                tone: normalized.accent?.tone?.sportsTone ?? .newPlay
+            ),
+            dataConfidence: GameEventSituationDataConfidence(rawValue: normalized.dataConfidence) ?? .contract
+        )
+    }
+}
+
+private extension GameEventSituationOwnership {
+    init(normalized: NormalizedPlayCardSituationOwnership) {
+        self.init(
+            role: GameEventSituationOwnershipRole(rawValue: normalized.role) ?? .association,
+            participantRole: normalized.participantRole,
+            teamAbbreviation: normalized.teamAbbreviation,
+            teamLabel: normalized.teamLabel,
+            confidence: GameEventSituationOwnershipConfidence(rawValue: normalized.confidence) ?? .explicit
+        )
+    }
+}
+
+private extension NormalizedPlayCardTone {
+    var sportsTone: SportsTheme.Tone {
+        switch self {
+        case .critical:
+            return .critical
+        case .scoring:
+            return .scoring
+        case .possession, .context:
+            return .newPlay
+        case .neutral, .secondary, .muted:
+            return .neutral
+        }
+    }
+}
+
 protocol SportRenderer {
     var theme: SportRenderingTheme { get }
 

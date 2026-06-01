@@ -8,6 +8,8 @@
     "status": "scheduled",
     "homeTeam": "Boston Red Sox",
     "awayTeam": "Toronto Blue Jays",
+    "homeTeamId": 111,
+    "awayTeamId": 141,
     "homeTeamAbbr": "BOS",
     "awayTeamAbbr": "TOR",
     "currentPeriod": null,

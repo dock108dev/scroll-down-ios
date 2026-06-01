@@ -21,6 +21,7 @@ struct GameProgressRecord: Codable, Equatable {
     var lastKnownEventCount: Int
     var newEventCount: Int
     var eventIdentityBaseline: GameEventIdentityBaseline?
+    var readingHistory: GameReadingHistoryRecord
     var updatedAt: Date
 
     static func empty(gameId: Int, now: Date) -> GameProgressRecord {
@@ -39,6 +40,7 @@ struct GameProgressRecord: Codable, Equatable {
             lastKnownEventCount: 0,
             newEventCount: 0,
             eventIdentityBaseline: nil,
+            readingHistory: .empty(),
             updatedAt: now
         )
     }
@@ -63,6 +65,7 @@ struct GameProgressRecord: Codable, Equatable {
         case lastKnownEventCount
         case newEventCount
         case eventIdentityBaseline
+        case readingHistory
         case updatedAt
     }
 
@@ -81,6 +84,7 @@ struct GameProgressRecord: Codable, Equatable {
         lastKnownEventCount: Int,
         newEventCount: Int,
         eventIdentityBaseline: GameEventIdentityBaseline?,
+        readingHistory: GameReadingHistoryRecord? = nil,
         updatedAt: Date
     ) {
         self.gameId = gameId
@@ -97,27 +101,41 @@ struct GameProgressRecord: Codable, Equatable {
         self.lastKnownEventCount = lastKnownEventCount
         self.newEventCount = newEventCount
         self.eventIdentityBaseline = eventIdentityBaseline
+        self.readingHistory = readingHistory ?? .empty()
         self.updatedAt = updatedAt
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let lastReadEventID = try container.decodeIfPresent(String.self, forKey: .lastReadEventID)
+        let lastReadEventIndex = try container.decodeIfPresent(Int.self, forKey: .lastReadEventIndex)
+        let lastKnownEventCount = try container.decode(Int.self, forKey: .lastKnownEventCount)
+        let reachedScoreboard = try container.decode(Bool.self, forKey: .reachedScoreboard)
+        let updatedAt = try container.decode(Date.self, forKey: .updatedAt)
         self.init(
             gameId: try container.decode(Int.self, forKey: .gameId),
             selectedMode: try container.decode(GameMode.self, forKey: .selectedMode),
             firstViewedAt: try container.decodeIfPresent(Date.self, forKey: .firstViewedAt),
             lastViewedAt: try container.decodeIfPresent(Date.self, forKey: .lastViewedAt),
-            lastReadEventID: try container.decodeIfPresent(String.self, forKey: .lastReadEventID),
-            lastReadEventIndex: try container.decodeIfPresent(Int.self, forKey: .lastReadEventIndex),
+            lastReadEventID: lastReadEventID,
+            lastReadEventIndex: lastReadEventIndex,
             lastScrollFallback: try container.decodeIfPresent(GameScrollFallbackRecord.self, forKey: .lastScrollFallback),
             expandedSectionIDs: try container.decodeIfPresent(Set<String>.self, forKey: .expandedSectionIDs) ?? [],
             expandedRawFeedKeys: try container.decodeIfPresent(Set<String>.self, forKey: .expandedRawFeedKeys) ?? [],
-            reachedScoreboard: try container.decode(Bool.self, forKey: .reachedScoreboard),
+            reachedScoreboard: reachedScoreboard,
             followLivePreference: try container.decode(FollowLivePreference.self, forKey: .followLivePreference),
-            lastKnownEventCount: try container.decode(Int.self, forKey: .lastKnownEventCount),
+            lastKnownEventCount: lastKnownEventCount,
             newEventCount: try container.decode(Int.self, forKey: .newEventCount),
             eventIdentityBaseline: try container.decodeIfPresent(GameEventIdentityBaseline.self, forKey: .eventIdentityBaseline),
-            updatedAt: try container.decode(Date.self, forKey: .updatedAt)
+            readingHistory: try container.decodeIfPresent(GameReadingHistoryRecord.self, forKey: .readingHistory)
+                ?? GameReadingHistoryRecord.migrated(
+                    lastReadEventID: lastReadEventID,
+                    lastReadEventIndex: lastReadEventIndex,
+                    lastKnownEventCount: lastKnownEventCount,
+                    reachedScoreboard: reachedScoreboard,
+                    updatedAt: updatedAt
+                ),
+            updatedAt: updatedAt
         )
     }
 }
@@ -128,9 +146,13 @@ protocol GameStateStore: AnyObject {
     var snapshots: AnyPublisher<LocalGameStateSnapshot, Never> { get }
 
     func isPinned(gameId: Int) -> Bool
+    func isFavoriteTeam(teamId: String) -> Bool
     func pin(_ game: Game)
     func unpin(gameId: Int)
     func togglePin(_ game: Game)
+    func setFavoriteTeam(teamId: String, isFavorite: Bool)
+    func toggleFavoriteTeam(teamId: String)
+    func recordFavoriteNotificationKeys(_ keys: Set<String>)
     func updatePinnedGame(_ game: Game)
     func saveHomeSnapshot(games: [Game], windowKey: String, fetchedAt: Date)
     func updatePinnedGameDetail(_ detail: GameDetail, fetchedAt: Date)
@@ -158,8 +180,16 @@ extension GameStateStore {
         snapshot.pinnedGamesById[gameId]?.isPinned == true
     }
 
+    func isFavoriteTeam(teamId: String) -> Bool {
+        snapshot.favoriteTeamIds.contains(teamId)
+    }
+
     func togglePin(_ game: Game) {
         isPinned(gameId: game.id) ? unpin(gameId: game.id) : pin(game)
+    }
+
+    func toggleFavoriteTeam(teamId: String) {
+        setFavoriteTeam(teamId: teamId, isFavorite: !isFavoriteTeam(teamId: teamId))
     }
 
     func progress(for gameId: Int) -> GameProgressRecord? {

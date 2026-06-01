@@ -55,6 +55,47 @@ struct GameEventIdentityBaseline: Codable, Equatable, Sendable {
     }
 }
 
+enum GameEventIdentityResolver {
+    static func readCursorID(for event: GameEvent, duplicateSourceEventIDs: Set<String>) -> String {
+        if let normalizedCardID = event.normalizedCardID {
+            return normalizedCardID
+        }
+        if let sourceEventID = event.normalizedSourceEventID,
+           !duplicateSourceEventIDs.contains(sourceEventID) {
+            return sourceEventID
+        }
+        if let sourceEventID = event.normalizedSourceEventID,
+           duplicateSourceEventIDs.contains(sourceEventID),
+           event.id == sourceEventID {
+            return event.detailAnchorID
+        }
+        return event.id
+    }
+
+    static func matches(
+        savedEventID: String,
+        event: GameEvent,
+        duplicateSourceEventIDs: Set<String>
+    ) -> Bool {
+        if let normalizedCardID = event.normalizedCardID,
+           normalizedCardID == savedEventID {
+            return true
+        }
+        if duplicateSourceEventIDs.contains(savedEventID) {
+            return event.detailAnchorID == savedEventID
+        }
+        if event.id == savedEventID || event.detailAnchorID == savedEventID {
+            return true
+        }
+        guard let sourceEventID = event.normalizedSourceEventID,
+              !duplicateSourceEventIDs.contains(sourceEventID)
+        else {
+            return false
+        }
+        return sourceEventID == savedEventID
+    }
+}
+
 enum GameEventListChangeKind: String, Equatable, Sendable {
     case unchanged
     case appended

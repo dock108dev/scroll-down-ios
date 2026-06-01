@@ -11,7 +11,7 @@ enum ScoreSpoilerFilter {
         guard let trimmed = value?.nilIfBlank else {
             return nil
         }
-        return containsAbsoluteScoreBearingText(trimmed, for: game) ? nil : trimmed
+        return containsHomeMetadataSpoilerText(trimmed, for: game) ? nil : trimmed
     }
 
     static func matchupText(for game: Game) -> String {
@@ -50,7 +50,7 @@ enum ScoreSpoilerFilter {
             #"\bup\s+(?:by\s+)?[0-9]+\b"#,
             #"\bdown\s+(?:by\s+)?[0-9]+\b"#,
             #"\btied\b"#,
-            #"\blead\s+change\b"#,
+            #"\blead\s+changes?\b"#,
             #"\bgo[- ]ahead\b"#,
             #"\bties?\s+(?:it|the\s+game|game)\b"#,
             #"\bcuts?\s+the\s+deficit\b"#,
@@ -63,6 +63,18 @@ enum ScoreSpoilerFilter {
 
     static func containsAnyScorePressureText(_ text: String, for game: Game) -> Bool {
         containsAbsoluteScoreBearingText(text, for: game) || containsRelativeScorePressureText(text)
+    }
+
+    static func containsHomeMetadataSpoilerText(_ text: String, for game: Game) -> Bool {
+        if containsAnyScorePressureText(text, for: game) {
+            return true
+        }
+        let normalized = normalize(text)
+        let patterns = [
+            #"\b[0-9]+\s+(?:points?|rebounds?|assists?|goals?|saves?|hits?|rbi|runs?|yards?|touchdowns?|scoring\s+plays?)\b"#,
+            #"\b(?:comeback|blowout|key\s+players?|player\s+stats?|team\s+stats?|led\s+by|powered\s+by)\b"#
+        ]
+        return patterns.contains { containsPattern($0, in: normalized) }
     }
 
     private static func fallbackMatchupText(for game: Game) -> String {
@@ -201,16 +213,22 @@ enum EventScoreSpoilerFilter {
             clockText: presentation.clockText,
             headline: filteredHeadline(presentation.headline, fallback: presentation, shouldHide: scoreTextPredicate),
             detail: filteredSupplement(presentation.detail, shouldHide: scoreTextPredicate),
+            contextItems: filteredContextItems(presentation.contextItems, shouldHide: scoreTextPredicate),
+            resultItems: filteredResultItems(presentation.resultItems, shouldHide: scoreTextPredicate),
             eventLabel: presentation.eventLabel,
             teamAbbreviation: presentation.teamAbbreviation,
             teamLabel: presentation.teamLabel,
             scoringLabel: filteredSupplement(presentation.scoringLabel, shouldHide: scoreTextPredicate),
-            scoreLabel: nil,
+            scoreLabel: filteredSupplement(presentation.scoreLabel, shouldHide: scoreTextPredicate),
             rawFeedText: filteredSupplement(presentation.rawFeedText, shouldHide: scoreTextPredicate),
             rawFeedSource: filteredSupplement(presentation.rawFeedSource, shouldHide: scoreTextPredicate),
+            rawFeedDisclosureTitle: presentation.rawFeedDisclosureTitle,
             accessibilityLabel: filteredSupplement(presentation.accessibilityLabel, shouldHide: scoreTextPredicate),
+            accessibilityValue: filteredSupplement(presentation.accessibilityValue, shouldHide: scoreTextPredicate),
+            accessibilityHint: presentation.accessibilityHint,
             situation: filteredSituation,
-            situationAccessibilityText: filteredAccessibilityText
+            situationAccessibilityText: filteredAccessibilityText,
+            isNormalizedCard: presentation.isNormalizedCard
         )
     }
 
@@ -231,6 +249,20 @@ enum EventScoreSpoilerFilter {
     private static func filteredSupplement(_ text: String?, shouldHide: (String) -> Bool) -> String? {
         guard let text = text?.nilIfBlank else { return nil }
         return shouldHide(text) ? nil : text
+    }
+
+    private static func filteredContextItems(
+        _ items: [PlayCardContextItemPresentation],
+        shouldHide: (String) -> Bool
+    ) -> [PlayCardContextItemPresentation] {
+        items.filter { shouldHide($0.text) == false }
+    }
+
+    private static func filteredResultItems(
+        _ items: [PlayCardResultItemPresentation],
+        shouldHide: (String) -> Bool
+    ) -> [PlayCardResultItemPresentation] {
+        items.filter { shouldHide($0.text) == false }
     }
 
     private static func filterSituation(

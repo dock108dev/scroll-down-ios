@@ -8,6 +8,8 @@
     "status": "in_progress",
     "homeTeam": "Seattle Mariners",
     "awayTeam": "New York Yankees",
+    "homeTeamId": 136,
+    "awayTeamId": 147,
     "homeTeamAbbr": "SEA",
     "awayTeamAbbr": "NYY",
     "currentPeriod": 4,

@@ -46,6 +46,21 @@ struct HomeGameItem: Identifiable, Equatable {
     let isPinned: Bool
     let pinnedRecord: PinnedGameRecord?
     let progress: GameProgressRecord?
+    let favoriteTeamIds: Set<String>
+
+    init(
+        game: Game,
+        isPinned: Bool,
+        pinnedRecord: PinnedGameRecord?,
+        progress: GameProgressRecord?,
+        favoriteTeamIds: Set<String> = []
+    ) {
+        self.game = game
+        self.isPinned = isPinned
+        self.pinnedRecord = pinnedRecord
+        self.progress = progress
+        self.favoriteTeamIds = favoriteTeamIds
+    }
 
     var id: Int { game.id }
 

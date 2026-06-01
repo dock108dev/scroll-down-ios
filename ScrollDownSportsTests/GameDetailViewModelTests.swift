@@ -171,6 +171,37 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.loading)
     }
 
+    func testRefreshCanSwitchFromLegacyFallbackToNormalizedWithoutLosingReadAnchor() async throws {
+        let store = InMemoryGameStateStore()
+        let viewModel = GameDetailViewModel(
+            gameId: 504,
+            apiClient: TestFixtures.makeAPIClient(
+                responses: [
+                    .httpError(statusCode: 503),
+                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2", "event-3"]))
+                ],
+                protocolClass: MockGameFeedSwitchURLProtocol.self,
+                gameDetailFetchMode: .normalizedWithLegacyFallback
+            ),
+            gameStateStore: store
+        )
+
+        await viewModel.refresh()
+        XCTAssertEqual(viewModel.detail?.feedMetadata.source, .legacyDetail)
+        XCTAssertEqual(viewModel.feedFallbackState, .legacyDetail)
+        viewModel.recordReadEvent(eventIndex: 1, eventID: "event-2", knownEventCount: 2)
+
+        await viewModel.refresh()
+
+        XCTAssertEqual(viewModel.detail?.feedMetadata.source, .normalizedFeed)
+        XCTAssertEqual(viewModel.feedGenerationStatus, .ready)
+        XCTAssertEqual(viewModel.feedFallbackState, .none)
+        XCTAssertEqual(viewModel.detail?.events.map(\.normalizedSourceEventID), ["event-1", "event-2", "event-3"])
+        XCTAssertEqual(store.progress(for: 504)?.lastReadEventID, "event-2")
+        XCTAssertEqual(viewModel.localProgress?.lastReadEventID, "event-2")
+    }
+
     func testProgressMutatorsPersistScrollExpansionRawFeedAndViewedState() {
         let now = TestFixtures.fixedDate("2026-05-22T16:00:00Z")
         let store = InMemoryGameStateStore(now: { now })
@@ -466,3 +497,4 @@ final class GameDetailViewModelTests: XCTestCase {
 }
 
 private final class MockGameURLProtocol: MockHTTPURLProtocol {}
+private final class MockGameFeedSwitchURLProtocol: MockHTTPURLProtocol {}

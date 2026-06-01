@@ -238,6 +238,16 @@ struct HomeView: View {
             } label: {
                 Label(item.isPinned ? "Unpin Game" : "Pin Game", systemImage: item.isPinned ? "pin.slash" : "pin")
             }
+            ForEach(favoriteParticipants(for: item.game)) { participant in
+                Button {
+                    viewModel.toggleFavoriteTeam(participant)
+                } label: {
+                    Label(
+                        favoriteLabel(for: participant),
+                        systemImage: viewModel.isFavoriteTeam(participant) ? "star.slash" : "star"
+                    )
+                }
+            }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
@@ -282,5 +292,14 @@ struct HomeView: View {
             .accessibilityIdentifier("home.gameRow.\(item.id)")
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         }
+    }
+
+    private func favoriteParticipants(for game: Game) -> [GameParticipant] {
+        game.participants.filter { $0.favoriteTeamID != nil }
+    }
+
+    private func favoriteLabel(for participant: GameParticipant) -> String {
+        let teamLabel = participant.abbreviation?.nilIfBlank ?? participant.name
+        return viewModel.isFavoriteTeam(participant) ? "Unfavorite \(teamLabel)" : "Favorite \(teamLabel)"
     }
 }

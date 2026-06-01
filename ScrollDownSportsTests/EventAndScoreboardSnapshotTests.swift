@@ -5,26 +5,51 @@ import XCTest
 @MainActor
 final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
     func testPlayRowsCoverImportanceScoringAndRawFeedStates() {
+        let game = ComponentSnapshotFixtures.game(id: 5_130, status: "in_progress", awayScore: 3, homeScore: 4)
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
                 PlayRow(
-                    presentation: ComponentSnapshotFixtures.scoringPlayPresentation(),
+                    presentation: Self.normalizedPresentation(
+                        game: game,
+                        sportLabel: "MLB",
+                        headline: "Julio Rodriguez turns a bases-loaded chance into the lead",
+                        body: "Seattle gets the finished card copy from the backend.",
+                        context: ["B8 1 out", "SEA", "Single"],
+                        result: ["Lead change", "Bases loaded"],
+                        scoreValue: "SEA 5, OAK 4",
+                        rawFeedText: "single to center, runners on second and third score"
+                    ),
                     importance: .critical,
                     rawFeedKey: "critical-score",
                     isRawFeedExpanded: false,
                     onRawFeedExpansionChange: { _, _ in }
                 )
                 PlayRow(
-                    presentation: ComponentSnapshotFixtures.scoringPlayPresentation(),
+                    presentation: Self.normalizedPresentation(
+                        game: game,
+                        sportLabel: "NFL",
+                        headline: "Bay Harbor finishes the drive with a short scoring run",
+                        body: "The same card system carries the richer football context.",
+                        context: ["Q4 01:18", "BAY", "Touchdown"],
+                        result: ["Red zone", "Drive payoff"],
+                        scoreValue: "BAY 27, NAR 24",
+                        rawFeedText: "rush middle for 3 yards, touchdown confirmed by review"
+                    ),
                     importance: .critical,
                     rawFeedKey: "critical-score",
                     isRawFeedExpanded: true,
                     onRawFeedExpansionChange: { _, _ in }
                 )
                 PlayRow(
-                    presentation: ComponentSnapshotFixtures.eventPresentation(
-                        headline: "North Arc forces a long field attempt",
-                        eventLabel: "Stop"
+                    presentation: Self.normalizedPresentation(
+                        game: game,
+                        sportLabel: "NHL",
+                        visualImportance: .high,
+                        headline: "North Arc forces a long attempt from the point",
+                        body: "Standard density stays readable without a separate hockey layout.",
+                        context: ["P2 04:17", "NAR", "Shot"],
+                        result: ["Power play pressure"],
+                        scoreValue: nil
                     ),
                     importance: .high,
                     rawFeedKey: nil,
@@ -32,10 +57,15 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
                     onRawFeedExpansionChange: { _, _ in }
                 )
                 PlayRow(
-                    presentation: ComponentSnapshotFixtures.eventPresentation(
+                    presentation: Self.normalizedPresentation(
+                        game: game,
+                        sportLabel: "NBA",
+                        visualImportance: .medium,
                         headline: "Bay Harbor resets after pressure",
-                        eventLabel: "Possession",
-                        scoreLabel: "NAR 24, BAY 20"
+                        body: "Basketball run context arrives as card text instead of local inference.",
+                        context: ["Q3 06:45", "BAY", "Possession"],
+                        result: ["Tempo settles"],
+                        scoreValue: nil
                     ),
                     importance: .medium,
                     rawFeedKey: nil,
@@ -43,13 +73,15 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
                     onRawFeedExpansionChange: { _, _ in }
                 )
                 PlayRow(
-                    presentation: ComponentSnapshotFixtures.eventPresentation(
-                        clockText: "",
+                    presentation: Self.normalizedPresentation(
+                        game: game,
+                        sportLabel: "NBA",
+                        visualImportance: .low,
                         headline: "Line change settles the possession",
-                        detail: "Fresh legs enter and the tempo slows.",
-                        eventLabel: nil,
-                        teamAbbreviation: nil,
-                        teamLabel: "Bay Harbor Lights"
+                        body: "All-play density remains quiet and compact.",
+                        context: ["Q2 02:10"],
+                        result: [],
+                        scoreValue: nil
                     ),
                     importance: .low,
                     rawFeedKey: nil,
@@ -352,6 +384,58 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             situation: situation,
             situationAccessibilityText: situation.accessibilitySummary
         )
+    }
+
+    private static func normalizedPresentation(
+        game: Game,
+        sportLabel: String,
+        visualImportance: NormalizedPlayCardImportance = .critical,
+        headline: String,
+        body: String?,
+        context: [String],
+        result: [String],
+        scoreValue: String?,
+        rawFeedText: String? = nil
+    ) -> GameEventPresentation {
+        let contextItems = context.enumerated().map { index, text in
+            NormalizedPlayCardContextItem(
+                id: "\(sportLabel)-context-\(index)",
+                kind: index == 0 ? .clock : index == 1 ? .teamBadge : .eventLabel,
+                text: text,
+                tone: index == 2 ? .context : .neutral,
+                participantRole: index == 1 ? .home : nil,
+                teamAbbreviation: index == 1 ? text : nil
+            )
+        }
+        let resultItems = result.enumerated().map { index, text in
+            NormalizedPlayCardResultItem(
+                id: "\(sportLabel)-result-\(index)",
+                text: text,
+                tone: index == 0 ? .critical : .secondary,
+                priority: index
+            )
+        }
+        let card = NormalizedPlayCard(
+            schemaVersion: 1,
+            cardID: nil,
+            visualImportance: visualImportance,
+            accent: nil,
+            clock: nil,
+            headline: NormalizedPlayCardText(text: headline, tone: nil, maxLines: nil),
+            body: body.map { NormalizedPlayCardText(text: $0, tone: .secondary, maxLines: nil) },
+            contextItems: contextItems,
+            resultItems: resultItems,
+            score: scoreValue.map {
+                NormalizedPlayCardScore(label: "Scoring", value: $0, isScoringPlay: true, spoilerPolicy: .hideUntilReveal)
+            },
+            team: nil,
+            situation: nil,
+            rawFeed: rawFeedText.map {
+                NormalizedPlayCardRawFeed(text: $0, source: "component-feed", updatedAt: nil, disclosureTitle: nil)
+            },
+            accessibility: NormalizedPlayCardAccessibility(label: headline, value: sportLabel, hint: nil, situationSummary: nil)
+        )
+        return GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed)
     }
 
     private static func baseballSituation(

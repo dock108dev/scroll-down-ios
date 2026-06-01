@@ -28,6 +28,7 @@ Gates:
   build                Same as fast.
   unit                 Run ScrollDownSportsTests without coverage enforcement.
   coverage             Run unit tests with coverage and enforce thresholds.
+  detail-scroll        Run focused long detail-feed scroll invariants.
   ui-smoke             Run deterministic critical XCUITest flows.
   visual               Run committed visual snapshot regression tests.
   accessibility        Run accessibility XCUITest audits.
@@ -531,6 +532,11 @@ run_coverage() {
     --repo-root "$ROOT_DIR"
 }
 
+run_detail_scroll() {
+  run_xcode_test detail-scroll "$RESULTS_DIR/DetailScroll.xcresult" no \
+    -only-testing:ScrollDownSportsTests/DetailLongFeedScrollTests
+}
+
 run_ui_smoke() {
   run_xcode_test ui-smoke "$RESULTS_DIR/UISmoke.xcresult" no \
     -only-testing:ScrollDownSportsUITests/ScrollDownSportsCriticalFlowsUITests
@@ -674,6 +680,9 @@ case "$1" in
     ;;
   coverage)
     run_coverage
+    ;;
+  detail-scroll)
+    run_detail_scroll
     ;;
   ui-smoke)
     run_ui_smoke

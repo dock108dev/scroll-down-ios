@@ -62,6 +62,12 @@ struct GameParticipant: Codable, Identifiable, Hashable, Sendable {
     let role: GameParticipantRole
     let name: String
     let abbreviation: String?
+
+    var favoriteTeamID: String? {
+        let value = id.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty, value != "home", value != "away" else { return nil }
+        return value
+    }
 }
 
 enum GameParticipantRole: Codable, Hashable, Sendable {
@@ -94,6 +100,166 @@ struct ScoreDelta: Codable, Hashable, Sendable {
     let before: Int?
     let after: Int?
     let change: Int?
+}
+
+struct NormalizedPlayCard: Codable, Hashable, Sendable {
+    let schemaVersion: Int
+    let cardID: String?
+    let visualImportance: NormalizedPlayCardImportance
+    let accent: NormalizedPlayCardAccent?
+    let clock: NormalizedPlayCardText?
+    let leadIn: NormalizedPlayCardText?
+    let headline: NormalizedPlayCardText
+    let body: NormalizedPlayCardText?
+    let contextItems: [NormalizedPlayCardContextItem]
+    let resultItems: [NormalizedPlayCardResultItem]
+    let score: NormalizedPlayCardScore?
+    let team: NormalizedPlayCardTeam?
+    let situation: NormalizedPlayCardSituation?
+    let rawFeed: NormalizedPlayCardRawFeed?
+    let accessibility: NormalizedPlayCardAccessibility
+
+    init(
+        schemaVersion: Int,
+        cardID: String?,
+        visualImportance: NormalizedPlayCardImportance,
+        accent: NormalizedPlayCardAccent?,
+        clock: NormalizedPlayCardText?,
+        leadIn: NormalizedPlayCardText? = nil,
+        headline: NormalizedPlayCardText,
+        body: NormalizedPlayCardText?,
+        contextItems: [NormalizedPlayCardContextItem],
+        resultItems: [NormalizedPlayCardResultItem],
+        score: NormalizedPlayCardScore?,
+        team: NormalizedPlayCardTeam?,
+        situation: NormalizedPlayCardSituation?,
+        rawFeed: NormalizedPlayCardRawFeed?,
+        accessibility: NormalizedPlayCardAccessibility
+    ) {
+        self.schemaVersion = schemaVersion
+        self.cardID = cardID
+        self.visualImportance = visualImportance
+        self.accent = accent
+        self.clock = clock
+        self.leadIn = leadIn
+        self.headline = headline
+        self.body = body
+        self.contextItems = contextItems
+        self.resultItems = resultItems
+        self.score = score
+        self.team = team
+        self.situation = situation
+        self.rawFeed = rawFeed
+        self.accessibility = accessibility
+    }
+}
+
+enum NormalizedPlayCardImportance: String, Codable, Hashable, Sendable {
+    case critical
+    case high
+    case medium
+    case low
+}
+
+enum NormalizedPlayCardTone: String, Codable, Hashable, Sendable {
+    case neutral
+    case secondary
+    case scoring
+    case critical
+    case possession
+    case context
+    case muted
+}
+
+struct NormalizedPlayCardAccent: Codable, Hashable, Sendable {
+    let tone: NormalizedPlayCardTone?
+    let participantRole: GameParticipantRole?
+    let teamAbbreviation: String?
+}
+
+struct NormalizedPlayCardText: Codable, Hashable, Sendable {
+    let text: String
+    let tone: NormalizedPlayCardTone?
+    let maxLines: Int?
+}
+
+struct NormalizedPlayCardContextItem: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let kind: NormalizedPlayCardContextKind
+    let text: String
+    let tone: NormalizedPlayCardTone?
+    let participantRole: GameParticipantRole?
+    let teamAbbreviation: String?
+}
+
+enum NormalizedPlayCardContextKind: String, Codable, Hashable, Sendable {
+    case clock
+    case teamBadge
+    case eventLabel
+    case status
+    case metadata
+}
+
+struct NormalizedPlayCardResultItem: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let text: String
+    let tone: NormalizedPlayCardTone?
+    let priority: Int
+}
+
+struct NormalizedPlayCardScore: Codable, Hashable, Sendable {
+    let label: String?
+    let value: String?
+    let isScoringPlay: Bool
+    let spoilerPolicy: NormalizedPlayCardSpoilerPolicy
+}
+
+enum NormalizedPlayCardSpoilerPolicy: String, Codable, Hashable, Sendable {
+    case alwaysShow
+    case hideUntilReveal
+    case finalOnly
+}
+
+struct NormalizedPlayCardTeam: Codable, Hashable, Sendable {
+    let participantRole: GameParticipantRole?
+    let abbreviation: String?
+    let displayName: String?
+    let label: String?
+}
+
+struct NormalizedPlayCardSituation: Codable, Hashable, Sendable {
+    let title: String
+    let periodText: String?
+    let setupText: String?
+    let contextLine: String?
+    let pressureLine: String?
+    let sport: String
+    let layout: String
+    let ownership: NormalizedPlayCardSituationOwnership?
+    let accent: NormalizedPlayCardAccent?
+    let dataConfidence: String
+}
+
+struct NormalizedPlayCardSituationOwnership: Codable, Hashable, Sendable {
+    let role: String
+    let participantRole: GameParticipantRole?
+    let teamAbbreviation: String?
+    let teamLabel: String?
+    let confidence: String
+}
+
+struct NormalizedPlayCardRawFeed: Codable, Hashable, Sendable {
+    let text: String?
+    let source: String?
+    let updatedAt: String?
+    let disclosureTitle: String?
+}
+
+struct NormalizedPlayCardAccessibility: Codable, Hashable, Sendable {
+    let label: String
+    let value: String?
+    let hint: String?
+    let situationSummary: String?
 }
 
 struct GameStatus: Codable, Hashable, Sendable {
@@ -216,6 +382,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
     let eligibleModes: Set<GameMode>
     let usesBackendModeEligibility: Bool
     let presentation: EventPresentationData?
+    let normalizedCard: NormalizedPlayCard?
     let importanceMetadata: EventImportanceData?
     let headline: String
     let detail: String?
@@ -243,6 +410,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
         eligibleModes: Set<GameMode>,
         usesBackendModeEligibility: Bool,
         presentation: EventPresentationData?,
+        normalizedCard: NormalizedPlayCard? = nil,
         importanceMetadata: EventImportanceData?,
         headline: String,
         detail: String?,
@@ -269,6 +437,7 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
         self.eligibleModes = eligibleModes
         self.usesBackendModeEligibility = usesBackendModeEligibility
         self.presentation = presentation
+        self.normalizedCard = normalizedCard
         self.importanceMetadata = importanceMetadata
         self.headline = headline
         self.detail = detail
@@ -294,6 +463,14 @@ struct GameEvent: Codable, Identifiable, Hashable, Sendable {
         sourceEventID?.nilIfBlank
     }
 
+    var normalizedCardID: String? {
+        normalizedCard?.cardID?.nilIfBlank
+    }
+
+    var readingHistoryCardID: String {
+        normalizedCardID ?? normalizedSourceEventID ?? id
+    }
+
     var diffKey: GameEventDiffKey {
         if let normalizedSourceEventID {
             return GameEventDiffKey(kind: .sourceEventID, value: normalizedSourceEventID, sequence: sequence)
@@ -308,6 +485,43 @@ enum GameEventImportance: Codable, Hashable, Sendable {
     case contextual
 }
 
+enum GameDetailSource: String, Codable, Hashable, Sendable {
+    case normalizedFeed
+    case legacyDetail
+}
+
+enum GameFeedGenerationStatus: String, Codable, Hashable, Sendable {
+    case unknown
+    case noPbpYet
+    case unsupportedSport
+    case generationPending
+    case validationBlocked
+    case staleRegenerating
+    case ready
+}
+
+enum GameFeedFallbackState: String, Codable, Hashable, Sendable {
+    case none
+    case legacyDetail
+    case safeEmpty
+}
+
+struct GameDetailFeedMetadata: Codable, Hashable, Sendable {
+    let source: GameDetailSource
+    let generationStatus: GameFeedGenerationStatus
+    let fallbackState: GameFeedFallbackState
+    let revealAvailable: Bool
+    let revealRequiredForScores: Bool
+
+    static let legacyDetail = GameDetailFeedMetadata(
+        source: .legacyDetail,
+        generationStatus: .unknown,
+        fallbackState: .none,
+        revealAvailable: false,
+        revealRequiredForScores: true
+    )
+}
+
 struct GameDetail: Codable, Hashable, Sendable {
     let game: Game
     let teamStats: [TeamStat]
@@ -317,8 +531,15 @@ struct GameDetail: Codable, Hashable, Sendable {
     let mlbPitchers: [MLBPitcherStat]?
     let nhlSkaters: [NHLPlayerStat]?
     let nhlGoalies: [NHLPlayerStat]?
+    var feedMetadata: GameDetailFeedMetadata = .legacyDetail
 
     var leagueCode: String {
         game.leagueCode.lowercased()
+    }
+
+    func withFeedMetadata(_ metadata: GameDetailFeedMetadata) -> GameDetail {
+        var detail = self
+        detail.feedMetadata = metadata
+        return detail
     }
 }

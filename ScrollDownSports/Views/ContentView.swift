@@ -19,6 +19,13 @@ struct HomeGameRoute: Identifiable, Hashable {
         self.init(gameId: game.id, summary: game)
     }
 
+    init?(notificationUserInfo: [AnyHashable: Any]?, games: [Game]) {
+        guard let gameId = FavoriteGameNotificationTapBridge.gameId(from: notificationUserInfo) else {
+            return nil
+        }
+        self.init(gameId: gameId, summary: games.first { $0.id == gameId })
+    }
+
     static func == (lhs: HomeGameRoute, rhs: HomeGameRoute) -> Bool {
         lhs.gameId == rhs.gameId
     }
@@ -76,6 +83,9 @@ struct ContentView: View {
             }
             .onChange(of: viewModel.games) { _, games in
                 refreshSelectedSummary(from: games)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: FavoriteGameNotificationTapBridge.notificationName)) { notification in
+                openNotificationRoute(userInfo: notification.userInfo)
             }
         }
     }
@@ -135,6 +145,12 @@ struct ContentView: View {
         guard let selectedGameRoute else { return }
         guard let game = games.first(where: { $0.id == selectedGameRoute.gameId }) else { return }
         self.selectedGameRoute = HomeGameRoute(game: game)
+    }
+
+    func openNotificationRoute(userInfo: [AnyHashable: Any]?) {
+        guard let route = HomeGameRoute(notificationUserInfo: userInfo, games: viewModel.games) else { return }
+        selectedGameRoute = route
+        compactPath = [route]
     }
 }
 

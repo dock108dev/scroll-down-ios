@@ -40,51 +40,28 @@ extension Calendar {
 }
 
 enum DateFormatters {
-    static let apiDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
-        return formatter
-    }()
+    private static let easternTime = TimeZone(identifier: "America/New_York")
 
-    static let queryDate: DateFormatter = {
+    private static func makeFormatter(timeZone: TimeZone?, dateFormat: String) -> DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = timeZone
+        formatter.dateFormat = dateFormat
         return formatter
-    }()
+    }
 
-    static let shortTime: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "EEE, MMM d · h:mm a"
-        return formatter
-    }()
+    static let apiDate = makeFormatter(
+        timeZone: TimeZone(secondsFromGMT: 0),
+        dateFormat: "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+    )
 
-    static let timeOnly: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "h:mm a"
-        return formatter
-    }()
+    static let queryDate = makeFormatter(timeZone: easternTime, dateFormat: "yyyy-MM-dd")
 
-    static let dayTitle: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "EEEE"
-        return formatter
-    }()
+    static let shortTime = makeFormatter(timeZone: easternTime, dateFormat: "EEE, MMM d · h:mm a")
 
-    static let daySubtitle: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/New_York")
-        formatter.dateFormat = "MMM d"
-        return formatter
-    }()
+    static let timeOnly = makeFormatter(timeZone: easternTime, dateFormat: "h:mm a")
+
+    static let dayTitle = makeFormatter(timeZone: easternTime, dateFormat: "EEEE")
+
+    static let daySubtitle = makeFormatter(timeZone: easternTime, dateFormat: "MMM d")
 }

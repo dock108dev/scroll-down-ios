@@ -78,6 +78,14 @@ private final class RecordingGameStateStore: GameStateStore {
         base.unpin(gameId: gameId)
     }
 
+    func setFavoriteTeam(teamId: String, isFavorite: Bool) {
+        base.setFavoriteTeam(teamId: teamId, isFavorite: isFavorite)
+    }
+
+    func recordFavoriteNotificationKeys(_ keys: Set<String>) {
+        base.recordFavoriteNotificationKeys(keys)
+    }
+
     func updatePinnedGame(_ game: Game) {
         base.updatePinnedGame(game)
     }
