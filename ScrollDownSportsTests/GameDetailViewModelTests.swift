@@ -86,14 +86,14 @@ final class GameDetailViewModelTests: XCTestCase {
         store.pin(game)
         let baseline = SDADomainMapper.detail(
             from: try JSONDecoder.sda.decode(
-                SDAGameDetailResponseDTO.self,
-                from: TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"])
+                SDACardFeedResponseDTO.self,
+                from: TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"])
             )
         )
         let updated = SDADomainMapper.detail(
             from: try JSONDecoder.sda.decode(
-                SDAGameDetailResponseDTO.self,
-                from: TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2", "event-3"])
+                SDACardFeedResponseDTO.self,
+                from: TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2", "event-3"])
             )
         )
         store.updatePinnedGameDetail(baseline, fetchedAt: Date())
@@ -114,8 +114,8 @@ final class GameDetailViewModelTests: XCTestCase {
             gameId: 504,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"])),
-                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2", "event-3"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2", "event-3"]))
                 ],
                 protocolClass: MockGameURLProtocol.self
             ),
@@ -146,8 +146,8 @@ final class GameDetailViewModelTests: XCTestCase {
             gameId: 505,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"])),
-                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2", "event-3"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2", "event-3"])),
                     .httpError(statusCode: 503)
                 ],
                 protocolClass: MockGameURLProtocol.self
@@ -171,25 +171,28 @@ final class GameDetailViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.loading)
     }
 
-    func testRefreshCanSwitchFromLegacyFallbackToNormalizedWithoutLosingReadAnchor() async throws {
+    func testRefreshFailureThenNormalizedRecoveryPreservesReadAnchor() async throws {
         let store = InMemoryGameStateStore()
         let viewModel = GameDetailViewModel(
             gameId: 504,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
                     .httpError(statusCode: 503),
-                    .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"])),
                     .ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2", "event-3"]))
                 ],
-                protocolClass: MockGameFeedSwitchURLProtocol.self,
-                gameDetailFetchMode: .normalizedWithLegacyFallback
+                protocolClass: MockGameFeedSwitchURLProtocol.self
             ),
             gameStateStore: store
         )
 
         await viewModel.refresh()
-        XCTAssertEqual(viewModel.detail?.feedMetadata.source, .legacyDetail)
-        XCTAssertEqual(viewModel.feedFallbackState, .legacyDetail)
+        XCTAssertNil(viewModel.detail)
+        XCTAssertEqual(viewModel.errorMessage, "The data service returned HTTP 503.")
+
+        await viewModel.refresh()
+        XCTAssertEqual(viewModel.detail?.feedMetadata.source, .normalizedFeed)
+        XCTAssertEqual(viewModel.feedFallbackState, .none)
         viewModel.recordReadEvent(eventIndex: 1, eventID: "event-2", knownEventCount: 2)
 
         await viewModel.refresh()

@@ -11,8 +11,14 @@ enum SDAUIPerformanceFixturePayload {
             return SDAUIFixturePayload.jsonData(["games": games, "total": games.count])
         }
 
-        guard path.hasPrefix("/api/v1/games/"),
-              let id = path.split(separator: "/").last.flatMap({ Int($0) }) else {
+        let parts = path.split(separator: "/")
+        guard parts.count == 6,
+              parts[0] == "api",
+              parts[1] == "v1",
+              parts[2] == "feed",
+              parts[3] == "games",
+              parts[5] == "cards",
+              let id = Int(parts[4]) else {
             return nil
         }
         return detailData(gameID: id)
@@ -24,17 +30,10 @@ enum SDAUIPerformanceFixturePayload {
         detailRequestCounts[gameID] = requestCount
         let playCount = gameID == 9101 && requestCount > 1 ? 105 : ((game["playCount"] as? Int) ?? 1)
 
-        return SDAUIFixturePayload.jsonData([
-            "detailContractVersion": 2,
-            "game": gameWithPlayCount(game, playCount: playCount),
-            "teamStats": SDAUIFixturePayload.teamStats(away: "Harbor Club 0", home: "Metro Club 0"),
-            "playerStats": SDAUIFixturePayload.playerStats(away: "Harbor Club 0", home: "Metro Club 0"),
-            "plays": plays(gameID: gameID, count: playCount),
-            "mlbBatters": SDAUIFixturePayload.batterStats(away: "Harbor Club 0", home: "Metro Club 0"),
-            "mlbPitchers": SDAUIFixturePayload.pitcherStats(away: "Harbor Club 0", home: "Metro Club 0"),
-            "nhlSkaters": [],
-            "nhlGoalies": []
-        ])
+        let updatedGame = gameWithPlayCount(game, playCount: playCount)
+        return SDAUIFixturePayload.jsonData(
+            SDAUIFixturePayload.cardFeed(game: updatedGame, plays: plays(gameID: gameID, count: playCount))
+        )
     }
 
     private static func gameSummaries() -> [[String: Any]] {

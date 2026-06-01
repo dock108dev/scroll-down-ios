@@ -14,6 +14,7 @@ extension LocalGameStateSnapshot {
         if let fetchedCursor,
            let existingCursor,
            fetchedCursor < existingCursor {
+            preserveCursorUnreadCount(&record)
             record.lastBackgroundRefreshAt = fetchedAt
             record.lastBackgroundError = nil
             pinnedGamesById[gameId] = record
@@ -35,6 +36,7 @@ extension LocalGameStateSnapshot {
             }
             record.latestPlayCursor = fetchedCursor
         }
+        preserveCursorUnreadCount(&record)
 
         pinnedGamesById[gameId] = record
         mirrorPinnedUnseenCountToProgress(gameId: gameId, count: record.newEventCount, now: fetchedAt)
@@ -64,6 +66,18 @@ extension LocalGameStateSnapshot {
             return max(0, latestSequence - seenSequence)
         }
         return latestCursor.isAfter(seenCursor) ? 1 : 0
+    }
+
+    private func preserveCursorUnreadCount(_ record: inout PinnedGameRecord) {
+        if let seenSequence = record.lastSeenPlayCursor?.sequence,
+           let latestSequence = record.latestPlayCursor?.sequence,
+           latestSequence > seenSequence {
+            record.newEventCount = max(record.newEventCount, latestSequence - seenSequence)
+        } else if let seenCursor = record.lastSeenPlayCursor,
+                  let latestCursor = record.latestPlayCursor,
+                  latestCursor.isAfter(seenCursor) {
+            record.newEventCount = max(record.newEventCount, unseenCount(from: seenCursor, to: latestCursor))
+        }
     }
 
     private mutating func mirrorPinnedUnseenCountToProgress(gameId: Int, count: Int, now: Date) {

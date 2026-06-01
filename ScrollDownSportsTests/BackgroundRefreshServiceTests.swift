@@ -31,7 +31,7 @@ final class BackgroundRefreshServiceTests: XCTestCase {
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
                     .ok(TestFixtures.sdaGameListJSON(ids: [703])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 703, playIDs: ["play-1", "play-2"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 703, cardIDs: ["play-1", "play-2"]))
                 ],
                 protocolClass: MockBackgroundURLProtocol.self
             ),
@@ -58,11 +58,11 @@ final class BackgroundRefreshServiceTests: XCTestCase {
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
                     .ok(TestFixtures.sdaGameListJSON(ids: [704])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 704, playIDs: ["play-1", "play-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 704, cardIDs: ["play-1", "play-2"])),
                     .ok(TestFixtures.sdaGameListJSON(ids: [704])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 704, playIDs: ["play-1", "play-2", "play-3", "play-4"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 704, cardIDs: ["play-1", "play-2", "play-3", "play-4"])),
                     .ok(TestFixtures.sdaGameListJSON(ids: [704])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 704, playIDs: ["play-1"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 704, cardIDs: ["play-1"]))
                 ],
                 protocolClass: MockBackgroundURLProtocol.self
             ),
@@ -165,7 +165,7 @@ final class BackgroundRefreshServiceTests: XCTestCase {
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
                     .ok(TestFixtures.sdaGameListJSON(ids: Array(710..<715))),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 710, playIDs: ["play-1"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 710, cardIDs: ["play-1"])),
                     .httpError(statusCode: 503)
                 ],
                 protocolClass: MockBackgroundURLProtocol.self

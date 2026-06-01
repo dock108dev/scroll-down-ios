@@ -487,7 +487,6 @@ enum GameEventImportance: Codable, Hashable, Sendable {
 
 enum GameDetailSource: String, Codable, Hashable, Sendable {
     case normalizedFeed
-    case legacyDetail
 }
 
 enum GameFeedGenerationStatus: String, Codable, Hashable, Sendable {
@@ -502,7 +501,6 @@ enum GameFeedGenerationStatus: String, Codable, Hashable, Sendable {
 
 enum GameFeedFallbackState: String, Codable, Hashable, Sendable {
     case none
-    case legacyDetail
     case safeEmpty
 }
 
@@ -513,8 +511,8 @@ struct GameDetailFeedMetadata: Codable, Hashable, Sendable {
     let revealAvailable: Bool
     let revealRequiredForScores: Bool
 
-    static let legacyDetail = GameDetailFeedMetadata(
-        source: .legacyDetail,
+    static let normalizedFeed = GameDetailFeedMetadata(
+        source: .normalizedFeed,
         generationStatus: .unknown,
         fallbackState: .none,
         revealAvailable: false,
@@ -531,7 +529,7 @@ struct GameDetail: Codable, Hashable, Sendable {
     let mlbPitchers: [MLBPitcherStat]?
     let nhlSkaters: [NHLPlayerStat]?
     let nhlGoalies: [NHLPlayerStat]?
-    var feedMetadata: GameDetailFeedMetadata = .legacyDetail
+    var feedMetadata: GameDetailFeedMetadata = .normalizedFeed
 
     var leagueCode: String {
         game.leagueCode.lowercased()

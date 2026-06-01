@@ -195,8 +195,7 @@ final class DecodingTests: XCTestCase {
     func testFetchGameUsesNormalizedFeedWhenAvailable() async throws {
         let client = TestFixtures.makeAPIClient(
             responses: [.ok(TestFixtures.sdaCardFeedJSON(cardIDs: ["event-1", "event-2"]))],
-            protocolClass: MockNormalizedFeedSuccessURLProtocol.self,
-            gameDetailFetchMode: .normalizedWithLegacyFallback
+            protocolClass: MockNormalizedFeedSuccessURLProtocol.self
         )
 
         let detail = try await client.fetchGame(id: 504)
@@ -212,44 +211,43 @@ final class DecodingTests: XCTestCase {
         XCTAssertNotNil(detail.events.first?.normalizedCard)
     }
 
-    func testNormalizedUnavailableFallsBackToLegacyDetail() async throws {
+    func testNormalizedValidationBlockedReturnsSafeEmptyWithoutLegacyRequest() async throws {
         let client = TestFixtures.makeAPIClient(
             responses: [
-                .ok(TestFixtures.sdaCardFeedJSON(status: "validation_blocked", cardIDs: [])),
-                .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1", "event-2"]))
+                .ok(TestFixtures.sdaCardFeedJSON(status: "validation_blocked", cardIDs: []))
             ],
-            protocolClass: MockNormalizedFallbackURLProtocol.self,
-            gameDetailFetchMode: .normalizedWithLegacyFallback
+            protocolClass: MockNormalizedFallbackURLProtocol.self
         )
 
         let detail = try await client.fetchGame(id: 504)
         let requests = MockHTTPURLProtocol.requestURLs(for: MockNormalizedFallbackURLProtocol.self)
 
-        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards", "/api/v1/games/504"])
-        XCTAssertEqual(detail.feedMetadata.source, .legacyDetail)
+        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
+        XCTAssertEqual(detail.feedMetadata.source, .normalizedFeed)
         XCTAssertEqual(detail.feedMetadata.generationStatus, .validationBlocked)
-        XCTAssertEqual(detail.feedMetadata.fallbackState, .legacyDetail)
-        XCTAssertEqual(detail.events.map(\.id), ["event-1", "event-2"])
+        XCTAssertEqual(detail.feedMetadata.fallbackState, .safeEmpty)
+        XCTAssertEqual(detail.events, [])
     }
 
-    func testMalformedNormalizedFeedFallsBackWithoutMaskingLegacyCompatibility() async throws {
+    func testMalformedNormalizedFeedFailsWithoutLegacyRequest() async throws {
         let malformedFeed = #"{"contractVersion":1,"game":{"gameId":504},"cards":[]}"#.data(using: .utf8)!
         let client = TestFixtures.makeAPIClient(
             responses: [
-                .ok(malformedFeed),
-                .ok(TestFixtures.sdaGameDetailJSON(playIDs: ["event-1"]))
+                .ok(malformedFeed)
             ],
-            protocolClass: MockMalformedNormalizedFeedURLProtocol.self,
-            gameDetailFetchMode: .normalizedWithLegacyFallback
+            protocolClass: MockMalformedNormalizedFeedURLProtocol.self
         )
 
-        let detail = try await client.fetchGame(id: 504)
+        do {
+            _ = try await client.fetchGame(id: 504)
+            XCTFail("Expected malformed normalized feed to fail")
+        } catch SDAApiError.incompleteNormalizedFeed {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
         let requests = MockHTTPURLProtocol.requestURLs(for: MockMalformedNormalizedFeedURLProtocol.self)
 
-        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards", "/api/v1/games/504"])
-        XCTAssertEqual(detail.feedMetadata.source, .legacyDetail)
-        XCTAssertEqual(detail.feedMetadata.fallbackState, .legacyDetail)
-        XCTAssertEqual(detail.events.map(\.id), ["event-1"])
+        XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
     }
 
     func testSportMetadataOnlySurvivesEventMapping() throws {
@@ -433,7 +431,7 @@ final class DecodingTests: XCTestCase {
         do {
             _ = try await client.fetchGame(id: 900)
             XCTFail("Expected incomplete detail error", file: file, line: line)
-        } catch SDAApiError.incompleteDetail {
+        } catch SDAApiError.incompleteNormalizedFeed {
         } catch {
             XCTFail("Unexpected error: \(error)", file: file, line: line)
         }

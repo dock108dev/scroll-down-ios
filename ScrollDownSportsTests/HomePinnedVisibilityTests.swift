@@ -18,7 +18,7 @@ final class HomePinnedVisibilityTests: XCTestCase {
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
                     .ok(try SDAFixturePayloadFactory.gameList(ids: [])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: pinned.id, playIDs: ["pinned-1"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: pinned.id, cardIDs: ["pinned-1"]))
                 ],
                 protocolClass: MockPinnedSuccessURLProtocol.self
             ),
@@ -33,7 +33,7 @@ final class HomePinnedVisibilityTests: XCTestCase {
         XCTAssertTrue(HomeSectionTestHelpers.allTimelineIDs(in: sections).isEmpty)
         XCTAssertEqual(viewModel.separatelyFetchedPinnedGames.map(\.id), [pinned.id])
         XCTAssertTrue(MockHTTPURLProtocol.requestURLs(for: MockPinnedSuccessURLProtocol.self).contains {
-            $0.path == "/api/v1/games/\(pinned.id)"
+            $0.path == "/api/v1/feed/games/\(pinned.id)/cards"
         })
     }
 

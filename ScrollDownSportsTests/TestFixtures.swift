@@ -4,8 +4,7 @@ import Foundation
 enum TestFixtures {
     static func makeAPIClient(
         responses: [MockHTTPResponse],
-        protocolClass: MockHTTPURLProtocol.Type,
-        gameDetailFetchMode: SDAGameDetailFetchMode = .legacyOnly
+        protocolClass: MockHTTPURLProtocol.Type
     ) -> SDAApiClient {
         MockHTTPURLProtocol.setResponses(responses, for: protocolClass)
         let configuration = URLSessionConfiguration.ephemeral
@@ -13,8 +12,7 @@ enum TestFixtures {
         return SDAApiClient(
             baseURL: URL(string: "https://example.test")!,
             apiKey: "",
-            session: URLSession(configuration: configuration),
-            gameDetailFetchMode: gameDetailFetchMode
+            session: URLSession(configuration: configuration)
         )
     }
 
