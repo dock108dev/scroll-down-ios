@@ -490,6 +490,28 @@ final class DecodingTests: XCTestCase {
         )
     }
 
+    func testCamelCaseRenderTypesPassNormalizedFeedContract() async throws {
+        let camelCaseRenderTypesFeed = try mutatedCardFeedJSON { payload in
+            var cards = payload["cards"] as? [[String: Any]] ?? []
+            cards[0]["renderType"] = "importantNarrative"
+            cards[1]["renderType"] = "standardPBP"
+            payload["cards"] = cards
+        }
+        let client = TestFixtures.makeAPIClient(
+            responses: [.ok(camelCaseRenderTypesFeed)],
+            protocolClass: MockCamelCaseRenderTypeFeedURLProtocol.self
+        )
+
+        let detail = try await client.fetchGame(id: 504)
+
+        XCTAssertEqual(detail.events.first?.normalizedCard?.renderType, .importantNarrative)
+        XCTAssertEqual(detail.events.dropFirst().first?.normalizedCard?.renderType, .standardPBP)
+        XCTAssertEqual(
+            MockHTTPURLProtocol.requestURLs(for: MockCamelCaseRenderTypeFeedURLProtocol.self).map(\.path),
+            ["/api/v1/feed/games/504/cards"]
+        )
+    }
+
     func testSportMetadataOnlySurvivesEventMapping() throws {
         let metadata = try mappedSportMetadata(
             sportMetadata: [
@@ -767,3 +789,4 @@ private final class MockMalformedNormalizedFeedURLProtocol: MockHTTPURLProtocol 
 private final class MockOldNormalizedFeedContractURLProtocol: MockHTTPURLProtocol {}
 private final class MockMissingRenderTypeFeedURLProtocol: MockHTTPURLProtocol {}
 private final class MockImportantStandardPBPFeedURLProtocol: MockHTTPURLProtocol {}
+private final class MockCamelCaseRenderTypeFeedURLProtocol: MockHTTPURLProtocol {}

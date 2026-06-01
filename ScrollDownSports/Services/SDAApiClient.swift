@@ -134,19 +134,13 @@ final class SDAApiClient: Sendable {
         if response.generation.cardCount > 0 && response.cards.isEmpty {
             throw SDAApiError.incompleteNormalizedFeed("Feed card count did not match cards")
         }
-        let supportedRenderTypes: Set<String> = [
-            "important_narrative",
-            "standard_pbp",
-            "full_pbp",
-            "play_unavailable"
-        ]
         for card in response.cards {
-            let renderType = card.renderType.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard supportedRenderTypes.contains(renderType) else {
+            let renderType = NormalizedPlayCardRenderType(cardFeedValue: card.renderType)
+            guard renderType != .unknown else {
                 throw SDAApiError.incompleteNormalizedFeed("Unsupported feed card render type")
             }
             if card.modeEligibility.important {
-                guard renderType == "important_narrative" else {
+                guard renderType == .importantNarrative else {
                     throw SDAApiError.incompleteNormalizedFeed("Important feed card is missing narrative render type")
                 }
                 guard card.setupLine?.nilIfBlank != nil,

@@ -168,14 +168,18 @@ enum NormalizedPlayCardRenderType: String, Codable, Hashable, Sendable {
     case unknown
 
     init(cardFeedValue: String?) {
-        switch cardFeedValue?.nilIfBlank?.lowercased() {
-        case "important_narrative", "importantNarrative":
+        guard let value = cardFeedValue?.nilIfBlank else {
+            self = .unknown
+            return
+        }
+        switch value.replacingOccurrences(of: "_", with: "").lowercased() {
+        case "importantnarrative":
             self = .importantNarrative
-        case "standard_pbp", "standardPBP":
+        case "standardpbp":
             self = .standardPBP
-        case "full_pbp", "fullPBP":
+        case "fullpbp":
             self = .fullPBP
-        case "play_unavailable", "playUnavailable":
+        case "playunavailable":
             self = .playUnavailable
         default:
             self = .unknown

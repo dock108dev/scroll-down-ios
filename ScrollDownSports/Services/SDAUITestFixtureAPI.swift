@@ -146,8 +146,8 @@ private enum SDAUITestFixturePayload {
             "rawFeedSource": "",
             "rawFeedUpdatedAt": "",
             "rawDescription": "",
-            "modeEligibility": ["important": true, "standard": true, "all": true],
-            "belongsToModes": ["important": true, "standard": true, "all": true],
+            "modeEligibility": ["important": scoring, "standard": true, "all": true],
+            "belongsToModes": ["important": scoring, "standard": true, "all": true],
             "scoreBefore": ["away": beforeAway, "home": beforeHome],
             "scoreAfter": ["away": away, "home": home],
             "sportMetadata": [:],
@@ -284,6 +284,12 @@ enum SDAUIFixturePayload {
         let headline = play["description"] as? String ?? "Game update"
         let period = play["periodLabel"] as? String ?? play["timeLabel"] as? String ?? "Game"
         let scoring = scoreChange != nil
+        let modeEligibility = play["modeEligibility"] as? [String: Any] ?? ["important": scoring, "standard": true, "all": true]
+        let importantEligible = modeEligibility["important"] as? Bool ?? false
+        let renderType = play["renderType"] as? String ?? (importantEligible ? "important_narrative" : "standard_pbp")
+        let setupLine = play["setupLine"] as? String ?? (scoring ? "\(period) score pressure" : period)
+        let playLine = play["playLine"] as? String ?? headline
+        let updateLine = play["updateLine"] as? String ?? (scoring ? "Score changes" : "Notable sequence")
         return [
             "id": play["eventId"] as? String ?? "event-\(index)",
             "gameId": gameID,
@@ -293,8 +299,9 @@ enum SDAUIFixturePayload {
             "league": league,
             "tier": play["tier"] as? Int ?? 2,
             "contentDepth": scoring ? "extended" : "standard",
-            "modeEligibility": play["modeEligibility"] as? [String: Any] ?? ["important": true, "standard": true, "all": true],
+            "modeEligibility": modeEligibility,
             "importance": play["importance"] as? [String: Any] ?? importance(level: "secondary", scoring: scoring),
+            "renderType": renderType,
             "visualImportance": scoring ? "high" : "medium",
             "period": ["ordinal": index, "label": period, "type": "period"],
             "displayTime": play["timeLabel"] as? String ?? period,
@@ -305,9 +312,12 @@ enum SDAUIFixturePayload {
             "scoreAfter": scoreAfter ?? NSNull(),
             "situation": ["summary": period, "raw": ["fixture": true]],
             "leadIn": period,
-            "stageSetting": scoring ? "\(period) - scoring chance" : period,
+            "stageSetting": play["stageSetting"] as? String ?? (scoring ? "\(period) score pressure" : period),
             "headline": headline,
             "description": headline,
+            "setupLine": importantEligible ? setupLine : NSNull(),
+            "playLine": importantEligible ? playLine : NSNull(),
+            "updateLine": importantEligible ? updateLine : NSNull(),
             "impact": scoring ? "Score changes" : NSNull(),
             "tags": scoring ? ["Scoring"] : ["Play"],
             "spoilerLevel": "none"
