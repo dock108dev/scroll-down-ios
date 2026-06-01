@@ -83,6 +83,74 @@ final class ReadingHistoryStoreTests: XCTestCase {
         XCTAssertTrue(history.cardsByID.values.allSatisfy { $0.cardID.hasPrefix("card-source-") })
     }
 
+    func testUnreadCountRecomputesFromResolvedReadCursor() {
+        let events = [
+            makeEvent(sequence: 10, sourceEventID: "source-10", cardID: "card-source-10", headline: "First"),
+            makeEvent(sequence: 20, sourceEventID: "source-20", cardID: "card-source-20", headline: "Second"),
+            makeEvent(sequence: 30, sourceEventID: "source-30", cardID: "card-source-30", headline: "Third")
+        ]
+
+        var sourceCursor = GameProgressRecord.empty(gameId: 901, now: TestFixtures.fixedDate())
+        sourceCursor.lastReadEventID = "card-source-20"
+        sourceCursor.recomputeUnreadCount(from: events)
+        XCTAssertEqual(sourceCursor.lastReadEventIndex, 1)
+        XCTAssertEqual(sourceCursor.newEventCount, 1)
+
+        var clampedIndexCursor = GameProgressRecord.empty(gameId: 902, now: TestFixtures.fixedDate())
+        clampedIndexCursor.lastReadEventIndex = 12
+        clampedIndexCursor.recomputeUnreadCount(from: events)
+        XCTAssertEqual(clampedIndexCursor.lastReadEventIndex, 2)
+        XCTAssertEqual(clampedIndexCursor.newEventCount, 0)
+
+        var negativeIndexCursor = GameProgressRecord.empty(gameId: 903, now: TestFixtures.fixedDate())
+        negativeIndexCursor.lastReadEventIndex = -4
+        negativeIndexCursor.recomputeUnreadCount(from: events)
+        XCTAssertEqual(negativeIndexCursor.lastReadEventIndex, 0)
+        XCTAssertEqual(negativeIndexCursor.newEventCount, 2)
+    }
+
+    func testUnreadCountFallsBackToSavedScrollSequence() {
+        let events = [
+            makeEvent(sequence: 10, sourceEventID: "source-10", cardID: "card-source-10", headline: "First"),
+            makeEvent(sequence: 30, sourceEventID: "source-30", cardID: "card-source-30", headline: "Third")
+        ]
+
+        var exactSequence = GameProgressRecord.empty(gameId: 904, now: TestFixtures.fixedDate())
+        exactSequence.lastScrollFallback = GameScrollFallbackRecord(eventSequence: 10, approximateOffset: 44)
+        exactSequence.recomputeUnreadCount(from: events)
+        XCTAssertEqual(exactSequence.lastReadEventIndex, 0)
+        XCTAssertEqual(exactSequence.newEventCount, 1)
+
+        var previousSequence = GameProgressRecord.empty(gameId: 905, now: TestFixtures.fixedDate())
+        previousSequence.lastScrollFallback = GameScrollFallbackRecord(eventSequence: 25, approximateOffset: 44)
+        previousSequence.recomputeUnreadCount(from: events)
+        XCTAssertEqual(previousSequence.lastReadEventIndex, 0)
+        XCTAssertEqual(previousSequence.newEventCount, 1)
+
+        var nextSequence = GameProgressRecord.empty(gameId: 906, now: TestFixtures.fixedDate())
+        nextSequence.lastScrollFallback = GameScrollFallbackRecord(eventSequence: 5, approximateOffset: 44)
+        nextSequence.recomputeUnreadCount(from: events)
+        XCTAssertEqual(nextSequence.lastReadEventIndex, 0)
+        XCTAssertEqual(nextSequence.newEventCount, 1)
+    }
+
+    func testUnreadCountClearsWhenEventsOrCursorAreMissing() {
+        let events = [
+            makeEvent(sequence: 10, sourceEventID: "source-10", cardID: "card-source-10", headline: "First")
+        ]
+
+        var emptyEvents = GameProgressRecord.empty(gameId: 907, now: TestFixtures.fixedDate())
+        emptyEvents.newEventCount = 7
+        emptyEvents.recomputeUnreadCount(from: [])
+        XCTAssertEqual(emptyEvents.newEventCount, 0)
+
+        var noCursor = GameProgressRecord.empty(gameId: 908, now: TestFixtures.fixedDate())
+        noCursor.newEventCount = 7
+        noCursor.recomputeUnreadCount(from: events)
+        XCTAssertEqual(noCursor.newEventCount, 0)
+        XCTAssertNil(noCursor.lastReadEventIndex)
+    }
+
     private func makeEvent(sequence: Int, sourceEventID: String, cardID: String, headline: String) -> GameEvent {
         TestFixtures.makeEvent(
             sequence: sequence,

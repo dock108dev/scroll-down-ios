@@ -27,6 +27,7 @@
     "ScrollDownSports/Resources/ScrollDownSports.entitlements",
     "ScrollDownSports/App/AppDelegate.swift",
     "ScrollDownSports/App/ScrollDownSportsApp.swift",
+    "ScrollDownSports/Services/LocalFavoriteGameNotificationDeliverer.swift",
     "ScrollDownSports/Services/SDAUITestFixtureAPI.swift",
     "ScrollDownSports/Services/SDAUIPerformanceFixturePayload.swift",
     "ScrollDownSports/Views/GameDetailView.swift"

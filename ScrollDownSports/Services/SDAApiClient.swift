@@ -182,22 +182,3 @@ final class SDAApiClient: Sendable {
         return SDAApiClient()
     }
 }
-
-private func feedGenerationStatus(from value: String) -> GameFeedGenerationStatus {
-    switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-    case "no_pbp_yet", "nopbpyet":
-        return .noPbpYet
-    case "unsupported_sport", "unsupportedsport":
-        return .unsupportedSport
-    case "generation_pending", "generationpending":
-        return .generationPending
-    case "validation_blocked", "validationblocked":
-        return .validationBlocked
-    case "stale_regenerating", "staleregenerating":
-        return .staleRegenerating
-    case "ready":
-        return .ready
-    default:
-        return .unknown
-    }
-}

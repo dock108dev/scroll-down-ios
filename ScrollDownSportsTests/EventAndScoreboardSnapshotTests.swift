@@ -351,6 +351,98 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
     }
 
+    func testCatchUpPlayCardsUseNormalizedBackendDensityPaths() {
+        let game = ComponentSnapshotFixtures.game(id: 5_140, status: "in_progress", awayScore: 1, homeScore: 2)
+        let importantCard = Self.normalizedCatchUpCard(
+            renderType: .importantNarrative,
+            visualImportance: .critical,
+            headline: "Alex Freeland puts Los Angeles in front",
+            body: "Alex Freeland doubles on a sharp fly ball to center. Max Muncy scores.",
+            narrative: NormalizedPlayCardNarrative(
+                setupLine: "Bottom 2, tied 0-0, runner on 1st, 2 outs",
+                playLine: "Alex Freeland doubles on a sharp fly ball to center. Max Muncy scores.",
+                updateLine: "LAD scores 1"
+            )
+        )
+        let important = Self.normalizedCatchUpEvent(
+            game: game,
+            card: importantCard,
+            sequence: 12,
+            importance: .primary,
+            contentDepth: .extended
+        )
+        let standardCard = Self.normalizedCatchUpCard(
+            renderType: .standardPBP,
+            visualImportance: .low,
+            headline: "Routine change keeps the inning moving",
+            body: "The backend body is available, but standard and full modes decide density from card metadata.",
+            rawFeedText: "routine provider text"
+        )
+        let standard = Self.normalizedCatchUpEvent(
+            game: game,
+            card: standardCard,
+            sequence: 13,
+            importance: .contextual,
+            contentDepth: .brief
+        )
+        let unavailableCard = Self.normalizedCatchUpCard(
+            renderType: .importantNarrative,
+            visualImportance: .high,
+            headline: "Missing narrative",
+            body: "The contract rejected important copy without narrative lines.",
+            narrative: nil
+        )
+        let unavailable = Self.normalizedCatchUpEvent(
+            game: game,
+            card: unavailableCard,
+            sequence: 14,
+            importance: .primary,
+            contentDepth: .extended
+        )
+
+        assertSwiftUISnapshot(
+            of: VStack(spacing: 12) {
+                CatchUpPlayCard(
+                    event: important.event,
+                    presentation: important.presentation,
+                    selectedMode: .key,
+                    rawFeedKey: nil,
+                    isRawFeedExpanded: false,
+                    onRawFeedExpansionChange: { _, _ in }
+                )
+                CatchUpPlayCard(
+                    event: standard.event,
+                    presentation: standard.presentation,
+                    selectedMode: .flow,
+                    rawFeedKey: nil,
+                    isRawFeedExpanded: false,
+                    onRawFeedExpansionChange: { _, _ in }
+                )
+                CatchUpPlayCard(
+                    event: standard.event,
+                    presentation: standard.presentation,
+                    selectedMode: .full,
+                    rawFeedKey: "routine-provider",
+                    isRawFeedExpanded: true,
+                    onRawFeedExpansionChange: { _, _ in }
+                )
+                CatchUpPlayCard(
+                    event: unavailable.event,
+                    presentation: unavailable.presentation,
+                    selectedMode: .key,
+                    rawFeedKey: nil,
+                    isRawFeedExpanded: false,
+                    onRawFeedExpansionChange: { _, _ in }
+                )
+            }
+            .padding(12)
+            .background(SportsTheme.Colors.paper),
+            named: "catch-up-card-normalized-density-paths",
+            width: .standard,
+            height: 640
+        )
+    }
+
     func testPlayRowPolicySuppressesPressureBoardMetricDuplicates() {
         let presentation = Self.baseballSituationPresentation()
         let suppressedText = PlayRowContentFilter.situationMetricSuppressionText(for: presentation)
@@ -359,6 +451,85 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         XCTAssertTrue(suppressedText.contains("B8 1 out"))
         XCTAssertTrue(suppressedText.contains("Lead change"))
         XCTAssertTrue(suppressedText.contains("Tied -> Up 1"))
+    }
+
+    private static func normalizedCatchUpEvent(
+        game: Game,
+        card: NormalizedPlayCard,
+        sequence: Int,
+        importance: GameEventImportance,
+        contentDepth: EventContentDepth
+    ) -> (event: GameEvent, presentation: GameEventPresentation) {
+        let event = TestFixtures.makeEvent(
+            sequence: sequence,
+            importance: importance,
+            headline: card.headline.text,
+            detail: card.body?.text,
+            periodLabel: "B2",
+            clockLabel: "2 outs",
+            contentDepth: contentDepth,
+            normalizedCard: card
+        )
+        return (
+            event,
+            GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed)
+        )
+    }
+
+    private static func normalizedCatchUpCard(
+        renderType: NormalizedPlayCardRenderType,
+        visualImportance: NormalizedPlayCardImportance,
+        headline: String,
+        body: String?,
+        narrative: NormalizedPlayCardNarrative? = nil,
+        rawFeedText: String? = nil
+    ) -> NormalizedPlayCard {
+        NormalizedPlayCard(
+            schemaVersion: 2,
+            cardID: "card-\(headline.lowercased().replacingOccurrences(of: " ", with: "-"))",
+            renderType: renderType,
+            narrative: narrative,
+            visualImportance: visualImportance,
+            accent: NormalizedPlayCardAccent(tone: .scoring, participantRole: .home, teamAbbreviation: "LAD"),
+            clock: NormalizedPlayCardText(text: "B2 2 outs", tone: .secondary, maxLines: 1),
+            leadIn: NormalizedPlayCardText(text: "2nd - LAD", tone: .secondary, maxLines: 1),
+            headline: NormalizedPlayCardText(text: headline, tone: nil, maxLines: nil),
+            body: body.map { NormalizedPlayCardText(text: $0, tone: .secondary, maxLines: nil) },
+            contextItems: [
+                NormalizedPlayCardContextItem(
+                    id: "clock",
+                    kind: .clock,
+                    text: "Bottom 2, LAD up 1-0, runner on 1st, 2 outs",
+                    tone: .context,
+                    participantRole: nil,
+                    teamAbbreviation: nil
+                ),
+                NormalizedPlayCardContextItem(
+                    id: "team",
+                    kind: .teamBadge,
+                    text: "LAD",
+                    tone: .neutral,
+                    participantRole: .home,
+                    teamAbbreviation: "LAD"
+                ),
+                NormalizedPlayCardContextItem(
+                    id: "label",
+                    kind: .eventLabel,
+                    text: "Double",
+                    tone: .context,
+                    participantRole: .home,
+                    teamAbbreviation: "LAD"
+                )
+            ],
+            resultItems: [
+                NormalizedPlayCardResultItem(id: "score-change", text: "LAD scores 1", tone: .scoring, priority: 10)
+            ],
+            score: NormalizedPlayCardScore(label: "Scoring", value: "LAD scores 1", isScoringPlay: true, spoilerPolicy: .alwaysShow),
+            team: NormalizedPlayCardTeam(participantRole: .home, abbreviation: "LAD", displayName: "Los Angeles Dodgers", label: "Los Angeles Dodgers"),
+            situation: nil,
+            rawFeed: rawFeedText.map { NormalizedPlayCardRawFeed(text: $0, source: "component-feed", updatedAt: nil, disclosureTitle: nil) },
+            accessibility: NormalizedPlayCardAccessibility(label: headline, value: "LAD", hint: nil, situationSummary: nil)
+        )
     }
 
     private static func baseballSituationPresentation(
