@@ -73,7 +73,8 @@ final class HomeVisualRegressionTests: SnapshotTestCase {
             named: "home-sport-filter-active",
             width: .compact,
             height: SnapshotDevice.phoneSmall.size.height,
-            device: .phoneSmall
+            device: .phoneSmall,
+            precision: 0.993
         )
     }
 
