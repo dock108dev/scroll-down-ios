@@ -19,7 +19,7 @@ final class ScrollDownSportsPerformanceSmokeUITests: XCTestCase {
             XCTAssertTrue(row("9101").waitForExistence(timeout: 5))
             tap(row("9101"))
             XCTAssertTrue(app.navigationBars["Catch Up"].waitForExistence(timeout: 8))
-            XCTAssertTrue(element("detail.event.evt-perf-001").waitForExistence(timeout: 8))
+            XCTAssertTrue(element("detail.event.evt-perf-010").waitForExistence(timeout: 8))
         }
 
         app.buttons["All Plays"].tap()

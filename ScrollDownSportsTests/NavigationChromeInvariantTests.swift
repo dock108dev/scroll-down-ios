@@ -45,23 +45,35 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertFalse(headerSource.contains(".shadow("))
     }
 
-    func testHomePinChromeKeepsStableHitTargetAndCardReservation() throws {
+    func testHomeFilterChangesKeepStableScrollViewIdentity() throws {
+        let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
+
+        XCTAssertTrue(homeSource.contains(".onChange(of: viewModel.homeFilterSignature)"))
+        XCTAssertTrue(homeSource.contains("requestFilterHomeScroll(proxy, filterSignature: signature)"))
+        XCTAssertFalse(homeSource.contains(".id(viewModel.homeFilterSignature)"))
+    }
+
+    func testHomeCardActionsReplacePinOverlayChrome() throws {
         let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
         let cardSource = try repoFile("ScrollDownSports/Views/HomeGameCardView.swift")
         let summaryCardSource = try repoFile("ScrollDownSports/Views/GameSummaryCard.swift")
 
-        XCTAssertTrue(cardSource.contains("static let pinVisibleSize: CGFloat = 34"))
-        XCTAssertTrue(cardSource.contains("static let pinHitTargetSize: CGFloat = 44"))
-        XCTAssertTrue(cardSource.contains("static let pinTrailingReservation"))
+        XCTAssertTrue(cardSource.contains("struct HomeGameActionMenu"))
+        XCTAssertTrue(cardSource.contains("static let actionVisibleSize: CGFloat = 30"))
+        XCTAssertTrue(cardSource.contains("static let actionHitTargetSize: CGFloat = 44"))
+        XCTAssertTrue(cardSource.contains("static let actionTrailingReservation"))
         XCTAssertTrue(summaryCardSource.contains(".padding(.trailing, trailingReservation)"))
-        XCTAssertTrue(summaryCardSource.contains("HomeGameCardLayout.pinTrailingReservation"))
+        XCTAssertTrue(summaryCardSource.contains("HomeGameCardLayout.actionTrailingReservation"))
         XCTAssertTrue(
             cardSource.contains(
-                ".frame(width: HomeGameCardLayout.pinHitTargetSize, height: HomeGameCardLayout.pinHitTargetSize)"
+                ".frame(width: HomeGameCardLayout.actionHitTargetSize, height: HomeGameCardLayout.actionHitTargetSize)"
             )
         )
-        XCTAssertTrue(homeSource.contains(".padding(.top, HomeGameCardLayout.pinOverlayPadding)"))
-        XCTAssertTrue(homeSource.contains(".padding(.trailing, HomeGameCardLayout.pinOverlayPadding)"))
+        XCTAssertTrue(homeSource.contains("HomeGameActionMenu("))
+        XCTAssertTrue(homeSource.contains(".padding(.top, HomeGameCardLayout.actionOverlayPadding)"))
+        XCTAssertTrue(homeSource.contains(".padding(.trailing, HomeGameCardLayout.actionOverlayPadding)"))
+        XCTAssertFalse(homeSource.contains("HomePinButton"))
+        XCTAssertFalse(cardSource.contains("struct HomePinButton"))
     }
 
     func testRootAndDetailNavigationBarsUseOpaqueToolbarBackgrounds() throws {

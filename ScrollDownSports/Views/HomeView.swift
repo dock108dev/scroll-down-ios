@@ -81,7 +81,6 @@ struct HomeView: View {
                 .padding(.top, layout.homeScrollTopPadding)
                 .padding(.bottom, layout.homeScrollBottomPadding)
             }
-            .id(viewModel.homeFilterSignature)
             .accessibilityIdentifier("home.scroll")
             .scrollDismissesKeyboard(.interactively)
             .onAppear {
@@ -226,18 +225,22 @@ struct HomeView: View {
         ZStack(alignment: .topTrailing) {
             gameSelectionControl(for: item)
 
-            HomePinButton(isPinned: item.isPinned) {
-                viewModel.togglePin(item.game)
-            }
-            .accessibilityIdentifier("home.gameRow.\(item.id).pin")
-            .padding(.top, HomeGameCardLayout.pinOverlayPadding)
-            .padding(.trailing, HomeGameCardLayout.pinOverlayPadding)
+            HomeGameActionMenu(
+                isPinned: item.isPinned,
+                favoriteParticipants: favoriteParticipants(for: item.game),
+                isFavoriteTeam: viewModel.isFavoriteTeam,
+                togglePin: { viewModel.togglePin(item.game) },
+                toggleFavoriteTeam: viewModel.toggleFavoriteTeam
+            )
+            .accessibilityIdentifier("home.gameRow.\(item.id).actions")
+            .padding(.top, HomeGameCardLayout.actionOverlayPadding)
+            .padding(.trailing, HomeGameCardLayout.actionOverlayPadding)
         }
         .contextMenu {
             Button {
                 viewModel.togglePin(item.game)
             } label: {
-                Label(item.isPinned ? "Unpin Game" : "Pin Game", systemImage: item.isPinned ? "pin.slash" : "pin")
+                Label(item.isPinned ? "Unpin game" : "Pin game", systemImage: item.isPinned ? "pin.slash" : "pin")
             }
             ForEach(favoriteParticipants(for: item.game)) { participant in
                 Button {
