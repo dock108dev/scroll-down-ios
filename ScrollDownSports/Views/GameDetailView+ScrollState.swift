@@ -321,6 +321,11 @@ extension GameDetailView {
             if targetAnchorID == nil {
                 programmaticScrollInFlight = false
                 programmaticScrollTargetAnchorID = nil
+            } else {
+                DispatchQueue.main.async {
+                    programmaticScrollInFlight = false
+                    programmaticScrollTargetAnchorID = nil
+                }
             }
             return
         }
