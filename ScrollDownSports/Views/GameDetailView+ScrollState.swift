@@ -162,6 +162,9 @@ extension GameDetailView {
 
     func scrollToReturnAnchor(_ proxy: ScrollViewProxy) {
         guard let anchor = returnAnchor else { return }
+        if AppEnvironment.isRunningUITests {
+            uiTestScoreboardRevealed = false
+        }
         viewModel.setFollowingLiveEdge(false)
         streamOrientationAnchorID = anchor.anchorID
         performProgrammaticScroll(targetAnchorID: anchor.anchorID) {
@@ -318,15 +321,8 @@ extension GameDetailView {
         programmaticScrollTargetAnchorID = targetAnchorID
         if AppEnvironment.isRunningUITests {
             scroll()
-            if targetAnchorID == nil {
-                programmaticScrollInFlight = false
-                programmaticScrollTargetAnchorID = nil
-            } else {
-                DispatchQueue.main.async {
-                    programmaticScrollInFlight = false
-                    programmaticScrollTargetAnchorID = nil
-                }
-            }
+            programmaticScrollInFlight = false
+            programmaticScrollTargetAnchorID = nil
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {

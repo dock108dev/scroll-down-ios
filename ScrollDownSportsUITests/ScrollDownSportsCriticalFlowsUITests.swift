@@ -96,8 +96,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
             throw XCTSkip("Compact-width keyboard route")
         }
 
-        let teamFilter = app.textFields["home.teamFilter"]
-        teamFilter.tap()
+        let teamFilter = focusTeamFilter()
         teamFilter.typeText("Canyon")
 
         XCTAssertTrue(element("home.stickyHeader").exists)
@@ -110,9 +109,9 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         app.swipeUp()
         XCTAssertTrue(row("9001").exists)
 
-        teamFilter.tap()
-        clearTextField(teamFilter)
-        teamFilter.typeText("No Such Team")
+        let refocusedTeamFilter = focusTeamFilter()
+        clearFocusedTextField(refocusedTeamFilter)
+        refocusedTeamFilter.typeText("No Such Team")
         dismissKeyboardIfVisible()
 
         XCTAssertTrue(app.staticTexts["No games match these filters"].waitForExistence(timeout: 3))
@@ -399,6 +398,23 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     @MainActor
     private func clearTextField(_ textField: XCUIElement) {
         textField.tap()
+        clearFocusedTextField(textField)
+    }
+
+    @MainActor
+    private func focusTeamFilter(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> XCUIElement {
+        let textField = app.textFields["home.teamFilter"]
+        XCTAssertTrue(textField.waitForExistence(timeout: 3), "Team filter is missing", file: file, line: line)
+        tap(textField)
+        XCTAssertTrue(textField.waitForExistence(timeout: 3), "Team filter disappeared after focus", file: file, line: line)
+        return textField
+    }
+
+    @MainActor
+    private func clearFocusedTextField(_ textField: XCUIElement) {
         let delete = String(repeating: XCUIKeyboardKey.delete.rawValue, count: textField.valueText.count)
         textField.typeText(delete)
     }

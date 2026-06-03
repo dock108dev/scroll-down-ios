@@ -222,7 +222,8 @@ final class DetailLongFeedScrollTests: XCTestCase {
         XCTAssertTrue(scrollSource.contains("performProgrammaticScroll(targetAnchorID: resumeState.target.detailAnchorID"))
         XCTAssertTrue(scrollSource.contains("performProgrammaticScroll(targetAnchorID: anchorID"))
         XCTAssertTrue(scrollSource.contains("if AppEnvironment.isRunningUITests"))
-        XCTAssertTrue(scrollSource.contains("DispatchQueue.main.async {\n                    programmaticScrollInFlight = false"))
+        XCTAssertTrue(scrollSource.contains("scroll()\n            programmaticScrollInFlight = false"))
+        XCTAssertTrue(scrollSource.contains("uiTestScoreboardRevealed = false"))
     }
 
     func testExpansionMutationsPreserveReaderAnchorWithoutInitialJump() throws {
