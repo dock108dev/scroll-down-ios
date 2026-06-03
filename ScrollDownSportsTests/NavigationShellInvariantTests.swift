@@ -126,15 +126,16 @@ final class NavigationShellInvariantTests: XCTestCase {
 
     func testDetailLoadingErrorAndSummaryFallbackStatesStayOnSelectedRoute() throws {
         let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollStateSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let initializer = try sourceBlock(
             in: source,
             startingAt: "init(",
             endingBefore: "var body: some View"
         )
         let unavailableState = try sourceBlock(
-            in: source,
-            startingAt: "private func unavailableDetailState",
-            endingBefore: "private var pendingNewPlayCount"
+            in: scrollStateSource,
+            startingAt: "func unavailableDetailState",
+            endingBefore: "var pendingNewPlayCount"
         )
         let chromeSource = try repoFile("ScrollDownSports/Views/GameDetailChrome.swift")
         let loadErrorState = try sourceBlock(
