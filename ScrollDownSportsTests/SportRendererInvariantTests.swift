@@ -213,6 +213,62 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertFalse(scoreboard.rows.map(\.title).joined(separator: " ").contains("Baltimo..."))
     }
 
+    func testGenericStatsPreferBackendTeamAbbreviationsOverMascotFallbacks() {
+        let game = TestFixtures.makeGame(
+            id: 1515,
+            leagueCode: "nhl",
+            awayName: "Vegas Golden Knights",
+            awayAbbreviation: "VGK",
+            homeName: "Carolina Hurricanes",
+            homeAbbreviation: "CAR"
+        )
+        let detail = GameDetail(
+            game: game,
+            teamStats: [
+                TeamStat(team: "Vegas Golden Knights", teamAbbreviation: "VGK", isHome: false, stats: ["points": .number(5)], normalizedStats: nil),
+                TeamStat(team: "Carolina Hurricanes", teamAbbreviation: "CAR", isHome: true, stats: ["points": .number(4)], normalizedStats: nil)
+            ],
+            playerStats: [
+                PlayerStat(
+                    team: "Vegas Golden Knights",
+                    teamAbbreviation: "VGK",
+                    playerName: "S. Theodore",
+                    minutes: nil,
+                    points: 3,
+                    rebounds: nil,
+                    assists: 2,
+                    yards: nil,
+                    touchdowns: nil,
+                    rawStats: ["goals": .number(1), "assists": .number(2), "points": .number(3)]
+                ),
+                PlayerStat(
+                    team: "Carolina Hurricanes",
+                    teamAbbreviation: "CAR",
+                    playerName: "N. Ehlers",
+                    minutes: nil,
+                    points: 2,
+                    rebounds: nil,
+                    assists: 0,
+                    yards: nil,
+                    touchdowns: nil,
+                    rawStats: ["goals": .number(2), "assists": .number(0), "points": .number(2)]
+                )
+            ],
+            events: [],
+            mlbBatters: nil,
+            mlbPitchers: nil,
+            nhlSkaters: nil,
+            nhlGoalies: nil
+        )
+
+        let stats = StatPresentationBuilder.genericPlayerSections(for: detail, sport: .nhl)
+        let teamComparison = StatPresentationBuilder.teamComparison(for: detail)
+
+        XCTAssertEqual(stats[1].tables.map(\.title), ["VGK Skaters", "CAR Skaters"])
+        XCTAssertEqual(stats[1].tables.flatMap { $0.rows.compactMap { $0.values["team"] } }, ["VGK", "CAR"])
+        XCTAssertEqual(teamComparison?.columns.map(\.title), ["VGK", "CAR"])
+    }
+
     func testScoreboardPresentationDropsDuplicateTotalSegments() {
         let game = TestFixtures.makeGame(id: 1506, leagueCode: "mlb", scoreboard: scoreboardWithDuplicateRunSegment())
 

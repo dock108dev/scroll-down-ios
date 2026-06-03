@@ -97,7 +97,7 @@ enum SDADomainMapper {
             participants: participants,
             scoreState: scoreState(scoreSnapshot: nil, score: dto.score, participants: participants),
             presentation: nil,
-            scoreboard: nil,
+            scoreboard: gameScoreboard(from: dto.scoreboard),
             progress: GameProgress(
                 selectedMode: .timeline,
                 periodOrdinal: response.cards.last?.period.ordinal,

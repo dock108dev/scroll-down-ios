@@ -23,6 +23,7 @@ enum StatPresentationBuilder {
         let statColumns = genericStatColumns(for: sport)
         let scoredPlayers = detail.playerStats.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: statColumns)) }
         let impactHighlights = genericImpactPlayers(from: scoredPlayers, columns: statColumns)
+        let teamAbbreviations = teamAbbreviations(for: detail)
         var sections: [StatSectionPresentation] = []
         if !impactHighlights.isEmpty {
             sections.append(
@@ -42,7 +43,7 @@ enum StatPresentationBuilder {
                 title: "By Team",
                 highlights: [],
                 cards: [],
-                tables: genericPlayerTablesByTeam(from: scoredPlayers, statColumns: statColumns),
+                tables: genericPlayerTablesByTeam(from: scoredPlayers, statColumns: statColumns, teamAbbreviations: teamAbbreviations),
                 emptyMessage: nil
             )
         )
@@ -335,7 +336,7 @@ enum StatPresentationBuilder {
             let team = pair.0
             return StatComparisonColumnPresentation(
                 id: "\(team.id)-\(index)",
-                title: shortTeamCode(team.team),
+                title: teamCode(for: team.team, explicit: team.teamAbbreviation),
                 subtitle: team.isHome ? "Home" : "Away"
             )
         }
