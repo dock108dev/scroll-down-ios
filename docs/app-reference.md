@@ -66,7 +66,13 @@ Detail event mapping keeps score-before, score-after, score-delta, optional `sit
 
 Situation cards use `SituationCardPolicy` and `SituationConfidenceGate` before rendering. Baseball can render a typed diamond when explicit pre-event base state is present, while ambiguous or generic context can fall back to a pressure board. Football, basketball, hockey, soccer, golf, tennis, and unknown sports route their supported situation metadata through sport-specific renderers or the generic pressure-board fallback without fabricating richer diagrams when the required state is missing.
 
-Home card state shows score rows when the local record has reached the scoreboard. Once the scoreboard enters the detail viewport, `GameDetailView` records `reachedScoreboard`; new live plays can move the scoreboard downstream again.
+There is no separate spoiler gate for player stats, team stats, or final score
+on the detail screen. Scrolling to those sections is the gate. Once the
+scoreboard enters the detail viewport, `GameDetailView` records
+`reachedScoreboard`, which allows home cards to show score rows for that game.
+When new live plays arrive, the feed can grow above the payoff sections and move
+the stats and scoreboard farther down the page again; reaching them again is a
+normal scroll interaction, not a separate reveal flow.
 
 ## Build Metadata
 
