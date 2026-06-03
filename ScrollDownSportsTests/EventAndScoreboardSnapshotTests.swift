@@ -472,7 +472,7 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
         )
         return (
             event,
-            GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed)
+            GameEventPresentation(card: card, game: game)
         )
     }
 
@@ -524,7 +524,7 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             resultItems: [
                 NormalizedPlayCardResultItem(id: "score-change", text: "LAD scores 1", tone: .scoring, priority: 10)
             ],
-            score: NormalizedPlayCardScore(label: "Scoring", value: "LAD scores 1", isScoringPlay: true, spoilerPolicy: .alwaysShow),
+            score: NormalizedPlayCardScore(label: "Scoring", value: "LAD scores 1", isScoringPlay: true),
             team: NormalizedPlayCardTeam(participantRole: .home, abbreviation: "LAD", displayName: "Los Angeles Dodgers", label: "Los Angeles Dodgers"),
             situation: nil,
             rawFeed: rawFeedText.map { NormalizedPlayCardRawFeed(text: $0, source: "component-feed", updatedAt: nil, disclosureTitle: nil) },
@@ -594,7 +594,7 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             contextItems: contextItems,
             resultItems: resultItems,
             score: scoreValue.map {
-                NormalizedPlayCardScore(label: "Scoring", value: $0, isScoringPlay: true, spoilerPolicy: .hideUntilReveal)
+                NormalizedPlayCardScore(label: "Scoring", value: $0, isScoringPlay: true)
             },
             team: nil,
             situation: nil,
@@ -603,7 +603,7 @@ final class EventAndScoreboardSnapshotTests: SnapshotTestCase {
             },
             accessibility: NormalizedPlayCardAccessibility(label: headline, value: sportLabel, hint: nil, situationSummary: nil)
         )
-        return GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed)
+        return GameEventPresentation(card: card, game: game)
     }
 
     private static func baseballSituation(

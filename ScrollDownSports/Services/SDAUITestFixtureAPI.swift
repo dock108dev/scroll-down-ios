@@ -247,9 +247,9 @@ enum SDAUIFixturePayload {
                 "homeTeamId": game["homeTeamId"] ?? NSNull(),
                 "awayTeamId": game["awayTeamId"] ?? NSNull(),
                 "homeTeamAbbr": homeAbbr ?? "",
-                "awayTeamAbbr": awayAbbr ?? ""
+                "awayTeamAbbr": awayAbbr ?? "",
+                "score": game["score"] ?? NSNull()
             ],
-            "spoilerPolicy": "pre_reveal",
             "generation": [
                 "status": "ready",
                 "cardCount": cards.count,
@@ -258,12 +258,8 @@ enum SDAUIFixturePayload {
                 "isStale": false,
                 "validationIssues": []
             ],
-            "reveal": [
-                "available": false,
-                "status": "unavailable",
-                "scoresInCards": false,
-                "revealRequiredForScores": true
-            ],
+            "teamStats": [],
+            "playerStats": [],
             "cards": cards
         ]
     }
@@ -319,8 +315,7 @@ enum SDAUIFixturePayload {
             "playLine": importantEligible ? playLine : NSNull(),
             "updateLine": importantEligible ? updateLine : NSNull(),
             "impact": scoring ? "Score changes" : NSNull(),
-            "tags": scoring ? ["Scoring"] : ["Play"],
-            "spoilerLevel": "none"
+            "tags": scoring ? ["Scoring"] : ["Play"]
         ]
     }
 

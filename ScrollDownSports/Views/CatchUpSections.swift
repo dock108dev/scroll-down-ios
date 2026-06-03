@@ -66,7 +66,6 @@ struct PlayByPlaySection: View {
     let events: [GameEvent]
     let renderer: any SportRenderer
     let selectedMode: DetailStreamMode
-    let scoreSpoilerPolicy: ScoreSpoilerPolicy
     let expandedRawFeedKeys: Set<String>
     let onRawFeedExpansionChange: (String, Bool) -> Void
     @Environment(\.sportsLayoutMetrics) private var layout
@@ -76,7 +75,6 @@ struct PlayByPlaySection: View {
         events: [GameEvent],
         renderer: any SportRenderer,
         selectedMode: DetailStreamMode,
-        scoreSpoilerPolicy: ScoreSpoilerPolicy = .revealed,
         expandedRawFeedKeys: Set<String>,
         onRawFeedExpansionChange: @escaping (String, Bool) -> Void
     ) {
@@ -84,7 +82,6 @@ struct PlayByPlaySection: View {
         self.events = events
         self.renderer = renderer
         self.selectedMode = selectedMode
-        self.scoreSpoilerPolicy = scoreSpoilerPolicy
         self.expandedRawFeedKeys = expandedRawFeedKeys
         self.onRawFeedExpansionChange = onRawFeedExpansionChange
     }
@@ -210,8 +207,7 @@ struct PlayByPlaySection: View {
         if let card = event.normalizedCard {
             return GameEventPresentation(
                 card: card,
-                game: game,
-                scoreSpoilerPolicy: .revealed
+                game: game
             )
         }
         guard let visibleEventIndex = visibleEventIndexByAnchorID[event.detailAnchorID] else {
@@ -224,8 +220,7 @@ struct PlayByPlaySection: View {
                 game: game,
                 selectedMode: selectedMode,
                 visibleEvents: visibleEvents,
-                eventIndex: visibleEventIndex,
-                scoreSpoilerPolicy: scoreSpoilerPolicy
+                eventIndex: visibleEventIndex
             )
         )
     }

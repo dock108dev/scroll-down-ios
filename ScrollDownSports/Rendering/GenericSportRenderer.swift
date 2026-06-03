@@ -15,7 +15,7 @@ struct GenericSportRenderer: SportRenderer {
             sportLabel: sportLabel,
             accentColor: accentColor(for: normalizedLeagueCode),
             liveColor: SportsTheme.Tone.live.accent,
-            scoreRevealColor: SportsTheme.Tone.scoreboard.accent,
+            scoreboardColor: SportsTheme.Tone.scoreboard.accent,
             primarySystemImage: "sportscourt"
         )
     }
@@ -27,7 +27,7 @@ struct GenericSportRenderer: SportRenderer {
             accentColor: theme.accentColor,
             statusText: statusText(for: game),
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            matchupLabel: game.matchupText,
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -41,7 +41,7 @@ struct GenericSportRenderer: SportRenderer {
             statusText: statusText(for: game),
             playCountText: game.progress.eventCount.map { "\($0) plays" },
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            matchupLabel: game.matchupText,
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -99,7 +99,7 @@ struct GenericSportRenderer: SportRenderer {
             totalHeader: totalHeader(for: game),
             stateText: game.scoreboard?.scoreline ?? game.scoreboard?.statusLabel ?? scoreboardStateText(for: game),
             stateColor: game.status.isLive ? theme.liveColor : SportsTheme.Colors.secondaryInk,
-            accentColor: theme.scoreRevealColor
+            accentColor: theme.scoreboardColor
         )
     }
 
@@ -365,7 +365,8 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     private func topRegionText(_ value: String?, for game: Game) -> String? {
-        ScoreSpoilerFilter.topRegionText(value, for: game)
+        _ = game
+        return value?.nilIfBlank
     }
 
     private func accentColor(for leagueCode: String) -> Color {

@@ -44,7 +44,6 @@
     "ScrollDownSports/Models/DisplayStringUtilities.swift": 95.0,
     "ScrollDownSports/Models/GameParticipantVisibility.swift": 95.0,
     "ScrollDownSports/Models/JSONValue.swift": 70.0,
-    "ScrollDownSports/Models/ScoreSpoilerFilter.swift": 95.0,
     "ScrollDownSports/Models/SDADomainMapper.swift": 95.0,
     "ScrollDownSports/Persistence/GameStateStore.swift": 90.0,
     "ScrollDownSports/Persistence/GameStateStoreTypes.swift": 90.0,

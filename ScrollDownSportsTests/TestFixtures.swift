@@ -296,8 +296,7 @@ enum TestFixtures {
                 "playLine": index == 0 ? "Feed update \(index + 1)" : NSNull(),
                 "updateLine": index == 0 ? "Sets the table." : NSNull(),
                 "impact": index == 0 ? "Sets the table." : NSNull(),
-                "tags": ["context"],
-                "spoilerLevel": "none"
+                "tags": ["context"]
             ]
             if index < cardOverrides.count {
                 cardOverrides[index].forEach { card[$0.key] = $0.value }
@@ -319,7 +318,6 @@ enum TestFixtures {
                 "awayTeamAbbr": "NYY",
                 "score": ["home": 2, "away": 1]
             ],
-            "spoilerPolicy": "revealed",
             "generation": [
                 "status": status,
                 "cardCount": cardCount ?? cards.count,
@@ -327,18 +325,6 @@ enum TestFixtures {
                 "generatedAt": cards.isEmpty ? NSNull() : "2026-05-22T23:45:00Z",
                 "isStale": status == "stale_regenerating",
                 "validationIssues": []
-            ],
-            "reveal": [
-                "available": true,
-                "status": "ready",
-                "scoresInCards": true,
-                "revealRequiredForScores": false,
-                "completedGameBoundary": [
-                    "finalScore": "allowed",
-                    "winner": "allowed",
-                    "stats": "allowed",
-                    "payoffCopy": "allowed"
-                ]
             ],
             "sections": [],
             "teamStats": [

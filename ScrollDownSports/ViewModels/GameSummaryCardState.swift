@@ -193,13 +193,13 @@ struct GameSummaryCardState {
         surface: GameSummaryCardSurface
     ) -> String {
         if surface == .detail,
-           let label = ScoreSpoilerFilter.topRegionText(presentationStatusText, for: game) {
+           let label = presentationStatusText?.nilIfBlank {
             return label
         }
-        if let label = ScoreSpoilerFilter.topRegionText(game.presentation?.statusLabel ?? game.presentation?.primaryLabel, for: game) {
+        if let label = (game.presentation?.statusLabel ?? game.presentation?.primaryLabel)?.nilIfBlank {
             return label
         }
-        if let scoreboardStatus = ScoreSpoilerFilter.topRegionText(game.scoreboard?.statusLabel, for: game) {
+        if let scoreboardStatus = game.scoreboard?.statusLabel?.nilIfBlank {
             return scoreboardStatus
         }
         switch phase {
@@ -236,7 +236,6 @@ struct GameSummaryCardState {
             return "Preview"
         }
         if let backendLabel = game.presentation?.primaryActionLabel?.nilIfBlank,
-           ScoreSpoilerFilter.topRegionText(backendLabel, for: game) != nil,
            labelIsAllowed(backendLabel, phase: phase, capability: capability) {
             return backendLabel
         }
@@ -484,9 +483,9 @@ struct GameSummaryCardState {
         primaryActionLabel: String
     ) -> String {
         [
-            ScoreSpoilerFilter.topRegionText(presentationAccessibilityLabel, for: game),
-            ScoreSpoilerFilter.topRegionText(presentationHeadline, for: game),
-            ScoreSpoilerFilter.matchupText(for: game),
+            presentationAccessibilityLabel?.nilIfBlank,
+            presentationHeadline?.nilIfBlank,
+            game.matchupText,
             statusText,
             primaryActionLabel
         ]

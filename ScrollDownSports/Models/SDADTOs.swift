@@ -56,9 +56,7 @@ struct SDAGameDetailResponseDTO: Decodable, Sendable {
 struct SDACardFeedResponseDTO: Decodable, Sendable {
     let contractVersion: Int
     let game: SDACardFeedGameDTO
-    let spoilerPolicy: String
     let generation: SDAFeedGenerationDTO
-    let reveal: SDARevealAvailabilityDTO
     let teamStats: [TeamStat]?
     let playerStats: [PlayerStat]?
     let cards: [SDANarrativeCardDTO]
@@ -85,13 +83,6 @@ struct SDAFeedGenerationDTO: Decodable, Hashable, Sendable {
     let generatedAt: String?
     let isStale: Bool
     let validationIssues: [String]
-}
-
-struct SDARevealAvailabilityDTO: Decodable, Hashable, Sendable {
-    let available: Bool
-    let status: String
-    let scoresInCards: Bool
-    let revealRequiredForScores: Bool
 }
 
 struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
@@ -133,7 +124,6 @@ struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
     let eventType: String?
     let impact: String?
     let tags: [String]
-    let spoilerLevel: String
 }
 
 struct SDACardPeriodDTO: Decodable, Hashable, Sendable {

@@ -35,8 +35,7 @@ struct GameHeaderPlaceholder: View {
                     .foregroundStyle(presentation.accentColor)
             }
             Text(
-                ScoreSpoilerFilter.topRegionText(presentation.headline, for: summary)
-                    ?? ScoreSpoilerFilter.matchupText(for: summary)
+                presentation.headline?.nilIfBlank ?? summary.matchupText
             )
                 .font(SportsTheme.Typography.appTitle)
                 .foregroundStyle(SportsTheme.Colors.ink)

@@ -244,7 +244,7 @@ final class PlayRowContentFilterTests: XCTestCase {
                 { "id": "team", "kind": "teamBadge", "text": "BAY", "teamAbbreviation": "BAY" }
               ],
               "resultItems": [{ "id": "impact", "text": "Backend impact", "tone": "critical", "priority": 10 }],
-              "score": { "label": "Scoring", "value": "BAY 100, NAR 99", "isScoringPlay": true, "spoilerPolicy": "hide_until_reveal" },
+              "score": { "label": "Scoring", "value": "BAY 100, NAR 99", "isScoringPlay": true },
               "rawFeed": { "text": "provider payload", "source": "SDA", "disclosureTitle": "Original feed" },
               "accessibility": { "label": "Backend card accessibility", "value": "Backend card value" }
             }
@@ -289,15 +289,14 @@ final class PlayRowContentFilterTests: XCTestCase {
             body: NormalizedPlayCardText(text: "The run continues.", tone: nil, maxLines: nil),
             contextItems: [],
             resultItems: [],
-            score: NormalizedPlayCardScore(label: "Scoring", value: "BAY 100, NAR 99", isScoringPlay: true, spoilerPolicy: .hideUntilReveal),
+            score: NormalizedPlayCardScore(label: "Scoring", value: "BAY 100, NAR 99", isScoringPlay: true),
             team: nil,
             situation: nil,
             rawFeed: nil,
             accessibility: NormalizedPlayCardAccessibility(label: "Bay Harbor answers", value: nil, hint: nil, situationSummary: nil)
         )
 
-        XCTAssertEqual(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .hideAbsoluteScores).scoreLabel, "BAY 100, NAR 99")
-        XCTAssertEqual(GameEventPresentation(card: card, game: game, scoreSpoilerPolicy: .revealed).scoreLabel, "BAY 100, NAR 99")
+        XCTAssertEqual(GameEventPresentation(card: card, game: game).scoreLabel, "BAY 100, NAR 99")
     }
 
     private func baseballPresentation(
