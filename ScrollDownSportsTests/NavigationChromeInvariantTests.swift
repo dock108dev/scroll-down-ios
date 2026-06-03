@@ -130,13 +130,14 @@ final class NavigationChromeInvariantTests: XCTestCase {
 
     func testDetailScreenHasStickyProgressNavigationWithoutLargeDuplicateCard() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let chromeSource = try repoFile("ScrollDownSports/Views/DetailNavigationChrome.swift")
 
         XCTAssertTrue(detailSource.contains("DetailStickyNavigationBar("))
         XCTAssertTrue(detailSource.contains("scrollToTop(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToReturnAnchor(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
-        XCTAssertTrue(detailSource.contains("Back to"))
+        XCTAssertTrue(scrollSource.contains("\"Back to \\(returnAnchor.label)\""))
         XCTAssertTrue(chromeSource.contains("Capsule()"))
     }
 
@@ -154,13 +155,14 @@ final class NavigationChromeInvariantTests: XCTestCase {
 
     func testReturnAnchorRemainsViewLocalAndClearsAfterBackToSpot() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let storeSource = try repoFile("ScrollDownSports/Persistence/GameStateStore.swift")
 
-        XCTAssertTrue(detailSource.contains("@State private var returnAnchor: DetailVisibleEventState?"))
-        XCTAssertTrue(detailSource.contains("private func rememberReturnAnchor()"))
-        XCTAssertTrue(detailSource.contains("return \"Back to \\(returnAnchor.label)\""))
-        XCTAssertTrue(detailSource.contains("private func scrollToReturnAnchor(_ proxy: ScrollViewProxy)"))
-        XCTAssertTrue(detailSource.contains("returnAnchor = nil"))
+        XCTAssertTrue(detailSource.contains("@State var returnAnchor: DetailVisibleEventState?"))
+        XCTAssertTrue(scrollSource.contains("func rememberReturnAnchor()"))
+        XCTAssertTrue(scrollSource.contains("\"Back to \\(returnAnchor.label)\""))
+        XCTAssertTrue(scrollSource.contains("func scrollToReturnAnchor(_ proxy: ScrollViewProxy)"))
+        XCTAssertTrue(scrollSource.contains("returnAnchor = nil"))
         XCTAssertFalse(storeSource.contains("returnAnchor"))
     }
 

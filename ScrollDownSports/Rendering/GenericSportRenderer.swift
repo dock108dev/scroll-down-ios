@@ -27,7 +27,7 @@ struct GenericSportRenderer: SportRenderer {
             accentColor: theme.accentColor,
             statusText: statusText(for: game),
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: game.matchupText,
+            matchupLabel: topRegionMatchupText(for: game),
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -41,7 +41,7 @@ struct GenericSportRenderer: SportRenderer {
             statusText: statusText(for: game),
             playCountText: game.progress.eventCount.map { "\($0) plays" },
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: game.matchupText,
+            matchupLabel: topRegionMatchupText(for: game),
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -365,8 +365,20 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     private func topRegionText(_ value: String?, for game: Game) -> String? {
-        _ = game
-        return value?.nilIfBlank
+        guard let text = value?.nilIfBlank else { return nil }
+        guard game.presentation?.scoreboardPlacement?.lowercased() != "bottom" else { return nil }
+        return text
+    }
+
+    private func topRegionMatchupText(for game: Game) -> String {
+        guard game.presentation?.scoreboardPlacement?.lowercased() == "bottom" else {
+            return game.matchupText
+        }
+        return participantMatchupText(for: game)
+    }
+
+    private func participantMatchupText(for game: Game) -> String {
+        "\(game.awayParticipant?.name ?? "Away") at \(game.homeParticipant?.name ?? "Home")"
     }
 
     private func accentColor(for leagueCode: String) -> Color {

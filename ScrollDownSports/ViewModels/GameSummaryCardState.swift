@@ -193,10 +193,12 @@ struct GameSummaryCardState {
         surface: GameSummaryCardSurface
     ) -> String {
         if surface == .detail,
+           game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
            let label = presentationStatusText?.nilIfBlank {
             return label
         }
-        if let label = (game.presentation?.statusLabel ?? game.presentation?.primaryLabel)?.nilIfBlank {
+        if game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
+           let label = (game.presentation?.statusLabel ?? game.presentation?.primaryLabel)?.nilIfBlank {
             return label
         }
         if let scoreboardStatus = game.scoreboard?.statusLabel?.nilIfBlank {
@@ -235,7 +237,8 @@ struct GameSummaryCardState {
         if phase == .scheduled {
             return "Preview"
         }
-        if let backendLabel = game.presentation?.primaryActionLabel?.nilIfBlank,
+        if game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
+           let backendLabel = game.presentation?.primaryActionLabel?.nilIfBlank,
            labelIsAllowed(backendLabel, phase: phase, capability: capability) {
             return backendLabel
         }
@@ -485,7 +488,7 @@ struct GameSummaryCardState {
         [
             presentationAccessibilityLabel?.nilIfBlank,
             presentationHeadline?.nilIfBlank,
-            game.matchupText,
+            topRegionMatchupText(for: game),
             statusText,
             primaryActionLabel
         ]
@@ -495,5 +498,12 @@ struct GameSummaryCardState {
 
     private static func shortName(for name: String) -> String {
         String(name.split(separator: " ").last?.prefix(4) ?? "TEAM")
+    }
+
+    private static func topRegionMatchupText(for game: Game) -> String {
+        guard game.presentation?.scoreboardPlacement?.lowercased() == "bottom" else {
+            return game.matchupText
+        }
+        return "\(game.awayParticipant?.name ?? "Away") at \(game.homeParticipant?.name ?? "Home")"
     }
 }
