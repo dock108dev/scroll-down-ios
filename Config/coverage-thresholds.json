@@ -30,7 +30,9 @@
     "ScrollDownSports/Services/LocalFavoriteGameNotificationDeliverer.swift",
     "ScrollDownSports/Services/SDAUITestFixtureAPI.swift",
     "ScrollDownSports/Services/SDAUIPerformanceFixturePayload.swift",
-    "ScrollDownSports/Views/GameDetailView.swift"
+    "ScrollDownSports/Views/GameDetailView.swift",
+    "ScrollDownSports/Views/GameDetailView+ReaderRestore.swift",
+    "ScrollDownSports/Views/GameDetailView+ScrollState.swift"
   ],
   "includedPathOverrides": [
     "ScrollDownSports/App/AppEnvironment.swift",

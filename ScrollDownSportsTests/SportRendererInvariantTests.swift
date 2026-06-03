@@ -398,6 +398,169 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(scoreboard.stateText, "Baltimore 7, Seattle 6")
     }
 
+    func testNormalizedCardSituationMapsContractFieldsIntoPresentation() {
+        let game = TestFixtures.makeGame(id: 1511, leagueCode: "nba")
+        let card = NormalizedPlayCard(
+            schemaVersion: 1,
+            cardID: "card-situation",
+            visualImportance: .high,
+            accent: NormalizedPlayCardAccent(
+                tone: .critical,
+                participantRole: .home,
+                teamAbbreviation: "SEA"
+            ),
+            clock: nil,
+            leadIn: NormalizedPlayCardText(text: "Late pressure", tone: .context, maxLines: nil),
+            headline: NormalizedPlayCardText(text: "Seattle forces overtime", tone: .scoring, maxLines: nil),
+            body: NormalizedPlayCardText(text: "The home side gets the stop it needed.", tone: .neutral, maxLines: nil),
+            contextItems: [
+                NormalizedPlayCardContextItem(
+                    id: "clock",
+                    kind: .clock,
+                    text: "Q4 00:05",
+                    tone: .muted,
+                    participantRole: nil,
+                    teamAbbreviation: nil
+                ),
+                NormalizedPlayCardContextItem(
+                    id: "team",
+                    kind: .teamBadge,
+                    text: "SEA",
+                    tone: .possession,
+                    participantRole: .home,
+                    teamAbbreviation: "SEA"
+                )
+            ],
+            resultItems: [
+                NormalizedPlayCardResultItem(id: "result", text: "Tie game", tone: .secondary, priority: 1)
+            ],
+            score: NormalizedPlayCardScore(label: "Scoring", value: "SEA 99, NYY 99", isScoringPlay: true),
+            team: NormalizedPlayCardTeam(
+                participantRole: .home,
+                abbreviation: "SEA",
+                displayName: "Seattle Mariners",
+                label: "Seattle"
+            ),
+            situation: NormalizedPlayCardSituation(
+                title: "Final possession",
+                periodText: "Q4",
+                setupText: "Five seconds left",
+                contextLine: "Seattle has the ball",
+                pressureLine: "High leverage",
+                sport: "basketball",
+                layout: "basketball",
+                ownership: NormalizedPlayCardSituationOwnership(
+                    role: "possession",
+                    participantRole: .home,
+                    teamAbbreviation: "SEA",
+                    teamLabel: "Seattle",
+                    confidence: "derivedFromPeriod"
+                ),
+                accent: NormalizedPlayCardAccent(
+                    tone: .scoring,
+                    participantRole: .home,
+                    teamAbbreviation: "SEA"
+                ),
+                dataConfidence: "feedProvided"
+            ),
+            rawFeed: NormalizedPlayCardRawFeed(
+                text: "SEA defensive rebound",
+                source: "provider",
+                updatedAt: "2026-05-22T23:59:00Z",
+                disclosureTitle: "Raw feed"
+            ),
+            accessibility: NormalizedPlayCardAccessibility(
+                label: "Seattle forces overtime",
+                value: "Tie game",
+                hint: "Double tap for feed details",
+                situationSummary: "Seattle possession with five seconds left"
+            )
+        )
+
+        let presentation = GameEventPresentation(card: card, game: game)
+
+        XCTAssertEqual(presentation.clockText, "Q4 00:05")
+        XCTAssertEqual(presentation.scoringLabel, "Scoring")
+        XCTAssertEqual(presentation.scoreLabel, "SEA 99, NYY 99")
+        XCTAssertEqual(presentation.teamAbbreviation, "SEA")
+        XCTAssertEqual(presentation.contextItems.map(\.tone), [.muted, .possession])
+        XCTAssertEqual(presentation.resultItems.map(\.text), ["Tie game"])
+        XCTAssertEqual(presentation.rawFeedDisclosureTitle, "Raw feed")
+        XCTAssertEqual(presentation.situation?.sport, .basketball)
+        XCTAssertEqual(presentation.situation?.layout, .basketball)
+        XCTAssertEqual(presentation.situation?.ownership?.role, .possession)
+        XCTAssertEqual(presentation.situation?.ownership?.confidence, .derivedFromPeriod)
+        XCTAssertEqual(presentation.situation?.accent.tone, .scoring)
+        XCTAssertEqual(presentation.situation?.dataConfidence, .feedProvided)
+        XCTAssertEqual(presentation.situationAccessibilityText, "Seattle possession with five seconds left")
+    }
+
+    func testSportRendererDefaultExtensionGroupsAndDelegatesSituations() {
+        struct MinimalRenderer: SportRenderer {
+            var theme: SportRenderingTheme {
+                GenericSportRenderer(leagueCode: "nba").theme
+            }
+
+            func gameCardPresentation(for game: Game) -> GameCardPresentation {
+                GenericSportRenderer(leagueCode: game.leagueCode).gameCardPresentation(for: game)
+            }
+
+            func gameHeaderPresentation(for game: Game) -> GameHeaderPresentation {
+                GenericSportRenderer(leagueCode: game.leagueCode).gameHeaderPresentation(for: game)
+            }
+
+            func eventPresentation(for event: GameEvent) -> GameEventPresentation {
+                GameEventPresentation(event: event)
+            }
+
+            func periodGroupLabel(for event: GameEvent) -> String {
+                event.periodLabel ?? "Unknown"
+            }
+
+            func periodGroupKey(for event: GameEvent) -> String {
+                periodGroupLabel(for: event)
+            }
+
+            func rowClockText(for event: GameEvent, periodGroupLabel: String?) -> String {
+                [periodGroupLabel, event.clockText].compactMap(\.self).joined(separator: " ")
+            }
+
+            func scoreboardPresentation(for game: Game) -> ScoreboardPresentation {
+                GenericSportRenderer(leagueCode: game.leagueCode).scoreboardPresentation(for: game)
+            }
+
+            func statsPresentation(for detail: GameDetail) -> GameStatsPresentation {
+                GenericSportRenderer(leagueCode: detail.game.leagueCode).statsPresentation(for: detail)
+            }
+        }
+
+        let events = [
+            TestFixtures.makeEvent(sequence: 20, sourceEventID: "b", periodLabel: "Q2", clockLabel: "09:00"),
+            TestFixtures.makeEvent(sequence: 10, sourceEventID: "a", periodLabel: "Q1", clockLabel: "10:00"),
+            TestFixtures.makeEvent(sequence: 30, sourceEventID: "c", periodLabel: "Q2", clockLabel: "08:30")
+        ]
+        let renderer = MinimalRenderer()
+        let context = SportRendererSituationContext(
+            game: TestFixtures.makeGame(id: 1512, leagueCode: "nba"),
+            selectedMode: .full,
+            visibleEvents: events,
+            eventIndex: 0
+        )
+
+        let groups = renderer.periodGroups(for: events)
+        let presentation = renderer.eventPresentation(
+            for: events[0],
+            periodGroupLabel: "Q2",
+            context: context
+        )
+
+        XCTAssertEqual(groups.map(\.id), ["Q1", "Q2"])
+        XCTAssertEqual(groups[1].events.map(\.id), ["b", "c"])
+        XCTAssertEqual(presentation.clockText, "Q2 Q2 · 09:00")
+        XCTAssertNil(renderer.eventSituationPresentation(for: events[0]))
+        XCTAssertNil(renderer.eventSituationPresentation(for: events[0], context: context))
+    }
+
     private func batter(team: String, atBats: Int? = 4) -> MLBBatterStat {
         MLBBatterStat(
             team: team,

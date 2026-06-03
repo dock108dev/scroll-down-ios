@@ -217,6 +217,65 @@ final class DecodingTests: XCTestCase {
         XCTAssertNotNil(detail.events.first?.normalizedCard)
     }
 
+    func testDomainMapperCoversFeedStatusAndStatsEligibilityBranches() {
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: " no_pbp_yet "), .noPbpYet)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "unsupportedSport"), .unsupportedSport)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "generation_pending"), .generationPending)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "validationBlocked"), .validationBlocked)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "stale_regenerating"), .staleRegenerating)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "ready"), .ready)
+        XCTAssertEqual(SDADomainMapper.feedGenerationStatus(from: "mystery"), .unknown)
+
+        let eligible = ModeEligibilityData(
+            isEligible: true,
+            reason: nil,
+            minimumEventCount: nil,
+            availableEventCount: nil
+        )
+        let ineligible = ModeEligibilityData(
+            isEligible: false,
+            reason: "stats_unavailable",
+            minimumEventCount: nil,
+            availableEventCount: nil
+        )
+        XCTAssertTrue(
+            GameEligibilityData(
+                catchUp: nil,
+                playByPlay: nil,
+                keyMoments: nil,
+                boxScore: nil,
+                teamStats: eligible,
+                playerStats: nil,
+                liveTracker: nil,
+                recap: nil
+            ).hasAnyStats
+        )
+        XCTAssertFalse(
+            GameEligibilityData(
+                catchUp: nil,
+                playByPlay: nil,
+                keyMoments: nil,
+                boxScore: nil,
+                teamStats: ineligible,
+                playerStats: ineligible,
+                liveTracker: nil,
+                recap: nil
+            ).hasAnyStats
+        )
+        XCTAssertTrue(
+            GameEligibilityData(
+                catchUp: nil,
+                playByPlay: nil,
+                keyMoments: nil,
+                boxScore: nil,
+                teamStats: nil,
+                playerStats: nil,
+                liveTracker: nil,
+                recap: nil
+            ).hasAnyStats
+        )
+    }
+
     func testGameListKeepsDefaultTimeout() async throws {
         let client = TestFixtures.makeAPIClient(
             responses: [.ok(try SDAFixturePayloadFactory.gameList(ids: [504]))],
