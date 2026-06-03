@@ -59,6 +59,8 @@ struct SDACardFeedResponseDTO: Decodable, Sendable {
     let spoilerPolicy: String
     let generation: SDAFeedGenerationDTO
     let reveal: SDARevealAvailabilityDTO
+    let teamStats: [TeamStat]?
+    let playerStats: [PlayerStat]?
     let cards: [SDANarrativeCardDTO]
 }
 
@@ -73,6 +75,7 @@ struct SDACardFeedGameDTO: Decodable, Hashable, Sendable {
     let awayTeamId: Int?
     let homeTeamAbbr: String?
     let awayTeamAbbr: String?
+    let score: SDAScoreDTO?
 }
 
 struct SDAFeedGenerationDTO: Decodable, Hashable, Sendable {

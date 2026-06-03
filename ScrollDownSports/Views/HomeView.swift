@@ -81,6 +81,7 @@ struct HomeView: View {
                 .padding(.top, layout.homeScrollTopPadding)
                 .padding(.bottom, layout.homeScrollBottomPadding)
             }
+            .id(viewModel.homeFilterSignature)
             .accessibilityIdentifier("home.scroll")
             .scrollDismissesKeyboard(.interactively)
             .onAppear {

@@ -35,8 +35,8 @@ enum SDADomainMapper {
         )
         return GameDetail(
             game: game,
-            teamStats: [],
-            playerStats: [],
+            teamStats: response.teamStats ?? [],
+            playerStats: response.playerStats ?? [],
             events: events,
             mlbBatters: nil,
             mlbPitchers: nil,
@@ -97,9 +97,7 @@ enum SDADomainMapper {
             localDateLabel: nil,
             status: GameStatus(rawValue: status),
             participants: participants,
-            scoreState: ScoreState(participantScores: participants.map {
-                ParticipantScore(participantID: $0.id, participantRole: $0.role, score: nil)
-            }),
+            scoreState: scoreState(scoreSnapshot: nil, score: dto.score, participants: participants),
             presentation: nil,
             scoreboard: nil,
             progress: GameProgress(
@@ -117,8 +115,8 @@ enum SDADomainMapper {
             ),
             availableFeatures: GameAvailableFeatures(
                 hasTimeline: !response.cards.isEmpty,
-                hasStats: false,
-                hasScoreboard: response.reveal.available
+                hasStats: !(response.teamStats ?? []).isEmpty || !(response.playerStats ?? []).isEmpty,
+                hasScoreboard: dto.score != nil || response.reveal.available
             )
         )
     }

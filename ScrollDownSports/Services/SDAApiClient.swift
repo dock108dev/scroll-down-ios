@@ -93,11 +93,10 @@ final class SDAApiClient: Sendable {
     }
 
     private func fetchNormalizedFeedResponse(id: Int) async throws -> SDACardFeedResponseDTO {
-        var components = URLComponents(
+        let components = URLComponents(
             url: baseURL.appending(path: "/api/v1/feed/games/\(id)/cards"),
             resolvingAgainstBaseURL: false
         )
-        components?.queryItems = [URLQueryItem(name: "spoilerPolicy", value: "pre_reveal")]
         guard let url = components?.url else { throw SDAApiError.invalidURL }
         do {
             return try await get(url, timeout: normalizedFeedRequestTimeout)

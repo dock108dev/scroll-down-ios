@@ -203,13 +203,17 @@ final class DecodingTests: XCTestCase {
 
         XCTAssertEqual(requests.map(\.path), ["/api/v1/feed/games/504/cards"])
         XCTAssertFalse(requests.map(\.path).contains("/api/v1/games/504"))
-        XCTAssertEqual(requests.first?.query, "spoilerPolicy=pre_reveal")
+        XCTAssertNil(requests.first?.query)
         XCTAssertEqual(MockHTTPURLProtocol.requestTimeouts(for: MockNormalizedFeedSuccessURLProtocol.self), [60])
         XCTAssertEqual(detail.feedMetadata.source, .normalizedFeed)
         XCTAssertEqual(detail.feedMetadata.generationStatus, .ready)
         XCTAssertEqual(detail.feedMetadata.fallbackState, .none)
         XCTAssertEqual(detail.events.map(\.normalizedSourceEventID), ["event-1", "event-2"])
         XCTAssertEqual(detail.game.participants.map(\.id), ["147", "136"])
+        XCTAssertEqual(detail.game.scoreState.away, 1)
+        XCTAssertEqual(detail.game.scoreState.home, 2)
+        XCTAssertEqual(detail.teamStats.map(\.team), ["New York Yankees", "Seattle Mariners"])
+        XCTAssertEqual(detail.playerStats.map(\.playerName), ["Cal Rios"])
         XCTAssertNotNil(detail.events.first?.normalizedCard)
     }
 

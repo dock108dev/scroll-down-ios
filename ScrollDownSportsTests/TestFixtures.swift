@@ -316,9 +316,10 @@ enum TestFixtures {
                 "homeTeamId": 136,
                 "awayTeamId": 147,
                 "homeTeamAbbr": "SEA",
-                "awayTeamAbbr": "NYY"
+                "awayTeamAbbr": "NYY",
+                "score": ["home": 2, "away": 1]
             ],
-            "spoilerPolicy": "pre_reveal",
+            "spoilerPolicy": "revealed",
             "generation": [
                 "status": status,
                 "cardCount": cardCount ?? cards.count,
@@ -328,18 +329,25 @@ enum TestFixtures {
                 "validationIssues": []
             ],
             "reveal": [
-                "available": false,
-                "status": "unavailable",
-                "scoresInCards": false,
-                "revealRequiredForScores": true,
+                "available": true,
+                "status": "ready",
+                "scoresInCards": true,
+                "revealRequiredForScores": false,
                 "completedGameBoundary": [
-                    "finalScore": "unavailable",
-                    "winner": "unavailable",
-                    "stats": "unavailable",
-                    "payoffCopy": "unavailable"
+                    "finalScore": "allowed",
+                    "winner": "allowed",
+                    "stats": "allowed",
+                    "payoffCopy": "allowed"
                 ]
             ],
             "sections": [],
+            "teamStats": [
+                ["team": "New York Yankees", "isHome": false, "stats": ["hits": 7], "normalizedStats": []],
+                ["team": "Seattle Mariners", "isHome": true, "stats": ["hits": 8], "normalizedStats": []]
+            ],
+            "playerStats": [
+                ["team": "Seattle Mariners", "playerName": "Cal Rios", "minutes": NSNull(), "points": 2, "rebounds": NSNull(), "assists": NSNull(), "rawStats": ["points": 2]]
+            ],
             "cards": cards
         ]
         do {
