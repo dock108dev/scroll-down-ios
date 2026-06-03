@@ -71,6 +71,7 @@
 		315F9A546E63665FD99E1020 /* testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 93999E174AF3F3B0A8617887 /* testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png */; };
 		31F91C86E9D5C9939A83EE25 /* GameDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 077B914BAF940BDB3732E5A9 /* GameDetailViewModel.swift */; };
 		320E52EBB7273FA16AF71BF6 /* SituationOwnershipAccentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25E263F0D7D4A3A8456DB52A /* SituationOwnershipAccentTests.swift */; };
+		33C22AD9BFCA7B9F10CF34B0 /* PeriodLabelModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */; };
 		353858CCD9F450347DBE1F48 /* testChromeTreatmentComparison.shared-chrome-treatment-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = B1E6BBE5327EBA2A790BD352 /* testChromeTreatmentComparison.shared-chrome-treatment-standard-phoneCompact-light-medium.png */; };
 		35A31BFA878AA19B38A74443 /* HomeSectionTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B6B80C99F2D42B2AEF7FF0 /* HomeSectionTestHelpers.swift */; };
 		35ABF013997D8050F3373E71 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 676C60896F8A3E640B7587D8 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png */; };
@@ -459,6 +460,7 @@
 		6748277B3EF0A3E7668E4E75 /* PlayRowContentFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRowContentFilter.swift; sourceTree = "<group>"; };
 		67610459440D1A4E54C1DB39 /* testLiveCard.live-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testLiveCard.live-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		676C60896F8A3E640B7587D8 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLabelModels.swift; sourceTree = "<group>"; };
 		68FCC99898765035A24B429D /* StorePersistenceInvariantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorePersistenceInvariantTests.swift; sourceTree = "<group>"; };
 		692B84C54089B805FD1B273B /* GameDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailViewModelTests.swift; sourceTree = "<group>"; };
 		69A9CACD2E7F627551CD0061 /* HomeGameCardState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeGameCardState.swift; sourceTree = "<group>"; };
@@ -828,6 +830,7 @@
 				8BAF3CB05B50F693E96EA548 /* NonFieldPressureBoard.swift */,
 				B99674510677F29A97ADA9E5 /* NonFieldPressureState.swift */,
 				E7AABE1C5C723F61B1719066 /* PeriodLabelFormatter.swift */,
+				6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */,
 				F5897570024B4539EB79B4D0 /* ReservedSportRenderers.swift */,
 				2AAF97627B5BA58ADFFCDA6E /* ScorePressurePresentation.swift */,
 				AE69031ECEFC85735F9A8907 /* SituationAccessibilitySummary.swift */,
@@ -1594,6 +1597,7 @@
 				9D4EBD19F552C481D92C80E7 /* NonFieldPressureState.swift in Sources */,
 				CD06E37B9B2AE29D2532AF3C /* NormalizedPlayCardModels.swift in Sources */,
 				309C595B309152E67445B5A3 /* PeriodLabelFormatter.swift in Sources */,
+				33C22AD9BFCA7B9F10CF34B0 /* PeriodLabelModels.swift in Sources */,
 				26DE297D2FE5DB455AA06069 /* PlayRow.swift in Sources */,
 				19DD5BF536BB8C32288A9662 /* PlayRowContentFilter.swift in Sources */,
 				9B307C0026CCF9247A3B4BBF /* PresentationDomainModels.swift in Sources */,
