@@ -355,6 +355,7 @@ struct GameDetailView: View {
             #endif
             guard !AppEnvironment.isRunningTests || allowsUITestFixtureRefresh else { return }
             await viewModel.refresh()
+            guard !AppEnvironment.isRunningUITests else { return }
             viewModel.startAutoRefresh()
         }
         .onDisappear {

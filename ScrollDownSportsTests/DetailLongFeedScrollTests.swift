@@ -195,6 +195,12 @@ final class DetailLongFeedScrollTests: XCTestCase {
         XCTAssertFalse(sectionSource.contains("visibleEvents.firstIndex(of: event)"))
     }
 
+    func testUITestFixturesDoNotStartDetailAutoRefreshLoop() throws {
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+
+        XCTAssertTrue(detailSource.contains("await viewModel.refresh()\n            guard !AppEnvironment.isRunningUITests else { return }\n            viewModel.startAutoRefresh()"))
+    }
+
     func testDetailControlsUseSemanticScrollAnchors() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
         let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
