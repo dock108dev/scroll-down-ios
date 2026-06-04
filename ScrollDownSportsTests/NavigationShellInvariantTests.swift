@@ -126,15 +126,16 @@ final class NavigationShellInvariantTests: XCTestCase {
 
     func testDetailLoadingErrorAndSummaryFallbackStatesStayOnSelectedRoute() throws {
         let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollStateSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let initializer = try sourceBlock(
             in: source,
             startingAt: "init(",
             endingBefore: "var body: some View"
         )
         let unavailableState = try sourceBlock(
-            in: source,
-            startingAt: "private func unavailableDetailState",
-            endingBefore: "private var pendingNewPlayCount"
+            in: scrollStateSource,
+            startingAt: "func unavailableDetailState",
+            endingBefore: "var pendingNewPlayCount"
         )
         let chromeSource = try repoFile("ScrollDownSports/Views/GameDetailChrome.swift")
         let loadErrorState = try sourceBlock(
@@ -181,10 +182,10 @@ final class NavigationShellInvariantTests: XCTestCase {
 
     func testPinControlsDoNotMutateSelectionRoutes() throws {
         let source = try repoFile("ScrollDownSports/Views/HomeView.swift")
-        let pinControl = try sourceBlock(
+        let actionMenu = try sourceBlock(
             in: source,
-            startingAt: "HomePinButton(isPinned: item.isPinned)",
-            endingBefore: ".accessibilityIdentifier(\"home.gameRow.\\(item.id).pin\")"
+            startingAt: "HomeGameActionMenu(",
+            endingBefore: ".accessibilityIdentifier(\"home.gameRow.\\(item.id).actions\")"
         )
         let contextMenu = try sourceBlock(
             in: source,
@@ -197,7 +198,7 @@ final class NavigationShellInvariantTests: XCTestCase {
             endingBefore: "@ViewBuilder"
         )
 
-        for controlSource in [pinControl, contextMenu, swipeAction] {
+        for controlSource in [actionMenu, contextMenu, swipeAction] {
             XCTAssertTrue(controlSource.contains("viewModel.togglePin(item.game)"))
             XCTAssertFalse(controlSource.contains("select(item)"))
             XCTAssertFalse(controlSource.contains("selectedGameId"))

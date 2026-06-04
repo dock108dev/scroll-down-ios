@@ -59,6 +59,24 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
+    func testLeagueSwitchFromScrolledHomeShowsShortResultWithoutBlankPage() {
+        configureApp()
+        app.launch()
+        assertHomeLoaded()
+
+        scrollUntilVisible(element("home.dateSection.timeline-upcoming"), direction: .up, maxSwipes: 8)
+        XCTAssertTrue(element("home.dateSection.timeline-upcoming").exists)
+
+        selectLeague("NBA")
+
+        XCTAssertTrue(element("home.stickyHeader").waitForExistence(timeout: 5))
+        XCTAssertTrue(row("9003").waitForExistence(timeout: 5))
+        XCTAssertTrue(row("9003").isHittable || row("9003").exists)
+        XCTAssertFalse(app.staticTexts["No games match these filters"].exists)
+        XCTAssertFalse(element("home.empty.noGames").exists)
+    }
+
+    @MainActor
     func testHomeHidesPlaceholderCopyAndSupportsFilters() {
         configureApp()
         app.launch()
@@ -96,8 +114,7 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
             throw XCTSkip("Compact-width keyboard route")
         }
 
-        let teamFilter = app.textFields["home.teamFilter"]
-        teamFilter.tap()
+        let teamFilter = focusTeamFilter()
         teamFilter.typeText("Canyon")
 
         XCTAssertTrue(element("home.stickyHeader").exists)
@@ -110,9 +127,9 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         app.swipeUp()
         XCTAssertTrue(row("9001").exists)
 
-        teamFilter.tap()
-        clearTextField(teamFilter)
-        teamFilter.typeText("No Such Team")
+        let refocusedTeamFilter = focusTeamFilter()
+        clearFocusedTextField(refocusedTeamFilter)
+        refocusedTeamFilter.typeText("No Such Team")
         dismissKeyboardIfVisible()
 
         XCTAssertTrue(app.staticTexts["No games match these filters"].waitForExistence(timeout: 3))
@@ -131,19 +148,16 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
         }
         XCTAssertFalse(app.staticTexts["Sample Game"].exists)
 
-        let pin = app.buttons["home.gameRow.9001.pin"]
-        XCTAssertTrue(pin.waitForExistence(timeout: 3))
-        XCTAssertEqual(pin.label, "Pin game")
-        tap(pin)
+        togglePinFromHomeActions(gameId: "9001", actionLabel: "Pin game")
 
-        let unpin = app.buttons["home.gameRow.9001.pin"]
-        XCTAssertTrue(unpin.waitForExistence(timeout: 3))
-        XCTAssertEqual(unpin.label, "Unpin game")
+        let actions = app.buttons["home.gameRow.9001.actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 3))
+        XCTAssertTrue(actions.label.contains("pinned"))
         XCTAssertTrue(element("home.section.pinned").waitForExistence(timeout: 3))
 
-        tap(unpin)
-        XCTAssertTrue(app.buttons["home.gameRow.9001.pin"].waitForExistence(timeout: 3))
-        XCTAssertEqual(app.buttons["home.gameRow.9001.pin"].label, "Pin game")
+        togglePinFromHomeActions(gameId: "9001", actionLabel: "Unpin game")
+        XCTAssertTrue(app.buttons["home.gameRow.9001.actions"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.buttons["home.gameRow.9001.actions"].label, "Game actions")
         if !isRegularWidth {
             XCTAssertTrue(app.navigationBars["Scroll Down"].exists)
         }
@@ -355,6 +369,23 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     }
 
     @MainActor
+    private func togglePinFromHomeActions(gameId: String, actionLabel: String) {
+        let actions = app.buttons["home.gameRow.\(gameId).actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 3))
+        tap(actions)
+
+        let menuButton = app.buttons[actionLabel]
+        if menuButton.waitForExistence(timeout: 3) {
+            tap(menuButton)
+            return
+        }
+
+        let menuText = app.staticTexts[actionLabel]
+        XCTAssertTrue(menuText.waitForExistence(timeout: 3), "Missing home action \(actionLabel)")
+        tap(menuText)
+    }
+
+    @MainActor
     private func tap(_ element: XCUIElement) {
         if element.isHittable {
             element.tap()
@@ -399,6 +430,23 @@ final class ScrollDownSportsCriticalFlowsUITests: XCTestCase {
     @MainActor
     private func clearTextField(_ textField: XCUIElement) {
         textField.tap()
+        clearFocusedTextField(textField)
+    }
+
+    @MainActor
+    private func focusTeamFilter(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> XCUIElement {
+        let textField = app.textFields["home.teamFilter"]
+        XCTAssertTrue(textField.waitForExistence(timeout: 3), "Team filter is missing", file: file, line: line)
+        tap(textField)
+        XCTAssertTrue(textField.waitForExistence(timeout: 3), "Team filter disappeared after focus", file: file, line: line)
+        return textField
+    }
+
+    @MainActor
+    private func clearFocusedTextField(_ textField: XCUIElement) {
         let delete = String(repeating: XCUIKeyboardKey.delete.rawValue, count: textField.valueText.count)
         textField.typeText(delete)
     }

@@ -9,8 +9,8 @@ final class LiveRefreshInvariantTests: XCTestCase {
             gameId: 1301,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1301, playIDs: ["event-1", "event-2"])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1301, playIDs: ["event-1", "event-2", "event-3", "event-4"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1301, cardIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1301, cardIDs: ["event-1", "event-2", "event-3", "event-4"]))
                 ],
                 protocolClass: MockLiveURLProtocol.self
             ),
@@ -37,8 +37,8 @@ final class LiveRefreshInvariantTests: XCTestCase {
             gameId: 1302,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1302, playIDs: ["event-1", "event-2"])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1302, playIDs: ["event-1", "event-2", "event-3"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1302, cardIDs: ["event-1", "event-2"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1302, cardIDs: ["event-1", "event-2", "event-3"]))
                 ],
                 protocolClass: MockLiveURLProtocol.self
             ),
@@ -63,8 +63,8 @@ final class LiveRefreshInvariantTests: XCTestCase {
             gameId: 1303,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1303, playIDs: ["event-1", "event-2", "event-3"])),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 1303, playIDs: ["replacement-1"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1303, cardIDs: ["event-1", "event-2", "event-3"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 1303, cardIDs: ["replacement-1"]))
                 ],
                 protocolClass: MockLiveURLProtocol.self
             ),

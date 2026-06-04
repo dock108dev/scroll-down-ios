@@ -64,8 +64,14 @@ private enum SDAUITestFixturePayload {
             return SDAUIFixturePayload.jsonData(["games": games, "total": games.count])
         }
 
-        guard path.hasPrefix("/api/v1/games/"),
-              let id = path.split(separator: "/").last.flatMap({ Int($0) }) else {
+        let parts = path.split(separator: "/")
+        guard parts.count == 6,
+              parts[0] == "api",
+              parts[1] == "v1",
+              parts[2] == "feed",
+              parts[3] == "games",
+              parts[5] == "cards",
+              let id = Int(parts[4]) else {
             return nil
         }
         return detailData(gameID: id, fixtureName: fixtureName)
@@ -74,17 +80,7 @@ private enum SDAUITestFixturePayload {
     private static func detailData(gameID: Int, fixtureName: String) -> Data? {
         guard let game = SDAUITestHomeFixturePayloads.gameSummaries(for: fixtureName)
             .first(where: { ($0["id"] as? Int) == gameID }) else { return nil }
-        return SDAUIFixturePayload.jsonData([
-            "detailContractVersion": 2,
-            "game": game,
-            "teamStats": SDAUIFixturePayload.teamStats(away: "Harbor Pilots", home: "Canyon Owls"),
-            "playerStats": SDAUIFixturePayload.playerStats(away: "Harbor Pilots", home: "Canyon Owls"),
-            "plays": plays(for: gameID),
-            "mlbBatters": SDAUIFixturePayload.batterStats(away: "Harbor Pilots", home: "Canyon Owls"),
-            "mlbPitchers": SDAUIFixturePayload.pitcherStats(away: "Harbor Pilots", home: "Canyon Owls"),
-            "nhlSkaters": [],
-            "nhlGoalies": []
-        ])
+        return SDAUIFixturePayload.jsonData(SDAUIFixturePayload.cardFeed(game: game, plays: plays(for: gameID)))
     }
 
     private static func plays(for gameID: Int) -> [[String: Any]] {
@@ -150,8 +146,8 @@ private enum SDAUITestFixturePayload {
             "rawFeedSource": "",
             "rawFeedUpdatedAt": "",
             "rawDescription": "",
-            "modeEligibility": ["important": true, "standard": true, "all": true],
-            "belongsToModes": ["important": true, "standard": true, "all": true],
+            "modeEligibility": ["important": scoring, "standard": true, "all": true],
+            "belongsToModes": ["important": scoring, "standard": true, "all": true],
             "scoreBefore": ["away": beforeAway, "home": beforeHome],
             "scoreAfter": ["away": away, "home": home],
             "sportMetadata": [:],
@@ -231,6 +227,121 @@ enum SDAUIFixturePayload {
             "isFinalPlay": false,
             "isRunEnding": false
         ]
+    }
+
+    static func cardFeed(game: [String: Any], plays: [[String: Any]]) -> [String: Any] {
+        let gameID = game["id"] as? Int ?? 0
+        let league = game["leagueCode"] as? String ?? "MLB"
+        let homeAbbr = game["homeTeamAbbr"] as? String
+        let awayAbbr = game["awayTeamAbbr"] as? String
+        let cards = plays.map { card(gameID: gameID, league: league, homeAbbr: homeAbbr, awayAbbr: awayAbbr, play: $0) }
+        return [
+            "contractVersion": 2,
+            "game": [
+                "gameId": gameID,
+                "sport": sportName(for: league),
+                "league": league,
+                "status": game["status"] as? String ?? "in_progress",
+                "homeTeam": game["homeTeam"] as? String ?? "",
+                "awayTeam": game["awayTeam"] as? String ?? "",
+                "homeTeamId": game["homeTeamId"] ?? NSNull(),
+                "awayTeamId": game["awayTeamId"] ?? NSNull(),
+                "homeTeamAbbr": homeAbbr ?? "",
+                "awayTeamAbbr": awayAbbr ?? "",
+                "score": game["score"] ?? NSNull()
+            ],
+            "generation": [
+                "status": "ready",
+                "cardCount": cards.count,
+                "lastPlayIndex": cards.last?["playIndex"] ?? NSNull(),
+                "generatedAt": "2026-05-22T23:45:00Z",
+                "isStale": false,
+                "validationIssues": []
+            ],
+            "teamStats": [],
+            "playerStats": [],
+            "cards": cards
+        ]
+    }
+
+    private static func card(
+        gameID: Int,
+        league: String,
+        homeAbbr: String?,
+        awayAbbr: String?,
+        play: [String: Any]
+    ) -> [String: Any] {
+        let index = play["playIndex"] as? Int ?? 1
+        let team = (play["teamAbbreviation"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let side = team == homeAbbr ? "home" : (team == awayAbbr ? "away" : "unknown")
+        let scoreBefore = scoreObject(play["scoreBefore"])
+        let scoreAfter = scoreObject(play["scoreAfter"]) ?? scoreObject(play["score"])
+        let scoreChange = scoreDelta(before: scoreBefore, after: scoreAfter)
+        let headline = play["description"] as? String ?? "Game update"
+        let period = play["periodLabel"] as? String ?? play["timeLabel"] as? String ?? "Game"
+        let scoring = scoreChange != nil
+        let modeEligibility = play["modeEligibility"] as? [String: Any] ?? ["important": scoring, "standard": true, "all": true]
+        let importantEligible = modeEligibility["important"] as? Bool ?? false
+        let renderType = play["renderType"] as? String ?? (importantEligible ? "important_narrative" : "standard_pbp")
+        let setupLine = play["setupLine"] as? String ?? (scoring ? "\(period) score pressure" : period)
+        let playLine = play["playLine"] as? String ?? headline
+        let updateLine = play["updateLine"] as? String ?? (scoring ? "Score changes" : "Notable sequence")
+        return [
+            "id": play["eventId"] as? String ?? "event-\(index)",
+            "gameId": gameID,
+            "sourcePlayId": play["eventId"] as? String ?? "event-\(index)",
+            "playIndex": index,
+            "sport": sportName(for: league),
+            "league": league,
+            "tier": play["tier"] as? Int ?? 2,
+            "contentDepth": scoring ? "extended" : "standard",
+            "modeEligibility": modeEligibility,
+            "importance": play["importance"] as? [String: Any] ?? importance(level: "secondary", scoring: scoring),
+            "renderType": renderType,
+            "visualImportance": scoring ? "high" : "medium",
+            "period": ["ordinal": index, "label": period, "type": "period"],
+            "displayTime": play["timeLabel"] as? String ?? period,
+            "clock": play["gameClock"] as? String ?? period,
+            "team": ["abbreviation": team ?? "", "name": team ?? "", "side": side],
+            "scoreBefore": scoreBefore ?? NSNull(),
+            "scoreChange": scoreChange ?? NSNull(),
+            "scoreAfter": scoreAfter ?? NSNull(),
+            "situation": ["summary": period, "raw": ["fixture": true]],
+            "leadIn": period,
+            "stageSetting": play["stageSetting"] as? String ?? (scoring ? "\(period) score pressure" : period),
+            "headline": headline,
+            "description": headline,
+            "setupLine": importantEligible ? setupLine : NSNull(),
+            "playLine": importantEligible ? playLine : NSNull(),
+            "updateLine": importantEligible ? updateLine : NSNull(),
+            "impact": scoring ? "Score changes" : NSNull(),
+            "tags": scoring ? ["Scoring"] : ["Play"]
+        ]
+    }
+
+    private static func sportName(for league: String) -> String {
+        switch league.uppercased() {
+        case "MLB": return "baseball"
+        case "NHL": return "hockey"
+        case "NBA", "NCAAB": return "basketball"
+        case "NFL", "NCAAF": return "football"
+        default: return league.lowercased()
+        }
+    }
+
+    private static func scoreObject(_ value: Any?) -> [String: Int]? {
+        guard let source = value as? [String: Any] else { return nil }
+        return [
+            "home": source["home"] as? Int ?? 0,
+            "away": source["away"] as? Int ?? 0
+        ]
+    }
+
+    private static func scoreDelta(before: [String: Int]?, after: [String: Int]?) -> [String: Int]? {
+        guard let before, let after else { return nil }
+        let home = max(0, (after["home"] ?? 0) - (before["home"] ?? 0))
+        let away = max(0, (after["away"] ?? 0) - (before["away"] ?? 0))
+        return home > 0 || away > 0 ? ["home": home, "away": away] : nil
     }
 
     static func teamStats(away: String, home: String) -> [[String: Any]] {

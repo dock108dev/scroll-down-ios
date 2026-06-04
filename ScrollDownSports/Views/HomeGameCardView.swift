@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum HomeGameCardLayout {
-    static let pinVisibleSize: CGFloat = 34
-    static let pinHitTargetSize: CGFloat = 44
-    static let pinOverlayPadding: CGFloat = 9
-    static let pinContentGap: CGFloat = 6
-    static let pinTrailingReservation = pinHitTargetSize + pinOverlayPadding + pinContentGap
+    static let actionVisibleSize: CGFloat = 30
+    static let actionHitTargetSize: CGFloat = 44
+    static let actionOverlayPadding: CGFloat = 8
+    static let actionContentGap: CGFloat = 5
+    static let actionTrailingReservation = actionHitTargetSize + actionOverlayPadding + actionContentGap
 }
 
 struct GameRowView: View {
@@ -26,29 +26,51 @@ struct GameRowView: View {
 
 }
 
-struct HomePinButton: View {
+struct HomeGameActionMenu: View {
     let isPinned: Bool
-    let action: () -> Void
+    let favoriteParticipants: [GameParticipant]
+    let isFavoriteTeam: (GameParticipant) -> Bool
+    let togglePin: () -> Void
+    let toggleFavoriteTeam: (GameParticipant) -> Void
 
     var body: some View {
-        Button {
-            SportsFeedback.selection()
-            action()
+        Menu {
+            Button {
+                SportsFeedback.selection()
+                togglePin()
+            } label: {
+                Label(isPinned ? "Unpin game" : "Pin game", systemImage: isPinned ? "pin.slash" : "pin")
+            }
+            .accessibilityIdentifier("home.action.pin")
+
+            ForEach(favoriteParticipants) { participant in
+                Button {
+                    SportsFeedback.selection()
+                    toggleFavoriteTeam(participant)
+                } label: {
+                    Label(
+                        favoriteLabel(for: participant),
+                        systemImage: isFavoriteTeam(participant) ? "star.slash" : "star"
+                    )
+                }
+            }
         } label: {
-            Image(systemName: isPinned ? "pin.slash.fill" : "pin")
+            Image(systemName: "ellipsis")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(isPinned ? SportsTheme.Tone.pinned.textOnAccent : SportsTheme.Tone.pinned.foreground)
-                .frame(width: HomeGameCardLayout.pinVisibleSize, height: HomeGameCardLayout.pinVisibleSize)
+                .foregroundStyle(isPinned ? SportsTheme.Tone.pinned.foreground : SportsTheme.Colors.secondaryInk)
+                .frame(width: HomeGameCardLayout.actionVisibleSize, height: HomeGameCardLayout.actionVisibleSize)
                 .background(
-                    isPinned ? SportsTheme.Tone.pinned.accent : SportsTheme.Tone.pinned.subtleFill,
+                    isPinned ? SportsTheme.Tone.pinned.subtleFill : SportsTheme.Colors.paperInset,
                     in: RoundedRectangle(cornerRadius: SportsTheme.Radius.control, style: .continuous)
                 )
-                .frame(width: HomeGameCardLayout.pinHitTargetSize, height: HomeGameCardLayout.pinHitTargetSize)
+                .frame(width: HomeGameCardLayout.actionHitTargetSize, height: HomeGameCardLayout.actionHitTargetSize)
         }
-        .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .scaleEffect(isPinned ? 1.04 : 1)
-        .animation(.snappy(duration: 0.22), value: isPinned)
-        .accessibilityLabel(isPinned ? "Unpin game" : "Pin game")
+        .accessibilityLabel(isPinned ? "Game actions, pinned" : "Game actions")
+    }
+
+    private func favoriteLabel(for participant: GameParticipant) -> String {
+        let teamLabel = participant.abbreviation?.nilIfBlank ?? participant.name
+        return isFavoriteTeam(participant) ? "Unfavorite \(teamLabel)" : "Favorite \(teamLabel)"
     }
 }

@@ -45,23 +45,35 @@ final class NavigationChromeInvariantTests: XCTestCase {
         XCTAssertFalse(headerSource.contains(".shadow("))
     }
 
-    func testHomePinChromeKeepsStableHitTargetAndCardReservation() throws {
+    func testHomeFilterChangesKeepStableScrollViewIdentity() throws {
+        let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
+
+        XCTAssertTrue(homeSource.contains(".onChange(of: viewModel.homeFilterSignature)"))
+        XCTAssertTrue(homeSource.contains("requestFilterHomeScroll(proxy, filterSignature: signature)"))
+        XCTAssertFalse(homeSource.contains(".id(viewModel.homeFilterSignature)"))
+    }
+
+    func testHomeCardActionsReplacePinOverlayChrome() throws {
         let homeSource = try repoFile("ScrollDownSports/Views/HomeView.swift")
         let cardSource = try repoFile("ScrollDownSports/Views/HomeGameCardView.swift")
         let summaryCardSource = try repoFile("ScrollDownSports/Views/GameSummaryCard.swift")
 
-        XCTAssertTrue(cardSource.contains("static let pinVisibleSize: CGFloat = 34"))
-        XCTAssertTrue(cardSource.contains("static let pinHitTargetSize: CGFloat = 44"))
-        XCTAssertTrue(cardSource.contains("static let pinTrailingReservation"))
+        XCTAssertTrue(cardSource.contains("struct HomeGameActionMenu"))
+        XCTAssertTrue(cardSource.contains("static let actionVisibleSize: CGFloat = 30"))
+        XCTAssertTrue(cardSource.contains("static let actionHitTargetSize: CGFloat = 44"))
+        XCTAssertTrue(cardSource.contains("static let actionTrailingReservation"))
         XCTAssertTrue(summaryCardSource.contains(".padding(.trailing, trailingReservation)"))
-        XCTAssertTrue(summaryCardSource.contains("HomeGameCardLayout.pinTrailingReservation"))
+        XCTAssertTrue(summaryCardSource.contains("HomeGameCardLayout.actionTrailingReservation"))
         XCTAssertTrue(
             cardSource.contains(
-                ".frame(width: HomeGameCardLayout.pinHitTargetSize, height: HomeGameCardLayout.pinHitTargetSize)"
+                ".frame(width: HomeGameCardLayout.actionHitTargetSize, height: HomeGameCardLayout.actionHitTargetSize)"
             )
         )
-        XCTAssertTrue(homeSource.contains(".padding(.top, HomeGameCardLayout.pinOverlayPadding)"))
-        XCTAssertTrue(homeSource.contains(".padding(.trailing, HomeGameCardLayout.pinOverlayPadding)"))
+        XCTAssertTrue(homeSource.contains("HomeGameActionMenu("))
+        XCTAssertTrue(homeSource.contains(".padding(.top, HomeGameCardLayout.actionOverlayPadding)"))
+        XCTAssertTrue(homeSource.contains(".padding(.trailing, HomeGameCardLayout.actionOverlayPadding)"))
+        XCTAssertFalse(homeSource.contains("HomePinButton"))
+        XCTAssertFalse(cardSource.contains("struct HomePinButton"))
     }
 
     func testRootAndDetailNavigationBarsUseOpaqueToolbarBackgrounds() throws {
@@ -130,13 +142,14 @@ final class NavigationChromeInvariantTests: XCTestCase {
 
     func testDetailScreenHasStickyProgressNavigationWithoutLargeDuplicateCard() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let chromeSource = try repoFile("ScrollDownSports/Views/DetailNavigationChrome.swift")
 
         XCTAssertTrue(detailSource.contains("DetailStickyNavigationBar("))
         XCTAssertTrue(detailSource.contains("scrollToTop(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToReturnAnchor(proxy)"))
         XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
-        XCTAssertTrue(detailSource.contains("Back to"))
+        XCTAssertTrue(scrollSource.contains("\"Back to \\(returnAnchor.label)\""))
         XCTAssertTrue(chromeSource.contains("Capsule()"))
     }
 
@@ -154,13 +167,14 @@ final class NavigationChromeInvariantTests: XCTestCase {
 
     func testReturnAnchorRemainsViewLocalAndClearsAfterBackToSpot() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
         let storeSource = try repoFile("ScrollDownSports/Persistence/GameStateStore.swift")
 
-        XCTAssertTrue(detailSource.contains("@State private var returnAnchor: DetailVisibleEventState?"))
-        XCTAssertTrue(detailSource.contains("private func rememberReturnAnchor()"))
-        XCTAssertTrue(detailSource.contains("return \"Back to \\(returnAnchor.label)\""))
-        XCTAssertTrue(detailSource.contains("private func scrollToReturnAnchor(_ proxy: ScrollViewProxy)"))
-        XCTAssertTrue(detailSource.contains("returnAnchor = nil"))
+        XCTAssertTrue(detailSource.contains("@State var returnAnchor: DetailVisibleEventState?"))
+        XCTAssertTrue(scrollSource.contains("func rememberReturnAnchor()"))
+        XCTAssertTrue(scrollSource.contains("\"Back to \\(returnAnchor.label)\""))
+        XCTAssertTrue(scrollSource.contains("func scrollToReturnAnchor(_ proxy: ScrollViewProxy)"))
+        XCTAssertTrue(scrollSource.contains("returnAnchor = nil"))
         XCTAssertFalse(storeSource.contains("returnAnchor"))
     }
 
@@ -191,7 +205,6 @@ final class NavigationChromeInvariantTests: XCTestCase {
         for path in [
             "ScrollDownSports/Views/HomeSectionsView.swift",
             "ScrollDownSports/Views/StreamControlBar.swift",
-            "ScrollDownSports/Views/CatchUpSections.swift",
             "ScrollDownSports/Views/GameDetailChrome.swift",
             "ScrollDownSports/Views/DetailNavigationChrome.swift"
         ] {

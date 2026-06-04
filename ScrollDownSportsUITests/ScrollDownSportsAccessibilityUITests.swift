@@ -19,7 +19,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
 
         assertNonEmptyLabelsForInteractiveElements()
         assertNoRawEnumLeakage()
-        assertMinimumTapTarget(app.buttons["home.gameRow.9001.pin"], named: "Home pin")
+        assertMinimumTapTarget(app.buttons["home.gameRow.9001.actions"], named: "Home game actions")
     }
 
     @MainActor
@@ -111,7 +111,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
         assertExactlyOneElement(identifier: "home.teamFilter")
         assertExactlyOneButton(identifier: "home.refresh")
         assertExactlyOneButton(identifier: "home.gameRow.9001")
-        assertExactlyOneButton(identifier: "home.gameRow.9001.pin")
+        assertExactlyOneButton(identifier: "home.gameRow.9001.actions")
         assertReachableLabelledControl(app.buttons["home.refresh"], named: "Home refresh")
 
         assertReachableLabelledControl(app.buttons["NBA"], named: "NBA league")

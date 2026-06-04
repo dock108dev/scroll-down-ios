@@ -56,9 +56,9 @@ struct SDAGameDetailResponseDTO: Decodable, Sendable {
 struct SDACardFeedResponseDTO: Decodable, Sendable {
     let contractVersion: Int
     let game: SDACardFeedGameDTO
-    let spoilerPolicy: String
     let generation: SDAFeedGenerationDTO
-    let reveal: SDARevealAvailabilityDTO
+    let teamStats: [TeamStat]?
+    let playerStats: [PlayerStat]?
     let cards: [SDANarrativeCardDTO]
 }
 
@@ -73,6 +73,8 @@ struct SDACardFeedGameDTO: Decodable, Hashable, Sendable {
     let awayTeamId: Int?
     let homeTeamAbbr: String?
     let awayTeamAbbr: String?
+    let score: SDAScoreDTO?
+    let scoreboard: SDAScoreboardDTO?
 }
 
 struct SDAFeedGenerationDTO: Decodable, Hashable, Sendable {
@@ -82,13 +84,6 @@ struct SDAFeedGenerationDTO: Decodable, Hashable, Sendable {
     let generatedAt: String?
     let isStale: Bool
     let validationIssues: [String]
-}
-
-struct SDARevealAvailabilityDTO: Decodable, Hashable, Sendable {
-    let available: Bool
-    let status: String
-    let scoresInCards: Bool
-    let revealRequiredForScores: Bool
 }
 
 struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
@@ -102,22 +97,34 @@ struct SDANarrativeCardDTO: Decodable, Identifiable, Hashable, Sendable {
     let contentDepth: String
     let modeEligibility: SDAEventModeEligibilityDTO
     let importance: SDAEventImportanceDTO
+    let renderType: String
     let visualImportance: String
+    let periodLabel: String?
     let period: SDACardPeriodDTO
     let displayTime: String?
     let clock: String?
     let team: SDACardTeamDTO
+    let teamDisplay: String?
+    let teamContext: String?
     let scoreBefore: SDAScoreSnapshotDTO?
     let scoreChange: SDACardScoreChangeDTO?
     let scoreAfter: SDAScoreSnapshotDTO?
+    let scoreBeforeDisplay: String?
+    let scoreAfterDisplay: String?
+    let situationBeforeDisplay: String?
+    let situationAfterDisplay: String?
     let situation: SDACardSituationDTO
     let leadIn: String
     let stageSetting: String
     let headline: String
     let description: String
+    let setupLine: String?
+    let playLine: String?
+    let updateLine: String?
+    let rawPlayText: String?
+    let eventType: String?
     let impact: String?
     let tags: [String]
-    let spoilerLevel: String
 }
 
 struct SDACardPeriodDTO: Decodable, Hashable, Sendable {
@@ -171,7 +178,7 @@ struct SDAPlayDTO: Decodable, Identifiable, Hashable, Sendable {
     let gameClock: String?
     let playType: String?
     let displayType: String
-    let teamAbbreviation: String?
+    var teamAbbreviation: String? = nil
     let playerName: String?
     let description: String?
     let score: SDAScoreDTO?
@@ -285,6 +292,7 @@ struct SDABasesOccupiedDTO: Decodable, Hashable, Sendable {
 struct TeamStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(isHome)" }
     let team: String
+    var teamAbbreviation: String? = nil
     let isHome: Bool
     let stats: [String: JSONValue]
     let normalizedStats: [NormalizedStat]?
@@ -300,6 +308,7 @@ struct NormalizedStat: Codable, Hashable, Sendable {
 struct PlayerStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
+    var teamAbbreviation: String? = nil
     let playerName: String
     let minutes: Double?
     let points: Double?
@@ -313,6 +322,7 @@ struct PlayerStat: Codable, Identifiable, Hashable, Sendable {
 struct MLBBatterStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)-batter" }
     let team: String
+    var teamAbbreviation: String? = nil
     let playerName: String
     let position: String?
     let atBats: Int?
@@ -327,6 +337,7 @@ struct MLBBatterStat: Codable, Identifiable, Hashable, Sendable {
 struct MLBPitcherStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)-pitcher" }
     let team: String
+    var teamAbbreviation: String? = nil
     let playerName: String
     let inningsPitched: String?
     let hits: Int?
@@ -340,6 +351,7 @@ struct MLBPitcherStat: Codable, Identifiable, Hashable, Sendable {
 struct NHLPlayerStat: Codable, Identifiable, Hashable, Sendable {
     var id: String { "\(team)-\(playerName)" }
     let team: String
+    var teamAbbreviation: String? = nil
     let playerName: String
     let goals: Int?
     let assists: Int?

@@ -278,6 +278,20 @@ extension GameEvent {
         eligibleModes.contains(.timeline)
     }
 
+    func displayDensity(for mode: DetailStreamMode) -> GameEventDisplayDensity {
+        switch mode {
+        case .key:
+            return .rich
+        case .flow:
+            return cardVisualImportance == .low ? .compact : .standard
+        case .full:
+            if cardVisualImportance == .low || contentDepth == .brief {
+                return .compact
+            }
+            return .standard
+        }
+    }
+
     func isEligible(for mode: DetailStreamMode) -> Bool {
         eligibleModes.contains(mode.storageMode)
     }

@@ -5,6 +5,6 @@ struct SportRenderingTheme {
     let sportLabel: String
     let accentColor: Color
     let liveColor: Color
-    let scoreRevealColor: Color
+    let scoreboardColor: Color
     let primarySystemImage: String
 }

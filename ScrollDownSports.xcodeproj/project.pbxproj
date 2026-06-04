@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0133A8CF819BE8CDB617518A /* GameStatusModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FBA1C3643E1ABDF4D30270 /* GameStatusModels.swift */; };
+		0151585EE87C152947309594 /* testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 6EAE0C9E69947D539DE2AC15 /* testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png */; };
 		016F0479457145B269484BFC /* testPlayRowSituationExpandedRawFeed.play-row-situation-expanded-raw-feed-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 53512BD566E5431EEEC8BE69 /* testPlayRowSituationExpandedRawFeed.play-row-situation-expanded-raw-feed-standard-phoneCompact-light-medium.png */; };
 		02C57640E9B1967CAAD02A8B /* missing_all_usable_event_text.json in Resources */ = {isa = PBXBuildFile; fileRef = CE9FA0CCBA2BC42A18A078A2 /* missing_all_usable_event_text.json */; };
+		04222E6AA2F564D57D88B75A /* StatPresentationImpactBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E455D89DE2B58CF06C67B8B /* StatPresentationImpactBuilder.swift */; };
 		04A0EB36A3428DF5E5993501 /* HomeSectionSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 407D17D806A79F4EBF87444D /* HomeSectionSnapshotTests.swift */; };
 		05A1BF2ABE57A5AE163D0779 /* testDetailEmptyPlayByPlayDarkModeAccessibilityText.detail-empty-play-by-play-standard-phoneCompact-dark-accessibility2.png in Resources */ = {isa = PBXBuildFile; fileRef = 0C07FCED276B3BF4E7CEF5FE /* testDetailEmptyPlayByPlayDarkModeAccessibilityText.detail-empty-play-by-play-standard-phoneCompact-dark-accessibility2.png */; };
 		05B5D459241CDCDC423E84F3 /* testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png in Resources */ = {isa = PBXBuildFile; fileRef = 4EB5C780DF72560B3E58F3FD /* testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png */; };
@@ -19,6 +22,7 @@
 		0BDB6E71DE6C19FAD04593BE /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 516EF834AE9B828A3436EFEE /* HomeViewModel.swift */; };
 		0C2DFCBB00A3255BE3CBA119 /* GameProgressReadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A0F7A09C8CE96D90795453 /* GameProgressReadState.swift */; };
 		0C41F55C74C36776F3CE53A5 /* testDetailTopControlsAccessibilityDynamicTypeCompactWidth.detail-top-controls-accessibility-compact-standard-phoneCompact-light-accessibility3.png in Resources */ = {isa = PBXBuildFile; fileRef = 0668AD18CD724A96016EBB11 /* testDetailTopControlsAccessibilityDynamicTypeCompactWidth.detail-top-controls-accessibility-compact-standard-phoneCompact-light-accessibility3.png */; };
+		0C426F8970BDAD6E751AB814 /* DetailLongFeedScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A22DE8F6D0BF7F6E5ACD600 /* DetailLongFeedScrollTests.swift */; };
 		0D6B175ED1A3E22352D25573 /* GameWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AA73A4C7681FA6B16C0FAF /* GameWindowTests.swift */; };
 		0D72B59593EFB352AE3CFA1A /* EventLabelResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17323975B5602866FD9F89C /* EventLabelResolverTests.swift */; };
 		0DD781CFFEF712B69ED88FF4 /* ScrollDownSportsAccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFA8FD6DE847C366D138A09 /* ScrollDownSportsAccessibilityUITests.swift */; };
@@ -34,14 +38,18 @@
 		17D7E864A546C985992BCB40 /* SportsThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACFF09498CCFA557155A4CF /* SportsThemeTests.swift */; };
 		17FBADA914242204E2EF54DF /* testReadableDetailTopChromeOnIPadPortrait.readable-detail-top-chrome-iPad11Full-iPad11Portrait-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 2908F5CFD176001802F2661A /* testReadableDetailTopChromeOnIPadPortrait.readable-detail-top-chrome-iPad11Full-iPad11Portrait-light-medium.png */; };
 		181EAA88C2E412911728F1BA /* AppScenePhaseHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02E84C6C9C6D19B7C69DE5A /* AppScenePhaseHandlerTests.swift */; };
+		182CDF4C7DECCD3B1898FAB7 /* GameEventModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E59F1547084292962F55032 /* GameEventModels.swift */; };
 		18BAE6919FD21FDF21A42C91 /* SDAPresentationDTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62296BE092035B1FA947E022 /* SDAPresentationDTOs.swift */; };
 		196685B782F2B7655E7DC0AE /* SportsTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F09636674431902AACA7CD5 /* SportsTheme.swift */; };
 		198CF4559874F6880B536F54 /* HomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF85DC548B28CA55B1A5780F /* HomeViewModelTests.swift */; };
 		19B8C2FC28FF1E6196474E10 /* GameDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692B84C54089B805FD1B273B /* GameDetailViewModelTests.swift */; };
 		19DD5BF536BB8C32288A9662 /* PlayRowContentFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6748277B3EF0A3E7668E4E75 /* PlayRowContentFilter.swift */; };
+		1A434671B77062AF99FF89E6 /* BackgroundResumeRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 351DABEBB0E052D42A2D8964 /* BackgroundResumeRestoreTests.swift */; };
 		1A6EE1FEFE760B9DB2F8AFC0 /* StreamControlBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD1CC8727346C5BBDF5F8388 /* StreamControlBar.swift */; };
 		1A895095B8D2080455645A56 /* testDetailDarkModeIPadShowsChromeControlsAndStats.detail-dark-mode-ipad-iPad11Full-iPad11Portrait-dark-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = FDF76F13D43D8E1BB7598A2D /* testDetailDarkModeIPadShowsChromeControlsAndStats.detail-dark-mode-ipad-iPad11Full-iPad11Portrait-dark-medium.png */; };
 		1C71FEFC95F2779C77881830 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE297C6548C97A971B330FF /* ContentView.swift */; };
+		1F26D1156C5B9B95DAE6B93C /* SDADomainMapper+CardFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = F207E205E2BC3BB9817628A9 /* SDADomainMapper+CardFeed.swift */; };
+		1F3FE9902208A0D36266A163 /* SDASituationDomainMapper+NormalizedCardHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4EE0A179B574DCA9BDCD09 /* SDASituationDomainMapper+NormalizedCardHelpers.swift */; };
 		2019D0E23573C001488933EA /* WidthAwareContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7787F33C5F55FF3CA2C0E6F0 /* WidthAwareContent.swift */; };
 		2396A6FB2C9D81F25A44DD83 /* testScoreboardContentWideWidthKeepsRowsDense.scoreboard-layouts-wide-tabletReadable-iPad11Portrait-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 237730C402C2FF2975F389B1 /* testScoreboardContentWideWidthKeepsRowsDense.scoreboard-layouts-wide-tabletReadable-iPad11Portrait-light-medium.png */; };
 		23D44EC2435EB063CBE07F6D /* GameWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4EAEDB20CEA427902CA8CD /* GameWindow.swift */; };
@@ -50,6 +58,7 @@
 		26DE297D2FE5DB455AA06069 /* PlayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927CACC07486D57651DACF97 /* PlayRow.swift */; };
 		27E0EE80434546618A4CE96F /* testHomeDarkModeLargePhone.home-dark-large-phone-large-phoneLarge-dark-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = B54B0C2E220D0E15485662C3 /* testHomeDarkModeLargePhone.home-dark-large-phone-large-phoneLarge-dark-medium.png */; };
 		284669B82690D7D656984CEB /* HomeGameCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C9B05887A425E02993A175 /* HomeGameCardView.swift */; };
+		284A2223D8A45A1E22B55903 /* LocalFavoriteGameNotificationDeliverer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB140AC77255828DAFB2A998 /* LocalFavoriteGameNotificationDeliverer.swift */; };
 		2858BEC0B9A4DA2FCBCF3683 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7520E0CAA72F5AF534E4F5 /* TestFixtures.swift */; };
 		28C91BAC5E771696F320E597 /* AppScenePhaseHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638D23BB8EF87375910D1223 /* AppScenePhaseHandler.swift */; };
 		294F495E1CADD8FB580EAB91 /* testTimelineEmptyStateWithoutActiveFilters.timeline-empty-no-filters-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 783BE8AD9FC34DDB256EEC99 /* testTimelineEmptyStateWithoutActiveFilters.timeline-empty-no-filters-standard-phoneCompact-light-medium.png */; };
@@ -62,6 +71,7 @@
 		315F9A546E63665FD99E1020 /* testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 93999E174AF3F3B0A8617887 /* testStatSectionWideTableRegularWidthUsesCappedExpansion.stats-wide-regular-standard-phoneCompact-light-medium.png */; };
 		31F91C86E9D5C9939A83EE25 /* GameDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 077B914BAF940BDB3732E5A9 /* GameDetailViewModel.swift */; };
 		320E52EBB7273FA16AF71BF6 /* SituationOwnershipAccentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25E263F0D7D4A3A8456DB52A /* SituationOwnershipAccentTests.swift */; };
+		33C22AD9BFCA7B9F10CF34B0 /* PeriodLabelModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */; };
 		353858CCD9F450347DBE1F48 /* testChromeTreatmentComparison.shared-chrome-treatment-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = B1E6BBE5327EBA2A790BD352 /* testChromeTreatmentComparison.shared-chrome-treatment-standard-phoneCompact-light-medium.png */; };
 		35A31BFA878AA19B38A74443 /* HomeSectionTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B6B80C99F2D42B2AEF7FF0 /* HomeSectionTestHelpers.swift */; };
 		35ABF013997D8050F3373E71 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 676C60896F8A3E640B7587D8 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png */; };
@@ -86,7 +96,6 @@
 		458C6F768525B01666611A50 /* mlb_scoring_progression.json in Resources */ = {isa = PBXBuildFile; fileRef = 9249EFE41F27E90C5C76E27E /* mlb_scoring_progression.json */; };
 		47298294FDAB1459906D4957 /* PressureBoardFallbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608C499ABD637F865427D80E /* PressureBoardFallbackView.swift */; };
 		473EB0774822A4C09AF69E2F /* SituationCardPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D489C406AA9FAFF511001D6 /* SituationCardPolicy.swift */; };
-		47A23F155943D74E3F8E2A0A /* testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = C541D8C538F03738B4765356 /* testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png */; };
 		486C2F85B6B992F062F1B472 /* BaseballFirstClassSituationMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E82CF7DD597FB0CF9A19D80 /* BaseballFirstClassSituationMetadata.swift */; };
 		48AF5195D02BFF090DFB8F29 /* StatTablePresentationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD239E317A6E32FE4BDF5AD8 /* StatTablePresentationBuilder.swift */; };
 		4906452CD32291C94D550BF9 /* SDAFixturePayloadFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19F5DF475C3FFB1CF2A264 /* SDAFixturePayloadFactory.swift */; };
@@ -103,6 +112,7 @@
 		585743B7321A293F6BB792BA /* testDetailFinalScoreAndExpandedStatsCompactPhone.detail-final-score-expanded-stats-phone-compact-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = EBBE605CAF4746BAC2193030 /* testDetailFinalScoreAndExpandedStatsCompactPhone.detail-final-score-expanded-stats-phone-compact-standard-phoneCompact-light-medium.png */; };
 		5A4BA81CB9E51FDB65CA445E /* GameStateStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F75C7842DD62503392F1D5E /* GameStateStoreTests.swift */; };
 		5C6E10AB8E0A8A1CA2FCAC74 /* ReservedSportRenderers.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5897570024B4539EB79B4D0 /* ReservedSportRenderers.swift */; };
+		5C9D413AB88AD9063D8D9B1C /* BaseballRenderer+Details.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4750749477EC092FDBEE8F3D /* BaseballRenderer+Details.swift */; };
 		5CC684969780B6BBE7DC89FE /* PeriodLabelFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0883C937E6550037C946B6BF /* PeriodLabelFormatterTests.swift */; };
 		5E073514445D51C7DBB115A0 /* SDASituationDomainMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868DCE2FB0BDAFCAD2B06BD8 /* SDASituationDomainMapper.swift */; };
 		5E507FD7F46F2D8990DACD08 /* GameEventDiffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25A5A1A4C9BA32185D2DCF47 /* GameEventDiffModels.swift */; };
@@ -138,6 +148,7 @@
 		7624C68FAE2ACC55B35196BB /* HomeGameCardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE87467768E03A1C1285B56 /* HomeGameCardSnapshotTests.swift */; };
 		762AD5C32A7A1F9BC160E2A5 /* BackgroundRefreshServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0028FC2FCEFE6258B31E0D9D /* BackgroundRefreshServiceTests.swift */; };
 		765EEBAE866AA98EA3269E1A /* SoccerPitchStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C142E8DC73F1CFECEE28521D /* SoccerPitchStripView.swift */; };
+		76AF8D026AA32CFF327729F4 /* GameDetailView+ScrollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE92CC32BD7A5F1B438CE174 /* GameDetailView+ScrollState.swift */; };
 		774D498F1AB3F0534D9F4743 /* testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 4CC2FDE0D325B071991AACDE /* testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png */; };
 		79B77934F4E4B300A6F9C870 /* BaseballSituationAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58202BEDF9F9D4D47B606C5C /* BaseballSituationAcceptanceTests.swift */; };
 		7A0A01EDA04F6B7864DB3447 /* testStatSectionEmptyAndMixedStates.stats-empty-mixed-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = FA0A3B250CA52D7056E8BC15 /* testStatSectionEmptyAndMixedStates.stats-empty-mixed-standard-phoneCompact-light-medium.png */; };
@@ -149,13 +160,13 @@
 		803C50B344ACFE626D6FE607 /* testPlayerAndTeamSectionsCollapsedStates.player-team-collapsed-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 28125D69549314EF0BFDB8A3 /* testPlayerAndTeamSectionsCollapsedStates.player-team-collapsed-standard-phoneCompact-light-medium.png */; };
 		8409F1E3613BBE17364577B2 /* LiveRefreshInvariantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D41AC3EAC00B7EBBE22B96E8 /* LiveRefreshInvariantTests.swift */; };
 		8624E10D5A635FEF5D4F7053 /* BaseballSituationMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051CD82926E814730E630FC9 /* BaseballSituationMetadata.swift */; };
-		86F44C281FB61FE2BB4293E2 /* testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png in Resources */ = {isa = PBXBuildFile; fileRef = D135A3342223776ED7848058 /* testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */; };
 		8718753A6D5EB0722F61A4F8 /* testPlayRowSituationNoScoreDeltaVariant.play-row-situation-no-score-delta-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 2E7B65CB44DEF9AAB40E6558 /* testPlayRowSituationNoScoreDeltaVariant.play-row-situation-no-score-delta-standard-phoneCompact-light-medium.png */; };
 		89CFE43A58C2CA62035957B7 /* SoccerRendererSituation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7754093EF7AF6E538D9CCE7B /* SoccerRendererSituation.swift */; };
 		89D8584DA78CCD39BE1E38F5 /* BackgroundDataSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9C6BAD870EFA20675E0C867 /* BackgroundDataSchedulerTests.swift */; };
 		89DE351E794B3CD9BF3EF10F /* BackgroundRefreshService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D08E71040D5D9B36B3FDB4 /* BackgroundRefreshService.swift */; };
 		8A3C71427D6EEB1E72FC1D74 /* testStatSectionWideTableCompactWidth.stats-wide-compact-compact-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = CBF4EBD63EB406322D9DB09E /* testStatSectionWideTableCompactWidth.stats-wide-compact-compact-phoneCompact-light-medium.png */; };
 		8A5221E32139FED7FF8EF6E9 /* BasketballSituationTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C459DD14BF59A0D60F63E35 /* BasketballSituationTypes.swift */; };
+		8AC4C10CF96818661AC6E5FF /* testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png in Resources */ = {isa = PBXBuildFile; fileRef = 4D0377EE00D91DE648809992 /* testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */; };
 		8B7EC5540D82B7B8B61F0239 /* testHomeActiveFiltersDarkModeCompactPhone.home-active-filters-dark-phone-compact-standard-phoneCompact-dark-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = BE05C65F6728CFEFDABCB335 /* testHomeActiveFiltersDarkModeCompactPhone.home-active-filters-dark-phone-compact-standard-phoneCompact-dark-medium.png */; };
 		8C5D1E9E53EB4A942300A33E /* GameDetailViewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4589562B493C16A461E52906 /* GameDetailViewSupport.swift */; };
 		8D898DD3AB3F43FDBED840F5 /* ScrollDownSportsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51B644805E0FD53FD72FB30 /* ScrollDownSportsApp.swift */; };
@@ -177,7 +188,6 @@
 		9811429CB6F3E89B2B490A19 /* DetailChromeDensity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3831C161A5F9D0FFD15B3459 /* DetailChromeDensity.swift */; };
 		986D491CFBE220C63012446F /* SDADomainMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD76DFA0E4CB1ED2A931DF20 /* SDADomainMapper.swift */; };
 		987E1414201A06ACD45D23C3 /* RestoreInvariantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD29AF3640B32167DD33B87A /* RestoreInvariantTests.swift */; };
-		988878EEF883B1CE6F934F22 /* ScoreSpoilerFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B045CBC1CB7637ECCC9B020 /* ScoreSpoilerFilterTests.swift */; };
 		9B307C0026CCF9247A3B4BBF /* PresentationDomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 541D2A808B1CC843C989F87A /* PresentationDomainModels.swift */; };
 		9B476B4249AB5D4CE53D5614 /* testHomeActiveFiltersSplitNarrowKeepsHeaderCompact.home-active-filters-split-narrow-splitNarrow-iPadMiniPortrait-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 313A131C91207000F3B37593 /* testHomeActiveFiltersSplitNarrowKeepsHeaderCompact.home-active-filters-split-narrow-splitNarrow-iPadMiniPortrait-light-medium.png */; };
 		9BDEDD70228C94903E42E87C /* testDetailEmptyPlayByPlaySplitNarrowIPad.detail-empty-play-by-play-split-narrow-splitNarrow-iPadMiniPortrait-light-accessibility2.png in Resources */ = {isa = PBXBuildFile; fileRef = 9978C9D78C6028D109B68271 /* testDetailEmptyPlayByPlaySplitNarrowIPad.detail-empty-play-by-play-split-narrow-splitNarrow-iPadMiniPortrait-light-accessibility2.png */; };
@@ -191,11 +201,14 @@
 		A63B6E33120D251EF0AAB5E6 /* testDetailTopResumeStickyAndProgressControls.detail-top-resume-sticky-progress-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 39D78003D54BF59E42CE4A60 /* testDetailTopResumeStickyAndProgressControls.detail-top-resume-sticky-progress-standard-phoneCompact-light-medium.png */; };
 		A7EBF2F0D8566F0F371CE78C /* testStickyNavigationProgressIsSecondary.sticky-progress-secondary-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 94E419F3CA5348B471FB7CB7 /* testStickyNavigationProgressIsSecondary.sticky-progress-secondary-standard-phoneCompact-light-medium.png */; };
 		A8DA88101FB34DB27E93480D /* testRichReservedSportDiagramRowsAccessibilityWidth.rich-reserved-sport-diagrams-accessibility-standard-phoneCompact-light-accessibility3.png in Resources */ = {isa = PBXBuildFile; fileRef = 7544BC37B2FACBA0CE04B5F6 /* testRichReservedSportDiagramRowsAccessibilityWidth.rich-reserved-sport-diagrams-accessibility-standard-phoneCompact-light-accessibility3.png */; };
+		AA1A3296C8B17C2C9029F88F /* BaseballSituationInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A6520A4A02DDBE6C4A5E3D /* BaseballSituationInputs.swift */; };
 		AB148482D2283393E7FAD379 /* Decoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B3D7C7233D38A473745EF72 /* Decoding.swift */; };
+		AC6BCA0B8A318598BF97FB1E /* HomeViewModel+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43684C04EC2B492882D6E2FA /* HomeViewModel+Sections.swift */; };
 		ADB743D68EE4B1BBC96F83C2 /* UserDefaultsGameStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510AE85901C4B320C4EDF475 /* UserDefaultsGameStateStore.swift */; };
 		AE37823E84AC5C8E028CF022 /* FootballFieldSituationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C953422992AF21B7ABEC40D4 /* FootballFieldSituationTests.swift */; };
 		AECDCAD6263D0F00A23AA50A /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = ACEB0CCD4CAC9363B82FDE62 /* SnapshotTesting */; };
 		B07D87FE9BC001DD3F413EF0 /* SDADTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95EEFB2FC943E09A4B7066F /* SDADTOs.swift */; };
+		B0ACFADE16B6CC2DE83CD312 /* testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 34A76C97856574EF0432B808 /* testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png */; };
 		B130159E22DC1DE123ACD421 /* BasketballHalfCourtPressureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F9A7FA00BDE994A7FF5EED2 /* BasketballHalfCourtPressureView.swift */; };
 		B1925CA1581ACD9CD81DAE53 /* SituationContractDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064FA3512A0A347A2CE056D8 /* SituationContractDecodingTests.swift */; };
 		B1FD44A7D1FC678AC0EBB170 /* HomeScrollCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521BDF4E61F91E1F178E2A8 /* HomeScrollCoordinatorTests.swift */; };
@@ -217,6 +230,7 @@
 		C24AF2D8A74FE7A9C5D37559 /* ScorePressurePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAF97627B5BA58ADFFCDA6E /* ScorePressurePresentation.swift */; };
 		C2B00E104F7C748DFA62B807 /* SDAUIPerformanceFixturePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD1218B24A4D4AFFB8FA2EA /* SDAUIPerformanceFixturePayload.swift */; };
 		C4347DED7F3B09CD8515FAFF /* BasketballSituationPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE2193CDA846FAAB18A529C /* BasketballSituationPresentation.swift */; };
+		C46D8193826F69F12B8A0411 /* GameDetailView+ReaderRestore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4EF658172A3943ECD0CAB3 /* GameDetailView+ReaderRestore.swift */; };
 		C60AA6D88CE32A9904BD7F7B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 99A04F981F34C650D120E280 /* PrivacyInfo.xcprivacy */; };
 		C6B1563700438CAA7128D725 /* testDetailDarkModePhoneShowsChromeControlsAndStats.detail-dark-mode-phone-standard-phoneCompact-dark-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = E9919E72D19BF1BF95A9C1FA /* testDetailDarkModePhoneShowsChromeControlsAndStats.detail-dark-mode-phone-standard-phoneCompact-dark-medium.png */; };
 		C9117E640081E34D436D1E5C /* FootballFieldStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E41F554300101E2896EF043 /* FootballFieldStripView.swift */; };
@@ -227,6 +241,7 @@
 		CAFBC533550651010F4F5A4D /* testHomeWithoutPinnedGamesCoversTimelineStatesAndPlaceholderFiltering.home-no-pinned-anchor-live-upcoming-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 2B19F6B4D8A7B7E4A5D7E548 /* testHomeWithoutPinnedGamesCoversTimelineStatesAndPlaceholderFiltering.home-no-pinned-anchor-live-upcoming-standard-phoneCompact-light-medium.png */; };
 		CB9C16857973DB2CBC627ECD /* HomeFunctionalityInvariantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5EE45015D7E9894182613A1 /* HomeFunctionalityInvariantTests.swift */; };
 		CCA0479A168786771DD5705C /* BaseballPrePitchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5750A9356E51B0E253C3A030 /* BaseballPrePitchState.swift */; };
+		CD06E37B9B2AE29D2532AF3C /* NormalizedPlayCardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B004765E2B28049E5BB202A /* NormalizedPlayCardModels.swift */; };
 		CD36E49525997C93E27E10C6 /* StatPresentationFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011E6BD92FC4B344AB438886 /* StatPresentationFormatting.swift */; };
 		CD84CE68C2747B743208F33B /* testHeaderLiveNewAndFinalCatchUpStates.header-live-new-final-catch-up-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 189416934E02162FF5BF4883 /* testHeaderLiveNewAndFinalCatchUpStates.header-live-new-final-catch-up-standard-phoneCompact-light-medium.png */; };
 		CDB3850E073D2A91820CA8A8 /* NonFieldPressureBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BAF3CB05B50F693E96EA548 /* NonFieldPressureBoard.swift */; };
@@ -252,8 +267,10 @@
 		DEEDF751C447FAFCC3E5D148 /* placeholder_tbd.json in Resources */ = {isa = PBXBuildFile; fileRef = 12487507F0F6E062E287BE3F /* placeholder_tbd.json */; };
 		DF4DCB52C11F64CF8E23C40D /* SoccerSituationMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE3DEC3BD7C99216688025F2 /* SoccerSituationMetadata.swift */; };
 		E026080B44F209E9D15FCEC1 /* testResumeCard.resume-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 4629E758DED01892ED96B2AC /* testResumeCard.resume-standard-phoneCompact-light-medium.png */; };
+		E171EEC42724210F2E319E6D /* testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = CD81AFA45D2368E7C6BC5E48 /* testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png */; };
 		E25B1FCB9E928D2E388AFC0A /* GameStateStoreTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 556D57D0F557379E9824D0DD /* GameStateStoreTypes.swift */; };
 		E4886CBBA40F45106FA1D2A4 /* HockeyRinkStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A80025C73D1D3F5215BA20 /* HockeyRinkStripView.swift */; };
+		E4A10F3F317DD28FD4CE51D8 /* CatchUpPlayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA92D8A45B916CEDDD0C2CD /* CatchUpPlayCard.swift */; };
 		E4EA3D41F3463640FEC87926 /* SportsThemeTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CDAE61B3AF1D018E0A093B /* SportsThemeTestSupport.swift */; };
 		E668FDB631C03D70B6710077 /* DetailNavigationChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04379B650198310567EB35AC /* DetailNavigationChrome.swift */; };
 		E7B7F3D488EEE770A0A3E923 /* testDetailFinalScoreAndExpandedStats.detail-final-score-expanded-stats-large-phoneLarge-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = 47840A958372036E1B34FC69 /* testDetailFinalScoreAndExpandedStats.detail-final-score-expanded-stats-large-phoneLarge-light-medium.png */; };
@@ -261,7 +278,6 @@
 		EAAAC4F1FDA39FA320F9E746 /* BackgroundRefreshState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C05A624FED66F6290E234B5F /* BackgroundRefreshState.swift */; };
 		EAE7F4A1FB5AACCD2E1EC470 /* FootballSituationMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD2A361EF2976C438BA2CDC6 /* FootballSituationMetadata.swift */; };
 		EB74FD104C934F1F0955E3FD /* SportRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07C8110424C21457DF0AC747 /* SportRenderer.swift */; };
-		EB8AE5AE8A13AF4537A0AB49 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = D08CAE412E71D5266C908F05 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png */; };
 		ED3C668E7F901B58C2A5BA37 /* SDAUITestFixtureAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DD24054954D44ED31AA5CB /* SDAUITestFixtureAPI.swift */; };
 		ED905C35832EF1FA26B48EA2 /* SnapshotDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFED20C09121500C02ED7ED8 /* SnapshotDevices.swift */; };
 		EEB4A7DAC66E0F2D42FD9311 /* testHomeWithRealPinnedGames.home-real-pinned-games-standard-phoneCompact-light-medium.png in Resources */ = {isa = PBXBuildFile; fileRef = C5995C746CD324A32955950E /* testHomeWithRealPinnedGames.home-real-pinned-games-standard-phoneCompact-light-medium.png */; };
@@ -283,7 +299,6 @@
 		FAFDD896184CB423E1595608 /* HockeySituationMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A5CD228C5AFD7E500F63505 /* HockeySituationMetadata.swift */; };
 		FB3F41B87E289E8054DE80D7 /* StatSectionSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B306D3DFADCA10E8E986946 /* StatSectionSnapshotTests.swift */; };
 		FB6A286A1F363F20B13EA5D4 /* StatPresentationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8429C1B418FF9E807A304E8 /* StatPresentationBuilder.swift */; };
-		FC110D707E076E7C6052FB76 /* ScoreSpoilerFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67302315C72D9F71EA5EE811 /* ScoreSpoilerFilter.swift */; };
 		FC2C07D542CDDA88FA243B15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A06B1DE63F2CD52268FC8C3 /* Assets.xcassets */; };
 		FC52ABF303A4BAAC369A6742 /* FixtureDataBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A77E36CCBD82486CCDF594F /* FixtureDataBoundaryTests.swift */; };
 		FC78EB8028AD82FEA25048B2 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB7D47258C85EEF889FA1101 /* HomeSections.swift */; };
@@ -353,14 +368,15 @@
 		237730C402C2FF2975F389B1 /* testScoreboardContentWideWidthKeepsRowsDense.scoreboard-layouts-wide-tabletReadable-iPad11Portrait-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScoreboardContentWideWidthKeepsRowsDense.scoreboard-layouts-wide-tabletReadable-iPad11Portrait-light-medium.png"; sourceTree = "<group>"; };
 		25A5A1A4C9BA32185D2DCF47 /* GameEventDiffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEventDiffModels.swift; sourceTree = "<group>"; };
 		25E263F0D7D4A3A8456DB52A /* SituationOwnershipAccentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationOwnershipAccentTests.swift; sourceTree = "<group>"; };
+		27A6520A4A02DDBE6C4A5E3D /* BaseballSituationInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballSituationInputs.swift; sourceTree = "<group>"; };
 		27D08E71040D5D9B36B3FDB4 /* BackgroundRefreshService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRefreshService.swift; sourceTree = "<group>"; };
 		28125D69549314EF0BFDB8A3 /* testPlayerAndTeamSectionsCollapsedStates.player-team-collapsed-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlayerAndTeamSectionsCollapsedStates.player-team-collapsed-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		282F6F941495E4C2EAB1EC48 /* SoccerSituationTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoccerSituationTypes.swift; sourceTree = "<group>"; };
 		28FE7FA676EDF8B0891148BA /* PlayRowContentFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRowContentFilterTests.swift; sourceTree = "<group>"; };
 		2908F5CFD176001802F2661A /* testReadableDetailTopChromeOnIPadPortrait.readable-detail-top-chrome-iPad11Full-iPad11Portrait-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testReadableDetailTopChromeOnIPadPortrait.readable-detail-top-chrome-iPad11Full-iPad11Portrait-light-medium.png"; sourceTree = "<group>"; };
+		29FBA1C3643E1ABDF4D30270 /* GameStatusModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStatusModels.swift; sourceTree = "<group>"; };
 		2AAF97627B5BA58ADFFCDA6E /* ScorePressurePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScorePressurePresentation.swift; sourceTree = "<group>"; };
 		2AD1218B24A4D4AFFB8FA2EA /* SDAUIPerformanceFixturePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDAUIPerformanceFixturePayload.swift; sourceTree = "<group>"; };
-		2B045CBC1CB7637ECCC9B020 /* ScoreSpoilerFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreSpoilerFilterTests.swift; sourceTree = "<group>"; };
 		2B19F6B4D8A7B7E4A5D7E548 /* testHomeWithoutPinnedGamesCoversTimelineStatesAndPlaceholderFiltering.home-no-pinned-anchor-live-upcoming-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeWithoutPinnedGamesCoversTimelineStatesAndPlaceholderFiltering.home-no-pinned-anchor-live-upcoming-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		2B279E9AED9051C839296D01 /* testResumeBannerCopyAndCompactLayout.resume-copy-compact-compact-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testResumeBannerCopyAndCompactLayout.resume-copy-compact-compact-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		2C1D58C22966B4415DADBC29 /* PerformanceSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceSmokeTests.swift; sourceTree = "<group>"; };
@@ -370,6 +386,8 @@
 		313A131C91207000F3B37593 /* testHomeActiveFiltersSplitNarrowKeepsHeaderCompact.home-active-filters-split-narrow-splitNarrow-iPadMiniPortrait-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeActiveFiltersSplitNarrowKeepsHeaderCompact.home-active-filters-split-narrow-splitNarrow-iPadMiniPortrait-light-medium.png"; sourceTree = "<group>"; };
 		341C8C4818FC7EBBA41872B8 /* mlb_situation_acceptance_events.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_situation_acceptance_events.json; sourceTree = "<group>"; };
 		341FA5216B0927093565661E /* SituationMetadataParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationMetadataParsing.swift; sourceTree = "<group>"; };
+		34A76C97856574EF0432B808 /* testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		351DABEBB0E052D42A2D8964 /* BackgroundResumeRestoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundResumeRestoreTests.swift; sourceTree = "<group>"; };
 		3554F87D2A51AE94B262FF72 /* testPlayRowSituationCollapsedRawFeed.play-row-situation-collapsed-raw-feed-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlayRowSituationCollapsedRawFeed.play-row-situation-collapsed-raw-feed-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		35A0F7A09C8CE96D90795453 /* GameProgressReadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgressReadState.swift; sourceTree = "<group>"; };
 		36C6ABB4EC030652FB860DF2 /* full_mobile_presentation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = full_mobile_presentation.json; sourceTree = "<group>"; };
@@ -386,6 +404,7 @@
 		3E82CF7DD597FB0CF9A19D80 /* BaseballFirstClassSituationMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballFirstClassSituationMetadata.swift; sourceTree = "<group>"; };
 		3FE87467768E03A1C1285B56 /* HomeGameCardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeGameCardSnapshotTests.swift; sourceTree = "<group>"; };
 		407D17D806A79F4EBF87444D /* HomeSectionSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSectionSnapshotTests.swift; sourceTree = "<group>"; };
+		43684C04EC2B492882D6E2FA /* HomeViewModel+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+Sections.swift"; sourceTree = "<group>"; };
 		4527861A450E45A5631DD139 /* ScrollDownSportsPerformanceSmokeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollDownSportsPerformanceSmokeUITests.swift; sourceTree = "<group>"; };
 		455D38418FA94987180EE8C9 /* missing_required_importance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = missing_required_importance.json; sourceTree = "<group>"; };
 		4589562B493C16A461E52906 /* GameDetailViewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailViewSupport.swift; sourceTree = "<group>"; };
@@ -393,13 +412,16 @@
 		4629E758DED01892ED96B2AC /* testResumeCard.resume-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testResumeCard.resume-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		4682BFBEBA85CCBB1D405DE4 /* missing_mode_eligibility.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = missing_mode_eligibility.json; sourceTree = "<group>"; };
 		47362611683892B0054A0C96 /* testPlayerAndTeamSectionsExpandedStates.player-team-expanded-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlayerAndTeamSectionsExpandedStates.player-team-expanded-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		4750749477EC092FDBEE8F3D /* BaseballRenderer+Details.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BaseballRenderer+Details.swift"; sourceTree = "<group>"; };
 		47840A958372036E1B34FC69 /* testDetailFinalScoreAndExpandedStats.detail-final-score-expanded-stats-large-phoneLarge-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testDetailFinalScoreAndExpandedStats.detail-final-score-expanded-stats-large-phoneLarge-light-medium.png"; sourceTree = "<group>"; };
 		47E2ADD8F80F17C237449321 /* HomePinnedVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePinnedVisibilityTests.swift; sourceTree = "<group>"; };
 		48DA40ED0A1DF52B1A3A211D /* GameReadingHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameReadingHistory.swift; sourceTree = "<group>"; };
 		49AB4E24CF6BE70575055587 /* GameDetailChromeSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailChromeSnapshotTests.swift; sourceTree = "<group>"; };
 		4CC2FDE0D325B071991AACDE /* testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		4D0377EE00D91DE648809992 /* testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png"; sourceTree = "<group>"; };
 		4D489C406AA9FAFF511001D6 /* SituationCardPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationCardPolicy.swift; sourceTree = "<group>"; };
 		4D84F1571D8E154A79F470F8 /* GameEventSituationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEventSituationModels.swift; sourceTree = "<group>"; };
+		4E59F1547084292962F55032 /* GameEventModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEventModels.swift; sourceTree = "<group>"; };
 		4EB5C780DF72560B3E58F3FD /* testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeActiveFiltersPhoneAccessibilityText.home-active-filters-phone-accessibility-standard-phoneCompact-light-accessibility5.png"; sourceTree = "<group>"; };
 		50926C52F9EA648450945557 /* ScrollDownSports.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ScrollDownSports.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50A5F12CD02E20CB03EA906E /* nhl_event_presentation_importance.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = nhl_event_presentation_importance.json; sourceTree = "<group>"; };
@@ -417,6 +439,8 @@
 		58202BEDF9F9D4D47B606C5C /* BaseballSituationAcceptanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballSituationAcceptanceTests.swift; sourceTree = "<group>"; };
 		598D59FFDDCDAB1E2F5FDECB /* BackgroundDataScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataScheduler.swift; sourceTree = "<group>"; };
 		5A0DE1F5982AF7EC85484D63 /* testHomeLeagueFilterNCAABCompactPhoneUsesMenuWithoutTruncation.home-league-filter-ncaab-compact-phone-compact-phoneSmall-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeLeagueFilterNCAABCompactPhoneUsesMenuWithoutTruncation.home-league-filter-ncaab-compact-phone-compact-phoneSmall-light-medium.png"; sourceTree = "<group>"; };
+		5A22DE8F6D0BF7F6E5ACD600 /* DetailLongFeedScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailLongFeedScrollTests.swift; sourceTree = "<group>"; };
+		5B004765E2B28049E5BB202A /* NormalizedPlayCardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalizedPlayCardModels.swift; sourceTree = "<group>"; };
 		5B86951E16BFA7C925A16DEB /* HomeViewModel+Anchors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+Anchors.swift"; sourceTree = "<group>"; };
 		5BB48B6EA0F9C60564030772 /* DetailStreamPolishViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailStreamPolishViews.swift; sourceTree = "<group>"; };
 		5BF326D4F232972BA1D66A6E /* SoccerSetPieceSituationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoccerSetPieceSituationTests.swift; sourceTree = "<group>"; };
@@ -434,16 +458,17 @@
 		6521BDF4E61F91E1F178E2A8 /* HomeScrollCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScrollCoordinatorTests.swift; sourceTree = "<group>"; };
 		653613704AE917D81A8A73A7 /* testHomeActiveFiltersDarkModeIPad.home-active-filters-dark-ipad-tabletReadable-iPad11Portrait-dark-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeActiveFiltersDarkModeIPad.home-active-filters-dark-ipad-tabletReadable-iPad11Portrait-dark-medium.png"; sourceTree = "<group>"; };
 		662D14C88F8675812C9009AD /* ScoreboardCardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardCardViews.swift; sourceTree = "<group>"; };
-		67302315C72D9F71EA5EE811 /* ScoreSpoilerFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreSpoilerFilter.swift; sourceTree = "<group>"; };
 		6748277B3EF0A3E7668E4E75 /* PlayRowContentFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRowContentFilter.swift; sourceTree = "<group>"; };
 		67610459440D1A4E54C1DB39 /* testLiveCard.live-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testLiveCard.live-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		676C60896F8A3E640B7587D8 /* testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScoreboardAndEventHierarchyTogether.event-scoreboard-hierarchy-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLabelModels.swift; sourceTree = "<group>"; };
 		68FCC99898765035A24B429D /* StorePersistenceInvariantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorePersistenceInvariantTests.swift; sourceTree = "<group>"; };
 		692B84C54089B805FD1B273B /* GameDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailViewModelTests.swift; sourceTree = "<group>"; };
 		69A9CACD2E7F627551CD0061 /* HomeGameCardState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeGameCardState.swift; sourceTree = "<group>"; };
 		6A4A87DE0A460C107E8C9B8B /* testMissingAbbreviationFallsBack.missing-abbreviation-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testMissingAbbreviationFallsBack.missing-abbreviation-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		6B5ED3BB8D85684950EDFF02 /* SportRenderingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportRenderingTheme.swift; sourceTree = "<group>"; };
 		6D1BB95BC5AB067311FF6905 /* GameParticipantVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameParticipantVisibilityTests.swift; sourceTree = "<group>"; };
+		6EAE0C9E69947D539DE2AC15 /* testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		6FFA70F76D8491D58C8D9E5F /* SituationDiagramViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationDiagramViews.swift; sourceTree = "<group>"; };
 		7149EC0385DE7331B8732D29 /* testInlineErrorState.inline-error-state-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testInlineErrorState.inline-error-state-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		7544BC37B2FACBA0CE04B5F6 /* testRichReservedSportDiagramRowsAccessibilityWidth.rich-reserved-sport-diagrams-accessibility-standard-phoneCompact-light-accessibility3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testRichReservedSportDiagramRowsAccessibilityWidth.rich-reserved-sport-diagrams-accessibility-standard-phoneCompact-light-accessibility3.png"; sourceTree = "<group>"; };
@@ -460,6 +485,7 @@
 		7CC1C8ABC87C52E5E16B7541 /* testScheduledCard.scheduled-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testScheduledCard.scheduled-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		7E621B1F6BA31E6E4D21D800 /* SnapshotAssertions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotAssertions.swift; sourceTree = "<group>"; };
 		7F9A7FA00BDE994A7FF5EED2 /* BasketballHalfCourtPressureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasketballHalfCourtPressureView.swift; sourceTree = "<group>"; };
+		7FA92D8A45B916CEDDD0C2CD /* CatchUpPlayCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchUpPlayCard.swift; sourceTree = "<group>"; };
 		803755582147FC752D50D569 /* scheduled_no_pbp_missing_optional_presentation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = scheduled_no_pbp_missing_optional_presentation.json; sourceTree = "<group>"; };
 		8472BF59734C56313B2F2CFE /* HomeScrollCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScrollCoordinator.swift; sourceTree = "<group>"; };
 		85AAE7CF12D76CCD971C781D /* SnapshotTestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTestCase.swift; sourceTree = "<group>"; };
@@ -471,6 +497,7 @@
 		8A7520E0CAA72F5AF534E4F5 /* TestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFixtures.swift; sourceTree = "<group>"; };
 		8B29FF8A8B29628714B47090 /* SDAUITestHomeFixturePayloadsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDAUITestHomeFixturePayloadsTests.swift; sourceTree = "<group>"; };
 		8BAF3CB05B50F693E96EA548 /* NonFieldPressureBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonFieldPressureBoard.swift; sourceTree = "<group>"; };
+		8E455D89DE2B58CF06C67B8B /* StatPresentationImpactBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatPresentationImpactBuilder.swift; sourceTree = "<group>"; };
 		8FBFD6F1D0F5A3964A9D40B3 /* testStatSectionWideTableTabletWidthKeepsNumericColumnsDense.stats-wide-tablet-tabletReadable-iPad11Portrait-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testStatSectionWideTableTabletWidthKeepsNumericColumnsDense.stats-wide-tablet-tabletReadable-iPad11Portrait-light-medium.png"; sourceTree = "<group>"; };
 		9249EFE41F27E90C5C76E27E /* mlb_scoring_progression.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_scoring_progression.json; sourceTree = "<group>"; };
 		927CACC07486D57651DACF97 /* PlayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayRow.swift; sourceTree = "<group>"; };
@@ -501,6 +528,7 @@
 		AAFA8FD6DE847C366D138A09 /* ScrollDownSportsAccessibilityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollDownSportsAccessibilityUITests.swift; sourceTree = "<group>"; };
 		AD76DFA0E4CB1ED2A931DF20 /* SDADomainMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDADomainMapper.swift; sourceTree = "<group>"; };
 		AE69031ECEFC85735F9A8907 /* SituationAccessibilitySummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationAccessibilitySummary.swift; sourceTree = "<group>"; };
+		AE92CC32BD7A5F1B438CE174 /* GameDetailView+ScrollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameDetailView+ScrollState.swift"; sourceTree = "<group>"; };
 		AF19F5DF475C3FFB1CF2A264 /* SDAFixturePayloadFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDAFixturePayloadFactory.swift; sourceTree = "<group>"; };
 		B17323975B5602866FD9F89C /* EventLabelResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLabelResolverTests.swift; sourceTree = "<group>"; };
 		B1B6B80C99F2D42B2AEF7FF0 /* HomeSectionTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSectionTestHelpers.swift; sourceTree = "<group>"; };
@@ -519,13 +547,13 @@
 		BE05C65F6728CFEFDABCB335 /* testHomeActiveFiltersDarkModeCompactPhone.home-active-filters-dark-phone-compact-standard-phoneCompact-dark-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeActiveFiltersDarkModeCompactPhone.home-active-filters-dark-phone-compact-standard-phoneCompact-dark-medium.png"; sourceTree = "<group>"; };
 		BED1C2E0329AC8E2BBAA3801 /* testPlayRowSituationCompactWidth.play-row-situation-compact-width-compact-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlayRowSituationCompactWidth.play-row-situation-compact-width-compact-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		BEFE963E39C88926805FEA8F /* ReadingHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingHistoryStoreTests.swift; sourceTree = "<group>"; };
+		BF4EE0A179B574DCA9BDCD09 /* SDASituationDomainMapper+NormalizedCardHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SDASituationDomainMapper+NormalizedCardHelpers.swift"; sourceTree = "<group>"; };
 		BF5656C7570A99CB8523A727 /* testRichReservedSportDiagramRowsStandardWidth.rich-reserved-sport-diagrams-standard-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testRichReservedSportDiagramRowsStandardWidth.rich-reserved-sport-diagrams-standard-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		BFD4C3015C118FEE02AB11EF /* scheduled_real_teams.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = scheduled_real_teams.json; sourceTree = "<group>"; };
 		C03A9058F51E4C2C9E8995CA /* testStickyNavigationTopEndAndReturnModes.sticky-top-end-return-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testStickyNavigationTopEndAndReturnModes.sticky-top-end-return-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		C05A624FED66F6290E234B5F /* BackgroundRefreshState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRefreshState.swift; sourceTree = "<group>"; };
 		C142E8DC73F1CFECEE28521D /* SoccerPitchStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoccerPitchStripView.swift; sourceTree = "<group>"; };
 		C1F54E1104466E8C28A5B4B1 /* leaderboard_scoreboard_game.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = leaderboard_scoreboard_game.json; sourceTree = "<group>"; };
-		C541D8C538F03738B4765356 /* testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		C5995C746CD324A32955950E /* testHomeWithRealPinnedGames.home-real-pinned-games-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testHomeWithRealPinnedGames.home-real-pinned-games-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		C675D5F847480C8FA60BE748 /* ScrollDownSportsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ScrollDownSportsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C7FC4E2723AC07E62657716A /* pinned_real_empty.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pinned_real_empty.json; sourceTree = "<group>"; };
@@ -540,11 +568,10 @@
 		CC00C1A347097AEB43C83438 /* testReadableDetailPlayStreamOnIPadLandscape.readable-detail-play-stream-iPad11LandscapeFull-iPad11Landscape-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testReadableDetailPlayStreamOnIPadLandscape.readable-detail-play-stream-iPad11LandscapeFull-iPad11Landscape-light-medium.png"; sourceTree = "<group>"; };
 		CC662D4D8372664724AD4C77 /* testErrorState.error-state-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testErrorState.error-state-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		CD2A361EF2976C438BA2CDC6 /* FootballSituationMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootballSituationMetadata.swift; sourceTree = "<group>"; };
+		CD81AFA45D2368E7C6BC5E48 /* testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		CE9FA0CCBA2BC42A18A078A2 /* missing_all_usable_event_text.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = missing_all_usable_event_text.json; sourceTree = "<group>"; };
 		D02E84C6C9C6D19B7C69DE5A /* AppScenePhaseHandlerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScenePhaseHandlerTests.swift; sourceTree = "<group>"; };
-		D08CAE412E71D5266C908F05 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		D130B3505C599F2ADDD1569A /* JSONFixtureValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONFixtureValidationTests.swift; sourceTree = "<group>"; };
-		D135A3342223776ED7848058 /* testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png"; sourceTree = "<group>"; };
 		D3AA73A4C7681FA6B16C0FAF /* GameWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWindowTests.swift; sourceTree = "<group>"; };
 		D3F17A0BDE63441F09819061 /* GenericSportRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericSportRenderer.swift; sourceTree = "<group>"; };
 		D41AC3EAC00B7EBBE22B96E8 /* LiveRefreshInvariantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveRefreshInvariantTests.swift; sourceTree = "<group>"; };
@@ -557,6 +584,7 @@
 		D91C5AD565D8764E0275753A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		DA3038ED1F59DD920F05E7EB /* mlb_inning_line_score.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_inning_line_score.json; sourceTree = "<group>"; };
 		DA4EAEDB20CEA427902CA8CD /* GameWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWindow.swift; sourceTree = "<group>"; };
+		DA4EF658172A3943ECD0CAB3 /* GameDetailView+ReaderRestore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameDetailView+ReaderRestore.swift"; sourceTree = "<group>"; };
 		DAE297C6548C97A971B330FF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		DD6848C2C6CB3B2989192850 /* EventAndScoreboardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventAndScoreboardSnapshotTests.swift; sourceTree = "<group>"; };
 		DF64B9DFCD47667B41321B73 /* testDetailImportantStandardAndAllPlayModes.detail-stream-modes-compact-phoneSmall-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testDetailImportantStandardAndAllPlayModes.detail-stream-modes-compact-phoneSmall-light-medium.png"; sourceTree = "<group>"; };
@@ -576,11 +604,13 @@
 		E9CADD2E079FE7B54CD77CB5 /* SituationConfidenceGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationConfidenceGate.swift; sourceTree = "<group>"; };
 		E9DC513FF79DC795B47C7C72 /* mlb_live_new_events.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mlb_live_new_events.json; sourceTree = "<group>"; };
 		EA6015C05807AE4A1D94B9ED /* testLongTeamNamesCompactWidth.long-team-names-compact-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testLongTeamNamesCompactWidth.long-team-names-compact-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
+		EB140AC77255828DAFB2A998 /* LocalFavoriteGameNotificationDeliverer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFavoriteGameNotificationDeliverer.swift; sourceTree = "<group>"; };
 		EBBE605CAF4746BAC2193030 /* testDetailFinalScoreAndExpandedStatsCompactPhone.detail-final-score-expanded-stats-phone-compact-standard-phoneCompact-light-medium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "testDetailFinalScoreAndExpandedStatsCompactPhone.detail-final-score-expanded-stats-phone-compact-standard-phoneCompact-light-medium.png"; sourceTree = "<group>"; };
 		EE90C69D5DBD2EA89B1B31BE /* SnapshotDeviceWidthModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotDeviceWidthModelTests.swift; sourceTree = "<group>"; };
 		EEE8FDD5AF27C942DFCBBA5D /* BaseballScorebookNotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballScorebookNotationTests.swift; sourceTree = "<group>"; };
 		EF2E71EC8BBE04F26C6FC5E0 /* GameSummaryCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSummaryCapability.swift; sourceTree = "<group>"; };
 		F09911C0A8D6178B8B149B3D /* HomeSectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSectionsView.swift; sourceTree = "<group>"; };
+		F207E205E2BC3BB9817628A9 /* SDADomainMapper+CardFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SDADomainMapper+CardFeed.swift"; sourceTree = "<group>"; };
 		F2A51DC59B81856925B03A20 /* ProductFlowIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductFlowIntegrationTests.swift; sourceTree = "<group>"; };
 		F33A3D1F45A16D06DFD8CEAA /* SituationDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SituationDecodingTests.swift; sourceTree = "<group>"; };
 		F3EC944E21851630FE7E9C6F /* GameSummaryCardState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSummaryCardState.swift; sourceTree = "<group>"; };
@@ -786,6 +816,8 @@
 				3E82CF7DD597FB0CF9A19D80 /* BaseballFirstClassSituationMetadata.swift */,
 				5750A9356E51B0E253C3A030 /* BaseballPrePitchState.swift */,
 				1EA5981867020DA8700DE672 /* BaseballRenderer.swift */,
+				4750749477EC092FDBEE8F3D /* BaseballRenderer+Details.swift */,
+				27A6520A4A02DDBE6C4A5E3D /* BaseballSituationInputs.swift */,
 				051CD82926E814730E630FC9 /* BaseballSituationMetadata.swift */,
 				2165F5423656F16003A3B880 /* BasketballSituationMetadata.swift */,
 				2EE2193CDA846FAAB18A529C /* BasketballSituationPresentation.swift */,
@@ -798,6 +830,7 @@
 				8BAF3CB05B50F693E96EA548 /* NonFieldPressureBoard.swift */,
 				B99674510677F29A97ADA9E5 /* NonFieldPressureState.swift */,
 				E7AABE1C5C723F61B1719066 /* PeriodLabelFormatter.swift */,
+				6838B08A6C9125068BFF1991 /* PeriodLabelModels.swift */,
 				F5897570024B4539EB79B4D0 /* ReservedSportRenderers.swift */,
 				2AAF97627B5BA58ADFFCDA6E /* ScorePressurePresentation.swift */,
 				AE69031ECEFC85735F9A8907 /* SituationAccessibilitySummary.swift */,
@@ -814,6 +847,7 @@
 				6B5ED3BB8D85684950EDFF02 /* SportRenderingTheme.swift */,
 				E8429C1B418FF9E807A304E8 /* StatPresentationBuilder.swift */,
 				011E6BD92FC4B344AB438886 /* StatPresentationFormatting.swift */,
+				8E455D89DE2B58CF06C67B8B /* StatPresentationImpactBuilder.swift */,
 				FD239E317A6E32FE4BDF5AD8 /* StatTablePresentationBuilder.swift */,
 			);
 			path = Rendering;
@@ -829,6 +863,7 @@
 				FB7D47258C85EEF889FA1101 /* HomeSections.swift */,
 				516EF834AE9B828A3436EFEE /* HomeViewModel.swift */,
 				5B86951E16BFA7C925A16DEB /* HomeViewModel+Anchors.swift */,
+				43684C04EC2B492882D6E2FA /* HomeViewModel+Sections.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -839,12 +874,14 @@
 				D02E84C6C9C6D19B7C69DE5A /* AppScenePhaseHandlerTests.swift */,
 				F9C6BAD870EFA20675E0C867 /* BackgroundDataSchedulerTests.swift */,
 				0028FC2FCEFE6258B31E0D9D /* BackgroundRefreshServiceTests.swift */,
+				351DABEBB0E052D42A2D8964 /* BackgroundResumeRestoreTests.swift */,
 				534AF1A5A73E5959E6F995CE /* BaseballPrePitchMetadataTests.swift */,
 				EEE8FDD5AF27C942DFCBBA5D /* BaseballScorebookNotationTests.swift */,
 				58202BEDF9F9D4D47B606C5C /* BaseballSituationAcceptanceTests.swift */,
 				375953AC02A071D2640F152C /* BasketballPossessionPressureTests.swift */,
 				D8540864CA9E32111240E0BD /* DecodingTests.swift */,
 				86A8CD29CE59C14D536A234C /* DetailChromeDensityTests.swift */,
+				5A22DE8F6D0BF7F6E5ACD600 /* DetailLongFeedScrollTests.swift */,
 				DD6848C2C6CB3B2989192850 /* EventAndScoreboardSnapshotTests.swift */,
 				B17323975B5602866FD9F89C /* EventLabelResolverTests.swift */,
 				3A77E36CCBD82486CCDF594F /* FixtureDataBoundaryTests.swift */,
@@ -881,7 +918,6 @@
 				BEFE963E39C88926805FEA8F /* ReadingHistoryStoreTests.swift */,
 				FD29AF3640B32167DD33B87A /* RestoreInvariantTests.swift */,
 				9B1FF90E3978919E9FE62B93 /* ScorePressurePresentationTests.swift */,
-				2B045CBC1CB7637ECCC9B020 /* ScoreSpoilerFilterTests.swift */,
 				AF19F5DF475C3FFB1CF2A264 /* SDAFixturePayloadFactory.swift */,
 				8B29FF8A8B29628714B47090 /* SDAUITestHomeFixturePayloadsTests.swift */,
 				CAE338DCE367CFD37D80349A /* SituationAccessibilitySummaryTests.swift */,
@@ -911,7 +947,8 @@
 		81234732E76F3C9A7324F212 /* EventAndScoreboardSnapshotTests */ = {
 			isa = PBXGroup;
 			children = (
-				C541D8C538F03738B4765356 /* testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png */,
+				34A76C97856574EF0432B808 /* testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png */,
+				6EAE0C9E69947D539DE2AC15 /* testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png */,
 				4CC2FDE0D325B071991AACDE /* testPlayRowGeneratedHeadlineAndCompactWidth.play-row-long-headline-compact-compact-phoneCompact-light-medium.png */,
 				9EFC47454C4E5B77DC1B9802 /* testPlayRowsCoverImportanceScoringAndRawFeedStates.play-row-importance-states-standard-phoneCompact-light-medium.png */,
 				3554F87D2A51AE94B262FF72 /* testPlayRowSituationCollapsedRawFeed.play-row-situation-collapsed-raw-feed-standard-phoneCompact-light-medium.png */,
@@ -984,10 +1021,10 @@
 				67610459440D1A4E54C1DB39 /* testLiveCard.live-standard-phoneCompact-light-medium.png */,
 				EA6015C05807AE4A1D94B9ED /* testLongTeamNamesCompactWidth.long-team-names-compact-phoneCompact-light-medium.png */,
 				6A4A87DE0A460C107E8C9B8B /* testMissingAbbreviationFallsBack.missing-abbreviation-standard-phoneCompact-light-medium.png */,
-				D08CAE412E71D5266C908F05 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png */,
+				CD81AFA45D2368E7C6BC5E48 /* testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png */,
 				4629E758DED01892ED96B2AC /* testResumeCard.resume-standard-phoneCompact-light-medium.png */,
 				7CC1C8ABC87C52E5E16B7541 /* testScheduledCard.scheduled-standard-phoneCompact-light-medium.png */,
-				D135A3342223776ED7848058 /* testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */,
+				4D0377EE00D91DE648809992 /* testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png */,
 			);
 			path = HomeGameCardSnapshotTests;
 			sourceTree = "<group>";
@@ -1046,6 +1083,7 @@
 			children = (
 				87A2273470E150707DD9CDE4 /* BaseballScorebookViews.swift */,
 				7F9A7FA00BDE994A7FF5EED2 /* BasketballHalfCourtPressureView.swift */,
+				7FA92D8A45B916CEDDD0C2CD /* CatchUpPlayCard.swift */,
 				1786AF5736CE166BCF6BAF5B /* CatchUpSections.swift */,
 				DAE297C6548C97A971B330FF /* ContentView.swift */,
 				3831C161A5F9D0FFD15B3459 /* DetailChromeDensity.swift */,
@@ -1055,6 +1093,8 @@
 				9E41F554300101E2896EF043 /* FootballFieldStripView.swift */,
 				A006CC90F536D265DDED2FE6 /* GameDetailChrome.swift */,
 				A22A4620CF71E123557EE03D /* GameDetailView.swift */,
+				DA4EF658172A3943ECD0CAB3 /* GameDetailView+ReaderRestore.swift */,
+				AE92CC32BD7A5F1B438CE174 /* GameDetailView+ScrollState.swift */,
 				4589562B493C16A461E52906 /* GameDetailViewSupport.swift */,
 				F772CDDEBCBCF4FB4D335555 /* GameSummaryCard.swift */,
 				57A80025C73D1D3F5215BA20 /* HockeyRinkStripView.swift */,
@@ -1098,6 +1138,7 @@
 				27D08E71040D5D9B36B3FDB4 /* BackgroundRefreshService.swift */,
 				1B3D7C7233D38A473745EF72 /* Decoding.swift */,
 				DA4EAEDB20CEA427902CA8CD /* GameWindow.swift */,
+				EB140AC77255828DAFB2A998 /* LocalFavoriteGameNotificationDeliverer.swift */,
 				5EDE14F8D46C8CB5F0396358 /* SDAApiClient.swift */,
 				2AD1218B24A4D4AFFB8FA2EA /* SDAUIPerformanceFixturePayload.swift */,
 				36DD24054954D44ED31AA5CB /* SDAUITestFixtureAPI.swift */,
@@ -1113,15 +1154,19 @@
 				7CAEC35295AA4254BAD02CD6 /* DisplayStringUtilities.swift */,
 				A00A85F139A70955EA647691 /* DomainModels.swift */,
 				25A5A1A4C9BA32185D2DCF47 /* GameEventDiffModels.swift */,
+				4E59F1547084292962F55032 /* GameEventModels.swift */,
 				4D84F1571D8E154A79F470F8 /* GameEventSituationModels.swift */,
 				1671221798BAAACF0E2EF353 /* GameParticipantVisibility.swift */,
+				29FBA1C3643E1ABDF4D30270 /* GameStatusModels.swift */,
 				A2D475FB1B35C62FC7E25E9F /* JSONValue.swift */,
+				5B004765E2B28049E5BB202A /* NormalizedPlayCardModels.swift */,
 				541D2A808B1CC843C989F87A /* PresentationDomainModels.swift */,
-				67302315C72D9F71EA5EE811 /* ScoreSpoilerFilter.swift */,
 				AD76DFA0E4CB1ED2A931DF20 /* SDADomainMapper.swift */,
+				F207E205E2BC3BB9817628A9 /* SDADomainMapper+CardFeed.swift */,
 				C95EEFB2FC943E09A4B7066F /* SDADTOs.swift */,
 				62296BE092035B1FA947E022 /* SDAPresentationDTOs.swift */,
 				868DCE2FB0BDAFCAD2B06BD8 /* SDASituationDomainMapper.swift */,
+				BF4EE0A179B574DCA9BDCD09 /* SDASituationDomainMapper+NormalizedCardHelpers.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1288,7 +1333,8 @@
 				43B183FB51CEE221F33F395F /* scheduled_no_pbp_missing_optional_presentation.json in Resources */,
 				55D38F07B4BD405090B2943C /* scheduled_real_teams.json in Resources */,
 				60F4D1D7133223C68EDE6041 /* stats_with_mlb_box_score.json in Resources */,
-				47A23F155943D74E3F8E2A0A /* testBoxScoreHiddenAndRevealedStates.box-score-hidden-revealed-standard-phoneCompact-light-medium.png in Resources */,
+				B0ACFADE16B6CC2DE83CD312 /* testBoxScoreRendersAsDownstreamPayoffWithoutRevealGate.box-score-downstream-payoff-standard-phoneCompact-light-medium.png in Resources */,
+				0151585EE87C152947309594 /* testCatchUpPlayCardsUseNormalizedBackendDensityPaths.catch-up-card-normalized-density-paths-standard-phoneCompact-light-medium.png in Resources */,
 				353858CCD9F450347DBE1F48 /* testChromeTreatmentComparison.shared-chrome-treatment-standard-phoneCompact-light-medium.png in Resources */,
 				1A895095B8D2080455645A56 /* testDetailDarkModeIPadShowsChromeControlsAndStats.detail-dark-mode-ipad-iPad11Full-iPad11Portrait-dark-medium.png in Resources */,
 				C6B1563700438CAA7128D725 /* testDetailDarkModePhoneShowsChromeControlsAndStats.detail-dark-mode-phone-standard-phoneCompact-dark-medium.png in Resources */,
@@ -1329,7 +1375,7 @@
 				6AD5A5B945162A6DD9C20D59 /* testLiveCard.live-standard-phoneCompact-light-medium.png in Resources */,
 				B3A8C259CC8957E9321C058B /* testLongTeamNamesCompactWidth.long-team-names-compact-phoneCompact-light-medium.png in Resources */,
 				F0A28A81F04CFED182FA41D7 /* testMissingAbbreviationFallsBack.missing-abbreviation-standard-phoneCompact-light-medium.png in Resources */,
-				EB8AE5AE8A13AF4537A0AB49 /* testPinnedAndUnpinnedChrome.pin-chrome-standard-phoneCompact-light-medium.png in Resources */,
+				E171EEC42724210F2E319E6D /* testPinnedAndUnpinnedActionChrome.action-chrome-standard-phoneCompact-light-medium.png in Resources */,
 				D137A9876DF90F636A8FAB72 /* testPinnedSectionEmptyStateHasNoPlaceholderRows.pinned-empty-no-placeholder-standard-phoneCompact-light-medium.png in Resources */,
 				DE4EBE97BDC13C930ECECFD2 /* testPinnedSectionWithRealPinnedGames.pinned-real-games-standard-phoneCompact-light-medium.png in Resources */,
 				4DED4BC59EF17A8C7595B25A /* testPlaceholderErrorAndFallbackChromeStates.placeholder-error-fallback-chrome-standard-phoneCompact-light-medium.png in Resources */,
@@ -1366,7 +1412,7 @@
 				A7EBF2F0D8566F0F371CE78C /* testStickyNavigationProgressIsSecondary.sticky-progress-secondary-standard-phoneCompact-light-medium.png in Resources */,
 				C97849F540BB791BA2F68165 /* testStickyNavigationTopEndAndReturnModes.sticky-top-end-return-standard-phoneCompact-light-medium.png in Resources */,
 				5FF13FAA344CE9182B656E73 /* testStreamControlBarModesAndAffordances.stream-control-affordances-standard-phoneCompact-light-medium.png in Resources */,
-				86F44C281FB61FE2BB4293E2 /* testTabletLongTeamNamesKeepPinChromeReadable.long-team-names-pin-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png in Resources */,
+				8AC4C10CF96818661AC6E5FF /* testTabletLongTeamNamesKeepActionChromeReadable.long-team-names-action-chrome-tabletReadable-iPad11Portrait-light-accessibility2.png in Resources */,
 				294F495E1CADD8FB580EAB91 /* testTimelineEmptyStateWithoutActiveFilters.timeline-empty-no-filters-standard-phoneCompact-light-medium.png in Resources */,
 				7147DDE8A93EDCE472592C7A /* testTimelineSectionsCoverAnchorBandsWithoutPlaceholders.timeline-anchor-bands-standard-phoneCompact-light-medium.png in Resources */,
 				082144E855A9EC2F1493401D /* wrong_detail_contract_version.json in Resources */,
@@ -1392,6 +1438,7 @@
 				181EAA88C2E412911728F1BA /* AppScenePhaseHandlerTests.swift in Sources */,
 				89D8584DA78CCD39BE1E38F5 /* BackgroundDataSchedulerTests.swift in Sources */,
 				762AD5C32A7A1F9BC160E2A5 /* BackgroundRefreshServiceTests.swift in Sources */,
+				1A434671B77062AF99FF89E6 /* BackgroundResumeRestoreTests.swift in Sources */,
 				5F4AF39E6916CDEB5DE5D715 /* BaseballPrePitchMetadataTests.swift in Sources */,
 				96F70BEDC8BAFA6ABC59AF87 /* BaseballScorebookNotationTests.swift in Sources */,
 				79B77934F4E4B300A6F9C870 /* BaseballSituationAcceptanceTests.swift in Sources */,
@@ -1399,6 +1446,7 @@
 				7E0C76DFDA92544A804AA1EF /* ComponentSnapshotFixtures.swift in Sources */,
 				D27DB7383075235241399E18 /* DecodingTests.swift in Sources */,
 				63221F3D2EAA433B699FB0DA /* DetailChromeDensityTests.swift in Sources */,
+				0C426F8970BDAD6E751AB814 /* DetailLongFeedScrollTests.swift in Sources */,
 				EFAE89E564D48740CACF07E4 /* EventAndScoreboardSnapshotTests.swift in Sources */,
 				0D72B59593EFB352AE3CFA1A /* EventLabelResolverTests.swift in Sources */,
 				FC52ABF303A4BAAC369A6742 /* FixtureDataBoundaryTests.swift in Sources */,
@@ -1437,7 +1485,6 @@
 				4906452CD32291C94D550BF9 /* SDAFixturePayloadFactory.swift in Sources */,
 				49E866336FAD4F4ECA4BA495 /* SDAUITestHomeFixturePayloadsTests.swift in Sources */,
 				6FFB34963B101625F0EAFFFA /* ScorePressurePresentationTests.swift in Sources */,
-				988878EEF883B1CE6F934F22 /* ScoreSpoilerFilterTests.swift in Sources */,
 				7F456B53ACE7764AABF93047 /* SituationAccessibilitySummaryTests.swift in Sources */,
 				3841C096CFD8871A53C29AC4 /* SituationCardPolicyTests.swift in Sources */,
 				A0F9E796D7C7DFD647B33DF3 /* SituationContextChipTests.swift in Sources */,
@@ -1487,13 +1534,16 @@
 				4108BF3DBB0A9DD51623EE1C /* BackgroundRefreshStateStore.swift in Sources */,
 				486C2F85B6B992F062F1B472 /* BaseballFirstClassSituationMetadata.swift in Sources */,
 				CCA0479A168786771DD5705C /* BaseballPrePitchState.swift in Sources */,
+				5C9D413AB88AD9063D8D9B1C /* BaseballRenderer+Details.swift in Sources */,
 				631E220FF56D2D19D23F6F5E /* BaseballRenderer.swift in Sources */,
 				50B15C9F919865433A50D5A1 /* BaseballScorebookViews.swift in Sources */,
+				AA1A3296C8B17C2C9029F88F /* BaseballSituationInputs.swift in Sources */,
 				8624E10D5A635FEF5D4F7053 /* BaseballSituationMetadata.swift in Sources */,
 				B130159E22DC1DE123ACD421 /* BasketballHalfCourtPressureView.swift in Sources */,
 				63E8CB32BF5B7035B4CB533A /* BasketballSituationMetadata.swift in Sources */,
 				C4347DED7F3B09CD8515FAFF /* BasketballSituationPresentation.swift in Sources */,
 				8A5221E32139FED7FF8EF6E9 /* BasketballSituationTypes.swift in Sources */,
+				E4A10F3F317DD28FD4CE51D8 /* CatchUpPlayCard.swift in Sources */,
 				3CCD7B07119CEF8DC3FAA9B7 /* CatchUpSections.swift in Sources */,
 				1C71FEFC95F2779C77881830 /* ContentView.swift in Sources */,
 				AB148482D2283393E7FAD379 /* Decoding.swift in Sources */,
@@ -1508,16 +1558,20 @@
 				C9117E640081E34D436D1E5C /* FootballFieldStripView.swift in Sources */,
 				EAE7F4A1FB5AACCD2E1EC470 /* FootballSituationMetadata.swift in Sources */,
 				5E9ED656F100CD1F2915B03C /* GameDetailChrome.swift in Sources */,
+				C46D8193826F69F12B8A0411 /* GameDetailView+ReaderRestore.swift in Sources */,
+				76AF8D026AA32CFF327729F4 /* GameDetailView+ScrollState.swift in Sources */,
 				FAEB6A9D0F783AA2C210A9F2 /* GameDetailView.swift in Sources */,
 				31F91C86E9D5C9939A83EE25 /* GameDetailViewModel.swift in Sources */,
 				8C5D1E9E53EB4A942300A33E /* GameDetailViewSupport.swift in Sources */,
 				5E507FD7F46F2D8990DACD08 /* GameEventDiffModels.swift in Sources */,
+				182CDF4C7DECCD3B1898FAB7 /* GameEventModels.swift in Sources */,
 				F024068ECA0DE03A09822A99 /* GameEventSituationModels.swift in Sources */,
 				D24D50F5586C9AA048ADDEFF /* GameParticipantVisibility.swift in Sources */,
 				0C2DFCBB00A3255BE3CBA119 /* GameProgressReadState.swift in Sources */,
 				BC80390AD020DEF0C579BE1D /* GameReadingHistory.swift in Sources */,
 				3BECF4A7449F983A05DFEBFF /* GameStateStore.swift in Sources */,
 				E25B1FCB9E928D2E388AFC0A /* GameStateStoreTypes.swift in Sources */,
+				0133A8CF819BE8CDB617518A /* GameStatusModels.swift in Sources */,
 				B6CA99792C361187D52C7305 /* GameSummaryCapability.swift in Sources */,
 				636869DF24DA12DCEECE22D5 /* GameSummaryCard.swift in Sources */,
 				917B37F9B0D00DD88DBE0A05 /* GameSummaryCardState.swift in Sources */,
@@ -1534,12 +1588,16 @@
 				94F1ED297BD6FB1225733CF3 /* HomeStickyHeaderView.swift in Sources */,
 				E8D250C2A57BF88AF21D5201 /* HomeView.swift in Sources */,
 				6AC154482FFDF42EFA0457B5 /* HomeViewModel+Anchors.swift in Sources */,
+				AC6BCA0B8A318598BF97FB1E /* HomeViewModel+Sections.swift in Sources */,
 				0BDB6E71DE6C19FAD04593BE /* HomeViewModel.swift in Sources */,
 				67190B9D15C56D573E3CE03C /* InMemoryGameStateStore.swift in Sources */,
 				45452404DFE376840A7C1E3F /* JSONValue.swift in Sources */,
+				284A2223D8A45A1E22B55903 /* LocalFavoriteGameNotificationDeliverer.swift in Sources */,
 				CDB3850E073D2A91820CA8A8 /* NonFieldPressureBoard.swift in Sources */,
 				9D4EBD19F552C481D92C80E7 /* NonFieldPressureState.swift in Sources */,
+				CD06E37B9B2AE29D2532AF3C /* NormalizedPlayCardModels.swift in Sources */,
 				309C595B309152E67445B5A3 /* PeriodLabelFormatter.swift in Sources */,
+				33C22AD9BFCA7B9F10CF34B0 /* PeriodLabelModels.swift in Sources */,
 				26DE297D2FE5DB455AA06069 /* PlayRow.swift in Sources */,
 				19DD5BF536BB8C32288A9662 /* PlayRowContentFilter.swift in Sources */,
 				9B307C0026CCF9247A3B4BBF /* PresentationDomainModels.swift in Sources */,
@@ -1547,14 +1605,15 @@
 				5C6E10AB8E0A8A1CA2FCAC74 /* ReservedSportRenderers.swift in Sources */,
 				45082C326AF21C53A03ED941 /* SDAApiClient.swift in Sources */,
 				B07D87FE9BC001DD3F413EF0 /* SDADTOs.swift in Sources */,
+				1F26D1156C5B9B95DAE6B93C /* SDADomainMapper+CardFeed.swift in Sources */,
 				986D491CFBE220C63012446F /* SDADomainMapper.swift in Sources */,
 				18BAE6919FD21FDF21A42C91 /* SDAPresentationDTOs.swift in Sources */,
+				1F3FE9902208A0D36266A163 /* SDASituationDomainMapper+NormalizedCardHelpers.swift in Sources */,
 				5E073514445D51C7DBB115A0 /* SDASituationDomainMapper.swift in Sources */,
 				C2B00E104F7C748DFA62B807 /* SDAUIPerformanceFixturePayload.swift in Sources */,
 				ED3C668E7F901B58C2A5BA37 /* SDAUITestFixtureAPI.swift in Sources */,
 				75F202B67FAC28314F523207 /* SDAUITestHomeFixturePayloads.swift in Sources */,
 				C24AF2D8A74FE7A9C5D37559 /* ScorePressurePresentation.swift in Sources */,
-				FC110D707E076E7C6052FB76 /* ScoreSpoilerFilter.swift in Sources */,
 				A4640B16B42E62211761B9ED /* ScoreboardCardViews.swift in Sources */,
 				8D898DD3AB3F43FDBED840F5 /* ScrollDownSportsApp.swift in Sources */,
 				D9C1C7E3FD24C2509800D46B /* SituationAccessibilitySummary.swift in Sources */,
@@ -1577,6 +1636,7 @@
 				196685B782F2B7655E7DC0AE /* SportsTheme.swift in Sources */,
 				FB6A286A1F363F20B13EA5D4 /* StatPresentationBuilder.swift in Sources */,
 				CD36E49525997C93E27E10C6 /* StatPresentationFormatting.swift in Sources */,
+				04222E6AA2F564D57D88B75A /* StatPresentationImpactBuilder.swift in Sources */,
 				B6F5C969EFE846704EBB5513 /* StatPresentationViews.swift in Sources */,
 				48AF5195D02BFF090DFB8F29 /* StatTablePresentationBuilder.swift in Sources */,
 				1A6EE1FEFE760B9DB2F8AFC0 /* StreamControlBar.swift in Sources */,

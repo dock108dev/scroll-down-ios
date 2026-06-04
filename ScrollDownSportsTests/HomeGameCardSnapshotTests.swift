@@ -33,14 +33,14 @@ final class HomeGameCardSnapshotTests: SnapshotTestCase {
         )
     }
 
-    func testTabletLongTeamNamesKeepPinChromeReadable() {
+    func testTabletLongTeamNamesKeepActionChromeReadable() {
         let longNameItem = ComponentSnapshotFixtures.longNameHomeItem()
         let pinnedItem = ComponentSnapshotFixtures.homeItem(game: longNameItem.game, isPinned: true)
 
         assertSwiftUISnapshot(
             of: cardChrome(item: pinnedItem)
                 .padding(.horizontal, 24),
-            named: "long-team-names-pin-chrome",
+            named: "long-team-names-action-chrome",
             width: .tabletReadable,
             height: 240,
             device: .iPad11Portrait,
@@ -52,13 +52,13 @@ final class HomeGameCardSnapshotTests: SnapshotTestCase {
         assertCardSnapshot(item: ComponentSnapshotFixtures.missingAbbreviationHomeItem(), named: "missing-abbreviation")
     }
 
-    func testPinnedAndUnpinnedChrome() {
+    func testPinnedAndUnpinnedActionChrome() {
         assertSwiftUISnapshot(
             of: VStack(spacing: 12) {
                 cardChrome(item: ComponentSnapshotFixtures.liveHomeItem(isPinned: false))
                 cardChrome(item: ComponentSnapshotFixtures.liveHomeItem(isPinned: true))
             },
-            named: "pin-chrome",
+            named: "action-chrome",
             width: .standard,
             height: 320
         )
@@ -87,9 +87,15 @@ final class HomeGameCardSnapshotTests: SnapshotTestCase {
     private func cardChrome(item: HomeGameItem) -> some View {
         ZStack(alignment: .topTrailing) {
             GameRowView(item: item)
-            HomePinButton(isPinned: item.isPinned) {}
-                .padding(.top, HomeGameCardLayout.pinOverlayPadding)
-                .padding(.trailing, HomeGameCardLayout.pinOverlayPadding)
+            HomeGameActionMenu(
+                isPinned: item.isPinned,
+                favoriteParticipants: [],
+                isFavoriteTeam: { _ in false },
+                togglePin: {},
+                toggleFavoriteTeam: { _ in }
+            )
+            .padding(.top, HomeGameCardLayout.actionOverlayPadding)
+            .padding(.trailing, HomeGameCardLayout.actionOverlayPadding)
         }
         .padding(12)
         .background(SportsTheme.Colors.paper)

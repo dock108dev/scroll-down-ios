@@ -193,13 +193,15 @@ struct GameSummaryCardState {
         surface: GameSummaryCardSurface
     ) -> String {
         if surface == .detail,
-           let label = ScoreSpoilerFilter.topRegionText(presentationStatusText, for: game) {
+           game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
+           let label = presentationStatusText?.nilIfBlank {
             return label
         }
-        if let label = ScoreSpoilerFilter.topRegionText(game.presentation?.statusLabel ?? game.presentation?.primaryLabel, for: game) {
+        if game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
+           let label = (game.presentation?.statusLabel ?? game.presentation?.primaryLabel)?.nilIfBlank {
             return label
         }
-        if let scoreboardStatus = ScoreSpoilerFilter.topRegionText(game.scoreboard?.statusLabel, for: game) {
+        if let scoreboardStatus = game.scoreboard?.statusLabel?.nilIfBlank {
             return scoreboardStatus
         }
         switch phase {
@@ -235,8 +237,8 @@ struct GameSummaryCardState {
         if phase == .scheduled {
             return "Preview"
         }
-        if let backendLabel = game.presentation?.primaryActionLabel?.nilIfBlank,
-           ScoreSpoilerFilter.topRegionText(backendLabel, for: game) != nil,
+        if game.presentation?.scoreboardPlacement?.lowercased() != "bottom",
+           let backendLabel = game.presentation?.primaryActionLabel?.nilIfBlank,
            labelIsAllowed(backendLabel, phase: phase, capability: capability) {
             return backendLabel
         }
@@ -484,9 +486,9 @@ struct GameSummaryCardState {
         primaryActionLabel: String
     ) -> String {
         [
-            ScoreSpoilerFilter.topRegionText(presentationAccessibilityLabel, for: game),
-            ScoreSpoilerFilter.topRegionText(presentationHeadline, for: game),
-            ScoreSpoilerFilter.matchupText(for: game),
+            presentationAccessibilityLabel?.nilIfBlank,
+            presentationHeadline?.nilIfBlank,
+            topRegionMatchupText(for: game),
             statusText,
             primaryActionLabel
         ]
@@ -496,5 +498,12 @@ struct GameSummaryCardState {
 
     private static func shortName(for name: String) -> String {
         String(name.split(separator: " ").last?.prefix(4) ?? "TEAM")
+    }
+
+    private static func topRegionMatchupText(for game: Game) -> String {
+        guard game.presentation?.scoreboardPlacement?.lowercased() == "bottom" else {
+            return game.matchupText
+        }
+        return "\(game.awayParticipant?.name ?? "Away") at \(game.homeParticipant?.name ?? "Home")"
     }
 }

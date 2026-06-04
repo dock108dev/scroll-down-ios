@@ -15,7 +15,7 @@ struct GenericSportRenderer: SportRenderer {
             sportLabel: sportLabel,
             accentColor: accentColor(for: normalizedLeagueCode),
             liveColor: SportsTheme.Tone.live.accent,
-            scoreRevealColor: SportsTheme.Tone.scoreboard.accent,
+            scoreboardColor: SportsTheme.Tone.scoreboard.accent,
             primarySystemImage: "sportscourt"
         )
     }
@@ -27,7 +27,7 @@ struct GenericSportRenderer: SportRenderer {
             accentColor: theme.accentColor,
             statusText: statusText(for: game),
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            matchupLabel: topRegionMatchupText(for: game),
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -41,7 +41,7 @@ struct GenericSportRenderer: SportRenderer {
             statusText: statusText(for: game),
             playCountText: game.progress.eventCount.map { "\($0) plays" },
             headline: topRegionText(game.presentation?.headline ?? game.presentation?.shortHeadline, for: game),
-            matchupLabel: ScoreSpoilerFilter.matchupText(for: game),
+            matchupLabel: topRegionMatchupText(for: game),
             secondaryText: topRegionText(game.presentation?.secondaryLabel ?? game.presentation?.subheadline, for: game),
             accessibilityLabel: topRegionText(game.presentation?.accessibilityLabel, for: game)
         )
@@ -94,16 +94,12 @@ struct GenericSportRenderer: SportRenderer {
             layout: layout,
             title: "Box Score",
             systemImage: "number.square",
-            revealTitle: "Score hidden",
-            revealDescription: "Reveal only when you are ready to see the current or final box score.",
-            revealButtonTitle: "Reveal box score",
-            hideButtonTitle: "Hide",
             rows: scoreboardRows(for: game),
             segments: scoreboardSegments(for: game),
             totalHeader: totalHeader(for: game),
             stateText: game.scoreboard?.scoreline ?? game.scoreboard?.statusLabel ?? scoreboardStateText(for: game),
             stateColor: game.status.isLive ? theme.liveColor : SportsTheme.Colors.secondaryInk,
-            accentColor: theme.scoreRevealColor
+            accentColor: theme.scoreboardColor
         )
     }
 
@@ -369,7 +365,20 @@ struct GenericSportRenderer: SportRenderer {
     }
 
     private func topRegionText(_ value: String?, for game: Game) -> String? {
-        ScoreSpoilerFilter.topRegionText(value, for: game)
+        guard let text = value?.nilIfBlank else { return nil }
+        guard game.presentation?.scoreboardPlacement?.lowercased() != "bottom" else { return nil }
+        return text
+    }
+
+    private func topRegionMatchupText(for game: Game) -> String {
+        guard game.presentation?.scoreboardPlacement?.lowercased() == "bottom" else {
+            return game.matchupText
+        }
+        return participantMatchupText(for: game)
+    }
+
+    private func participantMatchupText(for game: Game) -> String {
+        "\(game.awayParticipant?.name ?? "Away") at \(game.homeParticipant?.name ?? "Home")"
     }
 
     private func accentColor(for leagueCode: String) -> Color {

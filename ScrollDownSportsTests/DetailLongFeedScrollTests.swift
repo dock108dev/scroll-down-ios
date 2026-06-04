@@ -196,43 +196,49 @@ final class DetailLongFeedScrollTests: XCTestCase {
     }
 
     func testDetailControlsUseSemanticScrollAnchors() throws {
-        let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
 
-        XCTAssertTrue(source.contains(".onChange(of: stickyTopRequest)"))
-        XCTAssertTrue(source.contains("scrollToTop(proxy)"))
-        XCTAssertTrue(source.contains("proxy.scrollTo(GameDetailScrollAnchor.top, anchor: .top)"))
-        XCTAssertTrue(source.contains(".onChange(of: stickyEndRequest)"))
-        XCTAssertTrue(source.contains("scrollToEndOrLatest(proxy)"))
-        XCTAssertTrue(source.contains("proxy.scrollTo(GameDetailScrollAnchor.scoreboard"))
-        XCTAssertTrue(source.contains("scrollToLatest(proxy, preservesReturnAnchor: false)"))
-        XCTAssertTrue(source.contains("proxy.scrollTo(GameDetailScrollAnchor.event(target.detailAnchorID), anchor: .bottom)"))
-        XCTAssertTrue(source.contains("proxy.scrollTo(GameDetailScrollAnchor.latest, anchor: .bottom)"))
+        XCTAssertTrue(detailSource.contains(".onChange(of: stickyTopRequest)"))
+        XCTAssertTrue(detailSource.contains("scrollToTop(proxy)"))
+        XCTAssertTrue(scrollSource.contains("proxy.scrollTo(GameDetailScrollAnchor.top, anchor: .top)"))
+        XCTAssertTrue(detailSource.contains(".onChange(of: stickyEndRequest)"))
+        XCTAssertTrue(detailSource.contains("scrollToEndOrLatest(proxy)"))
+        XCTAssertTrue(scrollSource.contains("proxy.scrollTo(GameDetailScrollAnchor.scoreboard"))
+        XCTAssertTrue(scrollSource.contains("scrollToLatest(proxy, preservesReturnAnchor: false)"))
+        XCTAssertTrue(scrollSource.contains("proxy.scrollTo(GameDetailScrollAnchor.event(target.detailAnchorID), anchor: .bottom)"))
+        XCTAssertTrue(scrollSource.contains("proxy.scrollTo(GameDetailScrollAnchor.latest, anchor: .bottom)"))
     }
 
     func testProgrammaticRestoreDoesNotSaveTransientScrollFramesBeforeTargetIsVisible() throws {
-        let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
 
-        XCTAssertTrue(source.contains("@State private var programmaticScrollTargetAnchorID: String?"))
-        XCTAssertTrue(source.contains("reachedProgrammaticTarget"))
-        XCTAssertTrue(source.contains("programmaticScrollTargetAnchorID != nil"))
-        XCTAssertTrue(source.contains("return"))
-        XCTAssertTrue(source.contains("!programmaticScrollInFlight || reachedProgrammaticTarget != nil"))
-        XCTAssertTrue(source.contains("performProgrammaticScroll(targetAnchorID: resumeState.target.detailAnchorID"))
-        XCTAssertTrue(source.contains("performProgrammaticScroll(targetAnchorID: anchorID"))
+        XCTAssertTrue(detailSource.contains("@State var programmaticScrollTargetAnchorID: String?"))
+        XCTAssertTrue(scrollSource.contains("reachedProgrammaticTarget"))
+        XCTAssertTrue(scrollSource.contains("programmaticScrollTargetAnchorID != nil"))
+        XCTAssertTrue(scrollSource.contains("return"))
+        XCTAssertTrue(scrollSource.contains("!programmaticScrollInFlight || reachedProgrammaticTarget != nil"))
+        XCTAssertTrue(scrollSource.contains("performProgrammaticScroll(targetAnchorID: resumeState.target.detailAnchorID"))
+        XCTAssertTrue(scrollSource.contains("performProgrammaticScroll(targetAnchorID: anchorID"))
+        XCTAssertTrue(scrollSource.contains("if AppEnvironment.isRunningUITests"))
+        XCTAssertTrue(scrollSource.contains("scroll()\n            programmaticScrollInFlight = false"))
+        XCTAssertTrue(scrollSource.contains("uiTestScoreboardRevealed = false"))
     }
 
-    func testExpansionAndScoreRevealMutationsPreserveReaderAnchorWithoutInitialJump() throws {
-        let source = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+    func testExpansionMutationsPreserveReaderAnchorWithoutInitialJump() throws {
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let readerRestoreSource = try repoFile("ScrollDownSports/Views/GameDetailView+ReaderRestore.swift")
 
-        XCTAssertTrue(source.contains("onRawFeedExpansionChange: { key, isExpanded in"))
-        XCTAssertTrue(source.contains("viewModel.setRawFeedExpanded(key: key, isExpanded: isExpanded)"))
-        XCTAssertTrue(source.contains("isExpanded: sectionExpansionBinding(playerStatsSectionID, proxy: proxy)"))
-        XCTAssertTrue(source.contains("isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)"))
-        XCTAssertTrue(source.contains("scoreRevealed: scoreRevealBinding(proxy: proxy)"))
-        XCTAssertTrue(source.contains("private func preserveReaderAnchor(proxy: ScrollViewProxy, mutate: () -> Void)"))
-        XCTAssertTrue(source.contains("private func restoreAfterContentChange(_ proxy: ScrollViewProxy)"))
-        XCTAssertTrue(source.contains("GameDetailScrollLogic.restoredContentChangeAnchorID"))
-        XCTAssertFalse(source.contains(".onAppear {\n                    preserveReaderAnchor"))
+        XCTAssertTrue(detailSource.contains("onRawFeedExpansionChange: { key, isExpanded in"))
+        XCTAssertTrue(detailSource.contains("viewModel.setRawFeedExpanded(key: key, isExpanded: isExpanded)"))
+        XCTAssertTrue(detailSource.contains("isExpanded: sectionExpansionBinding(playerStatsSectionID, proxy: proxy)"))
+        XCTAssertTrue(detailSource.contains("isExpanded: sectionExpansionBinding(teamStatsSectionID, proxy: proxy)"))
+        XCTAssertFalse(detailSource.contains("scoreRevealBinding(proxy: proxy)"))
+        XCTAssertTrue(readerRestoreSource.contains("func preserveReaderAnchor(proxy: ScrollViewProxy, mutate: () -> Void)"))
+        XCTAssertTrue(readerRestoreSource.contains("func restoreAfterContentChange(_ proxy: ScrollViewProxy)"))
+        XCTAssertTrue(readerRestoreSource.contains("GameDetailScrollLogic.restoredContentChangeAnchorID"))
+        XCTAssertFalse(detailSource.contains(".onAppear {\n                    preserveReaderAnchor"))
     }
 
     private func makeGame(config: LongFeedConfig) -> Game {

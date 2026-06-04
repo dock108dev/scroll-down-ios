@@ -3,20 +3,17 @@ struct SportRendererSituationContext {
     let selectedMode: DetailStreamMode
     let visibleEvents: [GameEvent]
     let eventIndex: Int
-    let scoreSpoilerPolicy: ScoreSpoilerPolicy
 
     init(
         game: Game,
         selectedMode: DetailStreamMode,
         visibleEvents: [GameEvent],
-        eventIndex: Int,
-        scoreSpoilerPolicy: ScoreSpoilerPolicy = .revealed
+        eventIndex: Int
     ) {
         self.game = game
         self.selectedMode = selectedMode
         self.visibleEvents = visibleEvents
         self.eventIndex = eventIndex
-        self.scoreSpoilerPolicy = scoreSpoilerPolicy
     }
 }
 
@@ -35,7 +32,8 @@ struct PlayCardResultItemPresentation: Identifiable, Hashable {
 }
 
 extension GameEventPresentation {
-    init(card: NormalizedPlayCard, game: Game, scoreSpoilerPolicy: ScoreSpoilerPolicy) {
+    init(card: NormalizedPlayCard, game: Game) {
+        _ = game
         self.init(
             clockText: card.clock?.text ?? card.contextItems.first { $0.kind == .clock }?.text ?? "",
             leadIn: card.leadIn?.text,
@@ -57,7 +55,7 @@ extension GameEventPresentation {
             teamAbbreviation: card.team?.abbreviation ?? card.contextItems.first { $0.kind == .teamBadge }?.teamAbbreviation,
             teamLabel: card.team?.label,
             scoringLabel: card.score?.isScoringPlay == true ? card.score?.label?.nilIfBlank : nil,
-            scoreLabel: Self.visibleScoreValue(card.score, game: game, scoreSpoilerPolicy: scoreSpoilerPolicy),
+            scoreLabel: card.score?.value?.nilIfBlank,
             rawFeedText: card.rawFeed?.text,
             rawFeedSource: card.rawFeed?.source,
             rawFeedDisclosureTitle: card.rawFeed?.disclosureTitle,
@@ -68,22 +66,6 @@ extension GameEventPresentation {
             situationAccessibilityText: card.accessibility.situationSummary,
             isNormalizedCard: true
         )
-    }
-
-    private static func visibleScoreValue(
-        _ score: NormalizedPlayCardScore?,
-        game: Game,
-        scoreSpoilerPolicy: ScoreSpoilerPolicy
-    ) -> String? {
-        guard let score else { return nil }
-        switch score.spoilerPolicy {
-        case .alwaysShow:
-            return score.value?.nilIfBlank
-        case .hideUntilReveal:
-            return scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
-        case .finalOnly:
-            return game.status.isFinal && scoreSpoilerPolicy == .revealed ? score.value?.nilIfBlank : nil
-        }
     }
 }
 
@@ -204,13 +186,6 @@ extension SportRenderer {
             presentation.situation = eventSituationPresentation(for: event, context: context)
             presentation.situationAccessibilityText = presentation.situation?.accessibilitySummary
         }
-        if let context {
-            presentation = EventScoreSpoilerFilter.filtered(
-                presentation: presentation,
-                game: context.game,
-                policy: context.scoreSpoilerPolicy
-            )
-        }
         return presentation
     }
 
@@ -272,13 +247,6 @@ extension GenericSportRendererBacked {
         if presentation.situation == nil, let context {
             presentation.situation = eventSituationPresentation(for: event, context: context)
             presentation.situationAccessibilityText = presentation.situation?.accessibilitySummary
-        }
-        if let context {
-            presentation = EventScoreSpoilerFilter.filtered(
-                presentation: presentation,
-                game: context.game,
-                policy: context.scoreSpoilerPolicy
-            )
         }
         return presentation
     }

@@ -209,9 +209,9 @@ final class ProductFlowIntegrationTests: XCTestCase {
             gameId: 3021,
             apiClient: TestFixtures.makeAPIClient(
                 responses: [
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 3021, playIDs: ["event-1", "event-2", "event-3"])),
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 3021, cardIDs: ["event-1", "event-2", "event-3"])),
                     .httpError(statusCode: 503),
-                    .ok(TestFixtures.sdaGameDetailJSON(gameId: 3021, playIDs: ["event-1", "event-2", "event-3", "event-4"]))
+                    .ok(TestFixtures.sdaCardFeedJSON(gameId: 3021, cardIDs: ["event-1", "event-2", "event-3", "event-4"]))
                 ],
                 protocolClass: ProductFlowDetailURLProtocol.self
             ),

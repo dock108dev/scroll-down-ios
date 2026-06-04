@@ -23,7 +23,6 @@ final class GameDetailViewModel: ObservableObject {
     @Published private(set) var updateToken = UUID()
     @Published private(set) var feedGenerationStatus: GameFeedGenerationStatus = .unknown
     @Published private(set) var feedFallbackState: GameFeedFallbackState = .none
-    @Published private(set) var isRevealAvailable = false
 
     let gameId: Int
     let openingNewEventCount: Int
@@ -207,7 +206,6 @@ final class GameDetailViewModel: ObservableObject {
     private func applyFeedMetadata(from detail: GameDetail) {
         feedGenerationStatus = detail.feedMetadata.generationStatus
         feedFallbackState = detail.feedMetadata.fallbackState
-        isRevealAvailable = detail.feedMetadata.revealAvailable
     }
 
     private var autoRefreshInterval: Duration {

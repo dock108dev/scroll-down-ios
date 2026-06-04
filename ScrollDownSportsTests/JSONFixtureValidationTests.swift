@@ -72,8 +72,8 @@ final class JSONFixtureValidationTests: XCTestCase {
 
             do {
                 _ = try await client.fetchGame(id: 900)
-                XCTFail("Expected incomplete detail error for \(name)")
-            } catch SDAApiError.incompleteDetail {
+                XCTFail("Expected incomplete normalized-feed error for \(name)")
+            } catch SDAApiError.incompleteNormalizedFeed {
             } catch {
                 XCTFail("Unexpected error for \(name): \(error)")
             }

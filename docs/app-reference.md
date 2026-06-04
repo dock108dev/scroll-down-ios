@@ -62,11 +62,17 @@ Progress for unpinned games is pruned after 30 days. Pinned game records are kep
 
 `SportRendererRegistry` routes MLB to `BaseballRenderer`, NHL to `HockeyRenderer`, NFL to `FootballRenderer`, NBA to `BasketballRenderer`, soccer leagues to `SoccerRenderer`, golf to `GolfRenderer`, tennis to `TennisRenderer`, and other sports to `GenericSportRenderer`.
 
-Detail event mapping keeps score-before, score-after, score-delta, optional `situationBefore` and `situationAfter` snapshots, and merged sport metadata on each `GameEvent`. `PlayByPlaySection` passes the selected stream mode, visible event list, event index, game, and score-spoiler policy into the renderer so situation cards are only built for events visible in the current stream.
+Detail event mapping keeps score-before, score-after, score-delta, optional `situationBefore` and `situationAfter` snapshots, and merged sport metadata on each `GameEvent`. `PlayByPlaySection` passes the selected stream mode, visible event list, event index, and game into the renderer so situation cards are only built for events visible in the current stream.
 
 Situation cards use `SituationCardPolicy` and `SituationConfidenceGate` before rendering. Baseball can render a typed diamond when explicit pre-event base state is present, while ambiguous or generic context can fall back to a pressure board. Football, basketball, hockey, soccer, golf, tennis, and unknown sports route their supported situation metadata through sport-specific renderers or the generic pressure-board fallback without fabricating richer diagrams when the required state is missing.
 
-Home card state hides score rows behind a `score at bottom` cue when a game has a score, the local record has not reached the scoreboard, and the game is final or catch-up capable. Once the scoreboard enters the detail viewport, `GameDetailView` records `reachedScoreboard`.
+There is no separate spoiler gate for player stats, team stats, or final score
+on the detail screen. Scrolling to those sections is the gate. Once the
+scoreboard enters the detail viewport, `GameDetailView` records
+`reachedScoreboard`, which allows home cards to show score rows for that game.
+When new live plays arrive, the feed can grow above the payoff sections and move
+the stats and scoreboard farther down the page again; reaching them again is a
+normal scroll interaction, not a separate reveal flow.
 
 ## Build Metadata
 

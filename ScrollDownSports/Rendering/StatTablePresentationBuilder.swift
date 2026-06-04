@@ -5,7 +5,8 @@ extension StatPresentationBuilder {
         from scoredPlayers: [ScoredPlayerStat],
         statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns,
         tableID: String = "generic-full-stats",
-        title: String = "Full Stats"
+        title: String = "Full Stats",
+        teamAbbreviations: [String: String] = [:]
     ) -> StatTablePresentation {
         let sortedPlayers = scoredPlayers.sorted(by: sortScoredPlayers).prefix(80)
         let statColumns = Array(availableColumns.filter { column in
@@ -16,7 +17,10 @@ extension StatPresentationBuilder {
             tableColumn("team", "Team", width: 42, alignment: .leading)
         ] + statColumns
         let rows = sortedPlayers.enumerated().map { index, scored in
-            var values = ["player": scored.player.playerName, "team": shortTeamCode(scored.player.team)]
+            var values = [
+                "player": scored.player.playerName,
+                "team": teamCode(for: scored.player.team, explicit: scored.player.teamAbbreviation, teamAbbreviations: teamAbbreviations)
+            ]
             statColumns.forEach { column in
                 values[column.id] = genericValue(column.id, for: scored.player) ?? "-"
             }
@@ -29,14 +33,17 @@ extension StatPresentationBuilder {
         from scoredPlayers: [ScoredPlayerStat],
         statColumns availableColumns: [StatTableColumnPresentation] = genericStatColumns,
         tableIDPrefix: String = "generic-full-stats",
-        titleSuffix: String = "Stats"
+        titleSuffix: String = "Stats",
+        teamAbbreviations: [String: String] = [:]
     ) -> [StatTablePresentation] {
         orderedTeamGroups(scoredPlayers, team: { $0.player.team }).map { team, players in
-            genericPlayerTable(
+            let explicitTeamAbbreviation = players.compactMap { $0.player.teamAbbreviation?.nilIfBlank }.first
+            return genericPlayerTable(
                 from: players,
                 statColumns: availableColumns,
                 tableID: "\(tableIDPrefix)-\(team.stableStatID)",
-                title: "\(shortTeamCode(team)) \(titleSuffix)"
+                title: "\(teamCode(for: team, explicit: explicitTeamAbbreviation, teamAbbreviations: teamAbbreviations)) \(titleSuffix)",
+                teamAbbreviations: teamAbbreviations
             )
         }
     }
@@ -56,7 +63,7 @@ extension StatPresentationBuilder {
                 id: "\(player.id)-\(index)",
                 values: [
                     "player": player.playerName,
-                    "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team),
+                    "team": teamCode(for: player.team, explicit: player.teamAbbreviation, teamAbbreviations: teamAbbreviations),
                     "pos": player.position ?? "-",
                     "ab": statString(player.atBats), "h": statString(player.hits), "r": statString(player.runs),
                     "rbi": statString(player.rbi), "hr": statString(player.homeRuns),
@@ -70,9 +77,10 @@ extension StatPresentationBuilder {
     static func baseballBatterTablesByTeam(from batters: [ScoredBatter], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
         orderedTeamGroups(batters, team: { $0.player.team }).map { team, teamBatters in
             let table = baseballBatterTable(from: teamBatters, teamAbbreviations: teamAbbreviations)
+            let explicitTeamAbbreviation = teamBatters.compactMap { $0.player.teamAbbreviation?.nilIfBlank }.first
             return StatTablePresentation(
                 id: "\(table.id)-\(team.stableStatID)",
-                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Batters",
+                title: "\(teamCode(for: team, explicit: explicitTeamAbbreviation, teamAbbreviations: teamAbbreviations)) Batters",
                 columns: table.columns,
                 rows: table.rows
             )
@@ -92,7 +100,9 @@ extension StatPresentationBuilder {
             return StatTableRowPresentation(
                 id: "\(player.id)-\(index)",
                 values: [
-                    "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team), "ip": player.inningsPitched ?? "-",
+                    "player": player.playerName,
+                    "team": teamCode(for: player.team, explicit: player.teamAbbreviation, teamAbbreviations: teamAbbreviations),
+                    "ip": player.inningsPitched ?? "-",
                     "h": statString(player.hits), "r": statString(player.runs), "er": statString(player.earnedRuns),
                     "bb": statString(player.baseOnBalls), "k": statString(player.strikeOuts),
                     "hr": statString(player.homeRuns)
@@ -105,9 +115,10 @@ extension StatPresentationBuilder {
     static func baseballPitcherTablesByTeam(from pitchers: [ScoredPitcher], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
         orderedTeamGroups(pitchers, team: { $0.player.team }).map { team, teamPitchers in
             let table = baseballPitcherTable(from: teamPitchers, teamAbbreviations: teamAbbreviations)
+            let explicitTeamAbbreviation = teamPitchers.compactMap { $0.player.teamAbbreviation?.nilIfBlank }.first
             return StatTablePresentation(
                 id: "\(table.id)-\(team.stableStatID)",
-                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Pitchers",
+                title: "\(teamCode(for: team, explicit: explicitTeamAbbreviation, teamAbbreviations: teamAbbreviations)) Pitchers",
                 columns: table.columns,
                 rows: table.rows
             )
@@ -126,7 +137,9 @@ extension StatPresentationBuilder {
             return StatTableRowPresentation(
                 id: "\(player.id)-skater-\(index)",
                 values: [
-                    "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team), "g": statString(player.goals),
+                    "player": player.playerName,
+                    "team": teamCode(for: player.team, explicit: player.teamAbbreviation, teamAbbreviations: teamAbbreviations),
+                    "g": statString(player.goals),
                     "a": statString(player.assists), "pts": statString(player.points),
                     "sog": statString(player.shotsOnGoal)
                 ]
@@ -138,9 +151,10 @@ extension StatPresentationBuilder {
     static func hockeySkaterTablesByTeam(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
         orderedTeamGroups(players, team: { $0.player.team }).map { team, teamPlayers in
             let table = hockeySkaterTable(from: teamPlayers, teamAbbreviations: teamAbbreviations)
+            let explicitTeamAbbreviation = teamPlayers.compactMap { $0.player.teamAbbreviation?.nilIfBlank }.first
             return StatTablePresentation(
                 id: "\(table.id)-\(team.stableStatID)",
-                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Skaters",
+                title: "\(teamCode(for: team, explicit: explicitTeamAbbreviation, teamAbbreviations: teamAbbreviations)) Skaters",
                 columns: table.columns,
                 rows: table.rows
             )
@@ -160,7 +174,8 @@ extension StatPresentationBuilder {
         let rows = players.sorted(by: sortScoredNHLPlayers).enumerated().map { index, scored in
             let player = scored.player
             var values = [
-                "player": player.playerName, "team": teamAbbreviations[player.team] ?? shortTeamCode(player.team),
+                "player": player.playerName,
+                "team": teamCode(for: player.team, explicit: player.teamAbbreviation, teamAbbreviations: teamAbbreviations),
                 "sv": statString(player.saves), "ga": statString(player.goalsAgainst)
             ]
             if hasSavePercentage {
@@ -174,9 +189,10 @@ extension StatPresentationBuilder {
     static func hockeyGoalieTablesByTeam(from players: [ScoredNHLPlayer], teamAbbreviations: [String: String]) -> [StatTablePresentation] {
         orderedTeamGroups(players, team: { $0.player.team }).map { team, teamPlayers in
             let table = hockeyGoalieTable(from: teamPlayers, teamAbbreviations: teamAbbreviations)
+            let explicitTeamAbbreviation = teamPlayers.compactMap { $0.player.teamAbbreviation?.nilIfBlank }.first
             return StatTablePresentation(
                 id: "\(table.id)-\(team.stableStatID)",
-                title: "\(teamAbbreviations[team] ?? shortTeamCode(team)) Goalies",
+                title: "\(teamCode(for: team, explicit: explicitTeamAbbreviation, teamAbbreviations: teamAbbreviations)) Goalies",
                 columns: table.columns,
                 rows: table.rows
             )
@@ -185,6 +201,14 @@ extension StatPresentationBuilder {
 
     static func shortTeamCode(_ name: String) -> String {
         String(name.split(separator: " ").last?.prefix(3) ?? "TM").uppercased()
+    }
+
+    static func teamCode(
+        for team: String,
+        explicit: String? = nil,
+        teamAbbreviations: [String: String] = [:]
+    ) -> String {
+        explicit?.nilIfBlank ?? teamAbbreviations[team] ?? shortTeamCode(team)
     }
 
     static func orderedTeamGroups<T>(_ values: [T], team: (T) -> String) -> [(String, [T])] {

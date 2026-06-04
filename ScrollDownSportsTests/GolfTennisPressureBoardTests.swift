@@ -168,8 +168,6 @@ final class GolfTennisPressureBoardTests: XCTestCase {
         let presentation = SportRendererRegistry.renderer(for: game).scoreboardPresentation(for: game)
 
         XCTAssertEqual(presentation.title, "Match Score")
-        XCTAssertEqual(presentation.revealTitle, "Match score hidden")
-        XCTAssertEqual(presentation.revealButtonTitle, "Reveal match score")
         XCTAssertEqual(presentation.totalHeader, "Sets")
     }
 

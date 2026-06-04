@@ -73,7 +73,7 @@ struct GameSummaryCard: View {
     private var trailingReservation: CGFloat {
         switch state.surface {
         case .home:
-            return HomeGameCardLayout.pinTrailingReservation
+            return HomeGameCardLayout.actionTrailingReservation
         case .detail:
             return 0
         }
@@ -106,7 +106,7 @@ private struct GameSummaryMetadataRow: View {
                     .fill(SportsTheme.Tone.live.accent)
                     .frame(width: 6, height: 6)
             }
-            if state.surface == .detail, state.showsPinnedBadge {
+            if state.showsPinnedBadge {
                 Image(systemName: "pin.fill")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(SportsTheme.Tone.pinned.foreground)

@@ -115,7 +115,6 @@ struct SDANormalizedPlayCardScoreDTO: Decodable, Hashable, Sendable {
     let label: String?
     let value: String?
     let isScoringPlay: Bool?
-    let spoilerPolicy: String?
 }
 
 struct SDANormalizedPlayCardTeamDTO: Decodable, Hashable, Sendable {

@@ -172,16 +172,16 @@ final class SituationContractDecodingTests: XCTestCase {
         XCTAssertEqual(event.situationAfter?.sportState?.baseball?.outs, 1)
     }
 
-    func testMissingSituationContractDoesNotFailValidDetailFetch() async throws {
+    func testNormalizedFeedDetailFetchDoesNotRequireLegacySituationContract() async throws {
         let client = TestFixtures.makeAPIClient(
-            responses: [.ok(try detailPayload(playIndex: 24))],
+            responses: [.ok(TestFixtures.sdaCardFeedJSON(gameId: 900, cardIDs: ["event-24"]))],
             protocolClass: MockValidV2MissingSituationContractURLProtocol.self
         )
 
         let detail = try await client.fetchGame(id: 900)
 
         XCTAssertEqual(detail.events.count, 1)
-        XCTAssertNil(detail.events.first?.situationBefore)
+        XCTAssertEqual(detail.events.first?.normalizedSourceEventID, "event-24")
     }
 
     private func mappedEvent(
