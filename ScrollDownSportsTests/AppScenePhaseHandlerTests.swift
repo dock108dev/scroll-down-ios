@@ -122,6 +122,22 @@ private final class RecordingGameStateStore: GameStateStore {
         base.recordReadEvent(gameId: gameId, eventID: eventID, eventIndex: eventIndex, knownEventCount: knownEventCount)
     }
 
+    func recordScrollPosition(
+        gameId: Int,
+        eventID: String?,
+        eventIndex: Int?,
+        knownEventCount: Int?,
+        fallback: GameScrollFallbackRecord?
+    ) {
+        base.recordScrollPosition(
+            gameId: gameId,
+            eventID: eventID,
+            eventIndex: eventIndex,
+            knownEventCount: knownEventCount,
+            fallback: fallback
+        )
+    }
+
     func clearReadPosition(gameId: Int) {
         base.clearReadPosition(gameId: gameId)
     }

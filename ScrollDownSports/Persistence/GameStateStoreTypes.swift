@@ -203,21 +203,6 @@ extension GameStateStore {
         snapshot.progressByGameId[gameId]
     }
 
-    func recordScrollPosition(
-        gameId: Int,
-        eventID: String?,
-        eventIndex: Int?,
-        knownEventCount: Int?,
-        fallback: GameScrollFallbackRecord?
-    ) {
-        recordReadEvent(
-            gameId: gameId,
-            eventID: eventID,
-            eventIndex: eventIndex,
-            knownEventCount: knownEventCount
-        )
-        setScrollFallback(gameId: gameId, fallback: fallback)
-    }
 }
 
 extension Sport {

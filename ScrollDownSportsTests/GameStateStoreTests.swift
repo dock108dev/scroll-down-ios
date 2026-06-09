@@ -286,6 +286,46 @@ final class GameStateStoreTests: XCTestCase {
         XCTAssertEqual(record.newEventCount, 1)
     }
 
+    func testUserDefaultsScrollPositionPersistsCursorFallbackAndPinnedMirrorTogether() throws {
+        let defaults = try makeDefaults()
+        let now = TestFixtures.fixedDate("2026-05-22T12:00:00Z")
+        let game = TestFixtures.makeGame(
+            id: 104,
+            leagueCode: "nba",
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T23:30:00Z")
+        )
+        let store = UserDefaultsGameStateStore(
+            defaults: defaults,
+            key: "game-state-scroll-position-test",
+            now: { now }
+        )
+
+        store.pin(game)
+        store.recordScrollPosition(
+            gameId: game.id,
+            eventID: "made-shot",
+            eventIndex: 2,
+            knownEventCount: 4,
+            fallback: GameScrollFallbackRecord(eventSequence: 28, approximateOffset: 96)
+        )
+
+        let reloaded = UserDefaultsGameStateStore(
+            defaults: defaults,
+            key: "game-state-scroll-position-test",
+            now: { now }
+        )
+        let progress = try XCTUnwrap(reloaded.progress(for: game.id))
+        let record = try XCTUnwrap(reloaded.snapshot.pinnedGamesById[game.id])
+        XCTAssertEqual(progress.lastReadEventID, "made-shot")
+        XCTAssertEqual(progress.lastReadEventIndex, 2)
+        XCTAssertEqual(progress.lastScrollFallback?.eventSequence, 28)
+        XCTAssertEqual(progress.lastScrollFallback?.approximateOffset, 96)
+        XCTAssertEqual(progress.newEventCount, 1)
+        XCTAssertEqual(record.lastReadEventID, "made-shot")
+        XCTAssertEqual(record.lastReadEventIndex, 2)
+        XCTAssertEqual(record.newEventCount, 1)
+    }
+
     func testStartOverClearsReadPositionWithoutRemovingPinOrScoreboardState() throws {
         let game = TestFixtures.makeGame(
             id: 102,
