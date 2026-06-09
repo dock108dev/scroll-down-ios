@@ -109,7 +109,7 @@ struct ImportantNarrativePlayCard: View {
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if let team = presentation.teamAbbreviation?.nilIfBlank {
+                if let team = visibleTeamBadgeText {
                     teamBadge(team)
                 }
             }
@@ -117,7 +117,7 @@ struct ImportantNarrativePlayCard: View {
                 Text(metaText)
                     .font(SportsTheme.Typography.metadata.weight(.bold))
                     .foregroundStyle(SportsTheme.Colors.secondaryInk)
-                if let team = presentation.teamAbbreviation?.nilIfBlank {
+                if let team = visibleTeamBadgeText {
                     teamBadge(team)
                 }
             }
@@ -128,6 +128,14 @@ struct ImportantNarrativePlayCard: View {
         event.normalizedCard?.leadIn?.text.nilIfBlank
             ?? presentation.leadIn?.nilIfBlank
             ?? event.clockText
+    }
+
+    private var visibleTeamBadgeText: String? {
+        guard let team = presentation.teamAbbreviation?.nilIfBlank,
+              PlayRowContentFilter.shouldShowContextTeamBadge(team, leadIn: metaText) else {
+            return nil
+        }
+        return team
     }
 
     private func teamBadge(_ team: String) -> some View {
@@ -238,7 +246,7 @@ private extension GameEventPresentation {
     var pbpCardPresentation: GameEventPresentation {
         guard isNormalizedCard else { return self }
         var copy = self
-        copy.contextItems = contextItems.filter { $0.kind == .teamBadge || $0.kind == .eventLabel }
+        copy.contextItems = PlayRowContentFilter.compactNormalizedContextItems(for: self)
         copy.resultItems = []
         copy.situation = nil
         copy.situationAccessibilityText = nil

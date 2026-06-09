@@ -21,7 +21,7 @@ final class ProductFlowIntegrationTests: XCTestCase {
         XCTAssertEqual(renderer.eventPresentation(for: scoringPlay).scoreLabel, "3-2")
 
         let scoreboard = renderer.scoreboardPresentation(for: game)
-        XCTAssertEqual(scoreboard.stateText, "Yankees 7, Mariners 6")
+        XCTAssertEqual(scoreboard.stateText, "Final")
         XCTAssertEqual(scoreboard.rows.map(\.totalText), ["7", "6"])
         XCTAssertFalse(store.progress(for: game.id)?.reachedScoreboard == true)
 

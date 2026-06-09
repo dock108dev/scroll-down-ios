@@ -298,37 +298,10 @@ struct BoxScoreSection: View {
                     accent: presentation.accentColor
                 )
                 ScoreboardCardHeader(presentation: presentation)
-                if let finalScoreText {
-                    Text(finalScoreText)
-                        .font(SportsTheme.Typography.metadata.weight(.semibold))
-                        .foregroundStyle(SportsTheme.Colors.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityIdentifier("detail.boxScore.finalScore")
-                }
                 ScoreboardContent(presentation: presentation)
-
-                if let gameStateText = presentation.stateText {
-                    Text(gameStateText)
-                        .font(SportsTheme.Typography.metadata)
-                        .foregroundStyle(presentation.stateColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
             }
             .sportsSurface(.scoreboardCard, accent: presentation.accentColor)
         }
-    }
-
-    private var finalScoreText: String? {
-        guard
-            game.status.isFinal,
-            let away = game.awayParticipant,
-            let home = game.homeParticipant,
-            let awayScore = game.scoreState.away,
-            let homeScore = game.scoreState.home
-        else {
-            return nil
-        }
-        return "\(away.name) \(awayScore), \(home.name) \(homeScore)"
     }
 }
 

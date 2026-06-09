@@ -97,7 +97,7 @@ struct GenericSportRenderer: SportRenderer {
             rows: scoreboardRows(for: game),
             segments: scoreboardSegments(for: game),
             totalHeader: totalHeader(for: game),
-            stateText: game.scoreboard?.scoreline ?? game.scoreboard?.statusLabel ?? scoreboardStateText(for: game),
+            stateText: game.scoreboard?.statusLabel ?? scoreboardStateText(for: game),
             stateColor: game.status.isLive ? theme.liveColor : SportsTheme.Colors.secondaryInk,
             accentColor: theme.scoreboardColor
         )

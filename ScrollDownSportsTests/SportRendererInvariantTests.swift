@@ -451,7 +451,7 @@ final class SportRendererInvariantTests: XCTestCase {
         XCTAssertEqual(scoreboard.title, "Box Score")
         XCTAssertEqual(scoreboard.rows.map(\.id), ["away", "home"])
         XCTAssertEqual(scoreboard.rows.map(\.abbreviation), ["BAL", "SEA"])
-        XCTAssertEqual(scoreboard.stateText, "Baltimore 7, Seattle 6")
+        XCTAssertEqual(scoreboard.stateText, "Final")
     }
 
     func testNormalizedCardSituationMapsContractFieldsIntoPresentation() {

@@ -100,7 +100,7 @@ final class ProductPresentationInvariantTests: XCTestCase {
         let scoreboardPresentation = renderer.scoreboardPresentation(for: game)
         XCTAssertEqual(scoreboardPresentation.title, "Line Score")
         XCTAssertEqual(scoreboardPresentation.layout, .segmentTable)
-        XCTAssertEqual(scoreboardPresentation.stateText, "Yankees 7, Mariners 6")
+        XCTAssertEqual(scoreboardPresentation.stateText, "Final")
         XCTAssertEqual(scoreboardPresentation.rows.map(\.totalText), ["7", "6"])
     }
 

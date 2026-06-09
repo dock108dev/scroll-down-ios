@@ -110,6 +110,35 @@ struct PlayRowContentFilter {
         return matchingSituationLabels.contains { duplicatesMeaning(team, comparedWith: $0) } == false
     }
 
+    static func shouldShowContextTeamBadge(
+        _ team: String,
+        leadIn: String?
+    ) -> Bool {
+        guard let team = team.nilIfBlank else {
+            return false
+        }
+        guard let leadIn = leadIn?.nilIfBlank else {
+            return true
+        }
+        return duplicatesMeaning(team, comparedWith: leadIn) == false
+    }
+
+    static func compactNormalizedContextItems(for presentation: GameEventPresentation) -> [PlayCardContextItemPresentation] {
+        presentation.contextItems.filter { item in
+            switch item.kind {
+            case .teamBadge:
+                return shouldShowContextTeamBadge(
+                    item.teamAbbreviation ?? item.text,
+                    leadIn: presentation.leadIn
+                )
+            case .eventLabel:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
     static func situationAccessibilityValue(for presentation: GameEventPresentation) -> String {
         guard let supplement = presentation.situationAccessibilityText?.nilIfBlank else {
             return ""

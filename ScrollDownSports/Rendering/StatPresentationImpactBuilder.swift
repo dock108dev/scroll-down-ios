@@ -113,7 +113,33 @@ extension StatPresentationBuilder {
         }
     }
 
+    static func genericBaseballHitterImpactPlayers(
+        from players: [ScoredPlayerStat],
+        columns: [StatTableColumnPresentation]
+    ) -> [StatHighlightPresentation] {
+        let candidates = players
+            .filter { $0.score > 0 }
+            .sorted(by: sortScoredPlayers)
+            .prefix(3)
+            .map { scored in
+                (
+                    StatHighlightPresentation(
+                        id: scored.player.id,
+                        rank: nil,
+                        title: scored.player.playerName,
+                        subtitle: scored.player.team,
+                        headline: genericHeadline(for: scored.player, columns: columns),
+                        stats: genericStatCells(for: scored.player, columns: columns).prefix(3).map { $0 },
+                        accentTone: .scoring
+                    ),
+                    scored.score
+                )
+            }
+        return ranked(candidates)
+    }
+
     static func baseballImpactHighlights(from batters: [ScoredBatter], pitchers: [ScoredPitcher]) -> [StatHighlightPresentation] {
+        _ = pitchers
         let batterCandidates = batters
             .filter { $0.score > 0 }
             .sorted(by: sortScoredBatters)
@@ -131,24 +157,7 @@ extension StatPresentationBuilder {
                     scored.score
                 )
             }
-        let pitcherCandidates = pitchers
-            .filter { $0.score > 0 }
-            .sorted(by: sortScoredPitchers)
-            .map { scored in
-                (
-                    StatHighlightPresentation(
-                        id: scored.player.id,
-                        rank: nil,
-                        title: scored.player.playerName,
-                        subtitle: "\(scored.player.team) Pitcher",
-                        headline: pitcherHeadline(for: scored.player),
-                        stats: pitcherCells(for: scored.player).prefix(3).map { $0 },
-                        accentTone: .defensivePitching
-                    ),
-                    scored.score
-                )
-            }
-        return ranked(mergeHighlights(batterCandidates, pitcherCandidates))
+        return ranked(batterCandidates)
     }
 
     static func hockeyImpactHighlights(from skaters: [ScoredNHLPlayer], goalies: [ScoredNHLPlayer]) -> [StatHighlightPresentation] {

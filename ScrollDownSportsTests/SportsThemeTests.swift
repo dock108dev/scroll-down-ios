@@ -58,6 +58,7 @@ final class SportsThemeTests: XCTestCase {
         XCTAssertEqual(sections.count, 3)
         XCTAssertEqual(sections[0].highlights.first?.title, "Example Batter")
         XCTAssertEqual(sections[0].highlights.first?.headline, "2-for-4, 1 HR, 3 RBI")
+        XCTAssertFalse(sections[0].highlights.map(\.title).contains("Example Pitcher"))
         XCTAssertEqual(sections.map(\.title), [nil, "Batters", "Pitchers"])
         XCTAssertEqual(sections[1].tables.map(\.title), ["SOX Batters"])
         XCTAssertEqual(sections[2].tables.map(\.title), ["SOX Pitchers"])
@@ -208,6 +209,7 @@ final class SportsThemeTests: XCTestCase {
         let baseballSections = SportRendererRegistry.renderer(for: baseballDetail.game).statsPresentation(for: baseballDetail).playerSections
 
         XCTAssertEqual(baseballSections.map(\.title), [nil, "Hitters", "Pitchers"])
+        XCTAssertEqual(baseballSections[0].highlights.map(\.title), ["M. Reed"])
         XCTAssertEqual(baseballSections[1].tables[0].columns.map(\.label), ["Player", "Team", "H", "RBI"])
         XCTAssertEqual(baseballSections[2].tables[0].columns.map(\.label), ["Player", "Team", "IP", "ER", "K"])
 

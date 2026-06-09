@@ -172,6 +172,71 @@ final class PlayRowContentFilterTests: XCTestCase {
         )
     }
 
+    func testNormalizedContextTeamBadgeSuppressesTeamAlreadyNamedInLeadIn() {
+        let presentation = GameEventPresentation(
+            clockText: "6th",
+            leadIn: "6th · HOU batting",
+            headline: "Cam Smith - Double",
+            detail: nil,
+            contextItems: [
+                PlayCardContextItemPresentation(
+                    id: "team",
+                    kind: .teamBadge,
+                    text: "HOU",
+                    tone: nil,
+                    teamAbbreviation: "HOU"
+                ),
+                PlayCardContextItemPresentation(
+                    id: "label",
+                    kind: .eventLabel,
+                    text: "Double",
+                    tone: nil,
+                    teamAbbreviation: "HOU"
+                )
+            ],
+            eventLabel: "Double",
+            teamAbbreviation: "HOU",
+            teamLabel: "Houston Astros",
+            scoringLabel: nil,
+            scoreLabel: nil,
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            isNormalizedCard: true
+        )
+
+        XCTAssertEqual(PlayRowContentFilter.compactNormalizedContextItems(for: presentation).map(\.kind), [.eventLabel])
+    }
+
+    func testNormalizedContextTeamBadgeStaysWhenLeadInDoesNotNameTeam() {
+        let presentation = GameEventPresentation(
+            clockText: "Q4",
+            leadIn: "Fourth quarter",
+            headline: "Bay Harbor scores",
+            detail: nil,
+            contextItems: [
+                PlayCardContextItemPresentation(
+                    id: "team",
+                    kind: .teamBadge,
+                    text: "BAY",
+                    tone: nil,
+                    teamAbbreviation: "BAY"
+                )
+            ],
+            eventLabel: nil,
+            teamAbbreviation: "BAY",
+            teamLabel: "Bay Harbor",
+            scoringLabel: nil,
+            scoreLabel: nil,
+            rawFeedText: nil,
+            rawFeedSource: nil,
+            accessibilityLabel: nil,
+            isNormalizedCard: true
+        )
+
+        XCTAssertEqual(PlayRowContentFilter.compactNormalizedContextItems(for: presentation).map(\.kind), [.teamBadge])
+    }
+
     func testResultContextWaitsUntilAfterPlayText() {
         XCTAssertNil(PlayRowContentFilter.prePlaySituationText("Down 3 -> Tied"))
         XCTAssertEqual(PlayRowContentFilter.resultContextText("Down 3 -> Tied"), "Down 3 -> Tied")

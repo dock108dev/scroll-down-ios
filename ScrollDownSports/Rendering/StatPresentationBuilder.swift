@@ -114,10 +114,7 @@ enum StatPresentationBuilder {
         let scoredHitters = hitters.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: hitterColumns)) }
         let scoredPitchers = pitchers.map { ScoredPlayerStat(player: $0, score: genericImpactScore($0, columns: pitcherColumns)) }
         var sections: [StatSectionPresentation] = []
-        let impactHighlights = genericImpactPlayers(
-            from: scoredHitters + scoredPitchers,
-            columns: uniqueColumns(hitterColumns + pitcherColumns)
-        )
+        let impactHighlights = genericBaseballHitterImpactPlayers(from: scoredHitters, columns: hitterColumns)
         if !impactHighlights.isEmpty {
             sections.append(
                 StatSectionPresentation(
