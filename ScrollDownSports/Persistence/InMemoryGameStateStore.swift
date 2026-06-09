@@ -111,6 +111,26 @@ final class InMemoryGameStateStore: GameStateStore {
         updatePinnedProgressMirror(gameId: gameId)
     }
 
+    func recordScrollPosition(
+        gameId: Int,
+        eventID: String?,
+        eventIndex: Int?,
+        knownEventCount: Int?,
+        fallback: GameScrollFallbackRecord?
+    ) {
+        mutate { state in
+            state.recordReadEvent(
+                gameId: gameId,
+                eventID: eventID,
+                eventIndex: eventIndex,
+                knownEventCount: knownEventCount,
+                now: now
+            )
+            state.setScrollFallback(gameId: gameId, fallback: fallback, now: now)
+            state.mirrorProgressToPinnedGame(gameId: gameId)
+        }
+    }
+
     func clearReadPosition(gameId: Int) {
         mutate { state in
             state.clearReadPosition(gameId: gameId, now: now)

@@ -232,6 +232,22 @@ final class DetailLongFeedScrollTests: XCTestCase {
         XCTAssertTrue(scrollSource.contains("uiTestScoreboardRevealed = false"))
     }
 
+    func testVisibleScrollProgressIsCoalescedOffTheHotScrollPath() throws {
+        let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
+        let supportSource = try repoFile("ScrollDownSports/Views/GameDetailViewSupport.swift")
+        let scrollSource = try repoFile("ScrollDownSports/Views/GameDetailView+ScrollState.swift")
+
+        XCTAssertTrue(detailSource.contains("@StateObject var scrollRuntime = DetailScrollRuntime()"))
+        XCTAssertTrue(detailSource.contains("flushPendingReadPosition()"))
+        XCTAssertTrue(supportSource.contains("final class DetailScrollRuntime"))
+        XCTAssertTrue(supportSource.contains("var pendingReadPosition: DetailPendingReadPosition?"))
+        XCTAssertTrue(scrollSource.contains("scheduleReadPositionSave("))
+        XCTAssertTrue(scrollSource.contains("DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)"))
+        XCTAssertTrue(scrollSource.contains("viewModel.recordScrollPosition("))
+        XCTAssertFalse(scrollSource.contains("viewModel.recordReadEvent(\n            eventIndex: readFrame.readIndex"))
+        XCTAssertFalse(scrollSource.contains("viewModel.recordScrollFallback(\n            eventSequence: readFrame.sequence"))
+    }
+
     func testExpansionMutationsPreserveReaderAnchorWithoutInitialJump() throws {
         let detailSource = try repoFile("ScrollDownSports/Views/GameDetailView.swift")
         let readerRestoreSource = try repoFile("ScrollDownSports/Views/GameDetailView+ReaderRestore.swift")

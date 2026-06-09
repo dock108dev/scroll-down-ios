@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import ScrollDownSports
 
@@ -244,6 +245,42 @@ final class GameStateStoreTests: XCTestCase {
         store.recordReadEvent(gameId: game.id, eventID: "made-shot", eventIndex: 2, knownEventCount: 4)
 
         let record = try XCTUnwrap(store.snapshot.pinnedGamesById[game.id])
+        XCTAssertEqual(record.lastReadEventID, "made-shot")
+        XCTAssertEqual(record.lastReadEventIndex, 2)
+        XCTAssertEqual(record.newEventCount, 1)
+    }
+
+    func testScrollPositionRecordsReadCursorFallbackAndPinnedMirrorInOneEmission() throws {
+        let game = TestFixtures.makeGame(
+            id: 103,
+            leagueCode: "nba",
+            scheduledStart: TestFixtures.fixedDate("2026-05-22T23:30:00Z")
+        )
+        let store = InMemoryGameStateStore(now: { TestFixtures.fixedDate("2026-05-22T12:00:00Z") })
+        store.pin(game)
+
+        var emissions = 0
+        var cancellables = Set<AnyCancellable>()
+        store.snapshots
+            .dropFirst()
+            .sink { _ in emissions += 1 }
+            .store(in: &cancellables)
+
+        store.recordScrollPosition(
+            gameId: game.id,
+            eventID: "made-shot",
+            eventIndex: 2,
+            knownEventCount: 4,
+            fallback: GameScrollFallbackRecord(eventSequence: 28, approximateOffset: 96)
+        )
+
+        let progress = try XCTUnwrap(store.progress(for: game.id))
+        let record = try XCTUnwrap(store.snapshot.pinnedGamesById[game.id])
+        XCTAssertEqual(emissions, 1)
+        XCTAssertEqual(progress.lastReadEventID, "made-shot")
+        XCTAssertEqual(progress.lastReadEventIndex, 2)
+        XCTAssertEqual(progress.lastScrollFallback?.eventSequence, 28)
+        XCTAssertEqual(progress.lastScrollFallback?.approximateOffset, 96)
         XCTAssertEqual(record.lastReadEventID, "made-shot")
         XCTAssertEqual(record.lastReadEventIndex, 2)
         XCTAssertEqual(record.newEventCount, 1)

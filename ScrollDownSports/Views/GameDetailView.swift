@@ -9,9 +9,8 @@ struct GameDetailView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject var viewModel: GameDetailViewModel
+    @StateObject var scrollRuntime = DetailScrollRuntime()
     @State var streamOrientationAnchorID: String?
-    @State var lastVisibleEventAnchorID: String?
-    @State var lastVisibleEventSaveAt = Date.distantPast
     @State var visibilityTrackingSuppressed = true
     @State var liveEdgeMode: DetailLiveEdgeMode = .following
     @State var isNearLiveEdge = true
@@ -361,6 +360,7 @@ struct GameDetailView: View {
         .onDisappear {
             resizeStabilizationWorkItem?.cancel()
             contentChangeStabilizationWorkItem?.cancel()
+            flushPendingReadPosition()
             viewModel.stopAutoRefresh()
             viewModel.markViewed()
         }

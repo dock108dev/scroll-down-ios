@@ -28,6 +28,22 @@ struct DetailVisibleEventState: Equatable {
     }
 }
 
+struct DetailPendingReadPosition {
+    let anchorID: String
+    let eventIndex: Int
+    let eventID: String?
+    let knownEventCount: Int
+    let fallback: GameScrollFallbackRecord
+}
+
+@MainActor
+final class DetailScrollRuntime: ObservableObject {
+    var lastSavedReadAnchorID: String?
+    var lastSavedReadAt = Date.distantPast
+    var pendingReadPosition: DetailPendingReadPosition?
+    var readPositionSaveWorkItem: DispatchWorkItem?
+}
+
 struct DetailResizeRestoreSnapshot: Equatable {
     let visibleEvent: DetailVisibleEventState
     let offsetFraction: CGFloat

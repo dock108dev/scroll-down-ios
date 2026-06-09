@@ -393,21 +393,52 @@ extension GameDetailView {
             return
         }
 
+        scheduleReadPositionSave(
+            readFrame,
+            knownEventCount: DetailStreamMode.dedupedEvents(from: detail.events).count
+        )
+    }
+
+    func scheduleReadPositionSave(_ frame: DetailEventVisibilityFrame, knownEventCount: Int) {
         let now = Date()
-        guard readFrame.anchorID != lastVisibleEventAnchorID || now.timeIntervalSince(lastVisibleEventSaveAt) >= 0.35 else {
+        guard frame.anchorID != scrollRuntime.lastSavedReadAnchorID
+            || now.timeIntervalSince(scrollRuntime.lastSavedReadAt) >= 0.75
+        else {
             return
         }
 
-        lastVisibleEventAnchorID = readFrame.anchorID
-        lastVisibleEventSaveAt = now
-        viewModel.recordReadEvent(
-            eventIndex: readFrame.readIndex,
-            eventID: readFrame.eventID,
-            knownEventCount: DetailStreamMode.dedupedEvents(from: detail.events).count
+        scrollRuntime.pendingReadPosition = DetailPendingReadPosition(
+            anchorID: frame.anchorID,
+            eventIndex: frame.readIndex,
+            eventID: frame.eventID,
+            knownEventCount: knownEventCount,
+            fallback: GameScrollFallbackRecord(
+                eventSequence: frame.sequence,
+                approximateOffset: Double(frame.frame.minY)
+            )
         )
-        viewModel.recordScrollFallback(
-            eventSequence: readFrame.sequence,
-            approximateOffset: Double(readFrame.frame.minY)
+        scrollRuntime.readPositionSaveWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            flushPendingReadPosition()
+        }
+        scrollRuntime.readPositionSaveWorkItem = workItem
+        let delay: DispatchTimeInterval = AppEnvironment.isRunningUITests ? .milliseconds(1) : .milliseconds(650)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    func flushPendingReadPosition() {
+        guard let pending = scrollRuntime.pendingReadPosition else { return }
+        scrollRuntime.readPositionSaveWorkItem?.cancel()
+        scrollRuntime.readPositionSaveWorkItem = nil
+        scrollRuntime.pendingReadPosition = nil
+        scrollRuntime.lastSavedReadAnchorID = pending.anchorID
+        scrollRuntime.lastSavedReadAt = Date()
+        viewModel.recordScrollPosition(
+            eventIndex: pending.eventIndex,
+            eventID: pending.eventID,
+            eventSequence: pending.fallback.eventSequence,
+            approximateOffset: pending.fallback.approximateOffset,
+            knownEventCount: pending.knownEventCount
         )
     }
 

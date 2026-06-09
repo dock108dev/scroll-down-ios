@@ -164,6 +164,13 @@ protocol GameStateStore: AnyObject {
     func recordKnownEventCount(gameId: Int, count: Int)
     func recordEventRefresh(gameId: Int, events: [GameEvent], diff: GameEventListDiff)
     func recordReadEvent(gameId: Int, eventID: String?, eventIndex: Int?, knownEventCount: Int?)
+    func recordScrollPosition(
+        gameId: Int,
+        eventID: String?,
+        eventIndex: Int?,
+        knownEventCount: Int?,
+        fallback: GameScrollFallbackRecord?
+    )
     func clearReadPosition(gameId: Int)
     func setSelectedMode(gameId: Int, mode: GameMode)
     func setScrollFallback(gameId: Int, fallback: GameScrollFallbackRecord?)
@@ -194,6 +201,22 @@ extension GameStateStore {
 
     func progress(for gameId: Int) -> GameProgressRecord? {
         snapshot.progressByGameId[gameId]
+    }
+
+    func recordScrollPosition(
+        gameId: Int,
+        eventID: String?,
+        eventIndex: Int?,
+        knownEventCount: Int?,
+        fallback: GameScrollFallbackRecord?
+    ) {
+        recordReadEvent(
+            gameId: gameId,
+            eventID: eventID,
+            eventIndex: eventIndex,
+            knownEventCount: knownEventCount
+        )
+        setScrollFallback(gameId: gameId, fallback: fallback)
     }
 }
 

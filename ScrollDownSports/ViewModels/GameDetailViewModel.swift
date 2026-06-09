@@ -134,6 +134,25 @@ final class GameDetailViewModel: ObservableObject {
         )
     }
 
+    func recordScrollPosition(
+        eventIndex: Int,
+        eventID: String?,
+        eventSequence: Int?,
+        approximateOffset: Double?,
+        knownEventCount: Int?
+    ) {
+        gameStateStore.recordScrollPosition(
+            gameId: gameId,
+            eventID: eventID,
+            eventIndex: eventIndex,
+            knownEventCount: knownEventCount,
+            fallback: GameScrollFallbackRecord(
+                eventSequence: eventSequence,
+                approximateOffset: approximateOffset
+            )
+        )
+    }
+
     func markViewed() {
         gameStateStore.markViewed(gameId: gameId)
     }
