@@ -329,7 +329,7 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
             #"\b(UNKNOWN|undefined|null|nil)\b"#
         ]
 
-        let semanticContainers = [
+        let semanticContainerIdentifiers: Set<String> = [
             "home.stickyHeader",
             "home.section.timeline",
             "home.gameRow.9001",
@@ -340,8 +340,9 @@ final class ScrollDownSportsAccessibilityUITests: XCTestCase {
             "detail.boxScore.finalScore",
             "detail.stickyNav"
         ]
-        .map(element)
-        .filter(\.exists)
+        let semanticContainers = app.descendants(matching: .any)
+            .allElementsBoundByIndex
+            .filter { semanticContainerIdentifiers.contains($0.identifier) }
 
         let elements = app.buttons.allElementsBoundByIndex
             + app.links.allElementsBoundByIndex
