@@ -36,6 +36,7 @@ assert_contains "bash Scripts/local_gate.sh ipad-visual"
 assert_contains "bash Scripts/local_gate.sh ipad-accessibility"
 assert_contains "bash Scripts/local_gate.sh ipad-multitasking"
 assert_contains "bash Scripts/local_gate.sh performance-smoke"
+assert_contains "bash Scripts/package_ci_artifact.sh"
 assert_contains 'TEST_DESTINATION: ${{ matrix.device.destination }}'
 assert_contains "nightly-ipad:"
 assert_contains "Nightly iPad Coverage"
@@ -52,6 +53,9 @@ assert_contains "ScrollDownSports-visual-"
 assert_contains "ScrollDownSports-ui-accessibility-"
 assert_contains "ScrollDownSports-ipad-"
 assert_contains "ScrollDownSports-performance"
+assert_contains '.build/artifacts/uploads/ScrollDownSports-ipad-${{ matrix.device.name }}.tar.gz'
+assert_contains "include-hidden-files: true"
+assert_contains "compression-level: 0"
 
 assert_not_contains "npm "
 assert_not_contains "pnpm "

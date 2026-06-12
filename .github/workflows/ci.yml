@@ -80,13 +80,21 @@ jobs:
           xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen.png || true
           xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system.logarchive || true
 
+      - name: Package XCTest result bundles
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-pr-xcresults .build/TestResults/*.xcresult
+
       - name: Upload XCTest result bundles
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-pr-xcresults
-          path: .build/TestResults/*.xcresult
+          path: .build/artifacts/uploads/ScrollDownSports-pr-xcresults.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 14
 
       - name: Upload coverage reports
@@ -98,33 +106,55 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Package snapshot artifacts
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-pr-snapshot-artifacts ScrollDownSportsTests/__Snapshots__ .build/DerivedData/Logs/Test
+
       - name: Upload snapshot artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-pr-snapshot-artifacts
-          path: |
-            ScrollDownSportsTests/__Snapshots__
-            .build/DerivedData/Logs/Test
+          path: .build/artifacts/uploads/ScrollDownSports-pr-snapshot-artifacts.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 14
+
+      - name: Package simulator logs and screenshots
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-pr-simulator-diagnostics .build/artifacts/simulator
 
       - name: Upload simulator logs and screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-pr-simulator-diagnostics
-          path: .build/artifacts/simulator
+          path: .build/artifacts/uploads/ScrollDownSports-pr-simulator-diagnostics.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 14
+
+      - name: Package generated project
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-pr-generated-xcodeproj ScrollDownSports.xcodeproj
 
       - name: Upload generated project
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-pr-generated-xcodeproj
-          path: ScrollDownSports.xcodeproj
-          if-no-files-found: error
+          path: .build/artifacts/uploads/ScrollDownSports-pr-generated-xcodeproj.tar.gz
+          if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 7
 
   nightly-visual:
@@ -166,16 +196,21 @@ jobs:
           set -euo pipefail
           bash Scripts/local_gate.sh visual
 
+      - name: Package visual artifacts
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-visual-${{ matrix.device.name }} .build/TestResults/*.xcresult ScrollDownSportsTests/__Snapshots__ .build/DerivedData/Logs/Test
+
       - name: Upload visual artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-visual-${{ matrix.device.name }}
-          path: |
-            .build/TestResults/*.xcresult
-            ScrollDownSportsTests/__Snapshots__
-            .build/DerivedData/Logs/Test
+          path: .build/artifacts/uploads/ScrollDownSports-visual-${{ matrix.device.name }}.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
 
   nightly-ui-accessibility:
@@ -226,16 +261,21 @@ jobs:
           xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-${{ matrix.device.name }}.png || true
           xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-${{ matrix.device.name }}.logarchive || true
 
+      - name: Package UI and accessibility artifacts
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-ui-accessibility-${{ matrix.device.name }} .build/TestResults/*.xcresult .build/DerivedData/Logs/Test .build/artifacts/simulator
+
       - name: Upload UI and accessibility artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-ui-accessibility-${{ matrix.device.name }}
-          path: |
-            .build/TestResults/*.xcresult
-            .build/DerivedData/Logs/Test
-            .build/artifacts/simulator
+          path: .build/artifacts/uploads/ScrollDownSports-ui-accessibility-${{ matrix.device.name }}.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
 
   nightly-ipad:
@@ -304,17 +344,21 @@ jobs:
           xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-${{ matrix.device.name }}.png || true
           xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-${{ matrix.device.name }}.logarchive || true
 
+      - name: Package iPad artifacts
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-ipad-${{ matrix.device.name }} .build/TestResults/*.xcresult ScrollDownSportsTests/__Snapshots__ .build/DerivedData/Logs/Test .build/artifacts/simulator
+
       - name: Upload iPad artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-ipad-${{ matrix.device.name }}
-          path: |
-            .build/TestResults/*.xcresult
-            ScrollDownSportsTests/__Snapshots__
-            .build/DerivedData/Logs/Test
-            .build/artifacts/simulator
+          path: .build/artifacts/uploads/ScrollDownSports-ipad-${{ matrix.device.name }}.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
 
   nightly-performance:
@@ -346,14 +390,19 @@ jobs:
           xcrun simctl io booted screenshot .build/artifacts/simulator/final-screen-performance.png || true
           xcrun simctl spawn booted log collect --output .build/artifacts/simulator/system-performance.logarchive || true
 
+      - name: Package performance artifacts
+        if: always()
+        run: |
+          set -euo pipefail
+          bash Scripts/package_ci_artifact.sh ScrollDownSports-performance .build/TestResults/*.xcresult .build/DerivedData/Logs/Test .build/artifacts/simulator
+
       - name: Upload performance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ScrollDownSports-performance
-          path: |
-            .build/TestResults/*.xcresult
-            .build/DerivedData/Logs/Test
-            .build/artifacts/simulator
+          path: .build/artifacts/uploads/ScrollDownSports-performance.tar.gz
           if-no-files-found: ignore
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
